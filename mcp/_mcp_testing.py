@@ -3,10 +3,9 @@ import sys, os, time
 import numpy as np
 import scipy as sp, scipy.ndimage
 import visvis as vv
-vv.use('qt4')
+vv.use()
 
-from points import Point, Pointset, Aarray
-import diffgeo
+from vv.pypoints import Point, Pointset, Aarray
 import ssdf
 
 ## Test MCP on 2D data again
@@ -113,7 +112,7 @@ if 0:
 
 
 import visvis as vv
-from points import Point, Pointset, Aarray
+from visvis.pypoints import Point, Pointset, Aarray
 import numpy as np
 import mcp, mcpx, ssdf, time
 reload(mcp)
