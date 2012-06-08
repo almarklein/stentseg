@@ -15,9 +15,8 @@ import scipy as sp, scipy.ndimage
 from visvis.pypoints import Point, Pointset, Aarray
 from visvis.pypoints import is_Aarray
 
-#import diffgeo
-# Not sure were I'll put the gfilter functionality, pirt?
-diffgeo = None
+
+from . import gaussfun
 
 
 def getStentSurePositions(data, th1):
@@ -137,9 +136,9 @@ def getStentSurePositions_wrong(data, th1, th2=0):
         sigma = 0.8 # in mm
         # take anisotropy into account
         sigmas = [sigma/sam for sam in sampling]
-        Lxx = diffgeo.gfilter(data, sigmas, [0,0,2])
-        Lyy = diffgeo.gfilter(data, sigmas, [0,2,0])
-        Lzz = diffgeo.gfilter(data, sigmas, [2,0,0])
+        Lxx = gaussfun.gfilter(data, sigmas, [0,0,2])
+        Lyy = gaussfun.gfilter(data, sigmas, [0,2,0])
+        Lzz = gaussfun.gfilter(data, sigmas, [2,0,0])
         Lap = -(Lxx + Lyy + Lzz)
         #Lap = Aarray( Lap, sampling)
     

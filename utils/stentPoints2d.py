@@ -8,10 +8,10 @@ Implements functions to detect points on a stent in 2D slices sampled
 import os, sys, time
 import numpy as np
 import visvis as vv
-import diffgeo
 from points import Point, Pointset, Aarray
 #import subpixel deprecated module, use interp instead
 
+from . import gaussfun
 
 
 ## Point detection
@@ -47,20 +47,20 @@ def detect_points(slice, th_gc=2000, th_minHU=300, sigma=1.6):
     
     # Calculate Gaussian curvature    
     if True:
-        Lxx = diffgeo.gfilter(slice, sigma, [0,2])
-        Ltmp = diffgeo.gfilter(sliceStreak, sigma, [0,2])
+        Lxx = gaussfun.gfilter(slice, sigma, [0,2])
+        Ltmp = gaussfun.gfilter(sliceStreak, sigma, [0,2])
         Lxx = Lxx+2*Ltmp
         Lxx[Lxx>0]=0;
         
-        Lyy = diffgeo.gfilter(slice, sigma, [2,0])
-        Ltmp = diffgeo.gfilter(sliceStreak, sigma, [2,0])
+        Lyy = gaussfun.gfilter(slice, sigma, [2,0])
+        Ltmp = gaussfun.gfilter(sliceStreak, sigma, [2,0])
         Lyy = Lyy+2*Ltmp
         Lyy[Lyy>0]=0;
         
         Lgc = Lxx * Lyy
     
     # Make a smoothed version
-    slice_smoothed = diffgeo.gfilter(slice, 0.5, 0)
+    slice_smoothed = gaussfun.gfilter(slice, 0.5, 0)
     
     # Make a selection of candidate pixels
     Iy,Ix = np.where( (slice > th_minHU) & (Lgc > th_gc) )
