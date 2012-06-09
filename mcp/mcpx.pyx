@@ -6,8 +6,10 @@ import numpy as np
 cimport numpy as np
 import cython 
 
-# more imports
-from heap cimport FastUpdateBinaryHeap
+# more imports. 
+# There is an absolute import here; Relative cimport is not supported yet
+#from . cimport heap # cimport FastUpdateBinaryHeap
+from stentseg.mcp cimport heap
 from visvis.pypoints import Aarray, Point, Pointset
 import inspect
 
@@ -155,7 +157,7 @@ cdef class McpBase:
         self.nindex_f = self.nindex.reshape(flatshape)
         
         # create front: list of integer-positions
-        self.front = FastUpdateBinaryHeap(128, costs.size)
+        self.front = heap.FastUpdateBinaryHeap(128, costs.size)
     
     ## Positional methods
     
@@ -556,7 +558,7 @@ cdef class McpBase:
         cdef np.ndarray[INT_T, ndim=1, mode="c", negative_indices=False] offset = tmp[2]
         
         # get short reference to binary heap
-        cdef FastUpdateBinaryHeap front = self.front
+        cdef heap.FastUpdateBinaryHeap front = self.front
         
         # define nice types
         cdef int iter1, iter2 # iteretors for current and neighbor voxel

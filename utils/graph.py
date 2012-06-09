@@ -235,7 +235,7 @@ class Graph(list):
         # First create nodes
         pp = Pointset(struct.nodes)
         for p in pp:
-            self.appendNode(p)
+            self.AppendNode(p)
         
         # Make backward compatible
         if hasattr(struct, 'connections'):
