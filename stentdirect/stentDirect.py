@@ -37,6 +37,10 @@ import visvis as vv
 from visvis.pypoints import Point, Pointset, Aarray
 from visvis import ssdf
 
+# This code goes a long way; from before when I fixed a bug in the subtraction
+# of pointsets
+vv.pypoints.SHOW_SUBTRACTBUG_WARNING = True 
+
 from .. import mcp
 from . import stentGraph
 from ..utils import stentPoints3d
