@@ -5,7 +5,7 @@ The process is recorder such that it can be stored as an swf movie.
 
 import visvis as vv
 vv.use('PySide')
-from visvis.pypoints import Point, Pointset, Aarray
+from visvis import Point, Pointset, Aarray
 import numpy as np
 from pyzolib import ssdf
 

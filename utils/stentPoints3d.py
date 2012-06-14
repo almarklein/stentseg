@@ -12,11 +12,11 @@ from . import stentPoints3d_
 import os, sys
 import numpy as np
 import scipy as sp, scipy.ndimage
-from visvis.pypoints import Point, Pointset, Aarray
-from visvis.pypoints import is_Aarray
+from visvis import Point, Pointset, Aarray
+from visvis.utils.pypoints import is_Aarray
 
 
-from . import gaussfun
+from pirt import gaussfun
 
 
 def getStentSurePositions(data, th1):

@@ -9,7 +9,7 @@ the minimum cost between the seed point and another.
 
 import numpy as np
 #import scipy as sp, scipy.ndimage
-from visvis.pypoints import Point, Pointset, Aarray
+from visvis import Point, Pointset, Aarray
 
 import time
 import visvis as vv

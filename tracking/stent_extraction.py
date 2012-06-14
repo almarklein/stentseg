@@ -6,7 +6,7 @@ import centerline_tracking
 from points import Aarray, Point, Pointset
 from slice_from_volume import *
 from convert_2d_point_to_3d_point import *
-from graph import Graph
+from visvis.utils.graph import Graph
 
 def load_volume(patnr):
     

@@ -11,7 +11,8 @@ import sys, os, time
 import numpy as np
 import visvis as vv
 from pypoints import Point, Pointset, Aarray
-import graph, stentGraph
+import from visvis.utils import graph
+import . stentGraph
 import stentDirect
 
 

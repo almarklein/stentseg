@@ -5,7 +5,7 @@ import scipy as sp, scipy.ndimage
 import visvis as vv
 vv.use()
 
-from vv.pypoints import Point, Pointset, Aarray
+from vv import Point, Pointset, Aarray
 import ssdf
 
 ## Test MCP on 2D data again

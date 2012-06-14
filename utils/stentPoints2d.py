@@ -11,7 +11,7 @@ import visvis as vv
 from points import Point, Pointset, Aarray
 #import subpixel deprecated module, use interp instead
 
-from . import gaussfun
+from pirt import gaussfun
 
 
 ## Point detection

@@ -13,7 +13,7 @@ import scipy as sp, scipy.ndimage
 from visvis.pypoints import Point, Pointset, Aarray
 
 from .. import mcp
-from ..utils import gaussfun
+from pirt import gaussfun
 
 
 class Parameters:

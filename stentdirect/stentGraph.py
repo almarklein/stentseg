@@ -7,7 +7,8 @@ from visvis.pypoints import Point, Pointset
 from pyzolib import ssdf
 import time
 
-from ..utils import graph, gaussfun
+from visvis.utils import graph
+from pirt import gaussfun
 
 
 class StentNode(graph.Node):
