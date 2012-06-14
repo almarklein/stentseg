@@ -9,7 +9,8 @@ import cython
 # more imports. 
 # There is an absolute import here; Relative cimport is not supported yet
 #from . cimport heap # cimport FastUpdateBinaryHeap
-from stentseg.mcp cimport heap
+cimport heap
+# from stentseg.mcp 
 from visvis.pypoints import Aarray, Point, Pointset
 import inspect
 
