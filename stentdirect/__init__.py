@@ -72,7 +72,6 @@ class StentDirect:
         Set the volume.
         """
         self._vol = vol
-        self._prepareFigure()
     
     
     def SetParams(self, params):
@@ -276,7 +275,7 @@ class StentDirect:
         self.Step1()
         self.Step2()
         return self.Step3()
-
+        
 
 # Get default params
 def getDefaultParams(stentType=''):
