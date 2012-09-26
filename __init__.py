@@ -12,5 +12,5 @@ Python3.x and drop suppory for Python2.x.
 
 """
 
-from . import utils
-from . import stentdirect
+from stentseg import utils
+from stentseg import stentdirect

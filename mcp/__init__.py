@@ -17,11 +17,11 @@ import visvis as vv
 # Compile cython if needed
 from pyzolib import pyximport
 pyximport.install()
-from . import heap
+import heap
 pyximport.install()
-from . import mcpx
+import mcpx
 
-from .mcpx import (McpBase, McpSimple, McpDistance, McpWithEndPoints,
+from mcpx import (McpBase, McpSimple, McpDistance, McpWithEndPoints,
                     McpConnectedSourcePoints)
 
 
