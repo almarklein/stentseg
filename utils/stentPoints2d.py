@@ -11,7 +11,7 @@ import visvis as vv
 from points import Point, Pointset, Aarray
 #import subpixel deprecated module, use interp instead
 
-from pirt import gaussfun
+from stentseg import gaussfun
 
 
 ## Point detection
@@ -344,7 +344,7 @@ def fit_cirlce(pp, warnIfIllDefined=True):
     denum = A*C - B*B
     if denum==0:
         if warnIfIllDefined:
-            print "Warning: can not fit a circle to the given points."
+            print("Warning: can not fit a circle to the given points.")
         return ce
     
     # Calculate point
@@ -702,13 +702,13 @@ def cluster_points(pp, c, pauseTime=0, showConvergeToo=True):
         # We need at least three points
         if len(Lp)<3:
             _objectClearer(showObjects)
-            print 'oops: len(LP)<3' 
+            print('oops: len(LP)<3' )
             return []
         
         # Recalculate circle
         c = fit_cirlce(pp[Lp], False)
         if c.r == 0.0:
-            print 'oops: c.r==0' 
+            print('oops: c.r==0' )
             _objectClearer(showObjects)
             return []
         
@@ -828,7 +828,7 @@ def cluster_points(pp, c, pauseTime=0, showConvergeToo=True):
     
     # Done
     if round == 20:
-        print 'Warning: chopstick seemed not to converge.'
+        print('Warning: chopstick seemed not to converge.')
     _objectClearer(showObjects)
     #print 'cluster end', len(L)
     return pp[L]

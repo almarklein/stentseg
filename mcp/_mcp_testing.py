@@ -139,7 +139,7 @@ m.EvolveFront()
 t1 = time.time()
 
 # visualize
-print t1-t0,'secs'
+print(t1-t0,'secs')
 f = vv.figure(100); f.Clear()
 f.position = -750, 360, 560, 720
 vv.imshow(m.cumCosts, clim=(0,30000)) # 30000

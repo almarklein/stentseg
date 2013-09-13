@@ -125,7 +125,7 @@ class StentDirect:
         
         t1 = time.time()
         if self._verbose:
-            print 'Found %i seed points, which took %1.2f s.' % (len(nodes), t1-t0)
+            print('Found %i seed points, which took %1.2f s.' % (len(nodes), t1-t0))
         
         # Store the nodes
         self._nodes1 = nodes
@@ -171,7 +171,7 @@ class StentDirect:
         
         if self._verbose:
             tmp = 'Found %i edges. Evolving and tracing took %1.2f and %1.2f s.'
-            print tmp % (nodes.CountEdges(), t1-t0, t2-t1)
+            print(tmp % (nodes.CountEdges(), t1-t0, t2-t1))
         
         # Store result
         self._nodes2 = nodes
@@ -256,7 +256,7 @@ class StentDirect:
         if self._verbose:      
             tmp = "Reduced to %i edges, "
             tmp += "which took %1.2f s: cleaning %1.2f, pruning %1.2f, repos. %1.2f"
-            print tmp % (nodes.CountEdges(), t_total, t_clean, t1, t2+t3)
+            print(tmp % (nodes.CountEdges(), t_total, t_clean, t1, t2+t3))
         
         # Store result
         self._nodes3 = nodes

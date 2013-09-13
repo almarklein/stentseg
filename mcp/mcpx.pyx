@@ -467,7 +467,7 @@ cdef class McpBase:
                             s = self.costs.shape
                             if y+dy<0 or y+dy>=s[0] or x+dx<0 or x+dx>=s[1]:
                                 if nn in Ln:
-                                    print tmp,"Found neighbour that should not be there."
+                                    print tmp, "Found neighbour that should not be there."
                             else:
                                 if nn not in Ln:
                                     print tmp, "Missing a neighbour" 

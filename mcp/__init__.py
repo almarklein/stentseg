@@ -15,11 +15,12 @@ import time
 import visvis as vv
 
 # Compile cython if needed
+# todo: make this optional, install on import by default
 from pyzolib import pyximport
 pyximport.install()
-import heap
+from . import heap
 pyximport.install()
-import mcpx
+from . import mcpx
 
 from mcpx import (McpBase, McpSimple, McpDistance, McpWithEndPoints,
                     McpConnectedSourcePoints)

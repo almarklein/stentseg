@@ -78,6 +78,6 @@ m.EvolveFront(stepsize, im2show)
 ##
 def sample(event):
     x,y = event.x2d * m.time.sampling[1], event.y2d * m.time.sampling[0]
-    print m.time[int(y+0.5),int(x+0.5)]
+    print(m.time[int(y+0.5),int(x+0.5)])
 a = m._t2.GetAxes()
 a.eventMouseDown.Bind(sample)

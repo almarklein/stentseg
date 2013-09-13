@@ -8,7 +8,7 @@ from pyzolib import ssdf
 import time
 
 from visvis.utils import graph
-from pirt import gaussfun
+from stentseg import gaussfun
 
 
 class StentNode(graph.Node):
@@ -745,10 +745,10 @@ class StentGraph(graph.Graph):
                     # Otherwise revisit it 
                     if node.degree == 2:
                         self.PopNode(node)
-                        #print 'crossing repositioned'
+                        #print('crossing repositioned')
                     else:
                         nodeList.append(node)
-                        #print 'crossing inserted'
+                        #print('crossing inserted')
                     
                     # Don't look further now
                     break

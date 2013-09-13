@@ -13,7 +13,7 @@ import scipy as sp, scipy.ndimage
 from visvis.pypoints import Point, Pointset, Aarray
 
 from .. import mcp
-from pirt import gaussfun
+from stentseg import gaussfun
 
 
 class Parameters:
@@ -634,7 +634,7 @@ class BaseWalker(object):
         self._killReason = reason        
         # notify
         if self._manager.verbose:
-            print "walker killed: " + reason
+            print("walker killed: " + reason)
         # remove from list
         L = self._manager._walkers
         if self in L:
@@ -666,7 +666,7 @@ class BaseWalker(object):
         angleLimit = angleLimit * np.pi / 180.0
         while abs(vec1.angle(vec2)) > angleLimit:
             vec1 = ( vec1*10 + vec2 ).normalize()
-        #print vec0.angle(vec2)*180/np.pi, vec1.angle(vec2)*180/np.pi
+        #print(vec0.angle(vec2)*180/np.pi, vec1.angle(vec2)*180/np.pi)
         return vec1
 
 
@@ -1001,7 +1001,7 @@ class NewRegionGrowingWalker2D(BaseWalker2D):
                     distance += road[-1].distance(pos)
                     road.append(pos)
                     self.RememberPos(pos)
-                    print pos
+                    print(pos)
                     if val > th1:
                         break # finished!
                 else:
@@ -1985,7 +1985,7 @@ class MPCWalker2D(BaseWalker2D):
 #         d = 0        
 #         for p in reversed(path[:-1]):
 #             if p == self.pos:
-#                 print 'same one'
+#                 print('same one')
 #             self.SetPos(p)
 #             d += p.distance(self.pos)
 #             if d > self._manager.params.mcpDistance/2.0:
