@@ -29,8 +29,11 @@ import inspect
 
  
 # determine datatypes for MCP
-ctypedef np.float32_t FLOAT_T
-FLOAT = np.float32
+#ctypedef np.float32_t FLOAT_T
+#FLOAT = np.float32
+ctypedef np.float64_t FLOAT_T
+FLOAT = np.float64
+
 ctypedef np.int32_t INT_T
 INT = np.int32
 ctypedef np.int8_t NINDEX_T
@@ -130,9 +133,9 @@ cdef class McpBase:
         
         # make sure data is float32
         if not isinstance(costs, np.ndarray):
-            raise ValueError('Costs must be a float32 numpy array.')
+            raise ValueError('Costs must be a float64 numpy array.')
         if not costs.dtype == FLOAT:
-            raise ValueError('Costs must be a float32 numpy array.')
+            raise ValueError('Costs must be a float64 numpy array.')
         
         # make sure costs is an anisotropic array
         if not isinstance(costs, Aarray):
@@ -421,7 +424,7 @@ cdef class McpBase:
         
         # create full arrays and mapping arrays
         NA2 = np.zeros((count,), dtype=np.int32)
-        WA2 = np.zeros((count,), dtype=np.float32)
+        WA2 = np.zeros((count,), dtype=np.float64)
         offset = np.zeros((len(NA)+1,), dtype=np.int32)
         
         # fill the arrays (offset[0] is 0)
@@ -567,10 +570,10 @@ cdef class McpBase:
         cdef int ni # neighbor-index (see GetNeighborStuff docstring)
         cdef int tmpi
         #
-        cdef float w # weight of transition from current to neighbor
-        cdef float cost1, cost2 # cost at current and neighbor voxel
-        cdef float cumCost1, cumCost2 # cumCost at current and neighbor voxel
-        cdef float inf = np.inf
+        cdef double w # weight of transition from current to neighbor
+        cdef double cost1, cost2 # cost at current and neighbor voxel
+        cdef double cumCost1, cumCost2 # cumCost at current and neighbor voxel
+        cdef double inf = np.inf 
         
         # start loop
         maxiter += 1
@@ -617,8 +620,8 @@ cdef class McpBase:
                         cost1 = costs[i1]
                         cost2 = costs[i2]
                         if cost2 < inf:
-                            cumCost2 = cumCost1 + 0.5*w*( cost1 + cost2 )
-                            if cumCost2 < cumCosts[i2]:
+                            cumCost2 = cumCost1 + w*0.5*( cost1 + cost2 )
+                            if cumCost2 < cumCosts[i2]: 
                                 # Update
                                 cumCosts[i2] = cumCost2
                                 traceback[i2] = i1
@@ -817,7 +820,7 @@ cdef class McpDistance(McpSimple):
         sampling, origin = self.costs.sampling, self.costs.origin
         
         # create distance array        
-        self.distance = Aarray(shape, sampling, origin, 0, dtype=np.float32)
+        self.distance = Aarray(shape, sampling, origin, 0, dtype=np.float64)
         self.distance_f = self.distance.reshape(flatshape)
     
     
