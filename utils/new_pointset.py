@@ -7,7 +7,7 @@ import visvis as vv
 # todo: rename to avoid name clashes with vv.Pointset?
 # PointSet is a bit ugly, but "pointset" is nice because it does not imply plural
 # Vector seems more general (points are subset of vectors?) but it pronounces less nicely
-class Pointset(np.ndarray):
+class PointSet(np.ndarray):
     """ The PointSet class can be used to represent sets of points or
     vectors, as well as singleton points. The dimensionality of the
     vectors in the pointset can be anything, and the dtype can be any
@@ -124,13 +124,9 @@ class Pointset(np.ndarray):
     
     
     def append(self, *p):
-        """ append(*p)
-        
-        Append a point to this pointset. 
-        If p is not an instance of the Point class,  the constructor 
-        of Point is called to create one from the given argument. This 
-        enables pp.append(x,y,z)
-        
+        """ Append a point to this pointset. One can give the elements
+        of the points as separate arguments. Alternatively, a tuple or
+        numpy array can be given.
         """
         p = self._as_point(*p)
         
@@ -142,7 +138,9 @@ class Pointset(np.ndarray):
     
     
     def extend(self, data):
-        
+        """ Extend the point set with more points. The shape[1] of the
+        given data must match with that of this array.
+        """
         # Turn data into Pointset, which will do some checks for us
         pp = Pointset(data)
         
@@ -162,10 +160,7 @@ class Pointset(np.ndarray):
     
     
     def insert(self, index, *p):
-        """ insert(index, *p)
-        
-        Insert a point at the given index. 
-        
+        """ Insert a point at the given index. 
         """
         
         # check index
@@ -190,10 +185,7 @@ class Pointset(np.ndarray):
     
     
     def contains(self, *p):
-        """ contains(*p)
-        
-        Check whether a point is already in this set. 
-        
+        """ Check whether the given point is already in this set. 
         """
         
         if not len(self):
@@ -212,12 +204,10 @@ class Pointset(np.ndarray):
     
     
     def remove(self, *p, **kwargs):
-        """ remove(*p)
-        
-        Remove first occurance of the given point from the list. 
-        Produces an error if such a point is not present.
-        See also remove_all()
-        
+        """ Remove the given point from the point set. Produces an error
+        if such a point is not present. If the keyword argument `all`
+        is given and True, all occurances of that point are removed.
+        Otherwise only the first occurance is removed.
         """
         
         # Parse kwargs
@@ -279,11 +269,8 @@ class Pointset(np.ndarray):
     
     
     def pop(self, index=-1):
-        """ pop(index=-1)
-        
-        Removes and returns a point from the pointset. Removes the last
+        """ Remove and returns a point from the pointset. Removes the last
         by default (which is more efficient than popping from anywhere else).
-        
         """
         
         # check index
@@ -309,11 +296,8 @@ class Pointset(np.ndarray):
     
     
     def _as_point(self, *p):
-        """ _as_point(*p)
-        
-        Return the input as a point instance, also
-        check whether the dimensions match. 
-        
+        """ Return as something that can be applied to a row in the array.
+        Check whether the point-dimensions match with this point set.
         """
         
         # the point directly given?
@@ -337,12 +321,9 @@ class Pointset(np.ndarray):
     ## Math stuff
     
     def norm(self):
-        """ norm()
-        
-        Calculate the norm (length) of the vector.
-        This is the same as the distance to point 0,0 or 0,0,0,
-        but implemented a bit faster.
-        
+        """  Calculate the norm (length) of the vector. This is the
+        same as the distance to the origin, but implemented a bit
+        faster.
         """
         
         # we could do something like:
@@ -357,10 +338,7 @@ class Pointset(np.ndarray):
 
 
     def normalize(self):
-        """ normalize()
-        
-        Return normalized vector (to unit length). 
-        
+        """ Return normalized vector (to unit length). 
         """
         
         # calculate factor array
@@ -373,12 +351,9 @@ class Pointset(np.ndarray):
 
 
     def normal(self):
-        """ normal()
-        
-        Calculate the normalized normal of a vector.
-        Use (p1-p2).normal() to calculate the normal of the line p1-p2.
+        """ Calculate the normalized normal of a vector. Use
+        (p1-p2).normal() to calculate the normal of the line p1-p2.
         Only works on 2D points. For 3D points use cross().
-        
         """
         
         # check dims
@@ -426,11 +401,8 @@ class Pointset(np.ndarray):
     
     
     def distance(self, *p):
-        """ distance(p)
-        
-        Calculate the Euclidian distance between two points or pointsets. 
-        Use norm() to calculate the length of a vector.
-        
+        """ Calculate the Euclidian distance between two points or
+        pointsets. Use norm() to calculate the length of a vector.
         """
         
         # the point directly given?
@@ -453,16 +425,12 @@ class Pointset(np.ndarray):
 
 
     def angle(self, *p):
-        """ angle(p)
-        
-        Calculate the angle (in radians) between two vectors. 
-        For 2D uses the arctan2 method so the angle has a sign.
-        For 3D the angle is the smallest angles between the two
-        vectors.
+        """ Calculate the angle (in radians) between two vectors. For
+        2D uses the arctan2 method so the angle has a sign. For 3D the
+        angle is the smallest angles between the two vectors.
         
         If no point is given, the angle is calculated relative to the
         positive x-axis.
-        
         """
         
         # the point directly given?
@@ -509,20 +477,14 @@ class Pointset(np.ndarray):
     
     
     def angle2(self, *p):
-        """ angle2(p)
-        
-        Calculate the angle (in radians) of the vector between 
+        """ Calculate the angle (in radians) of the vector between 
         two points. 
         
-        Notes
-        -----
-        Say we have p1=(3,4) and p2=(2,1).
+        Say we have p1=(3,4) and p2=(2,1). ``p1.angle(p2)`` returns the
+        difference of the angles of the two vectors: ``0.142 = 0.927 - 0.785``
         
-        p1.angle(p2) returns the difference of the angles of the two vectors:
-        0.142 = 0.927 - 0.785
-        
-        p1.angle2(p2) returns the angle of the difference vector (1,3):
-        p1.angle2(p2) == (p1-p2).angle()
+        ``p1.angle2(p2)`` returns the angle of the difference vector ``(1,3)``:
+        ``p1.angle2(p2) == (p1-p2).angle()``
         
         """
         
@@ -550,12 +512,10 @@ class Pointset(np.ndarray):
     
     
     def dot(self, *p):
-        """ dot(p)
-        
-        Calculate the dot product of the two points or pointsets. 
-        The dot product is the standard inner product of the 
-        orthonormal Euclidean space.
-        
+        """ Calculate the dot product of two pointsets. The dot product
+        is the standard inner product of the orthonormal Euclidean
+        space. The sizes of the point sets should match, or one point
+        set should be singular.
         """
         
         # the point directly given?
@@ -578,15 +538,11 @@ class Pointset(np.ndarray):
     
     
     def cross(self, *p):
-        """ cross(p)
-        
-        Calculate the cross product of two 3D vectors. 
-        
-        Given two vectors, returns the vector that is orthogonal to
-        both vectors. The right hand rule is applied; this vector is
-        the middle finger, the argument the index finger, the returned
-        vector points in the direction of the thumb.
-        
+        """ Calculate the cross product of two 3D vectors. Given two
+        vectors, returns the vector that is orthogonal to both vectors.
+        The right hand rule is applied; this vector is the middle
+        finger, the argument the index finger, the returned vector
+        points in the direction of the thumb.
         """
         
         # the point directly given?
