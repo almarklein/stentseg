@@ -1,3 +1,7 @@
+
+import numpy as np
+
+
 class Image(np.ndarray):
     
     def __new__(cls, array):

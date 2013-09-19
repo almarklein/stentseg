@@ -42,8 +42,8 @@ from visvis import ssdf
 vv.pypoints.SHOW_SUBTRACTBUG_WARNING = True 
 
 from stentseg import mcp
-from stentseg.stentdirect import stentGraph
-from stentseg.utils import stentPoints3d
+from . import stentGraph
+from . import stentPoints3d
 
 
 class StentDirect:

@@ -3,65 +3,70 @@ Detect points on the stent from a 3D dataset containing the stent.
 
 """
 
-# Compile cython
-from pyzolib import pyximport
-pyximport.install()
-from . import stentPoints3d_ 
-
 # Normal imports
 import os, sys
 import numpy as np
 import scipy as sp, scipy.ndimage
-from visvis import Point, Pointset, Aarray
-from visvis.utils.pypoints import is_Aarray
+
+from stentseg.utils import PointSet
 
 
-from stentseg import gaussfun
+# # Compile cython
+# from pyzolib import pyximport
+# pyximport.install()
+# from . import stentPoints3d_ 
 
 
-def getStentSurePositions(data, th1):
+def get_stent_likely_positions(data, th1):
+    """ Get a pointset of positions that are likely to be on the stent.
+    If the given data has a "sampling" attribute, the positions are
+    scaled accordingly. 
     
-    # Init pointset
-    pp = Pointset(data.ndim) 
+    Detection goes according to three criteria:
+      * intensity above given threshold
+      * local maximum
+      * at least one neighbour with intensity above threshold
+    """
     
     # Get mask
-    if data.dtype == np.float32:
-        mask = stentPoints3d_.getMaskWithStentSurePositions_float(data, th1)
-    elif data.dtype == np.int16:
-        mask = stentPoints3d_.getMaskWithStentSurePositions_short(data, th1)
-    else:
-        raise ValueError('Data must be float or short.')
+    mask = get_mask_with_stent_likely_positions(data, th1)
     
     # Convert mask to points
-    indices = np.where(mask==2)
-    if pp.ndim==2:
-        Iy, Ix = indices
-        for i in range(len(Ix)):
-            pp.append(Ix[i], Iy[i])
-    elif pp.ndim==3:
-        Iz, Iy, Ix = indices
-        for i in range(len(Ix)):
-            pp.append(Ix[i], Iy[i], Iz[i])
-    else:
-        raise ValueError('Can only handle 2D and 3D data.')
+    indices = np.where(mask==2)  # Tuple of 1D arrays
+    pp = PointSet( np.column_stack(reversed(indices)), dtype=np.float32)
     
-    # Correct for anisotropy
-    if is_Aarray(data):
-        scale = Point( tuple(reversed(data.sampling)) ) 
-        if hasattr(data, 'get_start'):            
-            offset = data.get_start()
-        else:
-            offset = data.get_start()
-        pp = pp * scale + offset
+    # Correct for anisotropy and offset
+    if hasattr(data, 'sampling'):
+        pp *= PointSet( list(reversed(data.sampling)) ) 
+    if hasattr(data, 'origin'):
+        # todo: or call it/support offset?
+        pp += PointSet( list(reversed(data.origin)) ) 
     
-    # Done
     return pp
 
 
 
 
-def detect_stent_points_3d(data, th):
+def get_mask_with_stent_likely_positions(data, th):
+    """ Get a mask image where the positions that are likely to be
+    on the stent, subject to three criteria:
+      * intensity above given threshold
+      * local maximum
+      * at least one neighbour with intensity above threshold
+    Returns a mask, which can easily be turned into a set of points by 
+    detecting the voxels with the value 2.
     
+    This is the pure-Python implementation.
+    """
+    
+    # NOTE: this pure-Python implementation is little over twice as slow
+    # as the Cython implementation, which is a neglectable cost since
+    # the other steps in stent segmentation take much longer. By using
+    # pure-Python, installation and modification are much easier!
+    # It has been tested that this algorithm produces the same results
+    # as the Cython version.
+    
+    # Init mask
     mask = np.zeros_like(data, np.uint8)
     
     # Criterium 1: voxel must be above th

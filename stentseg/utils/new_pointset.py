@@ -30,7 +30,8 @@ class PointSet(np.ndarray):
         a point, with which the pointset is initialized. If input is a numpy
         array, the pointset is a view on that array (ndim must be 2).
     dtype : dtype descrsiption
-        The data type of the numpy array.
+        The data type of the numpy array. If not given, the result will
+        be float32.
     
     """
     
@@ -41,18 +42,20 @@ class PointSet(np.ndarray):
         elif isinstance(input, list):
             # Point is given, initialize with that point
             if not all([isinstance(i, (float, int)) for i in input]):
-                raise ValueError('Lists given to Pointset must be all scalars.')
-            a = np.array(input)
+                raise ValueError('Lists given to PointSet must be all scalars.')
+            a = np.array(input, dtype=dtype)
             a.shape = 1, len(a)
             return a.view(cls)
         elif isinstance(input, np.ndarray):
             # Array is given, turn into pointset
             if not input.ndim == 2:
-                raise ValueError('Arrays given to Pointset must have ndim=2.')
+                raise ValueError('Arrays given to PointSet must have ndim=2.')
+            if input.dtype != np.dtype(dtype):
+                input = input.astype(dtype)
             return input.view(cls)
         else:
             # Don't know what to do
-            raise ValueError('Invalid type to instantiate Pointset with (%r)' % type(input))
+            raise ValueError('Invalid type to instantiate PointSet with (%r)' % type(input))
     
     
     def __str__(self):
@@ -63,13 +66,13 @@ class PointSet(np.ndarray):
     def __repr__(self):
         """" Return short(one line) string representation of the pointset. """
         if len(self) == 0:
-            return "<Empty Pointset (np.ndarray) of %i dimensions>" % (
+            return "<Empty PointSet (np.ndarray) for points of %i dimensions>" % (
                  self.shape[1], )
         elif len(self) == 1:
             r = ', '.join( ['%1.4g' % i for i in self[0,:]])
-            return "<Pointset (np.ndarray) with 1 point: %s>" % r
+            return "<PointSet (np.ndarray) with 1 point: %s>" % r
         else:
-            return "<Pointset (np.ndarray) with %i points of %i dimensions>" % (
+            return "<PointSet (np.ndarray) with %i points of %i dimensions>" % (
                 len(self), self.shape[1] )
     
     
@@ -141,8 +144,8 @@ class PointSet(np.ndarray):
         """ Extend the point set with more points. The shape[1] of the
         given data must match with that of this array.
         """
-        # Turn data into Pointset, which will do some checks for us
-        pp = Pointset(data)
+        # Turn data into PointSet, which will do some checks for us
+        pp = PointSet(data)
         
         # Check dimensions
         if pp.shape[1] != self.shape[1]:
@@ -409,9 +412,9 @@ class PointSet(np.ndarray):
         if len(p)==1:
             p = p[0]
         
-        # Make p a Pointset
-        if not isinstance(p, Pointset):
-            p = Pointset(p)
+        # Make p a PointSet
+        if not isinstance(p, PointSet):
+            p = PointSet(p)
         
         # If one of the pointsets is singleton, put it in p1
         p1, p2 = self._check_and_sort(self, p, 'distance')
@@ -438,12 +441,12 @@ class PointSet(np.ndarray):
             p = p[0]
         elif len(p)==0:
             # use default point
-            p = Pointset([0 for i in range(self.shape[1])])
+            p = PointSet([0 for i in range(self.shape[1])])
             p[0,0] = 1
         
-        # Make p a Pointset
-        if not isinstance(p, Pointset):
-            p = Pointset(p)
+        # Make p a PointSet
+        if not isinstance(p, PointSet):
+            p = PointSet(p)
         
         # check. Keep the correct order!
         self._check_and_sort(self, p, 'angle')
@@ -494,9 +497,9 @@ class PointSet(np.ndarray):
         elif len(p)==0:
             raise ValueError("Function angle2() requires another point.")
         
-        # Make p a Pointset
-        if not isinstance(p, Pointset):
-            p = Pointset(p)
+        # Make p a PointSet
+        if not isinstance(p, PointSet):
+            p = PointSet(p)
         
         # check. Keep the correct order!
         self._check_and_sort(self, p,'angle')
@@ -522,9 +525,9 @@ class PointSet(np.ndarray):
         if len(p)==1:
             p = p[0]
             
-        # Make p a Pointset
-        if not isinstance(p, Pointset):
-            p = Pointset(p)     
+        # Make p a PointSet
+        if not isinstance(p, PointSet):
+            p = PointSet(p)     
         
         # check
         p1, p2 = self._check_and_sort(self,p,'dot')
@@ -552,9 +555,9 @@ class PointSet(np.ndarray):
         if not self.shape[1] == 3:
             raise ValueError("Cross product only works for 3D vectors!")
         
-        # Make p a Pointset
-        if not isinstance(p, Pointset):
-            p = Pointset(p)    
+        # Make p a PointSet
+        if not isinstance(p, PointSet):
+            p = PointSet(p)    
         
         # check (note that we use the original order for calculation)
         p1, p2 = self._check_and_sort(self, p,'cross')
@@ -567,20 +570,22 @@ class PointSet(np.ndarray):
         data[:,2] = a[:,0]*b[:,1] - a[:,1]*b[:,0]
         
         # return
-        return Pointset(data)
+        return PointSet(data)
 
 
-a = Pointset(2, np.float32)
-b = vv.Pointset(2)
 
-pp = np.random.uniform(0, 1, (100,2))
-
-t0 = time.time()
-for i in range(len(pp)):
-    a.append(pp[i])
-print('numpy resize: %1.3f s' % (time.time()-t0))
-
-t0 = time.time()
-for i in range(len(pp)):
-    b.append(pp[i])
-print('Pointset append: %1.3f s' % (time.time()-t0))
+if __name__ == '__main__':
+    a = PointSet(2, np.float32)
+    b = vv.Pointset(2)
+    
+    pp = np.random.uniform(0, 1, (100,2))
+    
+    t0 = time.time()
+    for i in range(len(pp)):
+        a.append(pp[i])
+    print('numpy resize: %1.3f s' % (time.time()-t0))
+    
+    t0 = time.time()
+    for i in range(len(pp)):
+        b.append(pp[i])
+    print('PointSet append: %1.3f s' % (time.time()-t0))

@@ -1,3 +1,5 @@
+# NOTE: THIS ALG HAS BEEN REPLACED WITH A PURE PYTHON VERSION. 
+# THIS CODE IS KEPT FOR REFERENCE ONLY
 
 import numpy as np
 cimport numpy as np #cimport imports pxd files
@@ -12,8 +14,8 @@ cdef inline short maxs(short a, short b): return a if a >= b else b
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
-def getMaskWithStentSurePositions_float(np.ndarray[DTYPE_f,ndim=3] data, float th1):
-    """ getStentSurePositions(data)
+def get_mask_with_stent_likely_positions_float(np.ndarray[DTYPE_f,ndim=3] data, float th1):
+    """ get_mask_with_stent_likely_positions(data)
     Detect seed points on the stents subject to three criteria:
       * intensity above given threshold
       * local maximum
@@ -88,8 +90,8 @@ def getMaskWithStentSurePositions_float(np.ndarray[DTYPE_f,ndim=3] data, float t
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
-def getMaskWithStentSurePositions_short(np.ndarray[DTYPE_s,ndim=3] data, float th1):
-    """ getStentSurePositions(data)
+def get_mask_with_stent_likely_positions_short(np.ndarray[DTYPE_s,ndim=3] data, float th1):
+    """ get_mask_with_stent_likely_positions(data)
     Detect seed points on the stents subject to three criteria:
       * intensity above given threshold
       * local maximum

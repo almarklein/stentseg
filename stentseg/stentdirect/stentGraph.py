@@ -8,7 +8,7 @@ from pyzolib import ssdf
 import time
 
 from visvis.utils import graph
-from stentseg import gaussfun
+from stentseg.utils import gaussfun
 
 
 class StentNode(graph.Node):
