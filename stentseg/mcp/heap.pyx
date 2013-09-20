@@ -368,7 +368,7 @@ cdef class BinaryHeap:
         
         # get values
         cdef int ir = i - ((1 << levels) - 1) #(2**self.levels-1) # LevelStart
-        cdef double value =  values[i]
+        cdef double value = values[i]
         self._popped_ref = self._references[ir]
         
         # remove it
@@ -377,6 +377,14 @@ cdef class BinaryHeap:
         
         # return 
         return value
+    
+    
+    cdef int pop_lala(self):
+        """ Cython -a makrs the return-line as very inefficient?"""
+        
+        cdef int foo
+        # return 
+        return foo
     
     
     ## Python Public methods (that do not need to be VERY fast)

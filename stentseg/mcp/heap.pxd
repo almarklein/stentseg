@@ -22,7 +22,9 @@ cdef class BinaryHeap:
     cdef void _remove(self, int i)
     
     cdef int push_fast(self, double value, int reference)
+    
     cdef double pop_fast(self)
+    cdef int pop_lala(self)
 
 cdef class FastUpdateBinaryHeap(BinaryHeap):
     cdef readonly int max_reference
