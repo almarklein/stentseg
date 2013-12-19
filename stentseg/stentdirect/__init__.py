@@ -41,7 +41,7 @@ from visvis import ssdf
 # of pointsets
 vv.pypoints.SHOW_SUBTRACTBUG_WARNING = True 
 
-# from stentseg import mcp
+from stentseg import _mcp as mcp
 from . import stentGraph
 from . import stentPoints3d
 
@@ -83,8 +83,11 @@ class StentDirect:
     
     def Draw(self, nodesNr=0, drawTex=True, fignr=101, **kwargs):
         # Init visualization
-        f=vv.figure(fignr); vv.clf();
-        a = vv.gca()
+        if fignr is not None:
+            f=vv.figure(fignr); vv.clf();
+            a = vv.gca()
+        else:
+            a = vv.gca()
         a.cameraType = '3d'
         a.daspect = 1,1,-1
         a.daspectAuto = False        
@@ -115,8 +118,7 @@ class StentDirect:
         
         # Detect points
         th = self._params.seed_threshold
-        pp = stentPoints3d.getStentSurePositions(self._vol,th)
-#         pp = stentPoints3d.getStentSurePositions_wrong(self._vol, th)
+        pp = stentPoints3d.get_stent_likely_positions(self._vol, th)
         
         # Create nodes object from found points
         nodes = stentGraph.StentGraph()
@@ -154,7 +156,7 @@ class StentDirect:
         
         # Create speed image (the devision makes it a float array)
         factor = float( self._params.mcp_speedFactor )        
-        speed = 1/2**((self._vol)/factor).astype(np.float32)
+        speed = 1/2**((self._vol)/factor).astype(np.float64)
         
         costToCtValue = lambda x: np.log2(1.0/x)*factor
         

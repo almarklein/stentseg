@@ -182,7 +182,9 @@ class StentGraph(graph.Graph):
         if isinstance(p, StentNode):
             pass
         elif isinstance(p, (Point, graph.Node)):
-            p = StentNode(p)            
+            p = StentNode(p)      
+        elif isinstance(p, np.ndarray):
+            p = StentNode(p)      
         else:
             raise ValueError("Only StentNode objects should be appended.")
         # Append and return
