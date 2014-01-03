@@ -136,7 +136,7 @@ class StentDirect:
         th = self._params.mcp_evolutionThreshold
         #seeds = [(n.x, n.y, n.z) for n in nodes]
         seeds = [(int(0.5+n.z/sam[0]), int(0.5+n.y/sam[1]), int(0.5+n.x/sam[2])) for n in nodes]
-        self._mcp = m = MCP_StentDirect(speed, nodes, th)
+        self._mcp = m = MCP_StentDirect(speed, nodes, th, self._vol.sampling)
         
         # Evolve front and trace paths        
         t0 = time.time()
