@@ -1,12 +1,38 @@
-""" A version of MCP_Connect from skimage that is tweaked to work
+# -*- coding: utf-8 -*-
+# Copyright (c) 2014, Almar Klein
+# Distributed under the (new) BSD License. See LICENSE.txt for more info.
+
+""" Module stentmcp
+
+A version of MCP_Connect from skimage that is tweaked to work
 with our stent segmentation algorithm.
+
+
+History
+-------
+
+Originally, the stentseg package contained its own version of the MCP 
+algorithm, which originated at the same time as the MCP implementation
+in skimage, since Zach and I collaborated on it. In particular the heap
+implementation was the same.
+
+In late 2013 I did a PR to scikit-image to incorporate the extra features
+that my implementation exposed. Now there is a single MCP codebase that 
+has the features that we need. It also means that the stentseg package
+is now pure Python, making distribution much easier.
+
+The variant of the MCP algorithm that can be used to connect points
+(MCP_Connect) needs overloading in order to do someting useful with it;
+the connections that are found need to be dealt with. That is what this
+module does.
+
 """
 
 import numpy as np
 import visvis as vv
 import skimage.graph
 
-from . import stentGraph
+from . import stentgraph
 
 
 class MCP_StentDirect(skimage.graph.MCP_Connect):
@@ -15,7 +41,7 @@ class MCP_StentDirect(skimage.graph.MCP_Connect):
     and turn these into an undirected graph.
     """
     
-    def __init__(self, costs, nodes, th, sampling):
+    def __init__(self, costs, nodes, th, sampling, origin=None):
         skimage.graph._mcp.MCP_Connect.__init__(self, costs, sampling=sampling)
         
         # Store the inputs
@@ -23,7 +49,10 @@ class MCP_StentDirect(skimage.graph.MCP_Connect):
         self._costs = costs
         self._th = th
         self._sampling = sampling
-        
+        self._origin = origin
+        if origin is None:
+            self._origin = tuple([0.0 for s in self._sampling])
+            
         # Init connections
         self._connections = {}
         self._connectioncount = 0
@@ -50,7 +79,8 @@ class MCP_StentDirect(skimage.graph.MCP_Connect):
         for p in reversed(path):
             pp.append(tuple(reversed(p)))
         sampling_factor = np.array(list(reversed(self._sampling)))
-        return pp * sampling_factor
+        origin = np.array(list(reversed(self._origin)))
+        return pp * sampling_factor + origin
     
     
     def finalize_connections(self, nodes, costToCtValue):
@@ -69,12 +99,12 @@ class MCP_StentDirect(skimage.graph.MCP_Connect):
             
             # Get CT values along the path
             pathCosts = [self._costs[(p.z,p.y,p.x)] for p in pp1]
-            ctValues = [costToCtValue(cost) for cost in pathCosts] 
+            ctValues = [costToCtValue(c) for c in pathCosts] 
             
             # Create a connection object (i.e. an edge), and connect it
             node1 = nodes[id1]
             node2 = nodes[id2]
-            cnew = stentGraph.PathEdge(node1, node2, cost, min(ctValues), pp1)
+            cnew = stentgraph.PathEdge(node1, node2, cost, min(ctValues), pp1)
             cnew.Connect()
     
     

@@ -1,10 +1,14 @@
+# -*- coding: utf-8 -*-
+# Copyright (c) 2014, Almar Klein
+# Distributed under the (new) BSD License. See LICENSE.txt for more info.
+
 """ Package stentDirect
 
-Implements a class to perform a step by step approach to segment 
-the stent, showing results in between. This is also where the
-parameter struct is used to steer the algorithm.
+Provides a class to perform a step by step approach to segment 
+the stent, showing results in between. 
 
-Also has a few cells to show a demo at the end.
+Some old notes on memory usage
+------------------------------
 
 Notes on memory usage. On the full 512x512x360 datasets a memory error is
 produced. I found that for each patient a 256x256x256 dataset can be 
@@ -23,11 +27,6 @@ So assuming a dataset of 256x256x256, the memory requirement is:
 - 64 MB for the int32 idmap
 total: 5*64+32+16 = 368 MB
 
-For the detection of seedpoints the memory requirements can be substantial
-too, because I use some morphology.
-
-
-
 """
 
 # Imports
@@ -40,6 +39,8 @@ from .base import StentDirect, StentDirect_oldMCP
 def getDefaultParams(stentType=''):
     """ getDefaultParams()
     Get the paramater stuct filled with defaults.
+    These defaults may not be optimal for you stent type and/or scanner
+    configuration.
     """
     
     # Generic params
@@ -73,7 +74,4 @@ def getDefaultParams(stentType=''):
 
     # Done
     return params
-
-
-# todo: MCP stop criterion: after segmentation of a certain region?
 

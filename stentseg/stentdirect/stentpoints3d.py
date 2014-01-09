@@ -1,4 +1,9 @@
-""" Module stentPoints3d
+# -*- coding: utf-8 -*-
+# Copyright (c) 2014, Almar Klein
+# Distributed under the (new) BSD License. See LICENSE.txt for more info.
+
+""" Module stentpoints3d
+
 Detect points on the stent from a 3D dataset containing the stent.
 
 """
@@ -11,13 +16,7 @@ import scipy as sp, scipy.ndimage
 from stentseg.utils import PointSet
 
 
-# # Compile cython
-# from pyzolib import pyximport
-# pyximport.install()
-# from . import stentPoints3d_ 
-
-
-def get_stent_likely_positions(data, th1):
+def get_stent_likely_positions(data, th):
     """ Get a pointset of positions that are likely to be on the stent.
     If the given data has a "sampling" attribute, the positions are
     scaled accordingly. 
@@ -29,7 +28,7 @@ def get_stent_likely_positions(data, th1):
     """
     
     # Get mask
-    mask = get_mask_with_stent_likely_positions(data, th1)
+    mask = get_mask_with_stent_likely_positions(data, th)
     
     # Convert mask to points
     indices = np.where(mask==2)  # Tuple of 1D arrays
@@ -56,7 +55,7 @@ def get_mask_with_stent_likely_positions(data, th):
     Returns a mask, which can easily be turned into a set of points by 
     detecting the voxels with the value 2.
     
-    This is the pure-Python implementation.
+    This is a pure-Python implementation.
     """
     
     # NOTE: this pure-Python implementation is little over twice as slow

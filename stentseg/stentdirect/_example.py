@@ -1,4 +1,4 @@
-from stentseg.stentdirect import StentDirect, getDefaultParams
+from stentseg.stentdirect import StentDirect, getDefaultParams, stentgraph
 import visvis as vv
 vv.pypoints.SHOW_SUBTRACTBUG_WARNING = True # Importand for converted legacy code
 
@@ -6,7 +6,7 @@ vv.pypoints.SHOW_SUBTRACTBUG_WARNING = True # Importand for converted legacy cod
 # Somehow obtain a volume (replace the three lines below)
 # use Aarray class for anisotropic volumes
 from visvis import ssdf
-s = ssdf.load('/home/almar/data/cropped/stents_valve/cropped_pat001.bsdf')
+s = ssdf.load('/home/almar/data/cropped/stents_valve/cropped_pat101.bsdf')
 vol = vv.Aarray(s.vol, s.sampling, s.origin)
 
 ##
@@ -23,6 +23,8 @@ sd = StentDirect(vol, p)
 # Perform the three steps of stentDirect
 sd.Step1()
 sd.Step2()
+#sd._nodes2 = stentgraph.StentGraph()
+#sd._nodes2.Unpack(ssdf.load('/home/almar/tmp.ssdf'))
 sd.Step3()
 
 # Create a mesh object for visualization (argument is strut tickness)

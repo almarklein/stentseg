@@ -1,3 +1,15 @@
+# -*- coding: utf-8 -*-
+# Copyright (c) 2014, Almar Klein
+# Distributed under the (new) BSD License. See LICENSE.txt for more info.
+
+""" Module base
+
+High level implementation of the MCP algorithm. This module defines
+the StentDirect class, which can detect a stent frame in three steps.
+It also allows visualization of the intermediate results.
+
+"""
+
 # Imports
 import sys, os, time
 import numpy as np
@@ -9,12 +21,9 @@ from visvis import ssdf
 # of pointsets
 vv.pypoints.SHOW_SUBTRACTBUG_WARNING = True 
 
-from . import stentGraph
-from . import stentPoints3d
+from . import stentgraph
+from . import stentpoints3d
 from .stentmcp import MCP_StentDirect
-
-from stentseg import _mcp as mcp  # Temorary
-
 
 
 class StentDirect:
@@ -89,10 +98,10 @@ class StentDirect:
         
         # Detect points
         th = self._params.seed_threshold
-        pp = stentPoints3d.get_stent_likely_positions(self._vol, th)
+        pp = stentpoints3d.get_stent_likely_positions(self._vol, th)
         
         # Create nodes object from found points
-        nodes = stentGraph.StentGraph()
+        nodes = stentgraph.StentGraph()
         for p in pp:
             nodes.AppendNode(p)
         
@@ -122,21 +131,33 @@ class StentDirect:
             raise ValueError('Seed points not yet calculated.')
         
         # Get nodes
-        nodes = stentGraph.StentGraph()
+        nodes = stentgraph.StentGraph()
         nodes.Unpack( self._nodes1.Pack() )
         
         # Create speed image (the devision makes it a float array)
         factor = float( self._params.mcp_speedFactor )        
         speed = 1/2**((self._vol)/factor).astype(np.float64)
-        sam = speed.sampling = self._vol.sampling
         
+        # Get sampling and origin
+        sam = tuple([1.0 for s in self._vol.shape])
+        ori = tuple([0.0 for s in self._vol.shape])
+        if hasattr(self._vol, 'sampling'):
+            sam = speed.sampling = self._vol.sampling
+        if hasattr(self._vol, 'origin'):
+            ori = speed.origin = self._vol.origin
+        
+        # Inverse Cost function
         costToCtValue = lambda x: np.log2(1.0/x)*factor
+        
+        # Create seeds
+        #seeds = [(n.x, n.y, n.z) for n in nodes]
+        seeds = [(int(0.5 + (n.z-ori[0]) / sam[0]), 
+                  int(0.5 + (n.y-ori[1]) / sam[1]), 
+                  int(0.5 + (n.x-ori[2]) / sam[2])) for n in nodes]
         
         # Create MCP object
         th = self._params.mcp_evolutionThreshold
-        #seeds = [(n.x, n.y, n.z) for n in nodes]
-        seeds = [(int(0.5+n.z/sam[0]), int(0.5+n.y/sam[1]), int(0.5+n.x/sam[2])) for n in nodes]
-        self._mcp = m = MCP_StentDirect(speed, nodes, th, self._vol.sampling)
+        self._mcp = m = MCP_StentDirect(speed, nodes, th, sam, ori)
         
         # Evolve front and trace paths        
         t0 = time.time()
@@ -179,7 +200,7 @@ class StentDirect:
             raise ValueError('Edges not yet calculated.')
         
         # Get nodes and params
-        nodes = stentGraph.StentGraph()
+        nodes = stentgraph.StentGraph()
         nodes.Unpack( self._nodes2.Pack() )
         params = self._params
         
@@ -256,11 +277,15 @@ class StentDirect:
 
 
 class StentDirect_oldMCP(StentDirect):
+    """ Variant that uses the old MCP algorithm. Temporarily kept in place.
+    """
     
     def Step2(self):
         """ Step2()
         Find edges using MCP.
         """
+        
+        from stentseg import _mcp as mcp  # Temporary
         
         # Check if we can go
         if self._vol is None or self._params is None:
@@ -269,7 +294,7 @@ class StentDirect_oldMCP(StentDirect):
             raise ValueError('Seed points not yet calculated.')
         
         # Get nodes
-        nodes = stentGraph.StentGraph()
+        nodes = stentgraph.StentGraph()
         nodes.Unpack( self._nodes1.Pack() )
         
         # Create speed image (the devision makes it a float array)
