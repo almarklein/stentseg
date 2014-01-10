@@ -4,9 +4,22 @@
 
 """ Package stentDirect
 
-Provides a class to perform a step by step approach to segment 
-the stent, showing results in between. 
+Provides an algorithm to perform a step by step approach to segment 
+the stent, optionally showing results in between. 
 
+Use the StentDirect class to do the segmentation. This class needs a set
+of parameters. Default parameters can be obtained using getDefaultParams().
+
+The theory for these algorithms is described in:
+
+    Klein, Almar and van der Vliet, J.A. and Oostveen, L.J. and Hoogeveen, 
+    Y. and Schultze Kool, L.J. and Renema, W.K.J. and Slump, C.H. (2012) 
+    Automatic segmentation of the wire frame of stent grafts from CT data. 
+    Medical Image Analysis, 16 (1). pp. 127-139. ISSN 1361-8415
+
+"""
+
+"""
 Some old notes on memory usage
 ------------------------------
 

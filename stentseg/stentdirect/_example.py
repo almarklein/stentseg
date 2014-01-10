@@ -23,7 +23,7 @@ sd = StentDirect(vol, p)
 # Perform the three steps of stentDirect
 sd.Step1()
 sd.Step2()
-#sd._nodes2 = stentgraph.StentGraph()
+#sd._nodes2 = stentgraph.StentGraph(),
 #sd._nodes2.Unpack(ssdf.load('/home/almar/tmp.ssdf'))
 sd.Step3()
 
