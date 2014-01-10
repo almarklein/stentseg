@@ -4,3 +4,4 @@ syntax: glob
 *.so
 stentseg/_graph
 stentseg/_mcp
+build/

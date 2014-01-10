@@ -1,4 +1,4 @@
-""" stentseg
+# Stentseg
 
 This library provides functionality to perform segmentation of a stent
 graft from 3D CT data.
@@ -8,16 +8,20 @@ stent grafts. These represent the different attempt that I did
 during my PhD. The only algorithmm that is exposed is the 3-step
 stent-direct algorithm.
 
-In the current situation the algorithms are assumed to return a model
-of the graph based on a geometric graph, but additional models may be
-added later.
-
 This library is written for Python 3, and probably also works for Python 2.
-It is written in pure Python, so installation is easy.
 
-"""
+## Installation
 
-__version__ = '0.1'
+You can place this directory on your PYTHONPATH, copy the stentseg_proxy.py
+one directory below (so it is on your PYTHONPATH as well), and then 
+rename it to stentseg.py.
 
-from stentseg import utils
-from stentseg import stentdirect
+Alternatively you can run ``python setup.py install``.
+
+
+## License
+
+Copyright (c) 2014, Almar Klein
+
+Distributed under the (new) BSD License. See LICENSE.txt for more info.
+
