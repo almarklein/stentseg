@@ -1,4 +1,4 @@
-from stentseg.stentdirect import StentDirect, getDefaultParams, stentgraph
+from stentseg.stentdirect import StentDirect2, getDefaultParams, stentgraph
 import visvis as vv
 vv.pypoints.SHOW_SUBTRACTBUG_WARNING = True # Importand for converted legacy code
 
@@ -6,25 +6,25 @@ vv.pypoints.SHOW_SUBTRACTBUG_WARNING = True # Importand for converted legacy cod
 # Somehow obtain a volume (replace the three lines below)
 # use Aarray class for anisotropic volumes
 from visvis import ssdf
-s = ssdf.load('/home/almar/data/cropped/stents_valve/cropped_pat101.bsdf')
-vol = vv.Aarray(s.vol, s.sampling, s.origin)
+vol = vv.volread('stent')
+vol = vv.Aarray(vol, (1,1,1))
 
 ##
 
 # Get parameters. Different scanners/protocols/stent material might need
 # different parameters. 
 p = getDefaultParams()
-p.graph_expectedNumberOfEdges = 4 # 2 for zig-zag, 4 for diamond shaped
-p.seed_threshold = 1600
-p.mcp_evolutionThreshold = 0.001
+p.graph_expectedNumberOfEdges = 2 # 2 for zig-zag, 4 for diamond shaped
+p.seed_threshold = 800
+p.mcp_evolutionThreshold = 0.04
 p.graph_weakThreshold = 10
-sd = StentDirect(vol, p)
+sd = StentDirect2(vol, p)
 
 # Perform the three steps of stentDirect
 sd.Step1()
 sd.Step2()
-#sd._nodes2 = stentgraph.StentGraph(),
-#sd._nodes2.Unpack(ssdf.load('/home/almar/tmp.ssdf'))
+# sd._nodes2 = stentgraph.StentGraph(),
+# sd._nodes2.Unpack(ssdf.load('/home/almar/tmp.ssdf'))
 sd.Step3()
 
 # Create a mesh object for visualization (argument is strut tickness)

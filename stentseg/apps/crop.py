@@ -12,7 +12,7 @@ from visvis import ssdf
 
 # Read data
 vols = imageio.mvolread(fname_in, 'DICOM')
-vol1 = vols[1]  # 1 to 4
+vol1 = vols[2]  # 1 to 4
 
 # Crop
 vol2 = cropper.crop3d(vol1)

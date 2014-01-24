@@ -103,6 +103,11 @@ class PointSet(np.ndarray):
             return out  # Type Image
     
     
+    def ravel(self, *args, **kwargs):
+        # Return numpy array on ravel
+        return np.ndarray.ravel(self,*args, **kwargs)[...]
+    
+    
     def __getitem__(self, index):
         """ Get a point or part of the pointset. """
         
@@ -589,3 +594,6 @@ if __name__ == '__main__':
     for i in range(len(pp)):
         b.append(pp[i])
     print('PointSet append: %1.3f s' % (time.time()-t0))
+
+    
+    

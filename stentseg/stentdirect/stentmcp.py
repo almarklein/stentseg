@@ -32,6 +32,8 @@ import numpy as np
 import visvis as vv
 import skimage.graph
 
+from stentseg.utils.new_pointset import PointSet
+
 from . import stentgraph
 
 
@@ -75,7 +77,7 @@ class MCP_StentDirect(skimage.graph.MCP_Connect):
     
     
     def traceback_to_Pointset(self, path):
-        pp = vv.Pointset(len(path[0]))
+        pp = PointSet(len(path[0]), dtype=np.float32)
         for p in reversed(path):
             pp.append(tuple(reversed(p)))
         sampling_factor = np.array(list(reversed(self._sampling)))
@@ -83,29 +85,33 @@ class MCP_StentDirect(skimage.graph.MCP_Connect):
         return pp * sampling_factor + origin
     
     
-    def finalize_connections(self, nodes, costToCtValue):
+    def finalize_connections(self, nodelist, costToCtValue):
         """ Turn the connections into a proper edge in the graph.
         """
+        # Note that nodelist is a list, self._nodes is the graph
         for (id1, id2, pos1, pos2, cost) in self._connections.values():
             
             # Get the two parts of the traceback
             tb1 = self.traceback(pos1)
             tb2 = self.traceback(pos2)
+            tb = list(reversed(tb1)) + tb2
             
             # Turn into pointset and glue the two parts together
-            pp1 = self.traceback_to_Pointset( list(reversed(tb1)) )
-            pp2 = self.traceback_to_Pointset( tb2 )
-            pp1.extend(pp2)
+            pp = self.traceback_to_Pointset(tb)
             
-            # Get CT values along the path
-            pathCosts = [self._costs[(p.z,p.y,p.x)] for p in pp1]
+            # Get CT values along the path, based on tb values (z,y,x)!
+            pathCosts = [self._costs[p[0], p[1], p[2]] for p in tb]
             ctValues = [costToCtValue(c) for c in pathCosts] 
             
             # Create a connection object (i.e. an edge), and connect it
-            node1 = nodes[id1]
-            node2 = nodes[id2]
-            cnew = stentgraph.PathEdge(node1, node2, cost, min(ctValues), pp1)
-            cnew.Connect()
+            self._nodes.add_edge(nodelist[id1], nodelist[id2],
+                                cost=cost,
+                                ctvalue=min(ctValues),
+                                path=pp)
+#             node1 = nodes[id1]
+#             node2 = nodes[id2]
+#             cnew = stentgraph.PathEdge(node1, node2, cost, min(ctValues), pp1)
+#             cnew.Connect()
     
     
     def goal_reached(self, index, cumcost):
