@@ -34,7 +34,7 @@ import skimage.graph
 
 from stentseg.utils.new_pointset import PointSet
 
-from . import stentgraph
+#from . import stentgraph2
 
 
 class MCP_StentDirect(skimage.graph.MCP_Connect):

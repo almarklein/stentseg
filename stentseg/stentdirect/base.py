@@ -383,8 +383,9 @@ class StentDirect2:
             raise ValueError('Seed points not yet calculated.')
         
         # Get nodes
-        nodes = stentgraph2.StentGraph()
-        nodes.unpack( self._nodes1.pack() )
+        #nodes = stentgraph2.StentGraph()
+        #nodes.unpack( self._nodes1.pack() )
+        nodes = self._nodes1.copy()
         
         # Create speed image (the devision makes it a float array)
         factor = float( self._params.mcp_speedFactor )        
@@ -453,8 +454,9 @@ class StentDirect2:
             raise ValueError('Edges not yet calculated.')
         
         # Get nodes and params
-        nodes = stentgraph.StentGraph()
-        nodes.Unpack( self._nodes2.Pack() )
+        #nodes = stentgraph2.StentGraph()
+        #nodes.unpack( self._nodes2.pack() )
+        nodes = self._nodes2.copy()
         params = self._params
         
         # Init times        
