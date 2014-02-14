@@ -91,10 +91,18 @@ class MCP_StentDirect(skimage.graph.MCP_Connect):
         # Note that nodelist is a list, self._nodes is the graph
         for (id1, id2, pos1, pos2, cost) in self._connections.values():
             
+            # Get the two nodes
+            node1, node2 = nodelist[id1], nodelist[id2]
+            
             # Get the two parts of the traceback
             tb1 = self.traceback(pos1)
             tb2 = self.traceback(pos2)
-            tb = list(reversed(tb1)) + tb2
+            
+            # Combine into one, the "start" is at the "smallest" node
+            if node1 < node2:
+                tb = tb1 + list(reversed(tb2))
+            else:
+                tb = tb2 + list(reversed(tb1))
             
             # Turn into pointset and glue the two parts together
             pp = self.traceback_to_Pointset(tb)
@@ -104,14 +112,10 @@ class MCP_StentDirect(skimage.graph.MCP_Connect):
             ctValues = [costToCtValue(c) for c in pathCosts] 
             
             # Create a connection object (i.e. an edge), and connect it
-            self._nodes.add_edge(nodelist[id1], nodelist[id2],
+            self._nodes.add_edge(node1, node2,
                                 cost=cost,
                                 ctvalue=min(ctValues),
                                 path=pp)
-#             node1 = nodes[id1]
-#             node2 = nodes[id2]
-#             cnew = stentgraph.PathEdge(node1, node2, cost, min(ctValues), pp1)
-#             cnew.Connect()
     
     
     def goal_reached(self, index, cumcost):
