@@ -23,10 +23,10 @@ from visvis import ssdf
 # of pointsets
 vv.pypoints.SHOW_SUBTRACTBUG_WARNING = True 
 
-from . import stentgraph
+from . import stentgraph_old
 from . import stentpoints3d
 from .stentmcp import MCP_StentDirect
-from . import stentgraph2
+from . import stentgraph
 
 
 
@@ -105,7 +105,7 @@ class StentDirect:
         pp = stentpoints3d.get_stent_likely_positions(self._vol, th)
         
         # Create nodes object from found points
-        nodes = stentgraph2.StentGraph()
+        nodes = stentgraph.StentGraph()
         for p in pp:
             p_as_tuple = tuple(p.flat) # todo: perhaps seed detector should just yield list of tuples.
             nodes.add_node(p_as_tuple)
@@ -136,7 +136,7 @@ class StentDirect:
             raise ValueError('Seed points not yet calculated.')
         
         # Get nodes
-        #nodes = stentgraph2.StentGraph()
+        #nodes = stentgraph.StentGraph()
         #nodes.unpack( self._nodes1.pack() )
         nodes = self._nodes1.copy()
         
@@ -192,8 +192,8 @@ class StentDirect:
         t0 = time.time()
         #nodes.Prune_redundant()        
         #nodes.Prune_unconnectedNodes()
-        stentgraph2.prune_redundant(nodes, params.graph_strongThreshold)
-        stentgraph2.prune_clusters(nodes, params.graph_minimumClusterSize)
+        stentgraph.prune_redundant(nodes, params.graph_strongThreshold)
+        stentgraph.prune_clusters(nodes, params.graph_minimumClusterSize)
         return time.time() - t0
     
     
@@ -209,7 +209,7 @@ class StentDirect:
             raise ValueError('Edges not yet calculated.')
         
         # Get nodes and params
-        #nodes = stentgraph2.StentGraph()
+        #nodes = stentgraph.StentGraph()
         #nodes.unpack( self._nodes2.pack() )
         nodes = self._nodes2.copy()
         params = self._params
@@ -230,11 +230,11 @@ class StentDirect:
             cur_edges = nodes.number_of_edges()
             ene = params.graph_expectedNumberOfEdges
             
-            stentgraph2.prune_very_weak(nodes, params.graph_weakThreshold)
-            stentgraph2.prune_weak(nodes, ene, params.graph_strongThreshold)
-            stentgraph2.prune_redundant(nodes, params.graph_strongThreshold)            
-            stentgraph2.prune_clusters(nodes, params.graph_minimumClusterSize)
-            stentgraph2.prune_tails(nodes, params.graph_trimLength)
+            stentgraph.prune_very_weak(nodes, params.graph_weakThreshold)
+            stentgraph.prune_weak(nodes, ene, params.graph_strongThreshold)
+            stentgraph.prune_redundant(nodes, params.graph_strongThreshold)            
+            stentgraph.prune_clusters(nodes, params.graph_minimumClusterSize)
+            stentgraph.prune_tails(nodes, params.graph_trimLength)
         
         
         t0 = time.time()-t_start
@@ -335,7 +335,7 @@ class StentDirect_old:
         pp = stentpoints3d.get_stent_likely_positions(self._vol, th)
         
         # Create nodes object from found points
-        nodes = stentgraph.StentGraph()
+        nodes = stentgraph_old.StentGraph()
         for p in pp:
             nodes.AppendNode(p)
         
@@ -367,7 +367,7 @@ class StentDirect_old:
             raise ValueError('Seed points not yet calculated.')
         
         # Get nodes
-        nodes = stentgraph.StentGraph()
+        nodes = stentgraph_old.StentGraph()
         nodes.Unpack( self._nodes1.Pack() )
         
         # Create speed image (the devision makes it a float array)
@@ -420,7 +420,7 @@ class StentDirect_old:
             raise ValueError('Edges not yet calculated.')
         
         # Get nodes and params
-        nodes = stentgraph.StentGraph()
+        nodes = stentgraph_old.StentGraph()
         nodes.Unpack( self._nodes2.Pack() )
         params = self._params
         

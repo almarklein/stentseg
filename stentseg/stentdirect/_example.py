@@ -1,17 +1,18 @@
-from stentseg.stentdirect import StentDirect, StentDirect_old, getDefaultParams, stentgraph
-from stentseg.stentdirect.stentgraph2 import create_mesh
+""" 
+Example demonstrating the stent segmentation algorithm on the stent CT
+volume that comes with visvis.
+"""
 
 import visvis as vv
-vv.pypoints.SHOW_SUBTRACTBUG_WARNING = True # Importand for converted legacy code
-
-
-# Somehow obtain a volume (replace the three lines below)
-# use Aarray class for anisotropic volumes
 from visvis import ssdf
+
+from stentseg.stentdirect import StentDirect, StentDirect_old, getDefaultParams, stentgraph
+from stentseg.stentdirect.stentgraph import create_mesh
+
+# Load volume data, use Aarray class for anisotropic volumes
 vol = vv.volread('stent')
 vol = vv.Aarray(vol, (1,1,1))
 
-##
 
 # Get parameters. Different scanners/protocols/stent material might need
 # different parameters. 
@@ -20,6 +21,8 @@ p.graph_expectedNumberOfEdges = 2 # 2 for zig-zag, 4 for diamond shaped
 p.seed_threshold = 800
 p.mcp_evolutionThreshold = 0.06
 p.graph_weakThreshold = 10
+
+# Instantiate stentdirect segmenter object
 #sd = StentDirect_old(vol, p)
 sd = StentDirect(vol, p)
 
@@ -31,11 +34,11 @@ sd.Step2()
 sd.Step3()
 
 # Create a mesh object for visualization (argument is strut tickness)
-
 if hasattr(sd._nodes3, 'CreateMesh'):
     bm = sd._nodes3.CreateMesh(0.6)  # old
 else:
     bm = create_mesh(sd._nodes3, 0.6) # new
+
 
 # Create figue
 vv.figure(1); vv.clf()
