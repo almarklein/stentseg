@@ -1,4 +1,6 @@
-from stentseg.stentdirect import StentDirect2, getDefaultParams, stentgraph
+from stentseg.stentdirect import StentDirect, StentDirect_old, getDefaultParams, stentgraph
+from stentseg.stentdirect.stentgraph2 import create_mesh
+
 import visvis as vv
 vv.pypoints.SHOW_SUBTRACTBUG_WARNING = True # Importand for converted legacy code
 
@@ -16,9 +18,10 @@ vol = vv.Aarray(vol, (1,1,1))
 p = getDefaultParams()
 p.graph_expectedNumberOfEdges = 2 # 2 for zig-zag, 4 for diamond shaped
 p.seed_threshold = 800
-p.mcp_evolutionThreshold = 0.04
+p.mcp_evolutionThreshold = 0.06
 p.graph_weakThreshold = 10
-sd = StentDirect2(vol, p)
+#sd = StentDirect_old(vol, p)
+sd = StentDirect(vol, p)
 
 # Perform the three steps of stentDirect
 sd.Step1()
@@ -28,25 +31,33 @@ sd.Step2()
 sd.Step3()
 
 # Create a mesh object for visualization (argument is strut tickness)
-bm = sd._nodes3.CreateMesh(0.6)
+
+if hasattr(sd._nodes3, 'CreateMesh'):
+    bm = sd._nodes3.CreateMesh(0.6)  # old
+else:
+    bm = create_mesh(sd._nodes3, 0.6) # new
 
 # Create figue
 vv.figure(1); vv.clf()
 
 # Show volume and segmented stent as a graph
-a1 = vv.subplot(121)
+a1 = vv.subplot(131)
 t = vv.volshow(vol)
 t.clim = -1000, 4000
-sd._nodes3.Draw(mc='g')
+sd._nodes2.Draw(mc='g')
+
+# Show cleaned up
+a2 = vv.subplot(132)
+sd._nodes3.Draw(mc='g', lc='b')
 
 # Show the mesh
-a2 = vv.subplot(122)
-a2.daspect = 1,-1,-1
+a3 = vv.subplot(133)
+a3.daspect = 1,-1,-1
 m = vv.mesh(bm)
 m.faceColor = 'g'
 
 # Use same camera
-a1.camera = a2.camera
+a1.camera = a2.camera = a3.camera
 
 # Take a screenshot 
 #vv.screenshot('/home/almar/projects/valve_result_pat001.jpg', vv.gcf(), sf=2)

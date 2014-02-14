@@ -46,7 +46,7 @@ total: 5*64+32+16 = 368 MB
 import sys, os, time
 from visvis import ssdf
 
-from .base import StentDirect, StentDirect2, StentDirect_oldMCP
+from .base import StentDirect, StentDirect, StentDirect_old
 
 # Get default params
 def getDefaultParams(stentType=''):

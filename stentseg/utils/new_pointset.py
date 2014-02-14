@@ -377,8 +377,8 @@ class PointSet(np.ndarray):
         a[:,0] = a[:,1] * f
         a[:,1] = -tmp * f
         return a
-
-
+    
+    
     ## Math stuff on two vectors
     
     def _check_and_sort(self, p1, p2, what='something'):
