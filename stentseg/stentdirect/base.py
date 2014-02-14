@@ -188,15 +188,6 @@ class StentDirect:
         return nodes
     
     
-    def _CleanGraph(self, nodes, params):
-        t0 = time.time()
-        #nodes.Prune_redundant()        
-        #nodes.Prune_unconnectedNodes()
-        stentgraph.prune_redundant(nodes, params.graph_strongThreshold)
-        stentgraph.prune_clusters(nodes, params.graph_minimumClusterSize)
-        return time.time() - t0
-    
-    
     def Step3(self):
         """ Step3()
         Process graph to remove unwanted edges.
