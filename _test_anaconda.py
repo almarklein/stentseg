@@ -93,8 +93,9 @@ sd = StentDirect_test(vol, p)
 # Perform the three steps of stentDirect
 sd.Step1()
 sd.Step2()
+#ssdf.save('/home/almar/tmp.ssdf', sd._nodes2.pack())
 # sd._nodes2 = stentgraph.StentGraph(),
-# sd._nodes2.Unpack(ssdf.load('/home/almar/tmp.ssdf'))
+# sd._nodes2.unpack(ssdf.load('/home/almar/tmp.ssdf'))
 sd.Step3()
 
 # Create a mesh object for visualization (argument is strut tickness)
