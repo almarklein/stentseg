@@ -78,7 +78,7 @@ class MCP_StentDirect(skimage.graph.MCP_Connect):
     
     def traceback_to_Pointset(self, path):
         pp = PointSet(len(path[0]), dtype=np.float32)
-        for p in reversed(path):
+        for p in path:
             pp.append(tuple(reversed(p)))
         sampling_factor = np.array(list(reversed(self._sampling)))
         origin = np.array(list(reversed(self._origin)))
@@ -106,6 +106,14 @@ class MCP_StentDirect(skimage.graph.MCP_Connect):
             
             # Turn into pointset and glue the two parts together
             pp = self.traceback_to_Pointset(tb)
+            
+            if False:  # Verify path direction
+                if node1 < node2:
+                    assert tuple(pp[0].flat) == node1
+                    assert tuple(pp[-1].flat) == node2
+                else:
+                    assert tuple(pp[0].flat) == node2
+                    assert tuple(pp[-1].flat) == node1
             
             # Get CT values along the path, based on tb values (z,y,x)!
             pathCosts = [self._costs[p[0], p[1], p[2]] for p in tb]

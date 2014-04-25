@@ -469,16 +469,15 @@ class PointSet(np.ndarray):
             dangs[I] -= 2*np.pi
             return dangs
             
-        elif p1.ndim ==3:
+        elif p1.shape[1] == 3:
             # calculate 3D case
             p1, p2 = p1.normalize(), p2.normalize()
-            data = p1.dot(p2)
+            data = np.inner(p1, p2)  # Not np.dot()!
             # correct for round off errors (or we will get NANs)
             data[data>1.0] = 1.0
             data[data<-1.0] = -1.0
             #return data
             return np.arccos(data)
-        
         else:
             # not possible
             raise ValueError("Can only calculate angle for 2D and 3D vectors.")

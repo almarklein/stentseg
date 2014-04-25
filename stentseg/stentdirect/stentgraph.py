@@ -12,11 +12,14 @@ stent.
 
 from __future__ import print_function, division, absolute_import
 
+import numpy as np
 import networkx as nx
-from stentseg.utils.new_pointset import PointSet
+
 import visvis as vv
 from visvis import ssdf
 
+from stentseg.utils.new_pointset import PointSet
+from stentseg.utils import gaussfun
 
 # todo: what if we sort by CT value?
 SORTBY = 'cost'
@@ -294,6 +297,132 @@ def _prune_redundant_edge(graph, n1, n2, min_ctvalue):
                     return
 
 
+def _pop_node(graph, node):
+    """ Pop a node from the graph and connect its two neightbours.
+    The paths are combined and ctvalue and cost are taken into account.
+    Returns the returned edge (or None if the node could not be popped).
+    
+    If the three nodes under consideration (the given and its two
+    neighbours) form a clique, the clique is reduced to a single node
+    which is connected to itself. The remaining node is the smallest
+    of the neighbours of the given node.
+    """
+    
+    #  n1 -- n2 -- n3  (n2 is popped)
+    n2 = node
+    
+    # We can only pop nodes that have two neighbours
+    assert graph.degree(n2) == 2
+    
+    # Get the neihbours and the corresponding edges
+    n1, n3 = list(graph.edge[n2].keys())
+    edge12 = graph.edge[n1][n2]
+    edge23 = graph.edge[n2][n3]
+    
+    # Get the paths and conbine into one new path
+    # The start of a path is at the "smallest" node (stentmcp.py)
+    path12 = edge12['path']
+    path23 = edge23['path']
+    # First make sure the path is from n2-n1-n3
+    if n2 < n1: 
+        path12 = PointSet(np.flipud(path12))
+    if n3 < n2:
+        path23 = PointSet(np.flipud(path23))
+    path = PointSet(path12.shape[1])
+    path.extend(path12[:-1])  # Avoid that n2 occurs twice in the path
+    path.extend(path23)
+    # Flip if necessary
+    if n3 < n1:
+        path = PointSet(np.flipud(path)).copy()  # make C_CONTIGUOUS
+    
+    # Verify path order
+    if False:
+        if n1 < n3:
+            assert tuple(path[0].flat) == n1
+            assert tuple(path[-1].flat) == n3
+        else:
+            assert tuple(path[0].flat) == n3
+            assert tuple(path[-1].flat) == n1
+    
+    # Calculate new ctvalue and cost
+    cost = sum([edge12['cost'], edge23['cost']])
+    ctvalue = min(edge12['ctvalue'], edge23['ctvalue'])
+    
+    # Check if this is a cluster of three nodes...
+    neighbours1 = set(graph.edge[n1].keys())
+    neighbours3 = set(graph.edge[n3].keys())
+    collapse3 = False
+    if n3 in neighbours1: # == n1 in neighbours3
+        # So n1 and n3 are connected. We cannot just pop n2, because
+        # each two nodes can have just one connection. We either pop
+        # two nodes, or not pop at all.
+        #
+        # Determine what node we can collapse
+        collapse3 = True
+        collapsable = set()
+        if neighbours1 == set([n2, n3]):
+            collapsable.add(n1)
+        if neighbours3 == set([n1, n2]):
+            collapsable.add(n3)
+        #
+        if not collapsable: 
+            #print('cannot pop %s' % repr(n2))
+            return  # we cannot pop this node!
+        else:
+            node_to_collapse = min(collapsable)  # in case both were ok
+        # Get edge
+        edge13 = graph.edge[n1][n3]
+        # Path from 1-3 is always reversed (because now we need it
+        # in the other* order that we defined above)
+        path13 = edge13['path']
+        path13_via2 = path
+        path = PointSet(path.shape[1])
+        if node_to_collapse == min([n1, n3]):  # node to keep is NOT min
+            path.extend(np.flipud(path13))
+            path.extend(path13_via2)
+        else:  # node to keep is min
+            path.extend(path13_via2)
+            path.extend(np.flipud(path13))
+            
+        # Cost and ctvalue is easy
+        cost = sum([edge13['cost'], cost])
+        ctvalue = min(edge13['ctvalue'], ctvalue)
+    
+    # Pop the node, make new edge
+    if collapse3:
+        # Keep the smallest of the two
+        graph.remove_node(n2)
+        graph.remove_node(node_to_collapse)
+        node_to_keep = n1 if node_to_collapse == n3 else n3
+        #assert node_to_keep == tuple(path[0].flat)
+        #assert node_to_keep == tuple(path[-1].flat)
+        graph.add_edge(node_to_keep, node_to_keep, cost=cost, ctvalue=ctvalue, path=path)
+        return (node_to_keep, node_to_keep)
+    else:
+        graph.remove_node(n2)
+        graph.add_edge(n1, n3, cost=cost, ctvalue=ctvalue, path=path)
+        return (n1, n3)
+
+
+def pop_nodes(graph):
+    """ Pop all nodes with degree 2 (having exactly two edges). A series
+    of connected nodes can thus be reduced by a single node with an
+    edge that connects to itself. After this, the cornerpoints need to
+    be detected.
+    """
+    
+    for node in list(graph.nodes()):
+        try:
+            neighbours = list(graph.edge[node].keys())
+        except KeyError:
+            continue  # node popped as a cluster of three in _pop_node()
+        if len(neighbours) == 2:
+            if node not in neighbours:  # cannot pop if we only connect to self
+                if graph.node[node].get('nopop', False):
+                    pass  # explicitly prevent popping
+                else:
+                    _pop_node(graph, node)
+
 
 def create_mesh(graph, radius=1.0, fullPaths=True):
     """ Create a polygonal model from the stent and return it as
@@ -322,6 +451,122 @@ def create_mesh(graph, radius=1.0, fullPaths=True):
     else:
         return None
 
+
+def _detect_corners(path, th=3, smoothFactor=1.0, angTh=45):
+    """ detectCorners(path, th=5, smoothFactor=3, angTh=45)
+    Return the indices on the given path were corners are detected.
+    """
+    
+    # Initialize angles
+    angles = np.zeros((len(path),), dtype=np.float64)
+    
+    # angle to radians
+    angTh = angTh * np.pi / 180
+    
+    for i in range(len(path)):
+        
+        # Are we far enough down the wire that we can calculate 
+        # the vectors?
+        if i >= th*2:
+            
+            # Get current point, point between vector, and point at end
+            p1 = path[i]                
+            p2 = path[i-th]  # center point              
+            p3 = path[i-2*th]
+            
+            # Calculate vectors          
+            vec1 = p1-p2
+            vec2 = p2-p3
+            
+            # Calculate and store angle between them, (abs for 2D)
+            angles[i-th] = abs(vec1.angle(vec2))
+    
+    # Smooth angles and take derivative
+    angles2 = angles
+    angles = gaussfun.gfilter(angles, smoothFactor)# * smoothFactor**0.5
+    #print([int(i*180/np.pi) for i in angles])
+    
+    # Detect local maximuma
+    tmp = angles[th:-th]
+    localmax = (    (tmp > angles[th-1:-th-1])
+                &   (tmp > angles[th+1:-th+1]) 
+                &   (tmp > angTh)
+                )
+    
+    # Return indices
+    I, = np.where(localmax)
+    return [i+th for i in I]
+
+
+def _add_corner_to_edge(graph, n1, n2, **kwargs):
+    
+    # Get path and locations to split it
+    edge = graph.edge[n1][n2]
+    path = edge['path']
+    I = _detect_corners(path, **kwargs)
+    
+    # Ensure n1 < n2
+    if tuple(path[0].flat) != n1:
+        n1, n2 = n2, n1
+    assert tuple(path[0].flat) == n1
+    assert tuple(path[-1].flat) == n2
+    
+    
+    if I:
+        # Split path in multiple sections
+        paths = []
+        i_prev = 0
+        for i in I:
+            paths.append( path[i_prev:i+1] )  # note the overlap
+            i_prev = i
+        paths.append( path[i_prev:] )
+        
+        # Create new nodes (and insert)
+        node2s = []
+        for i in I:
+            tmp = tuple(path[i].flat)
+            node2s.append(tmp)
+            graph.add_node(tmp, nopop=True)
+        node2s.append(n2)
+        
+        # Create new edges (and connect)
+        node1 = n1
+        for i in range(len(paths)):
+            node2 = node2s[i]
+            graph.add_edge(node1, node2, path=paths[i],
+                           cost=edge['cost'], ctvalue=edge['ctvalue'])
+            node1 = node2
+        
+        # Check whether we should still process a bit...
+        popThisNode = None
+        if n1 == n2 and len(I) > 1:
+            popThisNode = n1
+        
+        # Disconnect old edge
+        graph.remove_edge(n1, n2)
+        
+        # Pop node and process new bit if we have to.
+        # We use recursion, but can only recurse once 
+        if popThisNode and graph.degree(popThisNode) <= 2:                
+            cnew = _pop_node(graph, popThisNode)
+            if cnew is not None:
+                _add_corner_to_edge(graph, *cnew, **kwargs)
+
+
+def add_corner_nodes(graph):
+    """ Detects positions on each edge where it bends and places a new
+    node at these positions.
+    """
+    for n1, n2 in graph.edges():
+        _add_corner_to_edge(graph, n1, n2)
+
+
+def smooth_paths(graph, ntimes=1):
+    for n1, n2 in graph.edges():
+        path = graph.edge[n1][n2]['path']
+        for iter in range(ntimes):
+            tmp = path[1:-1] + path[0:-2] + path[2:]
+            path[1:-1] = tmp / 3.0
 
 
 class TestStentGraph:
@@ -662,7 +907,205 @@ class TestStentGraph:
         
         #print(nx.is_isomorphic(g, g2))
         assert nx.is_isomorphic(g, g2)
+    
+    
+    def test_pop_node(self):
+        
+        # Create paths
+        path1 = PointSet(2)
+        path1.append(1, 11)
+        path1.append(1, 12)
+        path2 = PointSet(2)
+        path2.append(1, 12)
+        path2.append(1, 13)
+        #
+        path12 = PointSet(2)
+        path12.append(1, 11)
+        path12.append(1, 12) 
+        path12.append(1, 13)
+        
+        # create 4 nodes (6-7-8-9), remove 8
+        graph = StentGraph()
+        graph.add_edge(6, 7, cost=4, ctvalue=70)
+        graph.add_edge(7, 8, cost=2, ctvalue=50, path=path1)
+        graph.add_edge(8, 9, cost=3, ctvalue=60, path=path2)
+        
+        # Pop
+        _pop_node(graph, 8)
+        
+        # Check
+        assert graph.number_of_nodes() == 3
+        assert 8 not in graph.nodes()
+        assert graph.edge[7][9]['ctvalue'] == 50
+        assert graph.edge[7][9]['cost'] == 5
+        assert np.all(graph.edge[7][9]['path'] == path12)
+        
+        
+        # create 4 nodes (6-8-7-9), remove 7
+        graph = StentGraph()
+        graph.add_edge(6, 8, cost=4, ctvalue=70)
+        graph.add_edge(8, 7, cost=2, ctvalue=50, path=np.flipud(path1))
+        graph.add_edge(7, 9, cost=3, ctvalue=60, path=path2)
+        
+        # Pop
+        _pop_node(graph, 7)
+        
+        # Check
+        assert graph.number_of_nodes() == 3
+        assert 7 not in graph.nodes()
+        assert graph.edge[8][9]['ctvalue'] == 50
+        assert graph.edge[8][9]['cost'] == 5
+        assert np.all(graph.edge[8][9]['path'] == path12)
+        
+        
+        # create 4 nodes (7-8-6-9), remove 8
+        graph = StentGraph()
+        graph.add_edge(7, 8, cost=4, ctvalue=70, path=np.flipud(path2))
+        graph.add_edge(8, 6, cost=2, ctvalue=50, path=path1)
+        graph.add_edge(6, 9, cost=3, ctvalue=60)
+        
+        # Pop
+        _pop_node(graph, 8)
+        
+        # Check
+        assert graph.number_of_nodes() == 3
+        assert 8 not in graph.nodes()
+        assert graph.edge[6][7]['ctvalue'] == 50
+        assert graph.edge[6][7]['cost'] == 6
+        assert np.all(graph.edge[6][7]['path'] == path12)
+        
+        
+        # create 3 nodes in a cycle. It should remove all but one
+        graph = StentGraph()
+        graph.add_edge(7, 8, cost=4, ctvalue=70, path=path1)
+        graph.add_edge(8, 9, cost=2, ctvalue=50, path=path2)
+        graph.add_edge(9, 7, cost=3, ctvalue=60, path=path2)
+        
+        # Pop
+        _pop_node(graph, 8)
+        
+        # Check
+        assert graph.number_of_nodes() == 1
+        assert graph.number_of_edges() == 1
+        assert 8 not in graph.nodes()
+        n = graph.nodes()[0]
+        assert len(graph.edge[n][n]['path']) == 6-1
+        
+        
+        # create 3 nodes in a cycle, with one subbranch
+        graph = StentGraph()
+        graph.add_edge(7, 8, cost=4, ctvalue=70, path=path1)
+        graph.add_edge(8, 9, cost=2, ctvalue=50, path=path2)
+        graph.add_edge(9, 7, cost=3, ctvalue=60, path=path2)
+        graph.add_edge(7, 4, cost=3, ctvalue=60, path=path2)
+        
+        # Pop
+        _pop_node(graph, 8)
+        
+        # Check
+        assert graph.number_of_nodes() == 2
+        assert graph.number_of_edges() == 2
+        assert 8 not in graph.nodes()
+        assert len(graph.edge[7][7]['path']) == 6-1
+    
+    
+    def test_pop_nodes(self):
+        
+        # Create dummy paths
+        path1 = PointSet(2)
+        path1.append(1, 11)
+        path1.append(1, 12)
+        
+        # create 4 nodes (6-7-8-9), remove 8
+        graph = StentGraph()
+        graph.add_edge(6, 7, cost=4, ctvalue=70, path=path1)
+        graph.add_edge(7, 8, cost=2, ctvalue=50, path=path1)
+        graph.add_edge(8, 9, cost=3, ctvalue=60, path=path1)
+        graph0 = graph.copy()
+        
+        # Pop straight line
+        graph = graph0.copy()
+        pop_nodes(graph)
+        assert graph.number_of_nodes() == 2
+        assert graph.number_of_edges() == 1
+        assert graph.edge[6][9]['path'].shape[0] == 3+1
+        
+        # Pop cycle
+        graph = graph0.copy()
+        graph.add_edge(9, 6, cost=3, ctvalue=60, path=path1)
+        pop_nodes(graph)
+        assert graph.number_of_nodes() == 1
+        assert graph.number_of_edges() == 1
+        n = graph.nodes()[0]
+        assert graph.edge[n][n]['path'].shape[0] == 4+1+1 # cycle
+        # arbitrary what node stayed around
+        
+        # Pop with one side branch popping
+        graph = graph0.copy()
+        graph.add_edge(7, 2, cost=3, ctvalue=60, path=path1)
+        pop_nodes(graph)
+        assert graph.number_of_nodes() == 4
+        assert graph.number_of_edges() == 3
+        assert graph.edge[7][9]['path'].shape[0] == 2+1
+        
+        # Pop with one prevent popping
+        graph = graph0.copy()
+        graph.node[7]['nopop'] = True
+        pop_nodes(graph)
+        assert graph.number_of_nodes() == 3
+        assert graph.number_of_edges() == 2
+        assert graph.edge[7][9]['path'].shape[0] == 2+1
 
+    
+    def test_detect_corners(self):
+        path = PointSet(3)
+        path.append(10, 2, 0)
+        path.append(11, 3, 0)
+        path.append(12, 4, 0)
+        path.append(13, 5, 0)
+        path.append(14, 6, 0)  
+        path.append(15, 7, 0)  # top
+        path.append(16, 6, 0)
+        path.append(17, 5, 0)
+        path.append(18, 4, 0)
+        path.append(19, 3, 0)
+        path.append(20, 2, 0)  # bottom
+        path.append(21, 3, 0)
+        path.append(22, 4, 0)
+        path.append(23, 5, 0)
+        path.append(24, 6, 0)
+        path.append(25, 7, 0)  # top
+        path.append(26, 6, 0)
+        path.append(27, 5, 0)
+        path.append(28, 4, 0)
+        path.append(29, 3, 0)
+        path0 = path
+        
+        for i in range(3):
+            path = path0.copy()
+            path[:,2] = path[:,i]
+            path[:,i] = 0
+                
+            # Test that _detect_corners detects the indices correctly
+            I = _detect_corners(path, smoothFactor=1)
+            assert I == [5, 10, 15]
+            
+            # Test that _add_corner_to_edge constructs the graph and splits 
+            # the path in the correct way
+            graph = StentGraph()
+            n1, n5 = tuple(path[0].flat), tuple(path[-1].flat)
+            n2, n3, n4 =  tuple(path[5].flat),  tuple(path[10].flat),  tuple(path[15].flat)
+            graph.add_edge(n1, n5, path=path, cost=0, ctvalue=0)
+            _add_corner_to_edge(graph, n1, n5, smoothFactor=1)
+            
+            assert graph.number_of_nodes() == 5
+            assert graph.number_of_edges() == 4
+            for n in [n1, n2, n3, n4, n5]:
+                assert n in graph.nodes()
+            assert np.all(graph.edge[n1][n2]['path'] == path[0:6])
+            assert np.all(graph.edge[n2][n3]['path'] == path[5:11])
+            assert np.all(graph.edge[n3][n4]['path'] == path[10:16])
+            assert np.all(graph.edge[n4][n5]['path'] == path[15:20])
 
 
 if __name__ == "__main__":

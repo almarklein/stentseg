@@ -227,6 +227,9 @@ class StentDirect:
             stentgraph.prune_clusters(nodes, params.graph_minimumClusterSize)
             stentgraph.prune_tails(nodes, params.graph_trimLength)
         
+        stentgraph.pop_nodes(nodes)
+        stentgraph.add_corner_nodes(nodes)
+        stentgraph.smooth_paths(nodes)
         
         t0 = time.time()-t_start
         tmp = "Reduced to %i edges, "

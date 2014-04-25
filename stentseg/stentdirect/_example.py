@@ -62,5 +62,11 @@ m.faceColor = 'g'
 # Use same camera
 a1.camera = a2.camera = a3.camera
 
+# 
+test = vv.plot([0,0,0], axesAdjust=False, ls='', ms='.', mc='r', mw=15)
+if False:
+    node = sd._nodes3.nodes()[170]
+    pp = vv.Pointset( np.array(list(node)).reshape(1,3) )
+    test.SetPoints(pp)
 # Take a screenshot 
 #vv.screenshot('/home/almar/projects/valve_result_pat001.jpg', vv.gcf(), sf=2)
