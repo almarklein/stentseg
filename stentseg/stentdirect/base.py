@@ -112,6 +112,7 @@ class StentDirect:
         
         t1 = time.time()
         if self._verbose:
+            print()
             print('Found %i seed points, which took %1.2f s.' % (len(nodes), t1-t0))
         
         # Store the nodes
@@ -212,7 +213,7 @@ class StentDirect:
         
         # Iteratively prune the graph. The order of operations should
         # not matter too much, although in practice there is a
-        # difference. In particular the prune_weak and prene_redundant
+        # difference. In particular the prune_weak and prune_redundant
         # have a similar function and should be executed in this order.
         cur_edges = 0
         count = 0
