@@ -148,13 +148,13 @@ def _sorted_neighbours(graph, node):
 def prune_weak(graph, enc, ctvalue):
     """ Remove weak edges, based on cost and number of expected edges (enc).
     
-    All edges are tested to be elligible for removoval from both nodes.
+    All edges are tested to be elligible for removal from both nodes.
     An edge is elligible for removal if a node has more than the 
     expected number of edges, and the edge is not strong enough (does not
     have a CT value above the given value).
     
     Rationale: Edges with a path that contains a very low CT
-    value can always be discarted. Edges in excess of the expected
+    value can always be discarded. Edges in excess of the expected
     number of edges can only be maintained if their lowest CT 
     value is so high it proves the existance of a wire between
     the nodes.

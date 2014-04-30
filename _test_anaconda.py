@@ -1,6 +1,6 @@
 """ 
-Example demonstrating the stent segmentation algorithm on the stent CT
-volume that comes with visvis.
+Test for stent segmentation algorithm on the Anaconda CT data.
+Class StentDirect_test is created to work the stent segmentation algorithm; inherits from Class StentDirect. def Step3(self) is originally copied from Class StentDirect in base.py
 """
 
 import time
@@ -13,16 +13,21 @@ from visvis import ssdf
 from stentseg.stentdirect import StentDirect, StentDirect_old, getDefaultParams, stentgraph
 from stentseg.stentdirect.stentgraph import create_mesh
 
-BASEDIR = '/home/almar/data/cropped/lspeas/'
+#BASEDIR = r'C:\Users\Maaike\Dropbox\UT MA3\Research Aortic Stent Grafts\Data_nonECG-gated\lspeas\\'
+BASEDIR = r'C:\Users\Maaike\Documents\UT MA3\LSPEAS_data\ssdf\LSPEAS_003\\'
 
 # Load volume data, use Aarray class for anisotropic volumes
-s = ssdf.load(BASEDIR+'lspeas_001.ssdf')
+#s = ssdf.load(BASEDIR+'lspeas_001.ssdf')
+#s = ssdf.load(BASEDIR+'crop001_ring2.ssdf')
+s = ssdf.load(BASEDIR+'LSPEAS_003_discharge_20.ssdf')   
 vol = vv.Aarray(s.vol, s.sampling)
+
 
 
 ##
 
 class StentDirect_test(StentDirect):
+    
     def Step3(self):
         """ Step3()
         Process graph to remove unwanted edges.
@@ -44,7 +49,7 @@ class StentDirect_test(StentDirect):
         t_start = time.time()
         t_clean = 0
         
-        print('hi, this function is indeed used :)')
+        print('Step3 in StentDirect_test is indeed used :)')
         
         # Iteratively prune the graph. The order of operations should
         # not matter too much, although in practice there is a
@@ -59,15 +64,15 @@ class StentDirect_test(StentDirect):
             
             stentgraph.prune_very_weak(nodes, params.graph_weakThreshold)
             stentgraph.prune_weak(nodes, ene, params.graph_strongThreshold)
-            stentgraph.prune_redundant(nodes, params.graph_strongThreshold)            
+            stentgraph.prune_redundant(nodes, params.graph_strongThreshold)           
             stentgraph.prune_clusters(nodes, params.graph_minimumClusterSize)
             stentgraph.prune_tails(nodes, params.graph_trimLength)
-        
         
         t0 = time.time()-t_start
         tmp = "Reduced to %i edges, "
         tmp += "which took %1.2f s (%i iters)"
         print(tmp % (nodes.number_of_edges(), t0, count))
+        print("****************************************")
         
         # Finish
         self._nodes3 = nodes
@@ -80,10 +85,15 @@ class StentDirect_test(StentDirect):
 # Get parameters. Different scanners/protocols/stent material might need
 # different parameters. 
 p = getDefaultParams()
-p.graph_expectedNumberOfEdges = 2 # 2 for zig-zag, 4 for diamond shaped
-p.seed_threshold = 800
-p.mcp_evolutionThreshold = 0.06
-p.graph_weakThreshold = 10
+p.graph_weakThreshold = 100             # step 3, stentgraph.prune_very_weak:
+p.mcp_evolutionThreshold = 0.06        # step 2, MCP_StentDirect defines threshold to stop -> cumcost reached
+p.graph_expectedNumberOfEdges = 2       # step 3, stentgraph.prune_weak
+#p.graph_trimLength =  3                # step 3, stentgraph.prune_tails
+p.graph_strongThreshold = 1100          # step 3, stentgraph.prune_weak and stentgraph.prune_redundant
+p.seed_threshold = 700                  # step 1
+#p.graph_minimumClusterSize = 8         # step 3, stentgraph.prune_clusters
+p.mcp_speedFactor = 100                 # step 2, speed image (delta), costToCtValue
+
 
 # Instantiate stentdirect segmenter object
 #sd = StentDirect_old(vol, p)
@@ -93,9 +103,11 @@ sd = StentDirect_test(vol, p)
 # Perform the three steps of stentDirect
 sd.Step1()
 sd.Step2()
-#ssdf.save('/home/almar/tmp.ssdf', sd._nodes2.pack())
-# sd._nodes2 = stentgraph.StentGraph(),
-# sd._nodes2.unpack(ssdf.load('/home/almar/tmp.ssdf'))
+    # For fast step 3 testing: save output from step  2 and load afterwards for use
+#ssdf.save(r'C:\Users\Maaike\Dropbox\ut ma3\research aortic stent grafts\data_nonecg-gated\tmp_nodes2\tmp_nodes2_700_100_006.ssdf', sd._nodes2.pack())
+#sd._nodes2 = stentgraph.StentGraph()
+#sd._nodes2.unpack(ssdf.load(r'C:\Users\Maaike\Dropbox\ut ma3\research aortic stent grafts\data_nonecg-gated\tmp_nodes2\tmp_nodes2_700_100_006.ssdf'))
+
 sd.Step3()
 
 # Create a mesh object for visualization (argument is strut tickness)
@@ -104,28 +116,54 @@ if hasattr(sd._nodes3, 'CreateMesh'):
 else:
     bm = create_mesh(sd._nodes3, 0.6) # new
 
-
-# Create figue
-vv.figure(1); vv.clf()
+## Create figure
+fig = vv.figure(1); vv.clf()
+fig.position = 0, 22, 1366, 706
+#fig.position = -1413.00, -2.00,  1366.00, 706.00
 
 # Show volume and segmented stent as a graph
 a1 = vv.subplot(131)
-t = vv.volshow(vol)
-t.clim = -1000, 4000
-sd._nodes2.Draw(mc='g')
+a1.axis.showBox = False
+#t = vv.volshow(vol)
+#t.clim = 0, 2500
+#sd._nodes1.Draw(mc='g', mw = 6)    # draw seeded nodes
+sd._nodes2.Draw(mc='g', lc = 'r')    # draw seeded and MCP connected nodes
 
 # Show cleaned up
 a2 = vv.subplot(132)
-sd._nodes3.Draw(mc='g', lc='b')
+#sd._nodes2.Draw(mc='g', lc='r')
+#sd._nodes3.Draw(mc='g', lc='r')
+m = vv.mesh(bm)
+m.faceColor = 'g'
+vv.xlabel('x')
+vv.ylabel('y')
+vv.zlabel('z')
 
 # Show the mesh
 a3 = vv.subplot(133)
 a3.daspect = 1,-1,-1
-m = vv.mesh(bm)
-m.faceColor = 'g'
+t = vv.volshow(vol)
+t.clim = 0, 2500
+sd._nodes3.Draw(mc='g', lc='g')
+#m = vv.mesh(bm)
+#m.faceColor = 'g'
 
-# Use same camera
+vv.xlabel('x')
+vv.ylabel('y')
+vv.zlabel('z')
+
+# # Use same camera
 a1.camera = a2.camera = a3.camera
 
+# get view through: a1.GetView()
+#viewlegs = {'zoom': 0.01451744640185224, 'roll': 0.0, 'loc': (61.086071960888674, 19.073681128917407, 161.57966440770915), 'azimuth': -29.862068965517253, 'fov': 0.0, 'daspect': (1.0, -1.0, -1.0), 'elevation': 23.70262390670554}
+#a1.SetView(viewlegs)
+
+viewringcrop = {'loc': (86.3519211709867, 61.10752367572089, 62.86534422588542), 'daspect': (1.0, -1.0, -1.0), 'elevation': 21.47230320699707, 'roll': 0.0, 'fov': 0.0, 'zoom': 0.025718541865111768, 'azimuth': 19.607237589996213}
+a1.SetView(viewringcrop)
+
+#viewring = {'fov': 0.0, 'elevation': 17.01166180758017, 'zoom': 0.019322721160865336, 'roll': 0.0, 'daspect': (1.0, -1.0, -1.0), 'loc': (85.07098073292472, 61.048256073622596, 60.822988663458425), 'azimuth': 95.31034482758619}
+#a1.SetView(viewring)
+
 # Take a screenshot 
-#vv.screenshot('/home/almar/projects/valve_result_pat001.jpg', vv.gcf(), sf=2)
+#vv.screenshot(r'C:\Users\Maaike\Dropbox\UT MA3\Research Aortic Stent Grafts\Data_nonECG-gated\figures\001_hooks_form_triangle.png', vv.gcf(), sf=2)

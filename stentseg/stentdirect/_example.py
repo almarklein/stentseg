@@ -11,16 +11,24 @@ from stentseg.stentdirect.stentgraph import create_mesh
 
 # Load volume data, use Aarray class for anisotropic volumes
 vol = vv.volread('stent')
-vol = vv.Aarray(vol, (1,1,1))
+vol = vv.Aarray(vol,(1,1,1))
+#stentvol = vv.ssdf.load(r'C:\Users\Maaike\Dropbox\UT MA3\Research Aortic Stent Grafts\Data_nonECG-gated\lspeas\lspeas_003.ssdf')
+#vol = vv.Aarray(stentvol.vol,stentvol.sampling)
 
 
 # Get parameters. Different scanners/protocols/stent material might need
 # different parameters. 
 p = getDefaultParams()
+p.graph_weakThreshold = 10              # step 3, stentgraph.prune_very_weak:
+p.mcp_evolutionThreshold = 0.06         # step 2, create MCP object
 p.graph_expectedNumberOfEdges = 2 # 2 for zig-zag, 4 for diamond shaped
-p.seed_threshold = 800
-p.mcp_evolutionThreshold = 0.06
-p.graph_weakThreshold = 10
+#                                       # step 3, in stentgraph.prune_weak
+#p.graph_trimLength =                   # step 3, stentgraph.prune_tails
+#p.graph_strongThreshold                # step 3, stentgraph.prune_weak and stentgraph.prune_redundant
+p.seed_threshold = 800                  # step 1
+#p.graph_minimumClusterSize             # step 3, stentgraph.prune_clusters
+#p.mcp_speedFactor                      # step 2, speed image
+
 
 # Instantiate stentdirect segmenter object
 #sd = StentDirect_old(vol, p)
@@ -29,7 +37,7 @@ sd = StentDirect(vol, p)
 # Perform the three steps of stentDirect
 sd.Step1()
 sd.Step2()
-# sd._nodes2 = stentgraph.StentGraph(),
+# sd._nodes2 = stentgraph.StentGraph()
 # sd._nodes2.Unpack(ssdf.load('/home/almar/tmp.ssdf'))
 sd.Step3()
 
@@ -41,13 +49,14 @@ else:
 
 
 # Create figue
-vv.figure(1); vv.clf()
+vv.figure(2); vv.clf()
 
 # Show volume and segmented stent as a graph
 a1 = vv.subplot(131)
 t = vv.volshow(vol)
-t.clim = -1000, 4000
-sd._nodes2.Draw(mc='g')
+t.clim = 0, 3000
+#sd._nodes1.Draw(mc='g', mw = 6)    # draw seeded nodes
+#sd._nodes2.Draw(mc='g')            # draw seeded and MCP connected nodes
 
 # Show cleaned up
 a2 = vv.subplot(132)
@@ -55,7 +64,7 @@ sd._nodes3.Draw(mc='g', lc='b')
 
 # Show the mesh
 a3 = vv.subplot(133)
-a3.daspect = 1,-1,-1
+a3.daspect = 1,-1,1
 m = vv.mesh(bm)
 m.faceColor = 'g'
 
