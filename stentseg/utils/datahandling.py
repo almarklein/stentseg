@@ -96,45 +96,43 @@ def savecropvols(vols, basedir, ptcode, CTcode, stenttype, cropname):
     ssdf.save(file_out, s)
 
 
-def saveaveraged(basedir, ptcode, CTcode, cropnames, phases):
+def saveaveraged(basedir, ptcode, CTcode, cropname, phases):
     """ Step C: Save average of a number of volumes (phases in cardiac cycle)
-    Load ssdf containing stent with all phases and save averaged volume as ssdf
-    Average of 'body' is also saved as ssdf when 'ring' in cropnames  
+    Load ssdf containing all phases and save averaged volume as new ssdf
     """
 
-    for cropname in cropnames:
-        filename = '%s_%s_%s_phases.ssdf' % (ptcode, CTcode, cropname)
-        file_in = os.path.join(basedir,ptcode, filename)
-        if not os.path.exists(file_in):
-            raise RuntimeError('Could not find ssdf for given input %s' % ptcode, CTcode, cropname)
-        s = ssdf.load(file_in)
-        s_avg = ssdf.new()
-        averaged = np.zeros(s.vol0.shape, np.float64)
-        phaserange = range(phases[0],phases[1]+10,10)
-        for phase in phaserange:
-            averaged += s['vol%i'% phase]
-            s_avg['meta%i'% phase] = s['meta%i'% phase]
-        averaged *= 1.0 / len(phaserange)
-        averaged = averaged.astype('float32')
-        
-        s_avg.vol = averaged
-        s_avg.sampling = s.sampling  # z, y, x voxel size in mm
-        s_avg.origin = s.origin
-        s_avg.stenttype = s.stenttype
-        s_avg.croprange = s.croprange
-        s_avg.meta = s.meta0  # sort of default meta, for loadvol
+    filename = '%s_%s_%s_phases.ssdf' % (ptcode, CTcode, cropname)
+    file_in = os.path.join(basedir,ptcode, filename)
+    if not os.path.exists(file_in):
+        raise RuntimeError('Could not find ssdf for given input %s' % ptcode, CTcode, cropname)
+    s = ssdf.load(file_in)
+    s_avg = ssdf.new()
+    averaged = np.zeros(s.vol0.shape, np.float64)
+    phaserange = range(phases[0],phases[1]+10,10)
+    for phase in phaserange:
+        averaged += s['vol%i'% phase]
+        s_avg['meta%i'% phase] = s['meta%i'% phase]
+    averaged *= 1.0 / len(phaserange)
+    averaged = averaged.astype('float32')
     
-        avg = 'avg'+ str(phases[0])+str(phases[1])
-        filename = '%s_%s_%s_%s.ssdf' % (ptcode, CTcode, cropname, avg)
-        file_out = os.path.join(basedir,ptcode, filename)
-        ssdf.save(file_out, s_avg)
+    s_avg.vol = averaged
+    s_avg.sampling = s.sampling  # z, y, x voxel size in mm
+    s_avg.origin = s.origin
+    s_avg.stenttype = s.stenttype
+    s_avg.croprange = s.croprange
+    s_avg.meta = s.meta0  # sort of default meta, for loadvol
+
+    avg = 'avg'+ str(phases[0])+str(phases[1])
+    filename = '%s_%s_%s_%s.ssdf' % (ptcode, CTcode, cropname, avg)
+    file_out = os.path.join(basedir,ptcode, filename)
+    ssdf.save(file_out, s_avg)
 
 
 def cropaveraged(cropnames):
     """ Crop averaged volume of stent manually
     Load ssdf containing stent_avg and saves new ssdf with overwritten croprange
-    
     """
+    
     filename = ptcode+'_'+CTcode+'_'+'stent'+'_'+avg+'.ssdf'
     file_in = os.path.join(basedir_s,ptcode, filename)
     if not os.path.exists(file_in):

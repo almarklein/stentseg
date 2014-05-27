@@ -8,7 +8,8 @@ from stentseg.utils.datahandling import select_dir, loadvol
 from stentseg.utils.datahandling import savecropvols, saveaveraged, cropaveraged
 
 
-# Select base directory DICOM data
+# Select base directory for DICOM data
+
 # The stentseg datahandling module is agnostic about where the DICOM data is
 dicom_basedir = select_dir(r'C:\LSPEAS_data\DICOM',
                            '/home/almar/data/dicom/stent_LPEAS',)
@@ -21,14 +22,14 @@ basedir = select_dir(os.getenv('LSPEAS_BASEDIR', ''),
 # Params Step A, B, C
 CT1, CT2, CT3, CT4 = 'pre', 'discharge', '1month', '6months'  # preset
 CTcode = CT2
-ptcode = 'LSPEAS_003'
+ptcode = 'LSPEAS_001'
 
 # Params Step B, C
 stent, ring = 'stent', 'ring'  # preset
-cropnames = stent, ring  # save crops of stent and/or ring (also body with 'ring')
-stenttype = 'anaconda'   # or 'endurent'
-
-phases = 50, 90  # C: start and end phase in cardiac cycle to average (50,90 = 5 phases)
+cropnames = stent, ring  # save crops of stent and/or ring
+stenttype = 'anaconda'   # or 'endurant'
+# C: start and end phase in cardiac cycle to average (50,90 = 5 phases)
+phases = 50, 90
 
 # todo: use fixed imageio instead
 def readdcm(dirname):
@@ -51,7 +52,7 @@ def readdcm(dirname):
     
     vols = []
     for volume in range(0,10): # 0,10 for all phases from 0 up to 90%
-        # Dit gaat niet gegarandeerd op de goede volgorde! Bij mij niet namelijk
+        # Dit gaat niet gegarandeerd op de goede volgorde! Bij Almar niet namelijk
         vol = imageio.volread(os.path.join(dirname,subfolder[volume]), 'dicom')
         vols.append(vol) 
         
@@ -61,7 +62,7 @@ def readdcm(dirname):
 ## Perform the steps A,B,C
 
 # Step A: Read DICOM
-#vols = readdcm(os.path.join(dicom_basedir, ptcode, ptcode+'_'+CTcode))
+vols = readdcm(os.path.join(dicom_basedir, ptcode, ptcode+'_'+CTcode))
 vols = imageio.mvolread(os.path.join(dicom_basedir, ptcode, ptcode+'_'+CTcode), 'dicom')
 # Take 10 and check 
 vols = vols[:10]
@@ -74,7 +75,8 @@ for cropname in cropnames:
     savecropvols(vols, basedir, ptcode, CTcode, stenttype, cropname)
 
 # Step C: Save average of a number of volumes (phases in cardiac cycle)
-saveaveraged(basedir, ptcode, CTcode, cropnames, phases)
+for cropname in cropnames:
+    saveaveraged(basedir, ptcode, CTcode, cropname, phases)
 
 
 ## Test load ssdf and visualize
