@@ -117,13 +117,6 @@ def saveaveraged(basedir, ptcode, CTcode, cropnames, phases):
         averaged *= 1.0 / len(phaserange)
         averaged = averaged.astype('float32')
         
-        # Prepare for saving crop body
-        if cropname == 'stent':
-            volstent = averaged
-            croprangestent = s.croprange
-        elif cropname == 'ring':
-            croprangering = s.croprange
-        
         s_avg.vol = averaged
         s_avg.sampling = s.sampling  # z, y, x voxel size in mm
         s_avg.origin = s.origin
@@ -135,37 +128,6 @@ def saveaveraged(basedir, ptcode, CTcode, cropnames, phases):
         filename = '%s_%s_%s_%s.ssdf' % (ptcode, CTcode, cropname, avg)
         file_out = os.path.join(basedir,ptcode, filename)
         ssdf.save(file_out, s_avg)
-    
-    # Create a cropped body of averaged stent volume when ring is input
-    if 'ring' in cropnames:
-        if not 'stent' in cropnames:
-            cropname = 'stent'
-            filename = ptcode+'_'+CTcode+'_'+cropname+'_phases'+'.ssdf'
-            file_in = os.path.join(basedir,ptcode, filename)
-            if not os.path.exists(file_in):
-                raise RuntimeError('Could not find ssdf for given input %s' % ptcode, CTcode, cropname)
-            s = ssdf.load(file_in)
-            croprangestent = s.croprange
-            volstent = s.vol
-        originstent_z = croprangestent[0][0]- 0  # translation in z
-        #originring_z = croprangering[0][0]- 0
-        start_z = croprangering[0][1] - originstent_z
-        body = volstent[start_z: ,:,:]
-        
-        s_avgb = ssdf.new()
-        s_avgb.vol = body
-        s_avgb.croprange = [croprangering[0][1], croprangestent[0][1]  ]  , [croprangestent[1] ], [croprangestent[2] ] 
-        s_avgb.sampling = s.sampling  # z, y, x voxel size in mm
-        s_avgb.origin = s.origin
-        s_avgb.stenttype = s.stenttype
-        
-        for phase in range(phases[0],phases[1]+10,10):
-            s_avgb['meta%i'% phase] = s['meta%i'% phase]
-        
-        cropname = 'body'
-        filename = ptcode+'_'+CTcode+'_'+cropname+'_'+avg+'.ssdf'
-        file_out = os.path.join(basedir,ptcode, filename)
-        ssdf.save(file_out, s_avgb)
 
 
 def cropaveraged(cropnames):
