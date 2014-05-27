@@ -63,7 +63,9 @@ def getDefaultParams(stentType=''):
     # The scale factor for the data to create speed image 
     params.mcp_speedFactor = 100         
     # The MCP threshold. Small=faster, but will miss connections if too small!   
-    params.mcp_evolutionThreshold = 0.06    
+    # params.mcp_evolutionThreshold = 0.06  # deprecated in favor of mcp_maxCoverageFronts
+    # The MCP max coverage fraction for evolving fronts
+    params.mcp_maxCoverageFronts = 0.03
     # The Expected Number of Connections
     params.graph_expectedNumberOfEdges = 2  
     # The th to determine a really strong connection
@@ -82,6 +84,14 @@ def getDefaultParams(stentType=''):
     elif stentType == 'aneurx':
         params.graph_expectedNumberOfEdges = 4
         params.graph_minimumClusterSize = 400
+    elif stentType == 'anaconda':
+        params.graph_expectedNumberOfEdges = 2
+    elif stentType == 'anacondaRing':
+        params.graph_expectedNumberOfEdges = 2
+        params.mcp_maxCoverageFronts = 0.004
+        # The length of the struts in anaconda proximal fixation rings
+        params.graph_min_strutlength = 7
+        params.graph_max_strutlength = 12
     elif stentType:
         raise ValueError('Unknown stent type %s' % stentType)
 

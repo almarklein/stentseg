@@ -163,13 +163,12 @@ class StentDirect:
                   int(0.5 + (n[1]-ori[1]) / sam[1]), 
                   int(0.5 + (n[0]-ori[2]) / sam[2])) for n in nodelist]
         
-        # Create MCP object
-        th = self._params.mcp_evolutionThreshold
-        self._mcp = m = MCP_StentDirect(speed, nodes, th, sam, ori)
+        # Create MCP object (th is deprecated)
+        self._mcp = m = MCP_StentDirect(speed, nodes, None, sam, ori)
         
         # Evolve front and trace paths        
         t0 = time.time()
-        m.find_costs(seeds, max_coverage=0.2)
+        m.find_costs(seeds, max_coverage=self._params.mcp_maxCoverageFronts)
         t1 = time.time()
         m.finalize_connections(nodelist, costToCtValue)
         #m.ConvertPotentialEdges(nodes, costToCtValue)

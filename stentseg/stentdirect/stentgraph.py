@@ -162,7 +162,7 @@ def prune_weak(graph, enc, ctvalue):
     
     # First, get a sorted list of edges
     edges = graph.edges()
-    # Sorting not needed, we sort at the neightbours
+    # Sorting not needed, we sort at the neighbours
     #edges.sort(key=lambda x: graph.edge[x[0]][x[1]]['ctvalue'])
     
     for (n1, n2) in edges:

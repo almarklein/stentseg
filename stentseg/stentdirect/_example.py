@@ -20,7 +20,7 @@ vol = vv.Aarray(vol,(1,1,1))
 # different parameters. 
 p = getDefaultParams()
 p.graph_weakThreshold = 10              # step 3, stentgraph.prune_very_weak:
-p.mcp_evolutionThreshold = 0.06         # step 2, create MCP object
+p.mcp_maxCoverageFronts = 0.03         # step 2, create MCP object
 p.graph_expectedNumberOfEdges = 2 # 2 for zig-zag, 4 for diamond shaped
 #                                       # step 3, in stentgraph.prune_weak
 #p.graph_trimLength =                   # step 3, stentgraph.prune_tails

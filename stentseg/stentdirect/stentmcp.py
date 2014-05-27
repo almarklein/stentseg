@@ -49,7 +49,7 @@ class MCP_StentDirect(skimage.graph.MCP_Connect):
         # Store the inputs
         self._nodes = nodes
         self._costs = costs
-        self._th = th
+        self._th = th  # note that this is deprecated
         self._sampling = sampling
         self._origin = origin
         if origin is None:
@@ -126,12 +126,12 @@ class MCP_StentDirect(skimage.graph.MCP_Connect):
                                 path=pp)
     
     
-    def goal_reached(self, index, cumcost):
-        """ Hook: we can stop the algorithm if the cumulative cost is
-        sufficiently high. 
-        """
-        if cumcost > self._th:
-            return 2
-        else:
-            return 0
+#     def goal_reached(self, index, cumcost):
+#         """ Hook: we can stop the algorithm if the cumulative cost is
+#         sufficiently high. 
+#         """
+#         if cumcost > self._th:
+#             return 2
+#         else:
+#             return 0
 
