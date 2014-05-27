@@ -22,7 +22,7 @@ basedir = select_dir(os.getenv('LSPEAS_BASEDIR', ''),
 # Params Step A, B, C
 CT1, CT2, CT3, CT4 = 'pre', 'discharge', '1month', '6months'  # preset
 CTcode = CT2
-ptcode = 'LSPEAS_001'
+ptcode = 'LSPEAS_003'
 
 # Params Step B, C
 stent, ring = 'stent', 'ring'  # preset
@@ -51,10 +51,14 @@ def readdcm(dirname):
         raise RuntimeError('Could not find any files for given input %s' % ptcode, CTcode)
     
     vols = []
-    for volume in range(0,10): # 0,10 for all phases from 0 up to 90%
-        # Dit gaat niet gegarandeerd op de goede volgorde! Bij Almar niet namelijk
-        vol = imageio.volread(os.path.join(dirname,subfolder[volume]), 'dicom')
-        vols.append(vol) 
+    for volnr in range(0,10): # 0,10 for all phases from 0 up to 90%
+        vol = imageio.volread(os.path.join(dirname,subfolder[volnr]), 'dicom')
+        vols.append(vol)
+    # Dit gaat niet gegarandeerd op de goede volgorde! Bij Almar niet namelijk
+    # Check order of phases
+    for i, vol in enumerate(vols):
+        perc = '%i%%' % (i*10)
+        assert perc in vol.meta.SeriesDescription
         
     return vols  
 
@@ -63,7 +67,8 @@ def readdcm(dirname):
 
 # Step A: Read DICOM
 vols = readdcm(os.path.join(dicom_basedir, ptcode, ptcode+'_'+CTcode))
-vols = imageio.mvolread(os.path.join(dicom_basedir, ptcode, ptcode+'_'+CTcode), 'dicom')
+#vols = imageio.mvolread(os.path.join(dicom_basedir, ptcode, ptcode+'_'+CTcode), 'dicom')
+
 # Take 10 and check 
 vols = vols[:10]
 for i, vol in enumerate(vols):
