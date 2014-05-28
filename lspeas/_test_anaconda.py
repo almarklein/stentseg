@@ -1,7 +1,8 @@
 """ 
 Test for stent segmentation algorithm on the Anaconda CT data.
-Class StentDirect_test is created to work the stent segmentation algorithm; inherits from Class StentDirect. def Step3(self) is originally copied from Class StentDirect in base.py
-
+Class StentDirect_test is created to work the stent segmentation algorithm; 
+inherits from Class StentDirect. def Step3(self) is originally copied from 
+Class StentDirect in base.py
 
 """
 
@@ -11,18 +12,27 @@ import numpy as np
 import networkx
 import visvis as vv
 from visvis import ssdf
+import os
 
 from stentseg.stentdirect import StentDirect, StentDirect_old, getDefaultParams, stentgraph
 from stentseg.stentdirect.stentgraph import create_mesh
+from stentseg.utils.datahandling import select_dir, loadvol
 
-#BASEDIR = r'C:\Users\Maaike\Dropbox\UT MA3\Research Aortic Stent Grafts\Data_nonECG-gated\lspeas\\'
-BASEDIR = r'C:\Users\Maaike\Documents\UT MA3\LSPEAS_data\ssdf\LSPEAS_003\\'
+# Automatically select basedir for ssdf data
+basedir = select_dir(os.getenv('LSPEAS_BASEDIR', ''),
+                     r'C:\Users\Maaike\Documents\UT MA3\LSPEAS_ssdf',)
+# Init params
+CT1, CT2, CT3, CT4 = 'pre', 'discharge', '1month', '6months'
 
-# Load volume data, use Aarray class for anisotropic volumes
-#s = ssdf.load(BASEDIR+'lspeas_001.ssdf')
-#s = ssdf.load(BASEDIR+'lspeas_001_ring.ssdf')
-s = ssdf.load(BASEDIR+'LSPEAS_003_discharge_50.ssdf')   
-vol = vv.Aarray(s.vol, s.sampling)
+# Set params to load the data
+ptcode = 'LSPEAS_003'
+ctcode = CT2
+cropname = 'ring'
+what = 'avg5090'
+
+# Load volume data
+s = loadvol(basedir, ptcode, ctcode, cropname, what)
+vol = s.vol
 
 ##
 
@@ -69,7 +79,7 @@ class StentDirect_test(StentDirect):
             stentgraph.prune_tails(nodes, params.graph_trimLength)
         
         # New 1/5/2014
-        #stentgraph.pop_nodes(nodes)
+        stentgraph.pop_nodes(nodes)
         #stentgraph.add_corner_nodes(nodes)
         stentgraph.smooth_paths(nodes)
         
@@ -93,12 +103,12 @@ p = getDefaultParams()
 p.graph_weakThreshold = 100             # step 3, stentgraph.prune_very_weak
 p.graph_expectedNumberOfEdges = 2       # step 3, stentgraph.prune_weak
 p.graph_trimLength =  5                 # step 3, stentgraph.prune_tails
+p.graph_minimumClusterSize = 10         # step 3, stentgraph.prune_clusters
 p.graph_strongThreshold = 3500          # step 3, stentgraph.prune_weak and stentgraph.prune_redundant
 p.seed_threshold = 1000                 # step 1
-p.graph_minimumClusterSize = 10         # step 3, stentgraph.prune_clusters
-p.mcp_speedFactor = 120                 # step 2, speed image (delta), costToCtValue
-p.mcp_maxCoverageFronts = 0.08          # step 2, base.py; replaces mcp_evolutionThreshold
-# todo: also remove evolutionThreshold in other scripts
+p.mcp_speedFactor = 190                 # step 2, speed image (delta), costToCtValue
+p.mcp_maxCoverageFronts = 0.004          # step 2, base.py; replaces mcp_evolutionThreshold
+# todo: write function to estimate maxCoverageFronts
 
 # Instantiate stentdirect segmenter object
 #sd = StentDirect_old(vol, p)
@@ -121,51 +131,53 @@ if hasattr(sd._nodes3, 'CreateMesh'):
 else:
     bm = create_mesh(sd._nodes3, 0.6) # new
 
+
 ## Create figure
+
 fig = vv.figure(1); vv.clf()
 fig.position = 0, 22, 1366, 706
 #fig.position = -1413.00, -2.00,  1366.00, 706.00
 
-# Show volume and segmented stent as a graph
+# Show volume and model as graph
 a1 = vv.subplot(131)
-a1.axis.showBox = False
 t = vv.volshow(vol)
 t.clim = 0, 2500
-sd._nodes1.Draw(mc='g', mw = 6)       # draw seeded nodes
-#sd._nodes2.Draw(mc='g', lc = 'r')    # draw seeded and MCP connected nodes
+#sd._nodes1.Draw(mc='g', mw = 6)       # draw seeded nodes
+sd._nodes2.Draw(mc='g', lc = 'g')    # draw seeded and MCP connected nodes
 
-# Show cleaned up
+# Show volume and cleaned up graph
 a2 = vv.subplot(132)
+t = vv.volshow(vol)
+t.clim = 0, 2500
 #sd._nodes2.Draw(mc='g', lc='r')
-#sd._nodes3.Draw(mc='g', lc='r')
-m = vv.mesh(bm)
-m.faceColor = 'g'
-vv.xlabel('x')
-vv.ylabel('y')
-vv.zlabel('z')
+sd._nodes3.Draw(mc='g', lc='g')
+
+vv.xlabel('x (mm)')
+vv.ylabel('y (mm)')
+vv.zlabel('z (mm)')
 
 # Show the mesh
 a3 = vv.subplot(133)
 a3.daspect = 1,-1,-1
-t = vv.volshow(vol)
-t.clim = 0, 2500
-sd._nodes3.Draw(mc='g', lc='g')
-#m = vv.mesh(bm)
-#m.faceColor = 'g'
+m = vv.mesh(bm)
+m.faceColor = 'g'
 
-vv.xlabel('x')
-vv.ylabel('y')
-vv.zlabel('z') 
+vv.xlabel('x (mm)')
+vv.ylabel('y (mm)')
+vv.zlabel('z (mm)')
 
 # # Use same camera
 a1.camera = a2.camera = a3.camera
 
 # get view through: a1.GetView()
-viewlegs = {'roll': 0.0, 'daspect': (1.0, -1.0, -1.0), 'zoom': 0.008194720024798605, 'fov': 0.0, 'loc': (88.49756216666863, 44.10514167476311, 148.9382541829829), 'azimuth': -55.10344827586208, 'elevation': 19.3731778425656}
-a1.SetView(viewlegs)
+# viewlegs = {'roll': 0.0, 'daspect': (1.0, -1.0, -1.0), 'zoom': 0.008194720024798605, 'fov': 0.0, 'loc': (88.49756216666863, 44.10514167476311, 148.9382541829829), 'azimuth': -55.10344827586208, 'elevation': 19.3731778425656}
+# a1.SetView(viewlegs)
 
-#viewringcrop = {'loc': (86.3519211709867, 61.10752367572089, 62.86534422588542), 'daspect': (1.0, -1.0, -1.0), 'elevation': 21.47230320699707, 'roll': 0.0, 'fov': 0.0, 'zoom': 0.025718541865111768, 'azimuth': 19.607237589996213}
-#a1.SetView(viewringcrop)
+viewringcrop = {'azimuth': 97.17241379310342,'daspect': (1.0, -1.0, -1.0),
+ 'elevation': 27.507288629737616,'fov': 0.0,
+ 'loc': (180.8365859069541, 87.79750435702455, 71.49154588671199),
+ 'roll': 0.0,'zoom': 0.025718541865111823}
+a1.SetView(viewringcrop)
 
 #viewring = {'fov': 0.0, 'elevation': 17.01166180758017, 'zoom': 0.019322721160865336, 'roll': 0.0, 'daspect': (1.0, -1.0, -1.0), 'loc': (85.07098073292472, 61.048256073622596, 60.822988663458425), 'azimuth': 95.31034482758619}
 #a1.SetView(viewring)
