@@ -34,7 +34,6 @@ def loadvol(basedir, ptcode, ctcode, cropname, what='phases'):
         if key.startswith('vol'):
             suffix = key[3:]
             vol = vv.Aarray(s[key], s.sampling, s.origin)
-            s.meta = s['meta'+suffix]
             s[key] = vol
     return s
 
@@ -80,7 +79,7 @@ def savecropvols(vols, basedir, ptcode, CTcode, stenttype, cropname):
     s = ssdf.new()
     s.sampling = vol_crop.sampling  # z, y, x voxel size in mm
     s.origin = vol_crop.origin
-    s.croprange = rz, ry, rx
+    s.croprange = rz, ry, rx  # in world coordinates 
     s.stenttype = stenttype
     
     # Export and save
@@ -90,7 +89,6 @@ def savecropvols(vols, basedir, ptcode, CTcode, stenttype, cropname):
         s['meta%i'% phase] = vols[volnr].meta
         vols[volnr].meta.PixelData = None  # avoid ssdf warning
         
-    
     filename = '%s_%s_%s_phases.ssdf' % (ptcode, CTcode, cropname)
     file_out = os.path.join(basedir,ptcode, filename )
     ssdf.save(file_out, s)
@@ -120,7 +118,6 @@ def saveaveraged(basedir, ptcode, CTcode, cropname, phases):
     s_avg.origin = s.origin
     s_avg.stenttype = s.stenttype
     s_avg.croprange = s.croprange
-    s_avg.meta = s.meta0  # sort of default meta, for loadvol
 
     avg = 'avg'+ str(phases[0])+str(phases[1])
     filename = '%s_%s_%s_%s.ssdf' % (ptcode, CTcode, cropname, avg)
@@ -128,30 +125,31 @@ def saveaveraged(basedir, ptcode, CTcode, cropname, phases):
     ssdf.save(file_out, s_avg)
 
 
-def cropaveraged(cropnames):
-    """ Crop averaged volume of stent manually
+def cropaveraged(cropname, phases):
+    """ Crop averaged volume of stent
     Load ssdf containing stent_avg and saves new ssdf with overwritten croprange
     """
     
-    filename = ptcode+'_'+CTcode+'_'+'stent'+'_'+avg+'.ssdf'
-    file_in = os.path.join(basedir_s,ptcode, filename)
+    avg = 'avg'+ str(phases[0])+str(phases[1])
+    filename = '%s_%s_%s_%s.ssdf' % (ptcode, CTcode, 'stent', avg)
+    file_in = os.path.join(basedir,ptcode, filename)
     if not os.path.exists(file_in):
             raise RuntimeError('Could not find ssdf stent_avg for given input %s' % ptcode, CTcode)
-    for cropname in cropnames:
-        s = ssdf.load(file_in)
-        
-        vol0 = vv.Aarray(s.vol, s.sampling, s.origin)
-        
-        # Open cropper tool
-        vol_crop,rz,ry,rx = cropper.crop3d(vol0) # Output of crop3d in cropper.py modified: return vol2, rz,ry,rx
-        offset = [i[0] for i in s.croprange]
-        s.croprange = ([rz.min+offset[0], rz.max+offset[0]], 
-                       [ry.min+offset[1], ry.max+offset[1]], 
-                       [rx.min+offset[2], rx.max+offset[2]])
-        
-        # Export and save
-        avg = 'avg'+ str(phases[0])+str(phases[1])
-        filename = ptcode+'_'+CTcode+'_'+cropname+'_'+avg+'.ssdf'
-        file_out = os.path.join(basedir_s,ptcode, filename)
-        ssdf.save(file_out, s)
+
+    s = ssdf.load(file_in)
+    
+    vol0 = vv.Aarray(s.vol, s.sampling, s.origin)
+    
+    # Open cropper tool
+    vol_crop,rz,ry,rx = cropper.crop3d(vol0) # Output of crop3d in cropper.py modified: return vol2, rz,ry,rx
+    offset = [i[0] for i in s.croprange]
+    s.croprange = ([rz.min+offset[0], rz.max+offset[0]], 
+                    [ry.min+offset[1], ry.max+offset[1]], 
+                    [rx.min+offset[2], rx.max+offset[2]])
+    
+    # Export and save
+    avg = 'avg'+ str(phases[0])+str(phases[1])
+    filename = ptcode+'_'+CTcode+'_'+cropname+'_'+avg+'.ssdf'
+    file_out = os.path.join(basedir_s,ptcode, filename)
+    ssdf.save(file_out, s)
 
