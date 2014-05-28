@@ -128,8 +128,7 @@ def saveaveraged(basedir, ptcode, ctcode, cropname, phases):
 
 def cropaveraged(basedir, ptcode, ctcode, crop_in='stent', what='avg5090', crop_out = 'body'):
     """ Crop averaged volume of stent
-    With loadvol, load ssdf containing an averaged volume and save new ssdf with 
-    overwritten vol, croprange and origin.
+    With loadvol, load ssdf containing an averaged volume and save new cropped ssdf
     """
     s = loadvol(basedir, ptcode, ctcode, crop_in, what)
     vol = s.vol
@@ -153,14 +152,25 @@ def cropaveraged(basedir, ptcode, ctcode, crop_in='stent', what='avg5090', crop_
     rx = int(vol_crop.origin[2] / vol_crop.sampling[2] + 0.5)
     rx = rx, rx + vol_crop.shape[2]
     
+    # Initialize struct
+    s2 = ssdf.new()
+    s2.sampling = vol_crop.sampling  # z, y, x voxel size in mm 
+    s2.stenttype = s.stenttype
+    for key in dir(s):
+        if key.startswith('meta'):
+            suffix = key[4:]
+            s2['meta'+suffix] = s['meta'+suffix]
+    
+    # Set new croprange, origin and vol
     offset = [i[0] for i in s.croprange]  # origin of crop_in
-    s.croprange = ([rz[0]+offset[0], rz[1]+offset[0]], 
+    s2.croprange = ([rz[0]+offset[0], rz[1]+offset[0]], 
                     [ry[0]+offset[1], ry[1]+offset[1]], 
                     [rx[0]+offset[2], rx[1]+offset[2]])
-    s.origin = vol_crop.origin
+    s2.origin = vol_crop.origin
+    s2.vol = vol_crop
     
     # Export and save
     filename = '%s_%s_%s_%s.ssdf'% (ptcode, ctcode, crop_out, what)
     file_out = os.path.join(basedir, ptcode, filename)
-    ssdf.save(file_out, s)
+    ssdf.save(file_out, s2)
 
