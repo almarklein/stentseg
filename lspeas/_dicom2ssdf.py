@@ -86,10 +86,8 @@ for cropname in cropnames:
 
 ## Test load ssdf and visualize
 
-
 # Load one volume/phase from ssdf with phases
 phase = 60
-cropname = 'stent'
 avg = 'avg5090'
 
 s1 = loadvol(basedir, ptcode, CTcode, 'stent', 'phases')
@@ -101,7 +99,7 @@ fig = vv.figure(1); vv.clf()
 fig.position = 0, 22, 1366, 706
 #fig.position = -1413.00, -2.00,  1366.00, 706.00
 a1 = vv.subplot(121)
-t = vv.volshow(s1.vol0)
+t = vv.volshow(s1['vol%i'% phase])
 t.clim = 0, 2500
 vv.xlabel('x')
 vv.ylabel('y')
@@ -122,6 +120,7 @@ a1.camera = a2.camera
 
 
 ## Visualize one image
+
 fig = vv.figure(2); vv.clf()
 fig.position = 0, 22, 1366, 706
 a = vv.gca()
