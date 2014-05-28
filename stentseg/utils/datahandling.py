@@ -1,6 +1,7 @@
 """
-Module to import ECG-gated DICOM data and save as ssdf.
-Input: patient code, CTcode, basedir load DICOM, basedir_s save ssdf, stenttype, cropname
+Module to handle ECG-gated DICOM data. Saves volumes in ssdf.
+Inputs: dicom_basedir, patient code, ctcode, basedir for ssdf, stenttype, 
+        cropname, phases
 
 """
 
@@ -45,7 +46,7 @@ def loadmodel(basedir, ptcode, ctcode, cropname):
     return ssdf.load(os.path.join(basedir, ptcode, fname))
 
 
-def savecropvols(vols, basedir, ptcode, CTcode, stenttype, cropname):
+def savecropvols(vols, basedir, ptcode, ctcode, cropname, stenttype):
     """ Step B: Crop and Save SSDF
     Input: vols from Step A
     Save 10 volumes (cardiac cycle phases) in one ssdf file
@@ -57,10 +58,10 @@ def savecropvols(vols, basedir, ptcode, CTcode, stenttype, cropname):
     vol0 = vv.Aarray(vols[0], vols[0].meta.sampling)  # vv.Aarray defines origin: 0,0,0
     
     # Open cropper tool
-    print('Set the appropriate cropping range for cropname "%s" '
+    print('Set the appropriate cropping range for "%s" '
             'and click finish to continue' % cropname)
     fig = vv.figure()
-    fig.title = 'Cropping for cropname "%s"' % cropname
+    fig.title = 'Cropping for "%s"' % cropname
     vol_crop = cropper.crop3d(vol0, fig)
     fig.Destroy()
     
@@ -89,20 +90,20 @@ def savecropvols(vols, basedir, ptcode, CTcode, stenttype, cropname):
         s['meta%i'% phase] = vols[volnr].meta
         vols[volnr].meta.PixelData = None  # avoid ssdf warning
         
-    filename = '%s_%s_%s_phases.ssdf' % (ptcode, CTcode, cropname)
+    filename = '%s_%s_%s_phases.ssdf' % (ptcode, ctcode, cropname)
     file_out = os.path.join(basedir,ptcode, filename )
     ssdf.save(file_out, s)
 
 
-def saveaveraged(basedir, ptcode, CTcode, cropname, phases):
+def saveaveraged(basedir, ptcode, ctcode, cropname, phases):
     """ Step C: Save average of a number of volumes (phases in cardiac cycle)
     Load ssdf containing all phases and save averaged volume as new ssdf
     """
 
-    filename = '%s_%s_%s_phases.ssdf' % (ptcode, CTcode, cropname)
+    filename = '%s_%s_%s_phases.ssdf' % (ptcode, ctcode, cropname)
     file_in = os.path.join(basedir,ptcode, filename)
     if not os.path.exists(file_in):
-        raise RuntimeError('Could not find ssdf for given input %s' % ptcode, CTcode, cropname)
+        raise RuntimeError('Could not find ssdf for given input %s' % ptcode, ctcode, cropname)
     s = ssdf.load(file_in)
     s_avg = ssdf.new()
     averaged = np.zeros(s.vol0.shape, np.float64)
@@ -120,36 +121,46 @@ def saveaveraged(basedir, ptcode, CTcode, cropname, phases):
     s_avg.croprange = s.croprange
 
     avg = 'avg'+ str(phases[0])+str(phases[1])
-    filename = '%s_%s_%s_%s.ssdf' % (ptcode, CTcode, cropname, avg)
+    filename = '%s_%s_%s_%s.ssdf' % (ptcode, ctcode, cropname, avg)
     file_out = os.path.join(basedir,ptcode, filename)
     ssdf.save(file_out, s_avg)
 
 
-def cropaveraged(cropname, phases):
+def cropaveraged(basedir, ptcode, ctcode, crop_in='stent', what='avg5090', crop_out = 'body'):
     """ Crop averaged volume of stent
-    Load ssdf containing stent_avg and saves new ssdf with overwritten croprange
+    With loadvol, load ssdf containing an averaged volume and save new ssdf with 
+    overwritten vol, croprange and origin.
     """
-    
-    avg = 'avg'+ str(phases[0])+str(phases[1])
-    filename = '%s_%s_%s_%s.ssdf' % (ptcode, CTcode, 'stent', avg)
-    file_in = os.path.join(basedir,ptcode, filename)
-    if not os.path.exists(file_in):
-            raise RuntimeError('Could not find ssdf stent_avg for given input %s' % ptcode, CTcode)
+    s = loadvol(basedir, ptcode, ctcode, crop_in, what)
+    vol = s.vol
 
-    s = ssdf.load(file_in)
-    
-    vol0 = vv.Aarray(s.vol, s.sampling, s.origin)
-    
     # Open cropper tool
-    vol_crop,rz,ry,rx = cropper.crop3d(vol0) # Output of crop3d in cropper.py modified: return vol2, rz,ry,rx
-    offset = [i[0] for i in s.croprange]
-    s.croprange = ([rz.min+offset[0], rz.max+offset[0]], 
-                    [ry.min+offset[1], ry.max+offset[1]], 
-                    [rx.min+offset[2], rx.max+offset[2]])
+    print('Set the appropriate cropping range for "%s" '
+            'and click finish to continue' % crop_out)
+    fig = vv.figure()
+    fig.title = 'Cropping for "%s"' % crop_out
+    vol_crop = cropper.crop3d(vol, fig)
+    fig.Destroy()
+    
+    if vol_crop.shape == vol.shape:
+        raise RuntimeError('User cancelled (no crop)')
+    
+    # Calculate crop range from origin
+    rz = int(vol_crop.origin[0] / vol_crop.sampling[0] + 0.5)
+    rz = rz, rz + vol_crop.shape[0]
+    ry = int(vol_crop.origin[1] / vol_crop.sampling[1] + 0.5)
+    ry = ry, ry + vol_crop.shape[1]
+    rx = int(vol_crop.origin[2] / vol_crop.sampling[2] + 0.5)
+    rx = rx, rx + vol_crop.shape[2]
+    
+    offset = [i[0] for i in s.croprange]  # origin of crop_in
+    s.croprange = ([rz[0]+offset[0], rz[1]+offset[0]], 
+                    [ry[0]+offset[1], ry[1]+offset[1]], 
+                    [rx[0]+offset[2], rx[1]+offset[2]])
+    s.origin = vol_crop.origin
     
     # Export and save
-    avg = 'avg'+ str(phases[0])+str(phases[1])
-    filename = ptcode+'_'+CTcode+'_'+cropname+'_'+avg+'.ssdf'
-    file_out = os.path.join(basedir_s,ptcode, filename)
+    filename = '%s_%s_%s_%s.ssdf'% (ptcode, ctcode, crop_out, what)
+    file_out = os.path.join(basedir, ptcode, filename)
     ssdf.save(file_out, s)
 
