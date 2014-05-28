@@ -21,7 +21,7 @@ basedir = select_dir(os.getenv('LSPEAS_BASEDIR', ''),
 
 # Params Step A, B, C
 CT1, CT2, CT3, CT4 = 'pre', 'discharge', '1month', '6months'  # preset
-CTcode = CT2
+ctcode = CT2
 ptcode = 'LSPEAS_003'
 
 # Params Step B, C
@@ -29,7 +29,7 @@ stent, ring = 'stent', 'ring'  # preset
 cropnames = stent, ring  # save crops of stent and/or ring
 stenttype = 'anaconda'   # or 'endurant'
 # C: start and end phase in cardiac cycle to average (50,90 = 5 phases)
-phases = 50, 90
+phases = 30, 90
 
 # todo: use fixed imageio instead
 def readdcm(dirname):
@@ -38,7 +38,7 @@ def readdcm(dirname):
     """
     
     if not os.path.isdir(dirname):
-        raise RuntimeError('Could not find data for given input %s' % ptcode, CTcode)
+        raise RuntimeError('Could not find data for given input %s' % ptcode, ctcode)
         
     while True:
         subfolder = os.listdir(dirname)
@@ -48,13 +48,13 @@ def readdcm(dirname):
             break
     
     if not subfolder:
-        raise RuntimeError('Could not find any files for given input %s' % ptcode, CTcode)
+        raise RuntimeError('Could not find any files for given input %s' % ptcode, ctcode)
     
     vols = []
     for volnr in range(0,10): # 0,10 for all phases from 0 up to 90%
         vol = imageio.volread(os.path.join(dirname,subfolder[volnr]), 'dicom')
         vols.append(vol)
-    # Dit gaat niet gegarandeerd op de goede volgorde! Bij Almar niet namelijk
+    #todo: Dit gaat niet gegarandeerd op de goede volgorde! Bij Almar niet namelijk
     # Check order of phases
     for i, vol in enumerate(vols):
         perc = '%i%%' % (i*10)
@@ -66,22 +66,20 @@ def readdcm(dirname):
 ## Perform the steps A,B,C
 
 # Step A: Read DICOM
-vols = readdcm(os.path.join(dicom_basedir, ptcode, ptcode+'_'+CTcode))
-#vols = imageio.mvolread(os.path.join(dicom_basedir, ptcode, ptcode+'_'+CTcode), 'dicom')
-
-# Take 10 and check 
-vols = vols[:10]
-for i, vol in enumerate(vols):
-    perc = '%i%%' % (i*10)
-    assert perc in vol.meta.SeriesDescription
+vols = readdcm(os.path.join(dicom_basedir, ptcode, ptcode+'_'+ctcode))
+#vols = imageio.mvolread(os.path.join(dicom_basedir, ptcode, ptcode+'_'+ctcode), 'dicom')
 
 # Step B: Crop and Save SSDF
 for cropname in cropnames:
-    savecropvols(vols, basedir, ptcode, CTcode, stenttype, cropname)
+    savecropvols(vols, basedir, ptcode, ctcode, cropname, stenttype)
 
 # Step C: Save average of a number of volumes (phases in cardiac cycle)
 for cropname in cropnames:
-    saveaveraged(basedir, ptcode, CTcode, cropname, phases)
+    saveaveraged(basedir, ptcode, ctcode, cropname, phases)
+
+
+## Crop from averaged volume
+cropaveraged(basedir, ptcode, ctcode, crop_in='stent', what='avg3090', crop_out= 'body')
 
 
 ## Test load ssdf and visualize
@@ -90,17 +88,22 @@ for cropname in cropnames:
 phase = 60
 avg = 'avg5090'
 
-s1 = loadvol(basedir, ptcode, CTcode, 'stent', 'phases')
-s2 = loadvol(basedir, ptcode, CTcode, 'ring', avg)
+s1 = loadvol(basedir, ptcode, ctcode, 'stent', what ='phases')
+s2 = loadvol(basedir, ptcode, ctcode, 'body', avg)
+s3 = loadvol(basedir, ptcode, ctcode, 'stent', 'avg3090')
 
-# Visualize and compare
+
+## Visualize and compare
+
 import visvis as vv
 fig = vv.figure(1); vv.clf()
 fig.position = 0, 22, 1366, 706
 #fig.position = -1413.00, -2.00,  1366.00, 706.00
 a1 = vv.subplot(121)
-t = vv.volshow(s1['vol%i'% phase])
-t.clim = 0, 2500
+# t = vv.volshow(s1['vol%i'% phase])
+# t.clim = 0, 2500
+t2 = vv.volshow(s3.vol)
+t2.clim = 0, 1500
 vv.xlabel('x')
 vv.ylabel('y')
 vv.zlabel('z')
@@ -109,7 +112,7 @@ vv.title('One volume at %i procent of cardiac cycle' % phase )
 a2 = vv.subplot(122)
 a2.daspect = 1,1,-1
 t = vv.volshow(s2.vol)
-t.clim = 0, 2500
+t.clim = 0, 1500
 vv.xlabel('x')
 vv.ylabel('y')
 vv.zlabel('z')
@@ -119,7 +122,7 @@ vv.title('Averaged volume %s' % avg )
 a1.camera = a2.camera
 
 
-## Visualize one image
+## Visualize one volume
 
 fig = vv.figure(2); vv.clf()
 fig.position = 0, 22, 1366, 706
@@ -127,6 +130,6 @@ a = vv.gca()
 a.cameraType = '3d'
 a.daspect = 1,1,-1
 a.daspectAuto = False
-t = vv.volshow(volavg)
+t = vv.volshow(vol)
 t.clim = 0, 2500
 
