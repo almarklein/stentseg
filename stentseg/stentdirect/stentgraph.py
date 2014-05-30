@@ -338,11 +338,11 @@ def _pop_node(graph, node):
     # Verify path order
     if False:
         if n1 < n3:
-            assert tuple(path[0].flat) == n1
-            assert tuple(path[-1].flat) == n3
+            assert np.isclose(path[0], n1).all()
+            assert np.isclose(path[-1], n3).all()
         else:
-            assert tuple(path[0].flat) == n3
-            assert tuple(path[-1].flat) == n1
+            assert np.isclose(path[0], n3).all()
+            assert np.isclose(path[-1], n1).all()
     
     # Calculate new ctvalue and cost
     cost = sum([edge12['cost'], edge23['cost']])
@@ -394,8 +394,8 @@ def _pop_node(graph, node):
         graph.remove_node(n2)
         graph.remove_node(node_to_collapse)
         node_to_keep = n1 if node_to_collapse == n3 else n3
-        #assert node_to_keep == tuple(path[0].flat)
-        #assert node_to_keep == tuple(path[-1].flat)
+        #assert np.isclose(path[0], node_to_keep).all()
+        #assert np.isclose(path[-1], node_to_keep).all()
         graph.add_edge(node_to_keep, node_to_keep, cost=cost, ctvalue=ctvalue, path=path)
         return (node_to_keep, node_to_keep)
     else:
@@ -506,10 +506,10 @@ def _add_corner_to_edge(graph, n1, n2, **kwargs):
     I = _detect_corners(path, **kwargs)
     
     # Ensure n1 < n2
-    if tuple(path[0].flat) != n1:
+    if not np.isclose(path[0], n1).all():
         n1, n2 = n2, n1
-    assert tuple(path[0].flat) == n1
-    assert tuple(path[-1].flat) == n2
+    assert np.isclose(path[0], n1).all()
+    assert np.isclose(path[-1], n2).all()
     
     
     if I:

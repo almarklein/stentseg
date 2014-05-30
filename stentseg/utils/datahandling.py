@@ -33,17 +33,25 @@ def loadvol(basedir, ptcode, ctcode, cropname, what='phases'):
     s = ssdf.load(os.path.join(basedir, ptcode, fname))
     for key in dir(s):
         if key.startswith('vol'):
-            suffix = key[3:]
-            vol = vv.Aarray(s[key], s.sampling, s.origin)
-            s[key] = vol
+            s[key] = vv.Aarray(s[key], s.sampling, s.origin)
+        elif key.startswith('deform'):
+            fields = s[key]
+            s[key] = [vv.Aarray(field, s.sampling, s.origin) for field in fields]
     return s
 
 
 def loadmodel(basedir, ptcode, ctcode, cropname):
     """ Load stent model. An ssdf struct is returned.
     """
+    # Load
     fname = '%s_%s_%s_%s.ssdf' % (ptcode, ctcode, cropname, 'model')
-    return ssdf.load(os.path.join(basedir, ptcode, fname))
+    s = ssdf.load(os.path.join(basedir, ptcode, fname))
+    # Turn into graph model
+    from stentseg.stentdirect import stentgraph
+    model = stentgraph.StentGraph()
+    model.unpack(s.model)
+    s.model = model
+    return s
 
 
 def savecropvols(vols, basedir, ptcode, ctcode, cropname, stenttype):

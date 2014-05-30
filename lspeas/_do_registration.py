@@ -43,6 +43,8 @@ reg.params.grid_sampling_factor = 0.5
 # Go!
 reg.register(verbose=1)
 
+# todo: in visualization, we need to multiply with -1, do we really have backward transforms?
+
 
 ## Store registration result
 

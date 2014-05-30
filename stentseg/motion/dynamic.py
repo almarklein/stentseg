@@ -3,11 +3,15 @@ calculations on the model.
 """
 
 import os, sys, time
+import gc
+
 import numpy as np
 import visvis as vv
-from stentseg.stentdirect import stentGraph
+
 import pirt
-import gc
+
+from stentseg.stentdirect import stentGraph
+from stentseg.utils import PointSet
 
 
 def incorporate_motion(g, deforms, origin):
@@ -19,30 +23,38 @@ def incorporate_motion(g, deforms, origin):
     
     """
     
-    # Nodes as pointset
-    g_nodes = vv.Pointset(3)
-    [g_nodes.append(p._data) for p in g]
+    # Get a list of nodes (nodes in fixed order)
+    nodes = g.nodes()  
+    
+    # Turn this into a pointset
+    g_nodes = PointSet(3, dtype='float32')
+    [g_nodes.append(*p) for p in g.nodes()]
     
     # Create deformation for all nodes in the graph
+    # todo: perhaps pirt *should* be aware of the origin!
+    # it isn't now, so we need to take it into account here
     g_deforms = []
-    samplePoints = g_nodes.subtract( [o for o in reversed(origin)] )
+    samplePoints = g_nodes - PointSet([o for o in reversed(origin)], dtype='float32')
     for deform in deforms:
         delta_z = deform.get_field_in_points(samplePoints, 0).reshape(-1, 1)
         delta_y = deform.get_field_in_points(samplePoints, 1).reshape(-1, 1)
         delta_x = deform.get_field_in_points(samplePoints, 2).reshape(-1, 1)
-        delta = vv.Pointset( np.concatenate((delta_x, delta_y, delta_z), axis=1) )
+        delta = PointSet( np.concatenate((delta_x, delta_y, delta_z), axis=1) )
         g_deforms.append(delta)
     
     # Attach deformation to each node.
     # Needed because the nodes do not know their own index
-    for i in range(len(g)):
-        g[i]._deforms = [g_deforms[j][i] for j in range(len(g_deforms))]
+    for i, node in enumerate(nodes):
+        deforms = PointSet(3, dtype='float32')
+        for j in range(len(g_deforms)):
+            deforms.append(g_deforms[j][i])
+        g.add_node(node, deforms=deforms)
     
-    # Attach list that is sorted by deformation to the graph
-    # Convenient in other situations
-    # When storing, we can only store deforms per node, and calculate
-    # the other representation when loading. 
-    g._deforms = g_deforms
+#     # Attach list that is sorted by deformation to the graph
+#     # Convenient in other situations
+#     # When storing, we can only store deforms per node, and calculate
+#     # the other representation when loading. 
+#     g._deforms = g_deforms
 
 
 def calculate_angle_changes(g):
