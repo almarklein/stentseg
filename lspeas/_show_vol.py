@@ -1,18 +1,24 @@
 """ Show the volume in a dynamic way.
 """
 
-## Show 3D movie, by alternating the 10 volumes
-
 import os
 import visvis as vv
 from stentseg.utils.datahandling import select_dir, loadvol
+from pirt.utils.deformvis import DeformableTexture3D
 
 # Select the ssdf basedir
 basedir = select_dir(os.getenv('LSPEAS_BASEDIR', ''),
                      r'C:\Users\Maaike\Documents\UT MA3\LSPEAS_ssdf',)
 
+# Select dataset to register
+ptcode = 'LSPEAS_003'
+ctcode = 'discharge'
+cropname = 'ring'
+
+## Show 3D movie, by alternating the 10 volumes
+
 # Load volumes
-s = loadvol(basedir, 'LSPEAS_003', 'discharge', 'ring', 'phases')
+s = loadvol(basedir, ptcode, ctcode, cropname, 'phases')
 vols = [s['vol%i'%(i*10)] for i in range(10)]
 
 # Start vis
@@ -24,29 +30,21 @@ a.daspect = 1, -1, -1
 container = vv.MotionDataContainer(a)
 for vol in vols:
     #t = vv.volshow(vol, clim=(0, 1000), renderStyle='mip')
-    t = vv.volshow(vol, clim=(-1000, 3000), renderStyle='iso')
+    t = vv.volshow(vol, clim=(-1000, 3000))
     t.isoThreshold = 400
+    t.renderStyle = 'iso'  # iso or mip work well
     t.parent = container
 
 
 
 ## Show 3D movie, by showing one volume that is moved by motion fields
 
-import os
-import visvis as vv
-from stentseg.utils.datahandling import select_dir, loadvol
-from pirt.utils.deformvis import DeformableTexture3D
-
-# Select the ssdf basedir
-basedir = select_dir(os.getenv('LSPEAS_BASEDIR', ''),
-                     r'C:\Users\Maaike\Documents\UT MA3\LSPEAS_ssdf',)
-
 # Load volume
-s = loadvol(basedir, 'LSPEAS_003', 'discharge', 'ring', 'avgreg')
+s = loadvol(basedir, ptcode, ctcode, cropname, 'avgreg')
 vol = s.vol
 
 # Load deformations
-s = loadvol(basedir, 'LSPEAS_003', 'discharge', 'ring', 'deforms')
+s = loadvol(basedir, ptcode, ctcode, cropname, 'deforms')
 deforms = [s['deform%i'%(i*10)] for i in range(10)]
 deforms = [[-field[::2,::2,::2] for field in fields] for fields in deforms]
 
@@ -58,12 +56,13 @@ a.daspect = 1, -1, -1
 # Setup motion container
 dt = DeformableTexture3D(a, vol)
 dt.clim = 0, 1000
+dt.isoThreshold = 400
+dt.renderStyle = 'iso'  # iso or mip work well
 dt.SetDeforms(*deforms)
 
 # Set limits and play!
 a.SetLimits()
-dt.MotionPlay(10, 0.2)
+dt.MotionPlay(10, 0.2)  # Each 10 ms do a step of 20%
 
 dt.motionSplineType = 'B-spline'
 dt.motionAmplitude = 2.0
-dt.MotionPlay

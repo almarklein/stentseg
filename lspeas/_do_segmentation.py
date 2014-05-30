@@ -101,7 +101,7 @@ filename = '%s_%s_%s_%s.ssdf' % (ptcode, ctcode, cropname, 'model')
 ssdf.save(os.path.join(basedir, ptcode, filename), s2)
 
 
-## Make model dynamic
+## Make model dynamic (and store/overwrite to disk)
 
 import pirt
 

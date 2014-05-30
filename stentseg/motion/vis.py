@@ -13,7 +13,8 @@ def create_mesh_with_values(g, radius=1.0, simplified=True):
     
     """
     from visvis.processing import lineToMesh, combineMeshes
-        
+    # todo: this still uses the old mesh model class
+    
     # Init list of meshes
     meshes = []
     
@@ -46,7 +47,7 @@ def convert_mesh_values_to_angle_change(m, g, i=None):
     change if i is None.
     
     """
-    
+    # todo: this still uses the old mesh model class
     # Get list of angle changes
     pp = vv.Pointset(1)
     if i is None:
@@ -72,6 +73,7 @@ def remove_stent_from_volume(vol, g, stripSize=5):
     lower value, so that the stent appears to be "removed". This is for
     visualization purposes only.
     """
+    # todo: this still uses the old mesh model class
     vol2 = vol.copy()
     for e in g.GetEdges():
         for node in e.GetPath(e.end1):
