@@ -2,7 +2,7 @@
 """
 
 
-def creat_mesh_with_values(g, radius=1.0, simplified=True): 
+def create_mesh_with_values(g, radius=1.0, simplified=True): 
     """ Create a Mesh object from the graph. The values of the mesh
     encode triplets (node1, node2, weight) where node1 and node2 are
     indices to nodes in the graph and weight is the relative proximity
