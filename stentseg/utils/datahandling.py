@@ -60,6 +60,7 @@ def savecropvols(vols, basedir, ptcode, ctcode, cropname, stenttype):
     # Open cropper tool
     print('Set the appropriate cropping range for "%s" '
             'and click finish to continue' % cropname)
+    print('Loading... be patient')
     fig = vv.figure()
     fig.title = 'Cropping for "%s"' % cropname
     vol_crop = cropper.crop3d(vol0, fig)
@@ -136,6 +137,7 @@ def cropaveraged(basedir, ptcode, ctcode, crop_in='stent', what='avg5090', crop_
     # Open cropper tool
     print('Set the appropriate cropping range for "%s" '
             'and click finish to continue' % crop_out)
+    print('Loading... be patient')
     fig = vv.figure()
     fig.title = 'Cropping for "%s"' % crop_out
     vol_crop = cropper.crop3d(vol, fig)

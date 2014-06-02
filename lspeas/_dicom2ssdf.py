@@ -22,7 +22,7 @@ basedir = select_dir(os.getenv('LSPEAS_BASEDIR', ''),
 # Params Step A, B, C
 CT1, CT2, CT3, CT4 = 'pre', 'discharge', '1month', '6months'  # preset
 ctcode = CT2
-ptcode = 'LSPEAS_003'
+ptcode = 'LSPEAS_002'
 
 # Params Step B, C
 stent, ring = 'stent', 'ring'  # preset
@@ -86,10 +86,10 @@ cropaveraged(basedir, ptcode, ctcode, crop_in='stent', what='avg3090', crop_out=
 
 # Load one volume/phase from ssdf with phases
 phase = 60
-avg = 'avg5090'
+avg = 'avg3090'
 
-s1 = loadvol(basedir, ptcode, ctcode, 'stent', what ='phases')
-s2 = loadvol(basedir, ptcode, ctcode, 'body', avg)
+#s1 = loadvol(basedir, ptcode, ctcode, 'stent', what ='phases')
+s2 = loadvol(basedir, ptcode, ctcode, 'ring', avg)
 s3 = loadvol(basedir, ptcode, ctcode, 'stent', 'avg3090')
 
 
@@ -103,7 +103,7 @@ a1 = vv.subplot(121)
 # t = vv.volshow(s1['vol%i'% phase])
 # t.clim = 0, 2500
 t2 = vv.volshow(s3.vol)
-t2.clim = 0, 1500
+t2.clim = 0, 2000
 vv.xlabel('x')
 vv.ylabel('y')
 vv.zlabel('z')
@@ -112,7 +112,7 @@ vv.title('One volume at %i procent of cardiac cycle' % phase )
 a2 = vv.subplot(122)
 a2.daspect = 1,1,-1
 t = vv.volshow(s2.vol)
-t.clim = 0, 1500
+t.clim = 0, 2000
 vv.xlabel('x')
 vv.ylabel('y')
 vv.zlabel('z')
