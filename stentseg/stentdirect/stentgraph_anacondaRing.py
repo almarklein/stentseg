@@ -38,10 +38,10 @@ def prune_weak(graph, enc, ctvalue, min_strutlength, max_strutlength):
     value above the given value). Exceptions are those edges that are part of a
     quadrangle, or quadrilateral, with other strong edges of a specified length.
     
-    Rationale: Edges with a path that contains a very low CT
-    value can almost always be discarded. Edges in excess of the expected
-    number of edges can only be maintained if their lowest CT 
-    value is so high it proves the existance of a wire between
+    Rationale: The proximal double Anaconda ring contains 4 anchor points with
+    hooks. Nodes at these points connect 3 or 4 edges and should be preserverd.
+    Edges in excess of the expected number of edges can only be maintained if 
+    their lowest CT value is so high it proves the existance of a wire between
     the nodes or if the path is situated between two hooks at 
     the proximal fixation rings (struts).
     """
@@ -76,9 +76,9 @@ def prune_weak(graph, enc, ctvalue, min_strutlength, max_strutlength):
                             q1 = graph.edge[node1][node2]
                             q2_path_l = _edge_length(graph, n1, node1)
                             q3_path_l = _edge_length(graph, n2, node2)
-                            #print('Quadrangle found with connecting edge: ',node1,'-',node2,q1)
-                            if (q1['ctvalue'] >= ctvalue and 
-                                min_strutlength < q2_path_l < max_strutlength and 
+                            print('Quadrangle found with connecting edge: ',node1,'-',node2,q1)
+                            #if (q1['ctvalue'] >= ctvalue and
+                            if (min_strutlength < q2_path_l < max_strutlength and 
                                 min_strutlength < q3_path_l < max_strutlength):
                                 quadrangle = 1            # strong
                                 break
@@ -91,8 +91,9 @@ def prune_weak(graph, enc, ctvalue, min_strutlength, max_strutlength):
                     #print('******************')
                     cnt1 +=1
                 if quadrangle == 2:
-                    #print('Eligable edge',n1,'-',n2,'part of *weak* quadrangle so removed')
-                    #print('******************')
+                    print('Eligable edge',n1,'-',n2,'part of *weak* quadrangle so removed')
+                    print('q2_path_l',q2_path_l,'q3_path_l',q3_path_l)
+                    print('******************')
                     graph.remove_edge(n1, n2)
                     cnt2 +=1
     print()
@@ -193,7 +194,7 @@ def _prune_redundant_edge(graph, n1, n2, min_ctvalue, min_strutlength, max_strut
                                 #print('edge' ,node1, '-' ,node2, 'with pathlength', path2_l)
                                 if (min_strutlength < path1_l < max_strutlength and 
                                     min_strutlength < path2_l < max_strutlength):
-#                                         print('Eligable edge',n1,'-',n2, graph.edge[n1][n2],'part of *strong* triangle so not removed')
+                                        print('Eligable edge',n1,'-',n2, graph.edge[n1][n2],'part of *strong* triangle so not removed')
 #                                         print()
 #                                         print('Neighbour edge is' ,n1, '-' ,node1, graph.edge[n1][node1], 'with pathlength', path1_l)
 #                                         print('Neighbour edge is' ,node1, '-' ,node2, graph.edge[node1][node2], 'with pathlength', path2_l)

@@ -28,7 +28,7 @@ CT1, CT2, CT3, CT4 = 'pre', 'discharge', '1month', '6months'
 ptcode = 'LSPEAS_003'
 ctcode = CT2
 cropname = 'ring'
-what = 'avg5090'
+what = 'avg3090'
 
 # Load volume data
 s = loadvol(basedir, ptcode, ctcode, cropname, what)
@@ -73,7 +73,7 @@ class StentDirect_test(StentDirect):
             ene = params.graph_expectedNumberOfEdges
             
             stentgraph.prune_very_weak(nodes, params.graph_weakThreshold)
-            stentgraph.prune_weak(nodes, ene, params.graph_strongThreshold)
+            #stentgraph.prune_weak(nodes, ene, params.graph_strongThreshold)
             stentgraph.prune_redundant(nodes, params.graph_strongThreshold)           
             stentgraph.prune_clusters(nodes, params.graph_minimumClusterSize)
             stentgraph.prune_tails(nodes, params.graph_trimLength)
@@ -81,6 +81,7 @@ class StentDirect_test(StentDirect):
         # New 1/5/2014
         stentgraph.pop_nodes(nodes)
         #stentgraph.add_corner_nodes(nodes)
+        # todo: fix AssertionError in _add_corner_to_edge; assert tuple(path[0].flat) == n1
         stentgraph.smooth_paths(nodes)
         
         t0 = time.time()-t_start
@@ -100,14 +101,14 @@ class StentDirect_test(StentDirect):
 # Get parameters. Different scanners/protocols/stent material might need
 # different parameters. 
 p = getDefaultParams()
+p.seed_threshold = 2300                 # step 1
+p.mcp_speedFactor = 190                 # step 2, speed image (delta), costToCtValue
+p.mcp_maxCoverageFronts = 0.003         # step 2, base.py; replaces mcp_evolutionThreshold
 p.graph_weakThreshold = 100             # step 3, stentgraph.prune_very_weak
 p.graph_expectedNumberOfEdges = 2       # step 3, stentgraph.prune_weak
 p.graph_trimLength =  5                 # step 3, stentgraph.prune_tails
 p.graph_minimumClusterSize = 10         # step 3, stentgraph.prune_clusters
 p.graph_strongThreshold = 3500          # step 3, stentgraph.prune_weak and stentgraph.prune_redundant
-p.seed_threshold = 1000                 # step 1
-p.mcp_speedFactor = 190                 # step 2, speed image (delta), costToCtValue
-p.mcp_maxCoverageFronts = 0.004          # step 2, base.py; replaces mcp_evolutionThreshold
 # todo: write function to estimate maxCoverageFronts
 
 # Instantiate stentdirect segmenter object
