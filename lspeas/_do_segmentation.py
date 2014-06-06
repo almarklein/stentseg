@@ -98,7 +98,7 @@ s2.model = model.pack()
 #s2.mesh = ssdf.new()
 
 # Save
-filename = '%s_%s_%s_%s.ssdf' % (ptcode, ctcode, cropname, 'model'+what[3:])
+filename = '%s_%s_%s_%s.ssdf' % (ptcode, ctcode, cropname, 'model')
 ssdf.save(os.path.join(basedir, ptcode, filename), s2)
 
 
