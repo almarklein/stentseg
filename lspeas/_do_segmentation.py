@@ -21,12 +21,13 @@ basedir = select_dir(os.getenv('LSPEAS_BASEDIR', ''),
 ptcode = 'LSPEAS_003'
 ctcode = 'discharge'
 cropname = 'ring'
+what = 'avg3090'
 
 
 ## Perform segmentation
 
 # Load volumes
-s = loadvol(basedir, ptcode, ctcode, cropname, 'avg5090')
+s = loadvol(basedir, ptcode, ctcode, cropname, what)
 vol = s.vol
 
 # Initialize segmentation parameters
@@ -97,7 +98,7 @@ s2.model = model.pack()
 #s2.mesh = ssdf.new()
 
 # Save
-filename = '%s_%s_%s_%s.ssdf' % (ptcode, ctcode, cropname, 'model')
+filename = '%s_%s_%s_%s.ssdf' % (ptcode, ctcode, cropname, 'model'+what[3:])
 ssdf.save(os.path.join(basedir, ptcode, filename), s2)
 
 
