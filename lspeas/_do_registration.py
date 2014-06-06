@@ -2,7 +2,7 @@
 Script to do the registation. This loads in the 10 volumes and
 calculates 10 deformation fields from it, which are then stored to disk.
 We can also create an average image from all volumes by first registering
-the volumes toward reach-other.
+the volumes toward each-other.
 """
 
 ## Perform image registration
@@ -50,10 +50,10 @@ reg.register(verbose=1)
 
 # Create struct
 s2 = vv.ssdf.new()
-N= len(vols)
+N = len(vols)
 for i in range(N):
     phase = i*10
-    s_avg['meta%i'%phase] = s['meta%i'%phase]
+    s2['meta%i'%phase] = s['meta%i'%phase]
 s2.origin = s.origin
 s2.stenttype = s.stenttype
 s2.croprange = s.croprange
@@ -94,7 +94,7 @@ s_avg.croprange = s.croprange
 #
 s_avg.vol = mean_vol.astype('float32')
 
-# Sace
+# Save
 avg = 'avgreg'
 filename = '%s_%s_%s_%s.ssdf' % (ptcode, ctcode, cropname, avg)
 ssdf.save(os.path.join(basedir, ptcode, filename), s_avg)
