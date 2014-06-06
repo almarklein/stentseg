@@ -34,16 +34,17 @@ vol = s.vol
 stentType = 'anacondaRing'
 
 p = getDefaultParams(stentType)
+p.seed_threshold = 2300                 # step 1
+p.mcp_speedFactor = 190                 # step 2, speed image (delta), costToCtValue
+p.mcp_maxCoverageFronts = 0.003         # step 2, base.py; replaces mcp_evolutionThreshold
 p.graph_weakThreshold = 100             # step 3, stentgraph.prune_very_weak
-p.graph_expectedNumberOfEdges = 2       # step 3, stentgraph.prune_weak
-#p.graph_trimLength =  3                # step 3, stentgraph.prune_tails
-p.graph_strongThreshold = 1200          # step 3, stentgraph.prune_weak and stentgraph.prune_redundant
-p.seed_threshold = 700                  # step 1
-#p.graph_minimumClusterSize = 8         # step 3, stentgraph.prune_clusters
-p.mcp_speedFactor = 140                 # step 2, speed image (delta), costToCtValue
-p.mcp_maxCoverageFronts = 0.015         # step 2, base.py; replaces mcp_evolutionThreshold
-#p.graph_min_strutlength = 7            # step 3, stentgraph.prune_weak and stentgraph.prune_redundant
+p.graph_expectedNumberOfEdges = 3       # step 3, stentgraph.prune_weak
+p.graph_trimLength =  5                 # step 3, stentgraph.prune_tails
+p.graph_minimumClusterSize = 10         # step 3, stentgraph.prune_clusters
+p.graph_strongThreshold = 3500          # step 3, stentgraph.prune_weak and stentgraph.prune_redundant
+#p.graph_min_strutlength = 6            # step 3, stentgraph.prune_weak and stentgraph.prune_redundant
 #p.graph_max_strutlength = 12           # step 3, stentgraph.prune_weak and stentgraph.prune_redundant
+# todo: write function to estimate maxCoverageFronts
 
 # Instantiate stentdirect segmenter object
 sd = StentDirect(vol, p)
