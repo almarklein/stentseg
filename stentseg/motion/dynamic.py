@@ -10,7 +10,7 @@ import visvis as vv
 
 import pirt
 
-from stentseg.stentdirect import stentGraph
+from stentseg.stentdirect import stentgraph
 from stentseg.utils import PointSet
 
 

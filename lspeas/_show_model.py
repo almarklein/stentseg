@@ -22,10 +22,10 @@ cropname = 'ring'
 # Load the stent model and mesh
 s = loadmodel(basedir, ptcode, ctcode, cropname)
 model = s.model
-modelmesh = create_mesh(model, 0.8)  # Param is thickness
+modelmesh = create_mesh(model, 0.6)  # Param is thickness
 
 # Load deformations
-s = loadvol(basedir, 'LSPEAS_003', 'discharge', 'ring', 'deforms')
+s = loadvol(basedir, ptcode, ctcode, cropname, 'deforms')
 deforms = [s['deform%i'%(i*10)] for i in range(10)]
 deforms = [[field[::2,::2,::2] for field in fields] for fields in deforms]
 

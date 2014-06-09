@@ -106,6 +106,7 @@ ssdf.save(os.path.join(basedir, ptcode, filename), s2)
 ## Make model dynamic (and store/overwrite to disk)
 
 import pirt
+from stentseg.motion.dynamic import incorporate_motion 
 
 # Load deforms
 s = loadvol(basedir, ptcode, ctcode, cropname, 'deforms')
