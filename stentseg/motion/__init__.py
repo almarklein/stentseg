@@ -13,5 +13,6 @@ from .dynamic import calculate_angle_changes
 from .dynamic import get_deform_in_nodes_at_sub_index
 
 from .vis import create_mesh_with_values
+from .vis import create_mesh_with_deforms
 from .vis import convert_mesh_values_to_angle_change
 from .vis import remove_stent_from_volume

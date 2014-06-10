@@ -2,49 +2,48 @@
 """
 
 
-# def create_mesh_with_values(g, radius=1.0, simplified=True): 
-#     """ Create a Mesh object from the graph. The values of the mesh
-#     encode triplets (node1, node2, weight) where node1 and node2 are
-#     indices to nodes in the graph and weight is the relative proximity
-#     to these nodes.
-#     
-#     The values array can then be used to set the value to any kind
-#     of information derived from the nodes.
-#     
-#     """
-#     from visvis.processing import lineToMesh, combineMeshes
-#     # todo: this still uses the old mesh model class
-#     
-#     # Init list of meshes
-#     meshes = []
-#     
-#     for e in g.GetEdges():
-#         # Obtain path of edge and make mesh
-#         if simplified:
-#             # Straight path
-#             path, values = vv.Pointset(3), vv.Pointset(3)
-#             path.append(e.end1._data); values.append(e._i1, e._i2, 0)
-#             path.append(e.end2._data); values.append(e._i1, e._i2, 1)
-#             #values = [e.end1._angleChange, e.end2._angleChange]
-#         else:
-#             path = vv.Pointset(e.props[2].data)
-#             #values = values.reshape(-1, 1)
-#             values = vv.Pointset(3)
-#             for i in np.linspace(0.0, 1.0, len(path)):
-#                 values.append(e._i1, e._i2, i)
-#         meshes.append( lineToMesh(path, radius, 8, values) )
-#     
-#     # Combine meshes and return
-#     if meshes:
-#         return combineMeshes(meshes)
-#     else:
-#         return None
-
-# Modify
-def create_mesh_with_values(graph, radius=1.0, fullPaths=True): 
+def create_mesh_with_values(g, radius=1.0, simplified=True): 
     """ Create a Mesh object from the graph. The values of the mesh
     encode triplets (node1, node2, weight) where node1 and node2 are
-    indices to nodes in the graph and weight is the deformation at these nodes.
+    indices to nodes in the graph and weight is the relative proximity
+    to these nodes.
+    
+    The values array can then be used to set the value to any kind
+    of information derived from the nodes.
+    
+    """
+    from visvis.processing import lineToMesh, combineMeshes
+    # todo: this still uses the old mesh model class
+    
+    # Init list of meshes
+    meshes = []
+    
+    for e in g.GetEdges():
+        # Obtain path of edge and make mesh
+        if simplified:
+            # Straight path
+            path, values = vv.Pointset(3), vv.Pointset(3)
+            path.append(e.end1._data); values.append(e._i1, e._i2, 0)
+            path.append(e.end2._data); values.append(e._i1, e._i2, 1)
+            #values = [e.end1._angleChange, e.end2._angleChange]
+        else:
+            path = vv.Pointset(e.props[2].data)
+            #values = values.reshape(-1, 1)
+            values = vv.Pointset(3)
+            for i in np.linspace(0.0, 1.0, len(path)):
+                values.append(e._i1, e._i2, i)
+        meshes.append( lineToMesh(path, radius, 8, values) )
+    
+    # Combine meshes and return
+    if meshes:
+        return combineMeshes(meshes)
+    else:
+        return None
+
+
+def create_mesh_with_deforms(graph, deforms, origin, radius=1.0, fullPaths=True): 
+    """ Create a Mesh object from the graph. The values of the mesh
+    encode the *deformation* at the points on the *paths* in the graph.
     
     The values array can be used to set the value to any kind
     of information derived from the nodes.
@@ -52,6 +51,7 @@ def create_mesh_with_values(graph, radius=1.0, fullPaths=True):
     """
     from visvis.processing import lineToMesh, combineMeshes
     from visvis import Pointset  # lineToMesh does not like the new PointSet class
+    from stentseg.utils import PointSet
     import numpy as np
     # todo: this still uses the old mesh model class: in progress..
     
@@ -63,19 +63,36 @@ def create_mesh_with_values(graph, radius=1.0, fullPaths=True):
         if fullPaths:
             path = graph.edge[n1][n2]['path']
             path = Pointset(path)  # Make a visvis pointset
+
+            # Get deformation for all points in path
+            # todo: perhaps pirt *should* be aware of the origin!
+            # it isn't now, so we need to take it into account here
+            g_deforms = []
+            samplePoints = path - PointSet([o for o in reversed(origin)], dtype='float32')
+            for deform in deforms:
+                delta_z = deform.get_field_in_points(samplePoints, 0).reshape(-1, 1)
+                delta_y = deform.get_field_in_points(samplePoints, 1).reshape(-1, 1)
+                delta_x = deform.get_field_in_points(samplePoints, 2).reshape(-1, 1)
+                delta = PointSet( np.concatenate((delta_x, delta_y, delta_z), axis=1) )
+                g_deforms.append(delta)
+            
+            # Attach deformation to each point.
+            # Needed because the points do not know their own index
             values = Pointset(3)
-            #values = values.reshape(-1, 1)
-            movn1 = np.asarray(sum(abs(graph.node[n1]['deforms']))) # x, y, z (?)
-            movn2 = np.asarray(sum(abs(graph.node[n2]['deforms'])))
-            for i in np.linspace(0.0, 1.0, len(path)):
-                values.append(movn1); values.append(movn2)
+            for i, point in enumerate(path):
+                mov = Pointset(3)
+                for j in range(len(g_deforms)):
+                    mov.append(g_deforms[j][i])
+                values.append(sum(abs(mov)))  # append tot. deform. over cardiac 
+                                              # cycle for point i in x,y,z
+        # todo: fix error on sum(abs(mov)). how compute abs and sum of pointset?
         else:
             # Straight path
             path, values = Pointset(3), Pointset(3)
             path.append(n1); path.append(n2)
-            movn1 = np.asarray(sum(abs(graph.node[n1]['deforms'])))
-            movn2 = np.asarray(sum(abs(graph.node[n2]['deforms'])))
-            values.append(movn1); values.append(movn2)
+            valuesn1 = np.asarray(sum(abs(graph.node[n1]['deforms'])))
+            valuesn2 = np.asarray(sum(abs(graph.node[n2]['deforms'])))
+            values.append(valuesn1); values.append(valuesn2)
             #values = [n1._angleChange, n2._angleChange]
             
         meshes.append( lineToMesh(path, radius, 8, values) )

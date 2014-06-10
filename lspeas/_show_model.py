@@ -8,7 +8,8 @@ import visvis as vv
 from stentseg.utils.datahandling import select_dir, loadvol, loadmodel
 from pirt.utils.deformvis import DeformableTexture3D, DeformableMesh
 from stentseg.stentdirect.stentgraph import create_mesh
-from stentseg.motion.vis import create_mesh_with_values,remove_stent_from_volume 
+from stentseg.motion.vis import create_mesh_with_deforms,remove_stent_from_volume
+import pirt 
 #import skimage.morphology
 from skimage.morphology import reconstruction
 
@@ -21,17 +22,20 @@ ptcode = 'LSPEAS_003'
 ctcode = 'discharge'
 cropname = 'ring'
 
-# Load the stent model and mesh
-s = loadmodel(basedir, ptcode, ctcode, cropname)
-model = s.model
-modelmesh = create_mesh(model, 0.6)  # Param is thickness
-#modelmesh = create_mesh_with_values(model, 0.6, fullPaths=True)
-#todo: create mesh based on path and deforms -> which points deform most?
-
 # Load deformations
 s = loadvol(basedir, ptcode, ctcode, cropname, 'deforms')
 deforms = [s['deform%i'%(i*10)] for i in range(10)]
+deformsMesh = [pirt.DeformationFieldBackward(*fields) for fields in deforms]
 deforms = [[field[::2,::2,::2] for field in fields] for fields in deforms]
+
+# Load the stent model and mesh
+s = loadmodel(basedir, ptcode, ctcode, cropname)
+model = s.model
+#modelmesh = create_mesh(model, 0.7)  # Param is thickness
+modelmesh = create_mesh_with_deforms(model, deformsMesh, s.origin, radius=0.7, fullPaths=False)
+#todo: create mesh based on path and deforms -> which points deform most?
+
+
 
 # todo: the deforms are stored in backward mapping (I think)
 # so we need to transform them to forward here.
@@ -67,8 +71,7 @@ a.SetLimits()
 dm.MotionPlay(10, 0.2)  # Each 10 ms do a step of 20%
 dm.motionSplineType = 'B-spline'
 dm.motionAmplitude = 3.0  # For a mesh we can (more) safely increase amplitude
-dm.faceColor = 'g'
-
+#dm.faceColor = 'g'
 
 #vv.record(a)
 
