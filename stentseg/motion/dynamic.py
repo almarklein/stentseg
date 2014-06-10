@@ -16,7 +16,7 @@ from stentseg.utils import PointSet
 
 def incorporate_motion(g, deforms, origin):
     """ Incorporate motion in the graph stent module. An attribute
-    _deforms is added to each node the graph.
+    _deforms is added to each node in the graph.
     
     An attribute _deforms is added to the graph, which contains the 
     deformation at the nodes, but organized by deform.
