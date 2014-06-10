@@ -30,9 +30,9 @@ a.daspect = 1, -1, -1
 container = vv.MotionDataContainer(a)
 for vol in vols:
     #t = vv.volshow(vol, clim=(0, 1000), renderStyle='mip')
-    t = vv.volshow(vol, clim=(-1000, 3000))
+    t = vv.volshow(vol, clim=(0, 3000))
     t.isoThreshold = 400
-    t.renderStyle = 'iso'  # iso or mip work well
+    t.renderStyle = 'mip'  # iso or mip work well
     t.parent = container
 
 
@@ -55,14 +55,15 @@ a.daspect = 1, -1, -1
 
 # Setup motion container
 dt = DeformableTexture3D(a, vol)
-dt.clim = 0, 1000
+dt.clim = 0, 3000
 dt.isoThreshold = 400
-dt.renderStyle = 'iso'  # iso or mip work well
+dt.renderStyle = 'mip'  # iso or mip work well
 dt.SetDeforms(*deforms)
 
 # Set limits and play!
 a.SetLimits()
-dt.MotionPlay(10, 0.2)  # Each 10 ms do a step of 20%
+dt.MotionPlay(10, 0.2)  # (10, 0.2) = each 10 ms do a step of 20%
+                        # With 85 bpm every beat 706 ms; 141 ms per 20%  
 
 dt.motionSplineType = 'B-spline'
 dt.motionAmplitude = 2.0
