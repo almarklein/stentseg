@@ -29,12 +29,10 @@ from stentseg.utils.datahandling import select_dir, loadvol
 # Automatically select basedir for ssdf data
 basedir = select_dir(os.getenv('LSPEAS_BASEDIR', ''),
                      r'C:\Users\Maaike\Documents\UT MA3\LSPEAS_ssdf',)
-# Init params
-CT1, CT2, CT3, CT4 = 'pre', 'discharge', '1month', '6months'
 
 # Set params to load the data
 ptcode = 'LSPEAS_003'
-ctcode = CT2
+ctcode = '1month'
 cropname = 'ring'
 what = 'avg3090'
 
@@ -82,9 +80,10 @@ class StentDirect_test(StentDirect):
                 ene = params.graph_expectedNumberOfEdges
                 
                 stentgraph.prune_very_weak(nodes, params.graph_weakThreshold)
-                stentgraph_anacondaRing.prune_weak(nodes, ene, params.graph_strongThreshold, 
-                                                    params.graph_min_strutlength,
-                                                    params.graph_max_strutlength)
+                #stentgraph.prune_weak(nodes, ene, params.graph_strongThreshold)
+                stentgraph_anacondaRing.prune_weak(nodes, ene, params.graph_strongThreshold,
+                                                        params.graph_min_strutlength,
+                                                        params.graph_max_strutlength)
                 stentgraph_anacondaRing.prune_redundant(nodes, params.graph_strongThreshold,
                                                         params.graph_min_strutlength,
                                                         params.graph_max_strutlength)
@@ -102,9 +101,8 @@ class StentDirect_test(StentDirect):
                 stentgraph.prune_clusters(nodes, params.graph_minimumClusterSize)
                 stentgraph.prune_tails(nodes, params.graph_trimLength)
         
-        # New 1/5/2014
         stentgraph.pop_nodes(nodes)
-        #stentgraph.add_corner_nodes(nodes)
+        stentgraph.add_corner_nodes(nodes)
         stentgraph.smooth_paths(nodes)
         
         t0 = time.time()-t_start
@@ -126,15 +124,15 @@ class StentDirect_test(StentDirect):
 stentType = 'anacondaRing'
 
 p = getDefaultParams(stentType)
-p.seed_threshold = 2500                 # step 1
+p.seed_threshold = 2300                 # step 1
 p.mcp_speedFactor = 190                 # step 2, speed image (delta), costToCtValue
 p.mcp_maxCoverageFronts = 0.003         # step 2, base.py; replaces mcp_evolutionThreshold
 p.graph_weakThreshold = 100             # step 3, stentgraph.prune_very_weak
-p.graph_expectedNumberOfEdges = 2       # step 3, stentgraph.prune_weak
+p.graph_expectedNumberOfEdges = 3       # step 3, stentgraph.prune_weak
 p.graph_trimLength =  5                 # step 3, stentgraph.prune_tails
 p.graph_minimumClusterSize = 10         # step 3, stentgraph.prune_clusters
 p.graph_strongThreshold = 3500          # step 3, stentgraph.prune_weak and stentgraph.prune_redundant
-p.graph_min_strutlength = 6            # step 3, stentgraph.prune_weak and stentgraph.prune_redundant
+p.graph_min_strutlength = 4            # step 3, stentgraph.prune_weak and stentgraph.prune_redundant
 p.graph_max_strutlength = 12           # step 3, stentgraph.prune_weak and stentgraph.prune_redundant
 # todo: write function to estimate maxCoverageFronts
 
@@ -146,11 +144,6 @@ sd = StentDirect_test(vol, p)
 # Perform the three steps of stentDirect
 sd.Step1()
 sd.Step2()
-    # For fast step 3 testing: save output from step 2 and load afterwards for use
-#ssdf.save(r'C:\Users\Maaike\Dropbox\ut ma3\research aortic stent grafts\data_nonecg-gated\tmp_nodes2\tmp_nodes2_700_50_005.ssdf', sd._nodes2.pack())
-#sd._nodes2 = stentgraph_prune_exception.StentGraph()
-#sd._nodes2.unpack(ssdf.load(r'C:\Users\Maaike\Dropbox\ut ma3\research aortic stent grafts\data_nonecg-gated\tmp_nodes2\tmp_nodes2_700_50_005.ssdf'))
-
 sd.Step3()
 
 # Create a mesh object for visualization (argument is strut tickness)

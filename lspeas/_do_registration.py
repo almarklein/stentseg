@@ -20,7 +20,7 @@ basedir = select_dir(os.getenv('LSPEAS_BASEDIR', ''),
 
 # Select dataset to register
 ptcode = 'LSPEAS_003'
-ctcode = 'discharge'
+ctcode = '1month'
 cropname = 'ring'
 
 # Load volumes
@@ -48,6 +48,8 @@ reg.register(verbose=1)
 
 ## Store registration result
 
+from visvis import ssdf
+
 # Create struct
 s2 = vv.ssdf.new()
 N = len(vols)
@@ -57,7 +59,7 @@ for i in range(N):
 s2.origin = s.origin
 s2.stenttype = s.stenttype
 s2.croprange = s.croprange
-#
+# Obtain deform fields
 for i in range(N):
     phase = i*10
     fields = [field for field in reg.get_deform(i).as_backward()]

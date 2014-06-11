@@ -189,9 +189,8 @@ def _prune_redundant_edge(graph, n1, n2, min_ctvalue, min_strutlength, max_strut
                         path1_l = _edge_length(graph, n1, node1)
                         path2_l = _edge_length(graph, node1, node2)
                         # Check if the neighbour triangle edges are proximal ring struts
-                        if (graph.edge[n1][node1]['ctvalue'] > (min_ctvalue*0.6) and
-                            graph.edge[node1][node2]['ctvalue'] > (min_ctvalue*0.6)):
-                                #print('edge' ,node1, '-' ,node2, 'with pathlength', path2_l)
+                        if (graph.edge[n1][node1]['ctvalue'] > (min_ctvalue*0.3) and
+                            graph.edge[node1][node2]['ctvalue'] > (min_ctvalue*0.3)):
                                 if (min_strutlength < path1_l < max_strutlength and 
                                     min_strutlength < path2_l < max_strutlength):
                                         print('Eligable edge',n1,'-',n2, graph.edge[n1][n2],'part of *strong* triangle so not removed')
@@ -218,8 +217,8 @@ def _prune_redundant_edge(graph, n1, n2, min_ctvalue, min_strutlength, max_strut
                         path1_l = _edge_length(graph, n2, node1)
                         path2_l = _edge_length(graph, node1, node2)
                         # Check if the neighbour triangle edges are proximal ring struts
-                        if (graph.edge[n2][node1]['ctvalue'] > (min_ctvalue*0.6) and
-                            graph.edge[node1][node2]['ctvalue'] > (min_ctvalue*0.6)):
+                        if (graph.edge[n2][node1]['ctvalue'] > (min_ctvalue*0.3) and
+                            graph.edge[node1][node2]['ctvalue'] > (min_ctvalue*0.3)):
                                 #print('edge' ,node1, '-' ,node2, 'with pathlength', path2_l)
                                 if (min_strutlength < path1_l < max_strutlength and 
                                     min_strutlength < path2_l < max_strutlength):

@@ -21,12 +21,10 @@ from stentseg.utils.datahandling import select_dir, loadvol
 # Automatically select basedir for ssdf data
 basedir = select_dir(os.getenv('LSPEAS_BASEDIR', ''),
                      r'C:\Users\Maaike\Documents\UT MA3\LSPEAS_ssdf',)
-# Init params
-CT1, CT2, CT3, CT4 = 'pre', 'discharge', '1month', '6months'
 
 # Set params to load the data
 ptcode = 'LSPEAS_003'
-ctcode = CT2
+ctcode = 'discharge'
 cropname = 'ring'
 what = 'avg3090'
 
@@ -174,10 +172,13 @@ a1.camera = a2.camera = a3.camera
 # viewlegs = {'roll': 0.0, 'daspect': (1.0, -1.0, -1.0), 'zoom': 0.008194720024798605, 'fov': 0.0, 'loc': (88.49756216666863, 44.10514167476311, 148.9382541829829), 'azimuth': -55.10344827586208, 'elevation': 19.3731778425656}
 # a1.SetView(viewlegs)
 
-viewringcrop = {'azimuth': 97.17241379310342,'daspect': (1.0, -1.0, -1.0),
- 'elevation': 27.507288629737616,'fov': 0.0,
- 'loc': (180.8365859069541, 87.79750435702455, 71.49154588671199),
- 'roll': 0.0,'zoom': 0.025718541865111823}
+viewringcrop = {'azimuth': 97.99999999999997,
+ 'daspect': (1.0, -1.0, -1.0),
+ 'elevation': 34.06705539358601,
+ 'fov': 0.0,
+ 'loc': (173.2495273737072, 104.1997680618794, 64.2241238750914),
+ 'roll': 0.0,
+ 'zoom': 0.017566110146241255}
 a1.SetView(viewringcrop)
 
 #viewring = {'fov': 0.0, 'elevation': 17.01166180758017, 'zoom': 0.019322721160865336, 'roll': 0.0, 'daspect': (1.0, -1.0, -1.0), 'loc': (85.07098073292472, 61.048256073622596, 60.822988663458425), 'azimuth': 95.31034482758619}

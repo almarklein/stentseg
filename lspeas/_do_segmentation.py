@@ -19,7 +19,7 @@ basedir = select_dir(os.getenv('LSPEAS_BASEDIR', ''),
 
 # Select dataset to register
 ptcode = 'LSPEAS_003'
-ctcode = 'discharge'
+ctcode = '1month'
 cropname = 'ring'
 what = 'avg3090'
 
@@ -31,19 +31,19 @@ s = loadvol(basedir, ptcode, ctcode, cropname, what)
 vol = s.vol
 
 # Initialize segmentation parameters
-stentType = 'anacondaRing'
+stentType = 'anacondaRing'  # 'anacondaRing' runs stentgraph_anacondaRing.prune_redundant in Step3
 
 p = getDefaultParams(stentType)
 p.seed_threshold = 2300                 # step 1
-p.mcp_speedFactor = 190                 # step 2, speed image (delta), costToCtValue
+p.mcp_speedFactor = 130                 # step 2, speed image (delta), costToCtValue
 p.mcp_maxCoverageFronts = 0.003         # step 2, base.py; replaces mcp_evolutionThreshold
 p.graph_weakThreshold = 100             # step 3, stentgraph.prune_very_weak
 p.graph_expectedNumberOfEdges = 3       # step 3, stentgraph.prune_weak
 p.graph_trimLength =  5                 # step 3, stentgraph.prune_tails
 p.graph_minimumClusterSize = 10         # step 3, stentgraph.prune_clusters
 p.graph_strongThreshold = 3500          # step 3, stentgraph.prune_weak and stentgraph.prune_redundant
-#p.graph_min_strutlength = 6            # step 3, stentgraph.prune_weak and stentgraph.prune_redundant
-#p.graph_max_strutlength = 12           # step 3, stentgraph.prune_weak and stentgraph.prune_redundant
+p.graph_min_strutlength = 4             # step 3, stentgraph.prune_weak and stentgraph.prune_redundant
+p.graph_max_strutlength = 12            # step 3, stentgraph.prune_weak and stentgraph.prune_redundant
 # todo: write function to estimate maxCoverageFronts
 
 # Instantiate stentdirect segmenter object
@@ -52,7 +52,7 @@ sd = StentDirect(vol, p)
 # Perform the three steps of stentDirect
 sd.Step1()
 sd.Step2()
-sd.Step3()
+sd.Step3(stentType)
 
 # Create a mesh object for visualization (argument is strut tickness)
 bm = create_mesh(sd._nodes3, 0.6) # new
@@ -60,29 +60,44 @@ bm = create_mesh(sd._nodes3, 0.6) # new
 # Get graph model
 model = sd._nodes3
 
-
-## Visualize 
+## Visualize
 
 fig = vv.figure(3); vv.clf()
 fig.position = 0, 22, 1366, 706
 
-# Show cleaned up
-a2 = vv.subplot(121)
-a2.daspect = 1,-1,-1
+# Show volume and model as graph
+a1 = vv.subplot(131)
 t = vv.volshow(vol)
 t.clim = 0, 2500
-sd._nodes3.Draw(mc='g', mw = 6, lc='b')
-vv.xlabel('x'); vv.ylabel('y'); vv.zlabel('z')
+#sd._nodes1.Draw(mc='g', mw = 6)       # draw seeded nodes
+sd._nodes2.Draw(mc='g', lc = 'g')    # draw seeded and MCP connected nodes
+
+# Show volume and cleaned up graph
+a2 = vv.subplot(132)
+t = vv.volshow(vol)
+t.clim = 0, 2500
+#sd._nodes2.Draw(mc='g', lc='r')
+sd._nodes3.Draw(mc='g', lc='g')
+vv.xlabel('x (mm)');vv.ylabel('y (mm)');vv.zlabel('z (mm)')
 
 # Show the mesh
-a3 = vv.subplot(122)
+a3 = vv.subplot(133)
 a3.daspect = 1,-1,-1
 m = vv.mesh(bm)
 m.faceColor = 'g'
-vv.xlabel('x'); vv.ylabel('y'); vv.zlabel('z')
+vv.xlabel('x (mm)');vv.ylabel('y (mm)');vv.zlabel('z (mm)')
 
-# Use same camera
-a2.camera = a3.camera
+# # Use same camera
+a1.camera = a2.camera = a3.camera
+
+viewringcrop = {'azimuth': 97.99999999999997,
+ 'daspect': (1.0, -1.0, -1.0),
+ 'elevation': 34.06705539358601,
+ 'fov': 0.0,
+ 'loc': (173.2495273737072, 104.1997680618794, 64.2241238750914),
+ 'roll': 0.0,
+ 'zoom': 0.017566110146241255}
+a1.SetView(viewringcrop)
 
 
 ## Store segmentation to disk

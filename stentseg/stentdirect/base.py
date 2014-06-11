@@ -26,7 +26,7 @@ vv.pypoints.SHOW_SUBTRACTBUG_WARNING = True
 from . import stentgraph_old
 from . import stentpoints3d
 from .stentmcp import MCP_StentDirect
-from . import stentgraph
+from . import stentgraph, stentgraph_anacondaRing
 
 
 
@@ -188,7 +188,7 @@ class StentDirect:
         return nodes
     
     
-    def Step3(self):
+    def Step3(self, stentType):
         """ Step3()
         Process graph to remove unwanted edges.
         """
@@ -216,16 +216,30 @@ class StentDirect:
         # have a similar function and should be executed in this order.
         cur_edges = 0
         count = 0
-        while cur_edges != nodes.number_of_edges():
-            count += 1
-            cur_edges = nodes.number_of_edges()
-            ene = params.graph_expectedNumberOfEdges
-            
-            stentgraph.prune_very_weak(nodes, params.graph_weakThreshold)
-            stentgraph.prune_weak(nodes, ene, params.graph_strongThreshold)
-            stentgraph.prune_redundant(nodes, params.graph_strongThreshold)            
-            stentgraph.prune_clusters(nodes, params.graph_minimumClusterSize)
-            stentgraph.prune_tails(nodes, params.graph_trimLength)
+        if stentType == 'anacondaRing':
+            while cur_edges != nodes.number_of_edges():
+                count += 1
+                cur_edges = nodes.number_of_edges()
+                ene = params.graph_expectedNumberOfEdges
+                
+                stentgraph.prune_very_weak(nodes, params.graph_weakThreshold)
+                stentgraph.prune_weak(nodes, ene, params.graph_strongThreshold)
+                stentgraph_anacondaRing.prune_redundant(nodes, params.graph_strongThreshold,
+                                                        params.graph_min_strutlength,
+                                                        params.graph_max_strutlength)
+                stentgraph.prune_clusters(nodes, params.graph_minimumClusterSize)
+                stentgraph.prune_tails(nodes, params.graph_trimLength)
+        else:
+            while cur_edges != nodes.number_of_edges():
+                count += 1
+                cur_edges = nodes.number_of_edges()
+                ene = params.graph_expectedNumberOfEdges
+                
+                stentgraph.prune_very_weak(nodes, params.graph_weakThreshold)
+                stentgraph.prune_weak(nodes, ene, params.graph_strongThreshold)
+                stentgraph.prune_redundant(nodes, params.graph_strongThreshold)           
+                stentgraph.prune_clusters(nodes, params.graph_minimumClusterSize)
+                stentgraph.prune_tails(nodes, params.graph_trimLength)
         
         stentgraph.pop_nodes(nodes)
         stentgraph.add_corner_nodes(nodes)
