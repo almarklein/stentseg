@@ -62,7 +62,7 @@ def create_mesh_with_deforms(graph, deforms, origin, radius=1.0, fullPaths=True)
         # Obtain path of edge and make mesh
         if fullPaths:
             path = graph.edge[n1][n2]['path']
-            path = Pointset(path)  # Make a visvis pointset
+            path = PointSet(path)  # Make a visvis pointset
 
             # Get deformation for all points in path
             # todo: perhaps pirt *should* be aware of the origin!
@@ -78,23 +78,30 @@ def create_mesh_with_deforms(graph, deforms, origin, radius=1.0, fullPaths=True)
             
             # Attach deformation to each point.
             # Needed because the points do not know their own index
-            values = Pointset(3)
+            values = PointSet(1)
             for i, point in enumerate(path):
-                mov = Pointset(3)
+                mov = PointSet(3)
                 for j in range(len(g_deforms)):
                     mov.append(g_deforms[j][i])
-                values.append(sum(abs(mov)))  # append tot. deform. over cardiac 
-                                              # cycle for point i in x,y,z
-        # todo: fix error on sum(abs(mov)). how compute abs and sum of pointset?
+                d = ( (mov[:,0]**2 + mov[:,1]**2 + mov[:,2]**2)**0.5 ).reshape(-1,1)  # magnitude in mm
+                dtot = d.sum()  # a measure for deformation of a point
+                values.append(np.asarray(dtot))
+            #values = np.vstack(values)
+            # todo: fix error: A point should be given as a 1D array; in lineToMesh
         else:
             # Straight path
-            path, values = Pointset(3), Pointset(3)
+            path, values = PointSet(3), PointSet(1)
             path.append(n1); path.append(n2)
-            valuesn1 = np.asarray(sum(abs(graph.node[n1]['deforms'])))
-            valuesn2 = np.asarray(sum(abs(graph.node[n2]['deforms'])))
-            values.append(valuesn1); values.append(valuesn2)
+            mov1 = graph.node[n1]['deforms']
+            mov2 = graph.node[n2]['deforms']
+            d1 = ( (mov1[:,0]**2 + mov1[:,1]**2 + mov1[:,2]**2)**0.5 ).reshape(-1,1)  # magnitude in mm
+            dtot1 = d1.sum()  # a measure for deformation of a point
+            d2 = ( (mov2[:,0]**2 + mov2[:,1]**2 + mov2[:,2]**2)**0.5 ).reshape(-1,1)  
+            dtot2 = d2.sum()
+            values.append(np.asarray(dtot1)); values.append(np.asarray(dtot2))
             #values = [n1._angleChange, n2._angleChange]
-            
+        
+        path, values = Pointset(path), Pointset(values)    
         meshes.append( lineToMesh(path, radius, 8, values) )
     
     # Combine meshes and return
@@ -136,14 +143,13 @@ def remove_stent_from_volume(vol, graph, stripSize=5):
     lower value, so that the stent appears to be "removed". This is for
     visualization purposes only. Makes use of known paths in graph model.
     """
-    
     from visvis import Pointset
 
     vol2 = vol.copy()
     for n1,n2 in graph.edges():
         path = graph.edge[n1][n2]['path']
         path = Pointset(path)  # Make a visvis pointset
-        stripSize2 = 2 * stripSize
+        stripSize2 = 0.5 * stripSize
         for point in path:
             z,y,x = vol2.point_to_index(point)
             vol2[z-stripSize:z+stripSize+1, y-stripSize:y+stripSize+1, x-stripSize:x+stripSize+1] = 0
