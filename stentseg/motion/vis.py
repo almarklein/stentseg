@@ -101,7 +101,7 @@ def create_mesh_with_deforms(graph, deforms, origin, radius=1.0, fullPaths=True)
             values.append(np.asarray(dtot1)); values.append(np.asarray(dtot2))
             #values = [n1._angleChange, n2._angleChange]
         
-        path, values = Pointset(path), Pointset(values)    
+        path, values = Pointset(path), np.asarray(values)    
         meshes.append( lineToMesh(path, radius, 8, values) )
     
     # Combine meshes and return

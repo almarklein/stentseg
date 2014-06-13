@@ -33,7 +33,6 @@ s = loadmodel(basedir, ptcode, ctcode, cropname)
 model = s.model
 #modelmesh = create_mesh(model, 0.9)  # Param is thickness
 modelmesh = create_mesh_with_deforms(model, deformsMesh, s.origin, radius=0.9, fullPaths=True)
-#todo: fix for fullPaths: A point should be given as a 1D array.
 
 
 # todo: the deforms are stored in backward mapping (I think)
@@ -90,50 +89,48 @@ dm.motionAmplitude = 3.0  # For a mesh we can (more) safely increase amplitude
 #dm.faceColor = 'g'
 
 
-# # Add clickable nodes
+# Add clickable nodes
 # textoffset = a.GetLimits()
 # textoffset = [0.5*(textoffset[0].min+textoffset[0].max), 0.5*(textoffset[1].min+textoffset[1].max), textoffset[2].min-10]  # x,y,z
 # t1 = vv.Text(a, text='Max deformation: ', x=textoffset[0], y=textoffset[1], z=textoffset[2], fontSize=9, color='b')
-# 
-# node_points = []
-# #node = model.nodes()[0]
-# for node in model.nodes():
-#     node_point = vv.solidSphere(translation = (node), scaling = (1.5,1.5,1.5))
-#     node_point.faceColor = 'c'
-#     node_point.node = node
-#     mov = model.node[node]['deforms']
-#     d = (mov[:,0]**2 + mov[:,1]**2 + mov[:,2]**2)**0.5  # magnitude in mm
-#     node_point.nodeDeform = d.max()  # a measure of max deformation for point
-#     node_points.append(node_point)
-#     
-# # todo: fix hide and show all nodes on key commands; fix reuse of t1 for text
-# def hide_node(event):
-#     if event.key  == vv.KEY_DOWN:
-#         for node_point in node_points:
-#             node_point.alpha = 0
-#     #event.owner.alpha = 0
-# def show_node(event):
-#     if event.key  == vv.KEY_UP:
-#         for node_point in node_points:
-#             node_point.alpha = 1
-#     #event.owner.alpha = 1
-# def pick_node(event):
-#     nodeDeform = event.owner.nodeDeform
-# #     if t1:
-# #         t1.Destroy()
-#     t1 = vv.Text(a, text='Max deformation: %1.2f mm' % nodeDeform, x=textoffset[0], y=textoffset[1], z=textoffset[2], fontSize=9, color='b')
-#     #t1.UpdatePosition(text='Max deformation: %1.2f mm' % nodeDeform)
-# 
-# f.eventKeyDown.Bind(hide_node)
-# #node_point.eventLeave.Bind(hide_node)
-# 
-# f.eventKeyUp.Bind(show_node)
-# #node_point.eventEnter.Bind(show_node)
-# 
-# #f.eventDoubleClick.Bind(text_remove)
-# 
-# for node_point in node_points:
-#     node_point.eventEnter.Bind(pick_node)
+t1 = vv.Label(a, 'Max deformation: ', fontSize=11, color='b')
+t1.position = 0.2, 5, 0.5, 20
+t1.bgcolor = None
+
+node_points = []
+#node = model.nodes()[0]
+for node in model.nodes():
+    node_point = vv.solidSphere(translation = (node), scaling = (1.5,1.5,1.5))
+    node_point.faceColor = 'c'
+    node_point.visible = False
+    node_point.node = node
+    mov = model.node[node]['deforms']
+    d = (mov[:,0]**2 + mov[:,1]**2 + mov[:,2]**2)**0.5  # magnitude in mm
+    node_point.nodeDeform = d.max()  # a measure of max deformation for point
+    node_points.append(node_point)
+
+def on_key(event): 
+    if event.key == vv.KEY_DOWN:
+        t1.visible = False
+        for node_point in node_points:
+            node_point.visible = False  # node_point.faceColor = 0, 0, 0, 0
+    elif event.key == vv.KEY_UP:
+        t1.visible = True
+        for node_point in node_points:
+            node_point.visible = True
+
+def pick_node(event):
+    nodeDeform = event.owner.nodeDeform
+    t1.text = 'Max deformation: \b{%1.2f mm}' % nodeDeform
+
+def unpick_node(event):
+    t1.text = 'Max deformation:'
+
+# Bind event handlers
+f.eventKeyDown.Bind(on_key)
+for node_point in node_points:
+    node_point.eventEnter.Bind(pick_node)
+    node_point.eventLeave.Bind(unpick_node)
 
 
 #vv.record(f)
