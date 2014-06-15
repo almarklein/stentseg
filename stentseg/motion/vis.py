@@ -53,7 +53,6 @@ def create_mesh_with_deforms(graph, deforms, origin, radius=1.0, fullPaths=True)
     from visvis import Pointset  # lineToMesh does not like the new PointSet class
     from stentseg.utils import PointSet
     import numpy as np
-    # todo: this still uses the old mesh model class: in progress..
     
     # Init list of meshes
     meshes = []
@@ -86,8 +85,6 @@ def create_mesh_with_deforms(graph, deforms, origin, radius=1.0, fullPaths=True)
                 d = ( (mov[:,0]**2 + mov[:,1]**2 + mov[:,2]**2)**0.5 ).reshape(-1,1)  # magnitude in mm
                 dtot = d.sum()  # a measure for deformation of a point
                 values.append(np.asarray(dtot))
-            #values = np.vstack(values)
-            # todo: fix error: A point should be given as a 1D array; in lineToMesh
         else:
             # Straight path
             path, values = PointSet(3), PointSet(1)
