@@ -80,10 +80,10 @@ class StentDirect_test(StentDirect):
                 ene = params.graph_expectedNumberOfEdges
                 
                 stentgraph.prune_very_weak(nodes, params.graph_weakThreshold)
-                #stentgraph.prune_weak(nodes, ene, params.graph_strongThreshold)
-                stentgraph_anacondaRing.prune_weak(nodes, ene, params.graph_strongThreshold,
-                                                        params.graph_min_strutlength,
-                                                        params.graph_max_strutlength)
+                stentgraph.prune_weak(nodes, ene, params.graph_strongThreshold)
+#                 stentgraph_anacondaRing.prune_weak(nodes, ene, params.graph_strongThreshold,
+#                                                         params.graph_min_strutlength,
+#                                                         params.graph_max_strutlength)
                 stentgraph_anacondaRing.prune_redundant(nodes, params.graph_strongThreshold,
                                                         params.graph_min_strutlength,
                                                         params.graph_max_strutlength)
@@ -155,50 +155,61 @@ else:
 
 ## Create figure
 
-fig = vv.figure(3); vv.clf()
+fig = vv.figure(2); vv.clf()
 fig.position = 0, 22, 1366, 706
 #fig.position = -1413.00, -2.00,  1366.00, 706.00
 
-# Show volume and segmented stent as a graph
-a1 = vv.subplot(131)
+# Show volume
+a1 = vv.subplot(141)
 t = vv.volshow(vol)
-t.clim = 0, 2500
-#sd._nodes1.Draw(mc='g', mw = 6)      # draw seeded nodes
-sd._nodes2.Draw(mc='g', lc = 'g')    # draw seeded and MCP connected nodes
+t.clim = 0, 3000
 
-# Show cleaned up
-a2 = vv.subplot(132)
+# Show volume and nodes/edges
+a2 = vv.subplot(142)
 t = vv.volshow(vol)
-t.clim = 0, 2500
-#sd._nodes2.Draw(mc='g', lc='r')
-sd._nodes3.Draw(mc='g', lc='g')
-#new_nodes1.Draw(mc='g', mw = 6)
+t.clim = 0, 3000
+sd._nodes1.Draw(mc='b')      # draw seeded nodes
+#sd._nodes2.Draw(mc='b', lc = 'g')    # draw seeded and MCP connected nodes
+
+# Show volume and nodes/edges
+a3 = vv.subplot(143)
+t = vv.volshow(vol)
+t.clim = 0, 3000
+sd._nodes2.Draw(mc='b', lc='g')
+#sd._nodes3.Draw(mc='b', lc='g')
+#new_nodes1.Draw(mc='b', mw = 6)
 
 vv.xlabel('x')
 vv.ylabel('y')
 vv.zlabel('z')
 
-# Show the mesh
-a3 = vv.subplot(133)
-a3.daspect = 1,-1,-1
-m = vv.mesh(bm)
-m.faceColor = 'g'
+# Show volume and cleaned up
+a4 = vv.subplot(144)
+a4.daspect = 1,-1,-1
+t = vv.volshow(vol)
+t.clim = 0, 3000
+sd._nodes3.Draw(mc='b', lc='g')
+#m = vv.mesh(bm)
+#m.faceColor = 'g'
 
 vv.xlabel('x')
 vv.ylabel('y')
 vv.zlabel('z')
 
 # # Use same camera
-a1.camera = a2.camera = a3.camera
+a1.camera = a2.camera = a3.camera = a4.camera
 
 # get view through: a1.GetView()
 #viewlegs = {'zoom': 0.007449745477089642, 'loc': (99.67564087275072, 44.54316599137399, 136.99019904163677), 'roll': 0.0, 'azimuth': -72.0689655172414, 'elevation': 10.451895043731781, 'daspect': (1.0, -1.0, -1.0), 'fov': 0.0}
 # a1.SetView(viewlegs)
 
-viewringcrop = {'azimuth': 97.17241379310342,'daspect': (1.0, -1.0, -1.0),
- 'elevation': 27.507288629737616,'fov': 0.0,
- 'loc': (180.8365859069541, 87.79750435702455, 71.49154588671199),
- 'roll': 0.0,'zoom': 0.025718541865111823}
+viewringcrop = {'azimuth': 103.35642000428354,
+ 'daspect': (1.0, -1.0, -1.0),
+ 'elevation': 22.77944593951248,
+ 'fov': 0.0,
+ 'loc': (179.3373928028404, 98.45327580567643, 60.80823406568838),
+ 'roll': 0.0,
+ 'zoom': 0.025718541865111827}
 a1.SetView(viewringcrop)
 
 #viewring = {'fov': 0.0, 'elevation': 17.01166180758017, 'zoom': 0.019322721160865336, 'roll': 0.0, 'daspect': (1.0, -1.0, -1.0), 'loc': (85.07098073292472, 61.048256073622596, 60.822988663458425), 'azimuth': 95.31034482758619}

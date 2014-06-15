@@ -11,7 +11,7 @@ from stentseg.stentdirect.stentgraph import create_mesh
 from stentseg.motion.vis import create_mesh_with_deforms,remove_stent_from_volume
 import pirt 
 #import skimage.morphology
-from skimage.morphology import reconstruction
+#from skimage.morphology import reconstruction
 
 # Select the ssdf basedir
 basedir = select_dir(os.getenv('LSPEAS_BASEDIR', ''),
@@ -19,7 +19,8 @@ basedir = select_dir(os.getenv('LSPEAS_BASEDIR', ''),
 
 # Select dataset to register
 ptcode = 'LSPEAS_003'
-ctcode = 'discharge'
+ctcode, nr = 'discharge', 1
+#ctcode, nr = '1month', 2
 cropname = 'ring'
 
 # Load deformations
@@ -54,25 +55,36 @@ vol = s.vol
 # vol2 = reconstruction(seed, mask, method='erosion')
 
 # Start vis
-f = vv.figure(1); vv.clf()
+f = vv.figure(nr); vv.clf()
 f.position = 0, 22, 1366, 706
 a = vv.gca()
 #a.axis.axisColor = 1,1,1
 #a.bgcolor = 0,0,0
 a.daspect = 1, -1, -1
-t = vv.volshow(vol, clim=(0, 2500), renderStyle='mip')
+t = vv.volshow(vol, clim=(0, 3000), renderStyle='mip')
 #vv.ColormapEditor(vv.gcf())
 #t.colormap = (0,0,0,0), (1,1,1,1) # 0 , 1500 clim
 vv.xlabel('x (mm)');vv.ylabel('y (mm)');vv.zlabel('z (mm)')
 vv.title('Model for LSPEAS %s  -  %s' % (ptcode[7:], ctcode))
-viewringcrop = {'azimuth': 84.04494382022472,
+viewringcrop = {'azimuth': 82.31139646869984,
  'daspect': (1.0, -1.0, -1.0),
- 'elevation': 18.513513513513523,
+ 'elevation': 24.864864864864863,
  'fov': 0.0,
- 'loc': (148.76399993896484, 89.11349868774414, 80.79999923706055),
+ 'loc': (149.82577398633552, 86.60102001731882, 82.34515557761024),
  'roll': 0.0,
- 'zoom': 0.010668186435651074}
-a.SetView(viewringcrop)
+ 'zoom': 0.008816683004670308}
+
+node_points = []
+for node in model.nodes():
+    node_point = vv.solidSphere(translation = (node), scaling = (1.1,1.1,1.1))
+    node_point.faceColor = 'b'
+    node_point.visible = False
+    node_point.node = node
+    mov = model.node[node]['deforms']
+    d = (mov[:,0]**2 + mov[:,1]**2 + mov[:,2]**2)**0.5  # magnitude in mm
+    node_point.maxDeform = d.max()  # a measure of max deformation for point
+    node_point.sumDeform = d.sum()
+    node_points.append(node_point)
 
 # Create deformable mesh
 dm = DeformableMesh(a, modelmesh)
@@ -83,6 +95,7 @@ vv.colorbar()
 
 # Run
 a.SetLimits()
+a.SetView(viewringcrop)
 dm.MotionPlay(10, 0.2)  # Each 10 ms do a step of 20%
 dm.motionSplineType = 'B-spline'
 dm.motionAmplitude = 3.0  # For a mesh we can (more) safely increase amplitude
@@ -90,41 +103,37 @@ dm.motionAmplitude = 3.0  # For a mesh we can (more) safely increase amplitude
 
 
 # Add clickable nodes
-# textoffset = a.GetLimits()
-# textoffset = [0.5*(textoffset[0].min+textoffset[0].max), 0.5*(textoffset[1].min+textoffset[1].max), textoffset[2].min-10]  # x,y,z
-# t1 = vv.Text(a, text='Max deformation: ', x=textoffset[0], y=textoffset[1], z=textoffset[2], fontSize=9, color='b')
-t1 = vv.Label(a, 'Max deformation: ', fontSize=11, color='b')
-t1.position = 0.2, 5, 0.5, 20
+t1 = vv.Label(a, 'Max of deformation vectors: ', fontSize=11, color='b')
+t1.position = 0.2, 5, 0.5, 20  # x (frac w), y, w (frac), h
 t1.bgcolor = None
+t1.visible = False
+t2 = vv.Label(a, 'Sum of deformation vectors: ', fontSize=11, color='b')
+t2.position = 0.2, 25, 0.5, 20
+t2.bgcolor = None
+t2.visible = False
 
-node_points = []
-#node = model.nodes()[0]
-for node in model.nodes():
-    node_point = vv.solidSphere(translation = (node), scaling = (1.5,1.5,1.5))
-    node_point.faceColor = 'c'
-    node_point.visible = False
-    node_point.node = node
-    mov = model.node[node]['deforms']
-    d = (mov[:,0]**2 + mov[:,1]**2 + mov[:,2]**2)**0.5  # magnitude in mm
-    node_point.nodeDeform = d.max()  # a measure of max deformation for point
-    node_points.append(node_point)
 
 def on_key(event): 
     if event.key == vv.KEY_DOWN:
         t1.visible = False
+        t2.visible = False
         for node_point in node_points:
             node_point.visible = False  # node_point.faceColor = 0, 0, 0, 0
     elif event.key == vv.KEY_UP:
         t1.visible = True
+        t2.visible = True
         for node_point in node_points:
             node_point.visible = True
 
 def pick_node(event):
-    nodeDeform = event.owner.nodeDeform
-    t1.text = 'Max deformation: \b{%1.2f mm}' % nodeDeform
+    maxDeform = event.owner.maxDeform
+    sumDeform = event.owner.sumDeform
+    t1.text = 'Max of deformation vectors: \b{%1.1f mm}' % maxDeform
+    t2.text = 'Sum of deformation vectors: \b{%1.1f mm}' % sumDeform
 
 def unpick_node(event):
-    t1.text = 'Max deformation:'
+    t1.text = 'Max of deformation vectors:'
+    t2.text = 'Sum of deformation vectors:'
 
 # Bind event handlers
 f.eventKeyDown.Bind(on_key)
@@ -137,3 +146,8 @@ for node_point in node_points:
 
 # In stentseg.motion.vis are a few functions, but they need to be adjusted
 # to work with the new stent model.
+
+## Use same camera when 2 models are running
+
+#vv.figure(1); a1 = vv.gca(); vv.figure(2); a2= vv.gca(); a1.camera = a2.camera
+

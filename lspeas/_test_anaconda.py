@@ -71,15 +71,13 @@ class StentDirect_test(StentDirect):
             ene = params.graph_expectedNumberOfEdges
             
             stentgraph.prune_very_weak(nodes, params.graph_weakThreshold)
-            #stentgraph.prune_weak(nodes, ene, params.graph_strongThreshold)
+            stentgraph.prune_weak(nodes, ene, params.graph_strongThreshold)
             stentgraph.prune_redundant(nodes, params.graph_strongThreshold)           
             stentgraph.prune_clusters(nodes, params.graph_minimumClusterSize)
             stentgraph.prune_tails(nodes, params.graph_trimLength)
         
-        # New 1/5/2014
         stentgraph.pop_nodes(nodes)
-        #stentgraph.add_corner_nodes(nodes)
-        # todo: fix AssertionError in _add_corner_to_edge; assert tuple(path[0].flat) == n1
+        stentgraph.add_corner_nodes(nodes)
         stentgraph.smooth_paths(nodes)
         
         t0 = time.time()-t_start
@@ -103,7 +101,7 @@ p.seed_threshold = 2300                 # step 1
 p.mcp_speedFactor = 190                 # step 2, speed image (delta), costToCtValue
 p.mcp_maxCoverageFronts = 0.003         # step 2, base.py; replaces mcp_evolutionThreshold
 p.graph_weakThreshold = 100             # step 3, stentgraph.prune_very_weak
-p.graph_expectedNumberOfEdges = 2       # step 3, stentgraph.prune_weak
+p.graph_expectedNumberOfEdges = 3       # step 3, stentgraph.prune_weak
 p.graph_trimLength =  5                 # step 3, stentgraph.prune_tails
 p.graph_minimumClusterSize = 10         # step 3, stentgraph.prune_clusters
 p.graph_strongThreshold = 3500          # step 3, stentgraph.prune_weak and stentgraph.prune_redundant
@@ -140,16 +138,16 @@ fig.position = 0, 22, 1366, 706
 # Show volume and model as graph
 a1 = vv.subplot(131)
 t = vv.volshow(vol)
-t.clim = 0, 2500
+t.clim = 0, 3000
 #sd._nodes1.Draw(mc='g', mw = 6)       # draw seeded nodes
-sd._nodes2.Draw(mc='g', lc = 'g')    # draw seeded and MCP connected nodes
+sd._nodes2.Draw(mc='b', lc = 'g')    # draw seeded and MCP connected nodes
 
 # Show volume and cleaned up graph
 a2 = vv.subplot(132)
 t = vv.volshow(vol)
-t.clim = 0, 2500
-#sd._nodes2.Draw(mc='g', lc='r')
-sd._nodes3.Draw(mc='g', lc='g')
+t.clim = 0, 3000
+#sd._nodes2.Draw(mc='b', lc='r')
+sd._nodes3.Draw(mc='b', lc='g')
 
 vv.xlabel('x (mm)')
 vv.ylabel('y (mm)')
