@@ -58,8 +58,9 @@ vol = s.vol
 f = vv.figure(nr); vv.clf()
 f.position = 0, 22, 1366, 706
 a = vv.gca()
-#a.axis.axisColor = 1,1,1
-#a.bgcolor = 0,0,0
+a.axis.axisColor = 1,1,1
+#a.axis.visible = False
+a.bgcolor = 0,0,0
 a.daspect = 1, -1, -1
 t = vv.volshow(vol, clim=(0, 3000), renderStyle='mip')
 #vv.ColormapEditor(vv.gcf())
@@ -96,7 +97,7 @@ vv.colorbar()
 # Run
 a.SetLimits()
 a.SetView(viewringcrop)
-dm.MotionPlay(10, 0.2)  # Each 10 ms do a step of 20%
+dm.MotionPlay(0.1, 0.2)  # (10, 0.2) = each 10 ms do a step of 20%
 dm.motionSplineType = 'B-spline'
 dm.motionAmplitude = 3.0  # For a mesh we can (more) safely increase amplitude
 #dm.faceColor = 'g'
@@ -141,8 +142,12 @@ for node_point in node_points:
     node_point.eventEnter.Bind(pick_node)
     node_point.eventLeave.Bind(unpick_node)
 
-
-#vv.record(f)
+# # Record video
+# rec = vv.record(a)
+# #...
+# # Export
+# rec.Stop()
+# rec.Export('%s_%s_%s_%s.avi') % (ptcode, ctcode, cropname, 'model')
 
 # In stentseg.motion.vis are a few functions, but they need to be adjusted
 # to work with the new stent model.
@@ -151,3 +156,14 @@ for node_point in node_points:
 
 #vv.figure(1); a1 = vv.gca(); vv.figure(2); a2= vv.gca(); a1.camera = a2.camera
 
+## Turn on/off axis
+
+# switch = False
+# 
+# a1.axis.visible = switch
+# a2.axis.visible = switch
+
+## Turn on/off moving mesh
+
+# dm.visible = False
+# dm.visible = True
