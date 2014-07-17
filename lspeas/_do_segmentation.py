@@ -19,7 +19,7 @@ basedir = select_dir(os.getenv('LSPEAS_BASEDIR', ''),
 
 # Select dataset to register
 ptcode = 'LSPEAS_003'
-ctcode = '1month'
+ctcode = 'discharge'
 cropname = 'ring'
 what = 'avg3090'
 
@@ -34,15 +34,15 @@ vol = s.vol
 stentType = 'anacondaRing'  # 'anacondaRing' runs stentgraph_anacondaRing.prune_redundant in Step3
 
 p = getDefaultParams(stentType)
-p.seed_threshold = 2300                 # step 1
-p.mcp_speedFactor = 130                 # step 2, speed image (delta), costToCtValue
+p.seed_threshold = 2800                 # step 1
+p.mcp_speedFactor = 190                 # step 2, speed image (delta), costToCtValue
 p.mcp_maxCoverageFronts = 0.003         # step 2, base.py; replaces mcp_evolutionThreshold
 p.graph_weakThreshold = 100             # step 3, stentgraph.prune_very_weak
 p.graph_expectedNumberOfEdges = 3       # step 3, stentgraph.prune_weak
 p.graph_trimLength =  5                 # step 3, stentgraph.prune_tails
 p.graph_minimumClusterSize = 10         # step 3, stentgraph.prune_clusters
-p.graph_strongThreshold = 3500          # step 3, stentgraph.prune_weak and stentgraph.prune_redundant
-p.graph_min_strutlength = 4             # step 3, stentgraph.prune_weak and stentgraph.prune_redundant
+p.graph_strongThreshold = 3700          # step 3, stentgraph.prune_weak and stentgraph.prune_redundant
+p.graph_min_strutlength = 7             # step 3, stentgraph.prune_weak and stentgraph.prune_redundant
 p.graph_max_strutlength = 12            # step 3, stentgraph.prune_weak and stentgraph.prune_redundant
 # todo: write function to estimate maxCoverageFronts
 
@@ -90,13 +90,13 @@ vv.xlabel('x (mm)');vv.ylabel('y (mm)');vv.zlabel('z (mm)')
 # # Use same camera
 a1.camera = a2.camera = a3.camera
 
-viewringcrop = {'azimuth': 97.99999999999997,
+viewringcrop = {'azimuth': 130.27586206896547,
  'daspect': (1.0, -1.0, -1.0),
- 'elevation': 34.06705539358601,
+ 'elevation': 36.559766763848394,
  'fov': 0.0,
- 'loc': (173.2495273737072, 104.1997680618794, 64.2241238750914),
+ 'loc': (153.7684681517934, 93.26987426473534, 84.39035953297544),
  'roll': 0.0,
- 'zoom': 0.017566110146241255}
+ 'zoom': 0.031119435656785325}
 a1.SetView(viewringcrop)
 
 
@@ -109,6 +109,11 @@ s2.sampling = s.sampling
 s2.origin = s.origin
 s2.stenttype = s.stenttype
 s2.croprange = s.croprange
+for key in dir(s):
+        if key.startswith('meta'):
+            suffix = key[4:]
+            s2['meta'+suffix] = s['meta'+suffix]
+s2.what = what
 # Store model
 s2.model = model.pack()
 #s2.mesh = ssdf.new()
