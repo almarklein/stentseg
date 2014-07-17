@@ -7,12 +7,12 @@ the volumes toward each-other.
 
 ## Perform image registration
 
-import os
+import os, time
 
 import numpy as np
 import visvis as vv
 import pirt.reg
-from stentseg.utils.datahandling import select_dir, loadvol
+from stentseg.utils.datahandling import select_dir, loadvol, loadmodel
 
 # Select the ssdf basedir
 basedir = select_dir(os.getenv('LSPEAS_BASEDIR', ''),
@@ -21,11 +21,13 @@ basedir = select_dir(os.getenv('LSPEAS_BASEDIR', ''),
 # Select dataset to register
 ptcode = 'LSPEAS_003'
 ctcode = '1month'
-cropname = 'ring'
+cropname = 'stent'
 
 # Load volumes
 s = loadvol(basedir, ptcode, ctcode, cropname, 'phases')
 vols = [s['vol%i'%(i*10)] for i in range(10)]
+
+t0 = time.time()
 
 # Initialize registration object
 reg = pirt.reg.GravityRegistration(*vols)
@@ -42,6 +44,9 @@ reg.params.grid_sampling_factor = 0.5
 
 # Go!
 reg.register(verbose=1)
+
+t1 = time.time()
+print('Registration completed, which took %1.2f s.' % (t1-t0))
 
 # todo: in visualization, we need to multiply with -1, do we really have backward transforms?
 
