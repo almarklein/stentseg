@@ -11,7 +11,7 @@ from stentseg.utils.datahandling import savecropvols, saveaveraged, cropaveraged
 # Select base directory for DICOM data
 
 # The stentseg datahandling module is agnostic about where the DICOM data is
-dicom_basedir = select_dir(r'C:\LSPEAS_data\DICOM',
+dicom_basedir = select_dir(r'G:\LSPEAS_data\DICOM',
                            '/home/almar/data/dicom/stent_LPEAS',)
 
 # Select the ssdf basedir
@@ -21,8 +21,8 @@ basedir = select_dir(os.getenv('LSPEAS_BASEDIR', ''),
 
 # Params Step A, B, C
 CT1, CT2, CT3, CT4 = 'pre', 'discharge', '1month', '6months'  # preset
-ctcode = CT2
-ptcode = 'LSPEAS_002'
+ctcode = 'discharge'
+ptcode = 'LSPEAS_003'
 
 # Params Step B, C
 stent, ring = 'stent', 'ring'  # preset
@@ -107,7 +107,7 @@ t2.clim = 0, 2000
 vv.xlabel('x')
 vv.ylabel('y')
 vv.zlabel('z')
-vv.title('One volume at %i procent of cardiac cycle' % phase )
+#vv.title('One volume at %i procent of cardiac cycle' % phase )
 
 a2 = vv.subplot(122)
 a2.daspect = 1,1,-1
