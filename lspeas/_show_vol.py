@@ -11,8 +11,8 @@ basedir = select_dir(os.getenv('LSPEAS_BASEDIR', ''),
                      r'C:\Users\Maaike\Documents\UT MA3\LSPEAS_ssdf',)
 
 # Select dataset to register
-ptcode = 'LSPEAS_003'
-ctcode = 'discharge'
+ptcode = 'LSPEAS_002'
+ctcode = 'pre'
 cropname = 'ring'
 
 ## Show 3D movie, by alternating the 10 volumes
@@ -29,10 +29,9 @@ a.daspect = 1, -1, -1
 # Setup data container
 container = vv.MotionDataContainer(a)
 for vol in vols:
-    #t = vv.volshow(vol, clim=(0, 1000), renderStyle='mip')
-    t = vv.volshow(vol, clim=(0, 3000))
-    t.isoThreshold = 400
-    t.renderStyle = 'mip'  # iso or mip work well
+    #t = vv.volshow2(vol, clim=(-750, 1000))
+    t = vv.volshow(vol, clim=(0, 3000), renderStyle = 'mip')
+    #t.isoThreshold = 400               # iso or mip work well 
     t.parent = container
 
 
@@ -62,7 +61,7 @@ dt.SetDeforms(*deforms)
 
 # Set limits and play!
 a.SetLimits()
-dt.MotionPlay(10, 0.2)  # (10, 0.2) = each 10 ms do a step of 20%
+dt.MotionPlay(5, 0.2)  # (10, 0.2) = each 10 ms do a step of 20%
                         # With 85 bpm every beat 706 ms; 141 ms per 20%  
 
 dt.motionSplineType = 'B-spline'
