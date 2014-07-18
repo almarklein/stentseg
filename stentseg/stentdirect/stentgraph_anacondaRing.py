@@ -137,14 +137,17 @@ def prune_redundant(graph, ctvalue, min_strutlength, max_strutlength):
         edges.reverse()
     
     cntremove = 0
+    cntspare = 0
     for (n1, n2) in edges:
-        _prune_redundant_edge(graph, n1, n2, ctvalue, min_strutlength, max_strutlength)
+        counter = _prune_redundant_edge(graph, n1, n2, ctvalue, min_strutlength, max_strutlength)
         if graph.has_edge(n1,n2):
-            pass
+            if counter == True:
+                cntspare += 1
         else:
             cntremove += 1   
     print()
     print('This iteration %i eligable edges for removal were part of a *weak* triangle so removed' % (cntremove))
+    print('This iteration %i eligable edges for removal were part of a *strong* triangle so not removed' % (cntspare))
     print()
 
 
@@ -152,12 +155,14 @@ def _prune_redundant_edge(graph, n1, n2, min_ctvalue, min_strutlength, max_strut
     """ Check if we should prune a given single redundant edge. 
     """
     
+    counter = False
+    
     # Do not allow connections to same node. Note: such edges should
     # not be produced by the MCP alg, but we check them to be sure
     if n1 == n2:
         print('Warning: detected node that was connected to itself.')
         graph.remove_edge(n1, n2)
-        return
+        return counter
     
     # Get neightbours for n1 and n2
     nn1 = set(graph.edge[n1].keys())
@@ -171,13 +176,13 @@ def _prune_redundant_edge(graph, n1, n2, min_ctvalue, min_strutlength, max_strut
     
     # If ct value is high enough, leave edge intact
     if ctvalue >= min_ctvalue:
-        return
+        return counter
     
     # Note: the graph type that we use prohibits having more than one
     # edge between any two nodes.
     
     weak = 0
-    
+
     # Check if there are two edges that are stronger than this edge
     for node1 in nn1:
         for node2 in graph.edge[node1].keys():
@@ -194,11 +199,12 @@ def _prune_redundant_edge(graph, n1, n2, min_ctvalue, min_strutlength, max_strut
                                 if (min_strutlength < path1_l < max_strutlength and 
                                     min_strutlength < path2_l < max_strutlength):
                                         print('Eligable edge',n1,'-',n2, graph.edge[n1][n2],'part of *strong* triangle so not removed')
-#                                         print()
-#                                         print('Neighbour edge is' ,n1, '-' ,node1, graph.edge[n1][node1], 'with pathlength', path1_l)
-#                                         print('Neighbour edge is' ,node1, '-' ,node2, graph.edge[node1][node2], 'with pathlength', path2_l)
-#                                         print('******************')
-                                        return                           
+                                        print()
+                                        print('Neighbour edge is' ,n1, '-' ,node1, graph.edge[n1][node1], 'with pathlength', path1_l)
+                                        print('Neighbour edge is' ,node1, '-' ,node2, graph.edge[node1][node2], 'with pathlength', path2_l)
+                                        print('******************')
+                                        counter = True
+                                        return counter                          
     if weak == 1:
 #         print('Eligable edge',n1,'-',n2, graph.edge[n1][n2],'part of *weak* triangle so removed')
 #         print()
@@ -206,7 +212,7 @@ def _prune_redundant_edge(graph, n1, n2, min_ctvalue, min_strutlength, max_strut
 #         print('Neighbour edge is' ,node1, '-' ,node2, graph.edge[node1][node2], 'with pathlength', path2_l)
 #         print('******************')
         graph.remove_edge(n1, n2)
-        return
+        return counter
     
     for node1 in nn2:
         for node2 in graph.edge[node1].keys():
@@ -222,10 +228,16 @@ def _prune_redundant_edge(graph, n1, n2, min_ctvalue, min_strutlength, max_strut
                                 #print('edge' ,node1, '-' ,node2, 'with pathlength', path2_l)
                                 if (min_strutlength < path1_l < max_strutlength and 
                                     min_strutlength < path2_l < max_strutlength):
-                                        return
+#                                         print('Eligable edge',n1,'-',n2, graph.edge[n1][n2],'part of *strong* triangle so not removed')
+#                                         print()
+#                                         print('Neighbour edge is' ,n1, '-' ,node1, graph.edge[n1][node1], 'with pathlength', path1_l)
+#                                         print('Neighbour edge is' ,node1, '-' ,node2, graph.edge[node1][node2], 'with pathlength', path2_l)
+#                                         print('********nn2**********')
+                                        counter = True
+                                        return counter
     if weak == 1:
         graph.remove_edge(n1, n2) 
-        return
+        return counter
                     
 
 
