@@ -48,6 +48,9 @@ def incorporate_motion(g, deforms, origin):
         deforms = PointSet(3, dtype='float32')
         for j in range(len(g_deforms)):
             deforms.append(g_deforms[j][i])
+        #mag = ((deforms[:,0]**2 + deforms[:,1]**2 + deforms[:,2]**2)**0.5).reshape(-1,1)  # magnitude in mm
+        #deforms = PointSet( np.concatenate((deforms,mag), axis = 1) )
+        # todo: uncomment and add magnitude column to deforms in each node?
         g.add_node(node, deforms=deforms)
     
 #     # Attach list that is sorted by deformation to the graph
