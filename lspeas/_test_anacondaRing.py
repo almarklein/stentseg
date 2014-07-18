@@ -187,7 +187,11 @@ vv.zlabel('z')
 a4 = vv.subplot(144)
 a4.daspect = 1,-1,-1
 t = vv.volshow(vol)
+#t.renderStyle = 'ray'
 t.clim = 0, 3000
+#t = vv.volshow2(vol)  # to see some vessel anatomy
+#t.clim = -750, 1000
+#vv.ColormapEditor(vv.gcf())
 sd._nodes3.Draw(mc='b', lc='g')
 #m = vv.mesh(bm)
 #m.faceColor = 'g'
