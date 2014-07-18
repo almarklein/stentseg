@@ -71,6 +71,7 @@ for i in range(N):
     s2['deform%i'%phase] = fields
 s2.sampling = s2.deform0[0].sampling  # Sampling of deform is different!
 # s2.origin = s2.deform0[0].origin  # But origin is zero
+s2.params = reg.params
 
 # Save
 filename = '%s_%s_%s_%s.ssdf' % (ptcode, ctcode, cropname, 'deforms')
@@ -98,8 +99,8 @@ s_avg.sampling = s.sampling  # z, y, x voxel size in mm
 s_avg.origin = s.origin
 s_avg.stenttype = s.stenttype
 s_avg.croprange = s.croprange
-#
 s_avg.vol = mean_vol.astype('float32')
+s_avg.params = s2.params
 
 # Save
 avg = 'avgreg'

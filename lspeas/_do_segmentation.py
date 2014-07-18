@@ -18,7 +18,7 @@ basedir = select_dir(os.getenv('LSPEAS_BASEDIR', ''),
                      r'C:\Users\Maaike\Documents\UT MA3\LSPEAS_ssdf',)
 
 # Select dataset to register
-ptcode = 'LSPEAS_003'
+ptcode = 'LSPEAS_001'
 ctcode = 'discharge'
 cropname = 'ring'
 what = 'avg3090'
@@ -34,16 +34,16 @@ vol = s.vol
 stentType = 'anacondaRing'  # 'anacondaRing' runs stentgraph_anacondaRing.prune_redundant in Step3
 
 p = getDefaultParams(stentType)
-p.seed_threshold = 2800                 # step 1
-p.mcp_speedFactor = 190                 # step 2, speed image (delta), costToCtValue
+p.seed_threshold = 1400                 # step 1
+p.mcp_speedFactor = 170                 # step 2, speed image (delta), costToCtValue
 p.mcp_maxCoverageFronts = 0.003         # step 2, base.py; replaces mcp_evolutionThreshold
 p.graph_weakThreshold = 100             # step 3, stentgraph.prune_very_weak
 p.graph_expectedNumberOfEdges = 3       # step 3, stentgraph.prune_weak
-p.graph_trimLength =  5                 # step 3, stentgraph.prune_tails
+p.graph_trimLength =  0                 # step 3, stentgraph.prune_tails
 p.graph_minimumClusterSize = 10         # step 3, stentgraph.prune_clusters
-p.graph_strongThreshold = 3700          # step 3, stentgraph.prune_weak and stentgraph.prune_redundant
-p.graph_min_strutlength = 7             # step 3, stentgraph.prune_weak and stentgraph.prune_redundant
-p.graph_max_strutlength = 12            # step 3, stentgraph.prune_weak and stentgraph.prune_redundant
+p.graph_strongThreshold = 3600          # step 3, stentgraph.prune_weak and stentgraph.prune_redundant
+p.graph_min_strutlength = 4            # step 3, stentgraph.prune_weak and stentgraph.prune_redundant
+p.graph_max_strutlength = 8            # step 3, stentgraph.prune_weak and stentgraph.prune_redundant
 # todo: write function to estimate maxCoverageFronts
 
 # Instantiate stentdirect segmenter object
@@ -90,13 +90,14 @@ vv.xlabel('x (mm)');vv.ylabel('y (mm)');vv.zlabel('z (mm)')
 # # Use same camera
 a1.camera = a2.camera = a3.camera
 
-viewringcrop = {'azimuth': 130.27586206896547,
+viewringcrop = {'azimuth': -65.65517241379314,
  'daspect': (1.0, -1.0, -1.0),
- 'elevation': 36.559766763848394,
+ 'elevation': 24.883381924198254,
  'fov': 0.0,
- 'loc': (153.7684681517934, 93.26987426473534, 84.39035953297544),
+ 'loc': (89.07751752223976, 62.73093920225121, 65.14016954642867),
  'roll': 0.0,
- 'zoom': 0.031119435656785325}
+ 'zoom': 0.02338049260464713}
+
 a1.SetView(viewringcrop)
 
 
@@ -114,6 +115,7 @@ for key in dir(s):
             suffix = key[4:]
             s2['meta'+suffix] = s['meta'+suffix]
 s2.what = what
+s2.params = p
 # Store model
 s2.model = model.pack()
 #s2.mesh = ssdf.new()
