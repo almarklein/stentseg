@@ -10,8 +10,8 @@ from pirt.utils.deformvis import DeformableTexture3D, DeformableMesh
 from stentseg.stentdirect.stentgraph import create_mesh
 from stentseg.motion.vis import create_mesh_with_deforms,remove_stent_from_volume
 import pirt 
-#import skimage.morphology
-#from skimage.morphology import reconstruction
+import skimage.morphology
+from skimage.morphology import reconstruction
 
 # Select the ssdf basedir
 basedir = select_dir(os.getenv('LSPEAS_BASEDIR', ''),
@@ -19,8 +19,8 @@ basedir = select_dir(os.getenv('LSPEAS_BASEDIR', ''),
 
 # Select dataset to register
 ptcode = 'LSPEAS_003'
-ctcode, nr = 'discharge', 1
-#ctcode, nr = '1month', 2
+#ctcode, nr = 'discharge', 1
+ctcode, nr = '1month', 2
 cropname = 'ring'
 
 # Load deformations
@@ -48,11 +48,12 @@ vol = s.vol
 #vol = remove_stent_from_volume(vol, model, stripSize=4)
 
 # todo: also create a way to show static ring thinner/transparent as reference 
-# skimage.morphology.reconstruction(seed, mask, method='dilation', selem=None, offset=None)
-# seed = vol # seed image is eroded
-# mask = np.zeros_like(vol, np.uint8)
-# mask[np.where(vol < 2500)] = 2500
-# vol2 = reconstruction(seed, mask, method='erosion')
+# vol2 = np.copy(vol)
+# seed = vol2*(vol2<1400) # erosion starts from seed image minima
+# # seed start moet original, deel te eroden moet max
+# seed[np.where(seed == 0)] = vol2.max()
+# mask = vol2
+# vol = reconstruction(seed, mask, method='erosion')
 
 # Start vis
 f = vv.figure(nr); vv.clf()
@@ -67,20 +68,21 @@ t = vv.volshow(vol, clim=(0, 3000), renderStyle='mip')
 #t.colormap = (0,0,0,0), (1,1,1,1) # 0 , 1500 clim
 vv.xlabel('x (mm)');vv.ylabel('y (mm)');vv.zlabel('z (mm)')
 vv.title('Model for LSPEAS %s  -  %s' % (ptcode[7:], ctcode))
-viewringcrop = {'azimuth': 82.31139646869984,
+viewringcrop = {'azimuth': 176.57303370786514,
  'daspect': (1.0, -1.0, -1.0),
- 'elevation': 24.864864864864863,
+ 'elevation': 17.162162162162165,
  'fov': 0.0,
- 'loc': (149.82577398633552, 86.60102001731882, 82.34515557761024),
+ 'loc': (137.1303669204193, 183.39814289598684, 67.48449361333874),
  'roll': 0.0,
- 'zoom': 0.008816683004670308}
+ 'zoom': 0.010668186435651074}
 
 node_points = []
-for node in model.nodes():
+for i, node in enumerate(model.nodes()):
     node_point = vv.solidSphere(translation = (node), scaling = (1.1,1.1,1.1))
     node_point.faceColor = 'b'
     node_point.visible = False
     node_point.node = node
+    node_point.nr = i
     mov = model.node[node]['deforms']
     d = (mov[:,0]**2 + mov[:,1]**2 + mov[:,2]**2)**0.5  # magnitude in mm
     node_point.maxDeform = d.max()  # a measure of max deformation for point
@@ -112,29 +114,38 @@ t2 = vv.Label(a, 'Sum of deformation vectors: ', fontSize=11, color='b')
 t2.position = 0.2, 25, 0.5, 20
 t2.bgcolor = None
 t2.visible = False
+t3 = vv.Label(a, 'Node nr: ', fontSize=11, color='b')
+t3.position = 0.2, 45, 0.5, 20
+t3.bgcolor = None
+t3.visible = False
 
 
 def on_key(event): 
     if event.key == vv.KEY_DOWN:
         t1.visible = False
         t2.visible = False
+        t3.visible = False
         for node_point in node_points:
-            node_point.visible = False  # node_point.faceColor = 0, 0, 0, 0
+            node_point.visible = False
     elif event.key == vv.KEY_UP:
         t1.visible = True
         t2.visible = True
+        t3.visible = True
         for node_point in node_points:
             node_point.visible = True
 
 def pick_node(event):
     maxDeform = event.owner.maxDeform
     sumDeform = event.owner.sumDeform
+    nodenr = event.owner.nr
     t1.text = 'Max of deformation vectors: \b{%1.1f mm}' % maxDeform
     t2.text = 'Sum of deformation vectors: \b{%1.1f mm}' % sumDeform
+    t3.text = 'Node nr: \b{%i}' % nodenr
 
 def unpick_node(event):
     t1.text = 'Max of deformation vectors:'
     t2.text = 'Sum of deformation vectors:'
+    t3.text = 'Node nr: '
 
 # Bind event handlers
 f.eventKeyDown.Bind(on_key)
@@ -154,16 +165,16 @@ for node_point in node_points:
 
 ## Use same camera when 2 models are running
 
-#vv.figure(1); a1 = vv.gca(); vv.figure(2); a2= vv.gca(); a1.camera = a2.camera
+vv.figure(1); a1 = vv.gca(); vv.figure(2); a2= vv.gca(); a1.camera = a2.camera
 
 ## Turn on/off axis
 
-# switch = False
-# 
-# a1.axis.visible = switch
-# a2.axis.visible = switch
+switch = False
+
+a1.axis.visible = switch
+a2.axis.visible = switch
 
 ## Turn on/off moving mesh
 
-# dm.visible = False
-# dm.visible = True
+dm.visible = False
+dm.visible = True
