@@ -42,7 +42,7 @@ p.graph_weakThreshold = 1000             # step 3, stentgraph.prune_very_weak
 p.graph_expectedNumberOfEdges = 3       # step 3, stentgraph.prune_weak
 p.graph_trimLength =  0                 # step 3, stentgraph.prune_tails
 p.graph_minimumClusterSize = 10         # step 3, stentgraph.prune_clusters
-p.graph_strongThreshold = 3900          # step 3, stentgraph.prune_weak and stentgraph.prune_redundant
+p.graph_strongThreshold = 3000          # step 3, stentgraph.prune_weak and stentgraph.prune_redundant
 #p.graph_min_strutlength = 5            # step 3, stentgraph.prune_weak and stentgraph.prune_redundant
 #p.graph_max_strutlength = 10            # step 3, stentgraph.prune_weak and stentgraph.prune_redundant
 # todo: write function to estimate maxCoverageFronts
@@ -106,7 +106,7 @@ a1.SetView(viewringcrop)
 
 # Build struct
 s2 = vv.ssdf.new()
-# We do not need origin and croprange, but keep them for reference
+# We do not need croprange, but keep for reference
 s2.sampling = s.sampling
 s2.origin = s.origin
 s2.stenttype = s.stenttype
@@ -129,7 +129,7 @@ ssdf.save(os.path.join(basedir, ptcode, filename), s2)
 ## Make model dynamic (and store/overwrite to disk)
 
 import pirt
-from stentseg.motion.dynamic import incorporate_motion 
+from stentseg.motion.dynamic import incorporate_motion_nodes, incorporate_motion_edges  
 
 # Load deforms
 s = loadvol(basedir, ptcode, ctcode, cropname, 'deforms')
@@ -141,7 +141,8 @@ s = loadmodel(basedir, ptcode, ctcode, cropname)
 model = s.model
 
 # Combine ...
-incorporate_motion(model, deforms, s.origin)
+incorporate_motion_nodes(model, deforms, s.origin)
+incorporate_motion_edges(model, deforms, s.origin)
 
 # Save back
 filename = '%s_%s_%s_%s.ssdf' % (ptcode, ctcode, cropname, 'model')

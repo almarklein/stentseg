@@ -8,7 +8,8 @@ to visualize the motion in the volume or stent mesh.
 
 """
 
-from .dynamic import incorporate_motion
+from .dynamic import incorporate_motion_nodes
+from .dynamic import incorporate_motion_edges
 from .dynamic import calculate_angle_changes
 from .dynamic import get_deform_in_nodes_at_sub_index
 

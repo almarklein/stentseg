@@ -14,13 +14,12 @@ from stentseg.stentdirect import stentgraph
 from stentseg.utils import PointSet
 
 
-def incorporate_motion(g, deforms, origin):
+def incorporate_motion_nodes(g, deforms, origin):
     """ Incorporate motion in the graph stent module. An attribute
     _deforms is added to each node in the graph.
     
     An attribute _deforms is added to the graph, which contains the 
     deformation at the nodes, but organized by deform.
-    
     """
     
     # Get a list of nodes (nodes in fixed order)
@@ -48,9 +47,6 @@ def incorporate_motion(g, deforms, origin):
         deforms = PointSet(3, dtype='float32')
         for j in range(len(g_deforms)):
             deforms.append(g_deforms[j][i])
-        #mag = ((deforms[:,0]**2 + deforms[:,1]**2 + deforms[:,2]**2)**0.5).reshape(-1,1)  # magnitude in mm
-        #deforms = PointSet( np.concatenate((deforms,mag), axis = 1) )
-        # todo: uncomment and add magnitude column to deforms in each node?
         g.add_node(node, deforms=deforms)
     
 #     # Attach list that is sorted by deformation to the graph
@@ -58,6 +54,43 @@ def incorporate_motion(g, deforms, origin):
 #     # When storing, we can only store deforms per node, and calculate
 #     # the other representation when loading. 
 #     g._deforms = g_deforms
+
+
+def incorporate_motion_edges(g, deforms, origin):
+    """ Incorporate motion to edges
+    An attribute _pathdeforms is added to each edge, which contains the
+    deformation at each point on the path 
+    
+    """
+
+    for n1, n2 in g.edges():
+        # Obtain path of edge
+        path = g.edge[n1][n2]['path']  # points on path include n1 n2
+        path = PointSet(path)  # Make a visvis pointset
+    
+        # Create deformation for all points on path
+        # todo: perhaps pirt *should* be aware of the origin!
+        # it isn't now, so we need to take it into account here
+        g_deforms = []
+        samplePoints = path - PointSet([o for o in reversed(origin)], dtype='float32')
+        for deform in deforms:
+            delta_z = deform.get_field_in_points(samplePoints, 0).reshape(-1, 1)
+            delta_y = deform.get_field_in_points(samplePoints, 1).reshape(-1, 1)
+            delta_x = deform.get_field_in_points(samplePoints, 2).reshape(-1, 1)
+            delta = PointSet( np.concatenate((delta_x, delta_y, delta_z), axis=1) )
+            g_deforms.append(delta)
+        
+        # Attach deformation to each point.
+        # Needed because the points do not know their own index
+        pathdeforms =  [] #PointSet(3, dtype= 'float32')
+        for i, point in enumerate(path):
+            pointdeforms = PointSet(3, dtype='float32')
+            for j in range(len(g_deforms)):
+                pointdeforms.append(g_deforms[j][i]) # for one point 10 deforms
+            pathdeforms.append(pointdeforms) # for points on path their 10 deforms
+        # Add pathdeforms to edge
+        g.add_edge(n1, n2, pathdeforms = pathdeforms)
+        # todo: better if pathdeforms is a PointSet? possible?
 
 
 def calculate_angle_changes(g):
