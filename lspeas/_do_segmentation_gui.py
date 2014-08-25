@@ -20,8 +20,8 @@ basedir = select_dir(os.getenv('LSPEAS_BASEDIR', ''),
                      r'C:\Users\Maaike\Documents\UT MA3\LSPEAS_ssdf',)
 
 # Select dataset to register
-ptcode = 'LSPEAS_002'
-ctcode = '1month'
+ptcode = 'LSPEAS_001'
+ctcode = 'discharge'
 cropname = 'ring'
 what = 'avg3090'
 
@@ -37,7 +37,7 @@ stentType = 'anaconda'  # 'anacondaRing' runs stentgraph_anacondaRing.prune_redu
 popNodes = False  # False when using GUI: pop, add corner nodes and smooth after
 
 p = getDefaultParams(stentType)
-p.seed_threshold = 1200                 # step 1
+p.seed_threshold = 1000                 # step 1
 p.mcp_speedFactor = 190                 # step 2, speed image (delta), costToCtValue
 p.mcp_maxCoverageFronts = 0.003         # step 2, base.py; replaces mcp_evolutionThreshold
 p.graph_weakThreshold = 1000            # step 3, stentgraph.prune_very_weak
@@ -115,15 +115,18 @@ t3.visible = False
 
 def on_key(event): 
     if event.key == vv.KEY_DOWN:
+        # hide nodes
         t1.visible = False
         t2.visible = False
         t3.visible = False
         for node_point in node_points:
             node_point.visible = False
     if event.key == vv.KEY_UP:
+        # show nodes
         for node_point in node_points:
             node_point.visible = True
     if event.key == vv.KEY_ENTER:
+        # restore edge
         assert len(selected_nodes) == 2
         select1 = selected_nodes[0].node
         select2 = selected_nodes[1].node
@@ -149,6 +152,7 @@ def on_key(event):
         line.faceColor = 'g'
         a3.SetView(view)
     if event.key == vv.KEY_DELETE:
+        # remove edge
         assert len(selected_nodes) == 2
         select1 = selected_nodes[0].node
         select2 = selected_nodes[1].node
@@ -159,9 +163,8 @@ def on_key(event):
         sd._nodes3.remove_edge(select1, select2)
         # Visualize removed edge, show keys and deselect nodes
         selected_nodes[1].faceColor = 'b'
-        selected_nodes.remove(selected_nodes[1])
         selected_nodes[0].faceColor = 'b'
-        selected_nodes.remove(selected_nodes[0])
+        selected_nodes.clear()
         t1.text = 'Edge ctvalue: \b{%1.2f HU}' % ct
         t2.text = 'Edge cost: \b{%1.7f }' % c
         t3.text = 'Edge length: \b{%1.2f mm}' % l
@@ -230,7 +233,7 @@ model = sd._nodes3
 
 # Build struct
 s2 = vv.ssdf.new()
-# We do not need origin and croprange, but keep them for reference
+# We do not need croprange, but keep for reference
 s2.sampling = s.sampling
 s2.origin = s.origin
 s2.stenttype = s.stenttype
@@ -241,6 +244,7 @@ for key in dir(s):
             s2['meta'+suffix] = s['meta'+suffix]
 s2.what = what
 s2.params = p
+s2.stentType = stentType
 # Store model
 s2.model = model.pack()
 #s2.mesh = ssdf.new()
@@ -253,7 +257,7 @@ ssdf.save(os.path.join(basedir, ptcode, filename), s2)
 ## Make model dynamic (and store/overwrite to disk)
 
 import pirt
-from stentseg.motion.dynamic import incorporate_motion 
+from stentseg.motion.dynamic import incorporate_motion_nodes, incorporate_motion_edges  
 
 # Load deforms
 s = loadvol(basedir, ptcode, ctcode, cropname, 'deforms')
@@ -265,7 +269,8 @@ s = loadmodel(basedir, ptcode, ctcode, cropname)
 model = s.model
 
 # Combine ...
-incorporate_motion(model, deforms, s.origin)
+incorporate_motion_nodes(model, deforms, s.origin)
+incorporate_motion_edges(model, deforms, s.origin)
 
 # Save back
 filename = '%s_%s_%s_%s.ssdf' % (ptcode, ctcode, cropname, 'model')
