@@ -19,7 +19,7 @@ basedir = select_dir(os.getenv('LSPEAS_BASEDIR', ''),
                      r'C:\Users\Maaike\Documents\UT MA3\LSPEAS_ssdf',)
 
 # Select dataset to register
-ptcode = 'LSPEAS_003'
+ptcode = 'LSPEAS_002'
 ctcode = '1month'
 cropname = 'stent'
 
@@ -46,7 +46,7 @@ reg.params.grid_sampling_factor = 0.5
 reg.register(verbose=1)
 
 t1 = time.time()
-print('Registration completed, which took %1.2f s.' % (t1-t0))
+print('Registration completed, which took %1.2f min.' % ((t1-t0)/60))
 
 # todo: in visualization, we need to multiply with -1, do we really have backward transforms?
 
