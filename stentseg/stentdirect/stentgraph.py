@@ -452,7 +452,7 @@ def create_mesh(graph, radius=1.0, fullPaths=True):
         return None
 
 
-def _detect_corners(path, th=3, smoothFactor=1.0, angTh=45):
+def _detect_corners(path, th=3, smoothFactor=3.0, angTh=45):
     """ detectCorners(path, th=5, smoothFactor=3, angTh=45)
     Return the indices on the given path were corners are detected.
     """
