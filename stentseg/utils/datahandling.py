@@ -40,11 +40,11 @@ def loadvol(basedir, ptcode, ctcode, cropname, what='phases'):
     return s
 
 
-def loadmodel(basedir, ptcode, ctcode, cropname):
+def loadmodel(basedir, ptcode, ctcode, cropname, modelname='modelavgreg'):
     """ Load stent model. An ssdf struct is returned.
     """
     # Load
-    fname = '%s_%s_%s_%s.ssdf' % (ptcode, ctcode, cropname, 'model')
+    fname = '%s_%s_%s_%s.ssdf' % (ptcode, ctcode, cropname, modelname)
     s = ssdf.load(os.path.join(basedir, ptcode, fname))
     # Turn into graph model
     from stentseg.stentdirect import stentgraph

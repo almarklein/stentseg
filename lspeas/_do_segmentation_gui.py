@@ -1,7 +1,7 @@
 """ Script to do the segmentation and store the result.
 A Graphical User Interface allows to restore and remove edges
-Do not run file but execute cells
 
+Do not run file but execute cells (overwrites!)
 """
 
 import os
@@ -20,10 +20,10 @@ basedir = select_dir(os.getenv('LSPEAS_BASEDIR', ''),
                      r'C:\Users\Maaike\Documents\UT MA3\LSPEAS_ssdf',)
 
 # Select dataset to register
-ptcode = 'LSPEAS_001'
+ptcode = 'LSPEAS_003'
 ctcode = 'discharge'
 cropname = 'ring'
-what = 'avg3090'
+what = 'avgreg'
 
 
 ## Perform segmentation
@@ -37,16 +37,16 @@ stentType = 'anaconda'  # 'anacondaRing' runs stentgraph_anacondaRing.prune_redu
 popNodes = False  # False when using GUI: pop, add corner nodes and smooth after
 
 p = getDefaultParams(stentType)
-p.seed_threshold = 1000                 # step 1
-p.mcp_speedFactor = 190                 # step 2, speed image (delta), costToCtValue
+p.seed_threshold = 1500                 # step 1
+p.mcp_speedFactor = 170                 # step 2, speed image (delta), costToCtValue
 p.mcp_maxCoverageFronts = 0.003         # step 2, base.py; replaces mcp_evolutionThreshold
 p.graph_weakThreshold = 1000            # step 3, stentgraph.prune_very_weak
 p.graph_expectedNumberOfEdges = 3       # step 3, stentgraph.prune_weak
 p.graph_trimLength =  0                 # step 3, stentgraph.prune_tails
 p.graph_minimumClusterSize = 10         # step 3, stentgraph.prune_clusters
-p.graph_strongThreshold = 3900          # step 3, stentgraph.prune_weak and stentgraph.prune_redundant
-#p.graph_min_strutlength = 5            # step 3, stentgraph.prune_weak and stentgraph.prune_redundant
-#p.graph_max_strutlength = 10            # step 3, stentgraph.prune_weak and stentgraph.prune_redundant
+p.graph_strongThreshold = 4600          # step 3, stentgraph.prune_weak and stentgraph.prune_redundant
+# p.graph_min_strutlength = 4            # step 3, stentgraph.prune_weak and stentgraph.prune_redundant
+# p.graph_max_strutlength = 10            # step 3, stentgraph.prune_weak and stentgraph.prune_redundant
 # todo: write function to estimate maxCoverageFronts
 
 # Instantiate stentdirect segmenter object
@@ -61,22 +61,24 @@ sd.Step3(stentType, popNodes)
 
 fig = vv.figure(4); vv.clf()
 fig.position = 0, 22, 1366, 706
-
-# Show volume and model as graph
-a1 = vv.subplot(131)
-t = vv.volshow(vol)
-t.clim = 0, 3000
-sd._nodes1.Draw(mc='b')       # draw seeded nodes
+# fig.position = 1528.00, 123.00,  1246.00, 730.00
+viewringcrop = {'azimuth': 105.3965517241379,
+ 'daspect': (1.0, -1.0, -1.0),
+ 'elevation': 31.457725947521887,
+ 'fov': 0.0,
+ 'loc': (98.97817014708237, 103.62329297851174, 111.17764009804003),
+ 'roll': 0.0,
+ 'zoom': 0.025718541865111917}
 
 # Show volume and cleaned up graph
-a2 = vv.subplot(132)
+a2 = vv.subplot(121)
 t = vv.volshow(vol)
 t.clim = 0, 3000
 sd._nodes2.Draw(mc='b', lc='g') # draw seeded and MCP connected nodes
 vv.xlabel('x (mm)');vv.ylabel('y (mm)');vv.zlabel('z (mm)')
 
 # Show the mesh
-a3 = vv.subplot(133)
+a3 = vv.subplot(122)
 a3.daspect = 1,-1,-1
 t = vv.volshow(vol)
 t.clim = 0, 3000
@@ -91,7 +93,7 @@ from stentseg.stentdirect.stentgraph_anacondaRing import _edge_length
 #Add clickable nodes
 node_points = []
 for i, node in enumerate(sd._nodes3.nodes()):
-    node_point = vv.solidSphere(translation = (node), scaling = (0.6,0.6,0.6))
+    node_point = vv.solidSphere(translation = (node), scaling = (0.4,0.4,0.4))
     node_point.faceColor = 'b'
     node_point.visible = False
     node_point.node = node
@@ -178,10 +180,10 @@ def on_key(event):
         a3.SetView(view)
     elif event.key == vv.KEY_ESCAPE:
         # ESCAPE will finish model
-        nodes = sd._nodes3
-        stentgraph.pop_nodes(nodes)
-        stentgraph.add_corner_nodes(nodes)
-        stentgraph.smooth_paths(nodes)
+        stentgraph.prune_clusters(sd._nodes3, 3) #remove residual nodes
+        stentgraph.pop_nodes(sd._nodes3)
+        stentgraph.add_corner_nodes(sd._nodes3)
+        stentgraph.smooth_paths(sd._nodes3)
         # Create mesh and visualize
         view = a3.GetView()
         bm = create_mesh(sd._nodes3, 0.6)
@@ -214,17 +216,17 @@ for node_point in node_points:
 
 
 # Use same camera
-a1.camera = a2.camera = a3.camera
+a2.camera = a3.camera
 
-viewringcrop = {'azimuth': 103.99999999999996,
- 'daspect': (1.0, -1.0, -1.0),
- 'elevation': 38.39650145772596,
- 'fov': 0.0,
- 'loc': (133.65612191490567, 178.8566574696272, 67.83158841706212),
- 'roll': 0.0,
- 'zoom': 0.025718541865111865}
-a1.SetView(viewringcrop)
+switch = False
+a2.axis.visible = switch
+a3.axis.visible = switch
 
+a3.SetView(viewringcrop)
+
+switch = False
+a2.axis.visible = switch
+a3.axis.visible = switch
 
 ## Store segmentation to disk
 
@@ -250,7 +252,7 @@ s2.model = model.pack()
 #s2.mesh = ssdf.new()
 
 # Save
-filename = '%s_%s_%s_%s.ssdf' % (ptcode, ctcode, cropname, 'model')
+filename = '%s_%s_%s_%s.ssdf' % (ptcode, ctcode, cropname, 'model'+what)
 ssdf.save(os.path.join(basedir, ptcode, filename), s2)
 
 
@@ -265,7 +267,7 @@ deforms = [s['deform%i'%(i*10)] for i in range(10)]
 deforms = [pirt.DeformationFieldBackward(*fields) for fields in deforms]
 
 # Load model
-s = loadmodel(basedir, ptcode, ctcode, cropname)
+s = loadmodel(basedir, ptcode, ctcode, cropname, 'model'+what)
 model = s.model
 
 # Combine ...
@@ -273,6 +275,6 @@ incorporate_motion_nodes(model, deforms, s.origin)
 incorporate_motion_edges(model, deforms, s.origin)
 
 # Save back
-filename = '%s_%s_%s_%s.ssdf' % (ptcode, ctcode, cropname, 'model')
+filename = '%s_%s_%s_%s.ssdf' % (ptcode, ctcode, cropname, 'model'+what)
 s.model = model.pack()
 ssdf.save(os.path.join(basedir, ptcode, filename), s)
