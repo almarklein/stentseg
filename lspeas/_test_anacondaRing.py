@@ -121,7 +121,7 @@ class StentDirect_test(StentDirect):
 
 # Get parameters. Different scanners/protocols/stent material might need
 # different parameters. 
-stentType = 'anacondaRing'
+stentType = 'anaconda'
 
 p = getDefaultParams(stentType)
 p.seed_threshold = 2300                 # step 1
@@ -169,14 +169,12 @@ a2 = vv.subplot(142)
 t = vv.volshow(vol)
 t.clim = 0, 3000
 sd._nodes1.Draw(mc='b')      # draw seeded nodes
-#sd._nodes2.Draw(mc='b', lc = 'g')    # draw seeded and MCP connected nodes
 
 # Show volume and nodes/edges
 a3 = vv.subplot(143)
 t = vv.volshow(vol)
 t.clim = 0, 3000
 sd._nodes2.Draw(mc='b', lc='g')
-#sd._nodes3.Draw(mc='b', lc='g')
 #new_nodes1.Draw(mc='b', mw = 6)
 
 vv.xlabel('x')
@@ -190,17 +188,16 @@ t = vv.volshow(vol)
 #t.renderStyle = 'ray'
 t.clim = 0, 3000
 #t = vv.volshow2(vol)  # to see some vessel anatomy
-#t.clim = -750, 1000
+#t.clim = -250, 250 # or -750, 500
 #vv.ColormapEditor(vv.gcf())
-sd._nodes3.Draw(mc='b', lc='g')
-#m = vv.mesh(bm)
-#m.faceColor = 'g'
+m = vv.mesh(bm)
+m.faceColor = 'g'
 
 vv.xlabel('x')
 vv.ylabel('y')
 vv.zlabel('z')
 
-# # Use same camera
+# Use same camera
 a1.camera = a2.camera = a3.camera = a4.camera
 
 # get view through: a1.GetView()
@@ -214,7 +211,7 @@ viewringcrop = {'azimuth': 103.35642000428354,
  'loc': (179.3373928028404, 98.45327580567643, 60.80823406568838),
  'roll': 0.0,
  'zoom': 0.025718541865111827}
-a1.SetView(viewringcrop)
+a3.SetView(viewringcrop)
 
 #viewring = {'fov': 0.0, 'elevation': 17.01166180758017, 'zoom': 0.019322721160865336, 'roll': 0.0, 'daspect': (1.0, -1.0, -1.0), 'loc': (85.07098073292472, 61.048256073622596, 60.822988663458425), 'azimuth': 95.31034482758619}
 #a1.SetView(viewring)

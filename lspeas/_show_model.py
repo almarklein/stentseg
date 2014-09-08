@@ -18,10 +18,11 @@ basedir = select_dir(os.getenv('LSPEAS_BASEDIR', ''),
                      r'C:\Users\Maaike\Documents\UT MA3\LSPEAS_ssdf',)
 
 # Select dataset to register
-ptcode = 'LSPEAS_003'
-#ctcode, nr = 'discharge', 1
-ctcode, nr = '1month', 2
+ptcode = 'LSPEAS_002'
+ctcode, nr = 'discharge', 1
+# ctcode, nr = '1month', 2
 cropname = 'ring'
+modelname = 'modelavgreg'
 
 # Load deformations
 s = loadvol(basedir, ptcode, ctcode, cropname, 'deforms')
@@ -30,22 +31,17 @@ deformsMesh = [pirt.DeformationFieldBackward(*fields) for fields in deforms]
 deforms = [[field[::2,::2,::2] for field in fields] for fields in deforms]
 
 # Load the stent model and mesh
-s = loadmodel(basedir, ptcode, ctcode, cropname)
+s = loadmodel(basedir, ptcode, ctcode, cropname, modelname)
 model = s.model
-#modelmesh = create_mesh(model, 0.9)  # Param is thickness
+# modelmesh = create_mesh(model, 0.9)  # Param is thickness
 modelmesh = create_mesh_with_deforms(model, deformsMesh, s.origin, radius=0.9, fullPaths=True)
 
-
-# todo: the deforms are stored in backward mapping (I think)
-# so we need to transform them to forward here.
-
-
 # Load static CT image to add as reference
-s = loadvol(basedir, ptcode, ctcode, cropname, 'avgreg')
+s = loadvol(basedir, ptcode, ctcode, 'stent', 'avgreg')
 vol = s.vol
 
 # Remove stent from vol for visualization
-#vol = remove_stent_from_volume(vol, model, stripSize=4)
+# vol = remove_stent_from_volume(vol, model, stripSize=4)
 
 # todo: also create a way to show static ring thinner/transparent as reference 
 # vol2 = np.copy(vol)
@@ -55,26 +51,29 @@ vol = s.vol
 # mask = vol2
 # vol = reconstruction(seed, mask, method='erosion')
 
+# todo: the deforms are stored in backward mapping (I think)
+# so we need to transform them to forward here.
+
 # Start vis
 f = vv.figure(nr); vv.clf()
 f.position = 0, 22, 1366, 706
 a = vv.gca()
 a.axis.axisColor = 1,1,1
-#a.axis.visible = False
+a.axis.visible = False
 a.bgcolor = 0,0,0
 a.daspect = 1, -1, -1
-t = vv.volshow(vol, clim=(0, 3000), renderStyle='mip')
+t = vv.volshow(vol, clim=(0, 4000), renderStyle='mip')
 #vv.ColormapEditor(vv.gcf())
 #t.colormap = (0,0,0,0), (1,1,1,1) # 0 , 1500 clim
 vv.xlabel('x (mm)');vv.ylabel('y (mm)');vv.zlabel('z (mm)')
 vv.title('Model for LSPEAS %s  -  %s' % (ptcode[7:], ctcode))
-viewringcrop = {'azimuth': 176.57303370786514,
+viewringcrop = {'azimuth': -166.8860353130016,
  'daspect': (1.0, -1.0, -1.0),
- 'elevation': 17.162162162162165,
+ 'elevation': 8.783783783783782,
  'fov': 0.0,
- 'loc': (137.1303669204193, 183.39814289598684, 67.48449361333874),
+ 'loc': (113.99322808141005, 161.58640433480713, 73.92662200285992),
  'roll': 0.0,
- 'zoom': 0.010668186435651074}
+ 'zoom': 0.01066818643565108}
 
 node_points = []
 for i, node in enumerate(model.nodes()):
@@ -163,16 +162,16 @@ for node_point in node_points:
 # In stentseg.motion.vis are a few functions, but they need to be adjusted
 # to work with the new stent model.
 
-## Use same camera when 2 models are running
-
-vv.figure(1); a1 = vv.gca(); vv.figure(2); a2= vv.gca(); a1.camera = a2.camera
-
 ## Turn on/off axis
+vv.figure(1); a1 = vv.gca(); vv.figure(2); a2= vv.gca()
 
 switch = False
 
 a1.axis.visible = switch
 a2.axis.visible = switch
+
+## Use same camera when 2 models are running
+a1.camera = a2.camera
 
 ## Turn on/off moving mesh
 

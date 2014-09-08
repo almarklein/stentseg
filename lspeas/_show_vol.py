@@ -12,8 +12,9 @@ basedir = select_dir(os.getenv('LSPEAS_BASEDIR', ''),
 
 # Select dataset to register
 ptcode = 'LSPEAS_002'
-ctcode = 'pre'
-cropname = 'ring'
+ctcode, nr = 'discharge', 1
+#ctcode, nr = '1month', 2
+cropname = 'stent'
 
 ## Show 3D movie, by alternating the 10 volumes
 
@@ -48,8 +49,12 @@ deforms = [s['deform%i'%(i*10)] for i in range(10)]
 deforms = [[-field[::2,::2,::2] for field in fields] for fields in deforms]
 
 # Start vis
-f = vv.figure(1); vv.clf()
+f = vv.figure(nr); vv.clf()
+f.position = 0, 22, 1366, 706
 a = vv.gca()
+a.axis.axisColor = 1,1,1
+a.axis.visible = False
+a.bgcolor = 0,0,0
 a.daspect = 1, -1, -1
 
 # Setup motion container
@@ -61,8 +66,19 @@ dt.SetDeforms(*deforms)
 
 # Set limits and play!
 a.SetLimits()
-dt.MotionPlay(5, 0.2)  # (10, 0.2) = each 10 ms do a step of 20%
+dt.MotionPlay(10, 0.4)  # (10, 0.2) = each 10 ms do a step of 20% ;(0.1,0.2)
                         # With 85 bpm every beat 706 ms; 141 ms per 20%  
 
 dt.motionSplineType = 'B-spline'
 dt.motionAmplitude = 2.0
+
+## Turn on/off axis
+vv.figure(1); a1 = vv.gca(); vv.figure(2); a2= vv.gca()
+
+switch = False
+
+a1.axis.visible = switch
+a2.axis.visible = switch
+
+## Use same camera when 2 vols are running
+a1.camera = a2.camera
