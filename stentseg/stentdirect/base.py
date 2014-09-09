@@ -188,7 +188,7 @@ class StentDirect:
         return nodes
     
     
-    def Step3(self, stentType, popNodes):
+    def Step3(self, stentType=None, popNodes=True):
         """ Step3()
         Process graph to remove unwanted edges.
         """
@@ -241,8 +241,11 @@ class StentDirect:
                 stentgraph.prune_clusters(nodes, params.graph_minimumClusterSize)
                 stentgraph.prune_tails(nodes, params.graph_trimLength)
         if popNodes == True:
+            # todo: perhaps this needs to be inside the above loop?
             stentgraph.pop_nodes(nodes)
             stentgraph.add_corner_nodes(nodes)
+            stentgraph.add_nodes_at_crossings(nodes)
+            stentgraph.pop_nodes(nodes)  # because adding nodes can leave other redundant
             stentgraph.smooth_paths(nodes)
         t0 = time.time()-t_start
         tmp = "Reduced to %i edges, "

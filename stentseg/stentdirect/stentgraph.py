@@ -117,6 +117,17 @@ class StentGraph(nx.Graph):
 
 
 
+def check_path_integrity(graph):
+    """ Verify that each path is represented in the right order.
+    """
+    for n1, n2 in graph.edges():
+        path = graph.edge[n1][n2]['path']
+        if n1 > n2:
+            n1, n2 = n2, n1
+        assert np.isclose(path[0], n1).all()
+        assert np.isclose(path[-1], n2).all()
+    
+
 def prune_very_weak(graph, ctvalue):
     """ Remove very weak edges
     
@@ -533,7 +544,9 @@ def _add_corner_to_edge(graph, n1, n2, **kwargs):
         node1 = n1
         for i in range(len(paths)):
             node2 = node2s[i]
-            graph.add_edge(node1, node2, path=paths[i],
+            subpath = paths[i]
+            if node1 > node2:  subpath = PointSet(np.flipud(subpath))
+            graph.add_edge(node1, node2, path=subpath,
                            cost=edge['cost'], ctvalue=edge['ctvalue'])
             node1 = node2
         
@@ -559,6 +572,125 @@ def add_corner_nodes(graph):
     """
     for n1, n2 in graph.edges():
         _add_corner_to_edge(graph, n1, n2)
+
+
+def _get_pairs_of_neighbours(graph, node):
+    """ For a given node, return all possible pairs of neighbours.
+    Returns a list of tuple pairs. Each tuple has the smallest element 
+    first. The list is also sorted.
+    """
+    neighbours = list(graph.edge[node].keys())
+    
+    pairs = []
+    
+    n = len(neighbours)
+    for i1 in range(0, n):
+        for i2 in range(i1+1, n):
+            n1, n2 = neighbours[i1], neighbours[i2]
+            if n1 > n2:
+                n1, n2 = n2, n1
+            pairs.append((n1, n2))
+    
+    pairs.sort()
+    return pairs
+
+
+def add_nodes_at_crossings(graph):
+    """ Reposition crossings to discart duplicate paths; i.e. place a node
+    at the position where two commin paths diverge.
+    """
+    # Check integrity of the graph
+    check_path_integrity(graph)
+    
+    # Keep processing the whole graph until there are no more changes
+    graph_changed = True
+    while graph_changed:
+        graph_changed = False
+        
+        # For each node ...
+        for node in graph.nodes():
+            
+            # Process this node until there are no more changes
+            graph_changed_now = True
+            while graph_changed_now:
+                graph_changed_now = _add_nodes_at_crossings_for_node(graph, node)
+                graph_changed = graph_changed or graph_changed_now
+
+
+def _add_nodes_at_crossings_for_node(graph, node):
+    
+    # Get all neightbour pars for the current node
+    neighbour_pairs = _get_pairs_of_neighbours(graph, node)
+    
+    # Check the path of all pairs ...
+    for node1, node2 in neighbour_pairs:
+        
+        # Get edge and path arrays
+        edge1 = graph[node][node1]
+        edge2 = graph[node][node2]
+        path1, path2 = edge1['path'], edge2['path']
+        
+        # Flip paths if necessary so that path[0] == node for both paths
+        if node > node1:  # if not np.isclose(path1[0], node).all()
+            path1 = np.flipud(path1)
+        if node > node2:  # if not np.isclose(path2[0], node).all()
+            path2 = np.flipud(path2)
+        
+        # Walk the paths until they diverge
+        maxwalk = min(path1.shape[0], path2.shape[0])
+        pathbreak = 0
+        for i in range(maxwalk):
+            if not np.allclose(path1[i], path2[i]):
+                pathbreak = i - 1
+                break
+        else:
+            pathbreak = maxwalk
+        
+        if pathbreak == maxwalk:
+            # One path is completely redundant: strip that path
+            
+            # Swap node1/node2 so that node1 has the shortest path
+            if path1.shape[0] > path2.shape[0]:
+                node1, node2 = node2, node1
+                edge1, edge2 = edge2, edge1
+                path1, path2 = path2, path1
+            # Trim path2
+            path2_ = path2[pathbreak-1:]
+            if node1 > node2:  path2_= np.flipud(path2_)
+            # Now remove edge node-node2 and replace with node1, node2
+            graph.remove_edge(node, node2)
+            graph.add_edge(node1, node2, path=PointSet(path2_), 
+                        cost=edge2['cost'], ctvalue=edge2['ctvalue'])
+            return True
+        
+        elif pathbreak > 0:
+            # A part of the path was the same: insert new node
+            
+            # Define new node and paths
+            new_node = tuple(path1[pathbreak].flat)
+            commonpath = path1[:pathbreak+1]
+            path1_ = path1[pathbreak:]
+            path2_ = path2[pathbreak:]
+            # Swap paths?
+            if node > new_node:  commonpath = np.flipud(commonpath)
+            if new_node > node1:  path1_= np.flipud(path1_)
+            if new_node > node2:  path2_ = np.flipud(path2_)
+            # Remove old edges
+            graph.remove_edge(node, node1)
+            graph.remove_edge(node, node2)
+            # Add new edges
+            graph.add_node(new_node, corner=True)  # mark the node
+            graph.add_edge(node, new_node, path=PointSet(commonpath), 
+                    cost=min(edge1['cost'], edge2['cost']), 
+                    ctvalue=max(edge1['ctvalue'], edge2['ctvalue']),)
+            graph.add_edge(new_node, node1, path=PointSet(path1_), 
+                        cost=edge1['cost'], ctvalue=edge1['ctvalue'])
+            graph.add_edge( new_node, node2, path=PointSet(path2_), 
+                        cost=edge2['cost'], ctvalue=edge2['ctvalue'])
+            return True
+    
+    # No changes (note that this is beyond the loop
+    return False
 
 
 def smooth_paths(graph, ntimes=1):
@@ -1102,11 +1234,209 @@ class TestStentGraph:
             assert graph.number_of_edges() == 4
             for n in [n1, n2, n3, n4, n5]:
                 assert n in graph.nodes()
-            assert np.all(graph.edge[n1][n2]['path'] == path[0:6])
-            assert np.all(graph.edge[n2][n3]['path'] == path[5:11])
-            assert np.all(graph.edge[n3][n4]['path'] == path[10:16])
-            assert np.all(graph.edge[n4][n5]['path'] == path[15:20])
+            path12, path23, path34, path45 = path[0:6], path[5:11], path[10:16], path[15:20]
+            if n1 > n2: path12 = np.flipud(path12)
+            if n2 > n3: path23 = np.flipud(path23)
+            if n3 > n4: path34 = np.flipud(path34)
+            if n4 > n5: path45 = np.flipud(path45)
+            assert np.all(graph.edge[n1][n2]['path'] == path12)
+            assert np.all(graph.edge[n2][n3]['path'] == path23)
+            assert np.all(graph.edge[n3][n4]['path'] == path34)
+            assert np.all(graph.edge[n4][n5]['path'] == path45)
+    
+    
+    def test_pairs(self):
+    
+        graph = nx.Graph()
+        graph.add_edge(1, 2)
+        graph.add_edge(1, 3)
+        graph.add_edge(1, 4)
+        graph.add_edge(1, 5)
+        #
+        graph.add_edge(2, 6)
+        graph.add_edge(2, 7)
+        #
+        graph.add_edge(3, 8)
+        
+        pairs1 = _get_pairs_of_neighbours(graph, 1)
+        assert pairs1 == [(2, 3), (2, 4), (2, 5), (3, 4), (3, 5), (4, 5)]
+        
+        pairs2 = _get_pairs_of_neighbours(graph, 2)
+        assert pairs2 == [(1, 6), (1, 7), (6, 7)]
+        
+        pairs3 = _get_pairs_of_neighbours(graph, 3)
+        assert pairs3 == [(1, 8)]
+        
+        pairs4 = _get_pairs_of_neighbours(graph, 4)
+        assert pairs4 == []
+        
 
+
+    def test_add_nodes_at_crossings1(self):
+        # N4---N1=====-------N2
+        #             |
+        #             N3
+        path1 = PointSet(3)  # path from n1 to n2
+        path1.append(10, 2, 0)
+        path1.append(10, 3, 0)
+        path1.append(10, 4, 0)
+        path1.append(10, 5, 0)
+        #
+        path3 = path1.copy()  # path to n3
+        #
+        path1.append(10, 6, 0)
+        path1.append(10, 7, 0)
+        path1.append(10, 8, 0)
+        #
+        path3.append(11, 5, 0)
+        path3.append(12, 5, 0)
+        path3.append(13, 5, 0)
+        #
+        path4 = PointSet(3)  # path to n4
+        path4.append(10, 0, 0)
+        path4.append(10, 1, 0)
+        path4.append(10, 2, 0)
+        
+        graph = nx.Graph()
+        n1 = tuple(path1[0].flat)
+        n2 = tuple(path1[-1].flat)
+        n3 = tuple(path3[-1].flat)
+        n4 = tuple(path4[0].flat)
+        graph.add_edge(n1, n2, path=path1, cost=3, ctvalue=3)
+        graph.add_edge(n1, n3, path=path3, cost=3, ctvalue=3)
+        graph.add_edge(n1, n4, path=path4, cost=3, ctvalue=3)
+        
+        # Pre-check
+        assert len(graph.nodes()) == 4
+        for n in (n1, n2, n3, n4):
+            assert n in graph.nodes()
+        # Deal with crossongs
+        add_nodes_at_crossings(graph)
+        # Check result
+        check_path_integrity(graph)
+        assert len(graph.nodes()) == 5
+        added_node = 10, 5, 0
+        for n in (n1, n2, n3, n4, added_node):
+            assert n in graph.nodes()
+    
+    
+    def test_add_nodes_at_crossings2(self):
+        
+        # N4---N1=====-------====N2
+        #             |     |
+        #             N3    N5
+        path1 = PointSet(3)  # path from n1 to n2
+        path1.append(10, 2, 0)
+        path1.append(10, 3, 0)
+        path1.append(10, 4, 0)
+        path1.append(10, 5, 0)
+        #
+        path3 = path1.copy()  # path to n3
+        #
+        path1.append(10, 6, 0)
+        path1.append(10, 7, 0)
+        path1.append(10, 8, 0)
+        path1.append(10, 9, 0)
+        #
+        path3.append(11, 5, 0)
+        path3.append(12, 5, 0)
+        path3.append(13, 5, 0)
+        #
+        path4 = PointSet(3)  # path to n4
+        path4.append(10, 0, 0)
+        path4.append(10, 1, 0)
+        path4.append(10, 2, 0)
+        # 
+        path5 = PointSet(3)  # path from n2 to n5 (note the order)
+        path5.append(10, 9, 0)  # dup path1
+        path5.append(10, 8, 0)  # dup path1
+        path5.append(10, 7, 0)  # dup path1
+        path5.append(11, 7, 0)
+        path5.append(12, 7, 0)
+        path5.append(13, 7, 0)
+        
+        graph = nx.Graph()
+        n1 = tuple(path1[0].flat)
+        n2 = tuple(path1[-1].flat)
+        n3 = tuple(path3[-1].flat)
+        n4 = tuple(path4[0].flat)
+        n5 = tuple(path5[-1].flat)
+        graph.add_edge(n1, n2, path=path1, cost=3, ctvalue=3)
+        graph.add_edge(n1, n3, path=path3, cost=3, ctvalue=3)
+        graph.add_edge(n1, n4, path=path4, cost=3, ctvalue=3)
+        graph.add_edge(n5, n2, path=path5, cost=3, ctvalue=3)
+        
+        # Pre-check
+        assert len(graph.nodes()) == 5
+        for n in (n1, n2, n3, n4, n5):
+            assert n in graph.nodes()
+        # Deal with crossongs
+        add_nodes_at_crossings(graph)
+        # Check result
+        check_path_integrity(graph)
+        assert len(graph.nodes()) == 7
+        added_node1 = 10, 5, 0
+        added_node2 = 10, 7, 0
+        for n in (n1, n2, n3, n4, n5, added_node1, added_node2):
+            assert n in graph.nodes()
+    
+    
+    def test_add_nodes_at_crossings3(self):
+        # N4---N1>>>>>======-------N2
+        #             |     |
+        #             N3    N5
+        path1 = PointSet(3)  # path from n1 to n2
+        path1.append(10, 2, 0)
+        path1.append(10, 3, 0)
+        path1.append(10, 4, 0)
+        path1.append(10, 5, 0)
+        #
+        path3 = path1.copy()  # path to n3
+        path3.append(11, 5, 0)
+        path3.append(12, 5, 0)
+        path3.append(13, 5, 0)
+        # 
+        path1.append(10, 6, 0)
+        path1.append(10, 7, 0)
+        #
+        path5 = path1.copy()
+        path5.append(11, 7, 0)
+        path5.append(12, 7, 0)
+        path5.append(13, 7, 0)
+        #
+        path1.append(10, 8, 0)
+        path1.append(10, 9, 0)
+        #
+        path4 = PointSet(3)  # path to n4
+        path4.append(10, 0, 0)
+        path4.append(10, 1, 0)
+        path4.append(10, 2, 0)
+        
+        graph = nx.Graph()
+        n1 = tuple(path1[0].flat)
+        n2 = tuple(path1[-1].flat)
+        n3 = tuple(path3[-1].flat)
+        n4 = tuple(path4[0].flat)
+        n5 = tuple(path5[-1].flat)
+        graph.add_edge(n1, n2, path=path1, cost=3, ctvalue=3)
+        graph.add_edge(n1, n3, path=path3, cost=3, ctvalue=3)
+        graph.add_edge(n1, n4, path=path4, cost=3, ctvalue=3)
+        graph.add_edge(n1, n5, path=path5, cost=3, ctvalue=3)
+        
+        # Pre-check
+        assert len(graph.nodes()) == 5
+        for n in (n1, n2, n3, n4, n5):
+            assert n in graph.nodes()
+        # Deal with crossongs
+        add_nodes_at_crossings(graph)
+        # Check result
+        check_path_integrity(graph)
+        assert len(graph.nodes()) == 7
+        added_node1 = 10, 5, 0
+        added_node2 = 10, 7, 0
+        for n in (n1, n2, n3, n4, n5, added_node1, added_node2):
+            assert n in graph.nodes()
+    
 
 if __name__ == "__main__":
     
