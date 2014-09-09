@@ -11,7 +11,7 @@ import numpy as np
 from stentseg.utils import PointSet
 import pirt
 from stentseg.stentdirect import stentgraph
-
+from visvis import Pointset # for meshes
 
 # Select the ssdf basedir
 basedir = select_dir(os.getenv('LSPEAS_BASEDIR', ''),
@@ -96,6 +96,7 @@ t6.visible = False
 
 # Initialize output variable to store pulsatility analysis
 storeOutput = list()
+outputmaxP = list()
 
 def on_key(event): 
     if event.key == vv.KEY_DOWN:
@@ -127,7 +128,7 @@ def on_key(event):
             n1Deforms = model.node[selectn1]['deforms']
             n2Deforms = model.node[selectn2]['deforms']
             # get pulsatility
-            output = point_to_point_pulsatility(model, selectn1, 
+            output = point_to_point_pulsatility(selectn1, 
                                 n1Deforms, selectn2, n2Deforms)
             # update labels
             t1.text = '\b{Node pair}: %i - %i' % (nindex[0], nindex[1])
@@ -172,7 +173,7 @@ def on_key(event):
             # get deforms for node
             n3Deforms = model.node[n3.node]['deforms']
             # get pulsatility
-            output2 = point_to_point_pulsatility(model, midpoint1, 
+            output2 = point_to_point_pulsatility(midpoint1, 
                                 midpoint1Deforms, n3.node, n3Deforms)
             # visualize midpoint
             view = a.GetView()
@@ -201,8 +202,8 @@ def on_key(event):
                 storeOutput.append(output2)
         # Midpoint_to_midpoint analysis
         if len(selected_nodes) == 4:
-            # get midpoints for the two edges
             outputs = list()
+            # get midpoints for the two edges
             # get nodepairs from order selected
             for i in (0,2):
                 n1 = selected_nodes[i].node
@@ -228,9 +229,11 @@ def on_key(event):
             midpoint2IndexPath = outputs[1][1]
             midpoint2 = outputs[1][2]
             midpoint2Deforms = outputs[1][3]
-            # get pulsatility
-            output2 = point_to_point_pulsatility(model, midpoint1, 
+            # get pulsatility midp to midp
+            output2 = point_to_point_pulsatility(midpoint1, 
                                 midpoint1Deforms, midpoint2, midpoint2Deforms)
+            # get max pulsatility between points on the paths
+            outputmaxP.append(edge_to_edge_max_pulsatility(model, nodepair1, nodepair2))
             # update labels
             t1.text = '\b{Node pairs}: (%i %i) - (%i %i)' % (nodepair1[0], nodepair1[1],
                                                             nodepair2[0], nodepair2[1])
@@ -246,7 +249,7 @@ def on_key(event):
             t5.visible = True
             t6.visible = True
             # Store output including nodepairs of the midpoints
-            output2.insert(0, nodepair1) # at the start
+            output2.insert(0, nodepair1) # indices at the start
             output2.insert(1, nodepair2)
             output2[8].insert(0, [midpoint1IndexPath])
             output2[9].insert(0, [midpoint2IndexPath])
@@ -257,6 +260,52 @@ def on_key(event):
             node.faceColor = 'g'  # make green when analyzed
         selected_nodes.clear()
     if event.key == vv.KEY_ESCAPE:
+        # get max pulsatility for model
+        pulsatility = list()
+        for outcome in outputmaxP:
+            pulsatility.append(outcome[7][0]) # [7][0] point_to_pointP
+        maxpulsatilityedge_to_edge = max(pulsatility)
+        maxPIndexedge_to_edge = pulsatility.index(maxpulsatilityedge_to_edge)
+        # max pulsatility from node and midpoint analysis
+        pulsatility2 = list()
+        for outcome in storeOutput:
+            pulsatility2.append(outcome[7][0])
+        maxpulsatilitypoint_to_point = max(pulsatility2)
+        maxPIndexpoint_to_point = pulsatility2.index(maxpulsatilitypoint_to_point)
+        # get max pulsatility overall
+        if maxpulsatilityedge_to_edge > maxpulsatilitypoint_to_point:
+            pathpoint1 = outputmaxP[maxPIndexedge_to_edge][8][1] # coordinates of point1
+            pathpoint2 = outputmaxP[maxPIndexedge_to_edge][9][1] # coordinates of point2
+            storeOutput.append(outputmaxP[maxPIndexedge_to_edge])
+        else:
+            pathpoint1 = storeOutput[maxPIndexpoint_to_point][8][1] # coordinates of point1
+            pathpoint2 = storeOutput[maxPIndexpoint_to_point][9][1] # coordinates of point2
+            storeOutput[maxPIndexpoint_to_point].append('max pulsatility (point_to_point) in model')
+            storeOutput.append(storeOutput[maxPIndexpoint_to_point])
+        # update labels for max pulsatility
+#         t1.text = '\b{Node pairs}: (%i %i) - (%i %i)' % (nodepair1[0], nodepair1[1],
+#                                                         nodepair2[0], nodepair2[1])
+#         t2.text = '[Max Pulsatility] Min: %1.2f mm' % output2[0][0]
+#         t3.text = '[Max Pulsatility] Max: %1.2f mm' % output2[4][0]
+#         t4.text = '[Max Pulsatility] Median: %1.2f mm' % output2[2]
+#         t5.text = '[Max Pulsatility] Q1 and Q3: %1.2f | %1.2f mm' % (output2[1], output2[3])
+#         t6.text = '[Max Pulsatility] Pulsatility: %1.2f mm (%1.2f %%)' % (output2[5][0], output2[5][1] )
+#         t1.visible = True
+#         t2.visible = True
+#         t3.visible = True
+#         t4.visible = True
+#         t5.visible = True
+#         t6.visible = True
+#todo: fix update labels
+        # visualize line of max pulsatility in model
+        view = a.GetView()
+        pp = Pointset(np.asarray([pathpoint1, pathpoint2]))  # visvis meshes do not work with PointSet
+        lineP = vv.solidLine(pp, radius = 0.2)
+        lineP.faceColor = 'r'
+        #lineP.eventDoubleClick.Bind(def..) show labels?
+        a.SetView(view)
+        
+        # store to excel
         storeOutputToExcel(storeOutput)
         for node_point in node_points:
             node_point.visible = False # show that store is ready
@@ -281,7 +330,8 @@ def unpick_node(event):
 
 def get_midpoint_deforms_edge(model, n1, n2):
     """ Get midpoint of a given edge
-    Returns output array with index of nodes, midpoint and its deforms
+    Returns output array with index of nodes, index of midpoint on path and 
+    midpoint with its deforms
     """
     # get index of nodes which are in fixed order
     n1index = model.nodes().index(n1)
@@ -303,7 +353,7 @@ def get_midpoint_deforms_edge(model, n1, n2):
     midpointDeforms = model.edge[n1][n2]['pathdeforms'][midpointIndex]
     return [nindex, midpointIndex, midpoint, midpointDeforms]
 
-def point_to_point_pulsatility(model, point1, point1Deforms, 
+def point_to_point_pulsatility(point1, point1Deforms, 
                                      point2, point2Deforms):
     """ Analyze pulsatility peak_to_peak or valley_to_valley between
     2 given points. Point can be a node or a midpoint, found by
@@ -334,7 +384,43 @@ def point_to_point_pulsatility(model, point1, point1Deforms,
     return [point_to_pointMin, point_to_pointQ1, point_to_pointMedian,
            point_to_pointQ3, point_to_pointMax, point_to_pointP, [point1,
            point1Deforms], [point2, point2Deforms], distances]
-    
+
+def edge_to_edge_max_pulsatility(model, nodepair1, nodepair2):
+    """ Find the max pulsatility between all points on edge paths
+    Input: nodepairs (index) of edges to analyze max pulsatility
+    Rationale: get a quick measure of max pulsatility in model, good to visualize
+    """ 
+    # get path
+    edge1 = model.edge[model.nodes()[nodepair1[0]]][model.nodes()[nodepair1[1]]]
+    edge2 = model.edge[model.nodes()[nodepair2[0]]][model.nodes()[nodepair2[1]]]
+    path1 = edge1['path']
+    path2 = edge2['path']
+    # Get puls for every combination of points on both edges
+    out = list()
+    for pointIndex1, point1 in enumerate(path1):
+        # get deforms of pathpoint
+        pathpoint1Deforms = edge1['pathdeforms'][pointIndex1]
+        for pointIndex2, point2 in enumerate(path2):
+            pathpoint2Deforms = edge2['pathdeforms'][pointIndex2]
+            out.append(point_to_point_pulsatility(point1, pathpoint1Deforms, point2, pathpoint2Deforms))
+    out_pulsatility = list()
+    for outcome in out:
+        out_pulsatility.append(outcome[5][0]) # [5][0] point_to_pointP
+    maxpulsatilityIndex = out_pulsatility.index(max(out_pulsatility))
+    maxpulsatility_out = out[maxpulsatilityIndex]
+    # return output for found max pulsatility pathpoints
+    # add nodepair indices and pathpoint indices
+    maxpulsatility_out.insert(0, nodepair1) # indices at the start
+    maxpulsatility_out.insert(1, nodepair2)
+    for pathpoint1Index, pathpoint1 in enumerate(path1):
+        if list(pathpoint1) == list(maxpulsatility_out[8][0]): # [8][0] pathpoint1
+            maxpulsatility_out[8].insert(0, [pathpoint1Index])
+    for pathpoint2Index, pathpoint2 in enumerate(path2):
+        if list(pathpoint2) == list(maxpulsatility_out[9][0]): # [9][0] pathpoint2
+            maxpulsatility_out[9].insert(0, [pathpoint2Index])
+    maxpulsatility_out.append('max pulsatility (edge_to_edge) in model')
+    return maxpulsatility_out
+
 import xlsxwriter
 def storeOutputToExcel(storeOutput):
     """Create file and add a worksheet or overwrite existing
@@ -372,8 +458,11 @@ def storeOutputToExcel(storeOutput):
                 for pointdeforms in variable[2]:
                     worksheet.write_row(rowoffset, 1, pointdeforms)
                     rowoffset += 1
-            else: # write 1D array distances
+            elif j == 10: # write 1D array distances
                 worksheet.write_column(rowstart, 3, variable)
+            elif j == 11: # write comment for max pulsatility
+                worksheet.write_string(rowoffset, 1, variable)
+                #todo: test comment
         rowoffset += 2 # add rowspace for next analysis Output
 
     # Store screenshot of stent
