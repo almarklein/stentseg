@@ -18,8 +18,8 @@ basedir = select_dir(os.getenv('LSPEAS_BASEDIR', ''),
                      r'C:\Users\Maaike\Documents\UT MA3\LSPEAS_ssdf',)
 
 # Select dataset to register
-ptcode = 'LSPEAS_001'
-ctcode = 'discharge'
+ptcode = 'LSPEAS_002'
+ctcode = '1month'
 cropname = 'ring'
 modelname = 'modelavgreg'
 
@@ -149,98 +149,110 @@ def on_key(event):
             output[9].insert(0, [n2index])
             if output not in storeOutput:
                 storeOutput.append(output)
-        # Midpoint_to_midpoint or midpoint_to_node analysis
-        if len(selected_nodes) == 3 or 4:
-            # find the edge(s) selected to analyze
+        # Midpoint_to_node analysis
+        if len(selected_nodes)== 3:
+            # find the edge selected to get midpoint
             selected_nodes2 = selected_nodes.copy()
-            outputs = list()
             for node1 in selected_nodes:
-                selected_nodes2.remove(node1)  # check combination once
+                selected_nodes2.remove(node1) # check combination once and not to self
                 for node2 in selected_nodes2:
                     if model.has_edge(node1.node, node2.node):
                         # get midpoint of edge and its deforms
                         output = get_midpoint_deforms_edge(model, node1.node, node2.node)
-                        midpoint = output[2]
-                        # store for both edges
-                        outputs.append(output)
-                        # visualize midpoint
-                        view = a.GetView()
-                        point = vv.plot(midpoint[0], midpoint[1], midpoint[2], 
-                                        mc = 'm', ms = '.', mw = 8)
-                        a.SetView(view)
-                        break  # edge found, start from first for loop 
-            if len(selected_nodes) == 4:
-                # Get pulsatility midpoint to midpoint
-                # get midpoints and deforms
-                nodepair1 = outputs[0][0]
-                midpoint1IndexPath = outputs[0][1]
-                midpoint1 = outputs[0][2]
-                midpoint1Deforms = outputs[0][3]
-                nodepair2 = outputs[1][0]
-                midpoint2IndexPath = outputs[1][1]
-                midpoint2 = outputs[1][2]
-                midpoint2Deforms = outputs[1][3]
-                # get pulsatility
-                output2 = point_to_point_pulsatility(model, midpoint1, 
-                                    midpoint1Deforms, midpoint2, midpoint2Deforms)
-                # update labels
-                t1.text = '\b{Node pairs}: (%i %i) - (%i %i)' % (nodepair1[0], nodepair1[1],
-                                                                nodepair2[0], nodepair2[1])
-                t2.text = 'Midpoint-to-midpoint Min: %1.2f mm' % output2[0][0]
-                t3.text = 'Midpoint-to-midpoint Max: %1.2f mm' % output2[4][0]
-                t4.text = 'Midpoint-to-midpoint Median: %1.2f mm' % output2[2]
-                t5.text = 'Midpoint-to-midpoint Q1 and Q3: %1.2f | %1.2f mm' % (output2[1], output2[3])
-                t6.text = 'Midpoint-to-midpoint Pulsatility: %1.2f mm (%1.2f %%)' % (output2[5][0], output2[5][1] )
-                t1.visible = True
-                t2.visible = True
-                t3.visible = True
-                t4.visible = True
-                t5.visible = True
-                t6.visible = True
-                # Store output including nodepairs of the midpoints
-                output2.insert(0, nodepair1) # at the start
-                output2.insert(1, nodepair2)
-                output2[8].insert(0, [midpoint1IndexPath])
-                output2[9].insert(0, [midpoint2IndexPath])
-                if output2 not in storeOutput:
-                    storeOutput.append(output2)
-            if len(selected_nodes)== 3:
-                # Get pulsatility from midpoint to node
-                # get index of nodepair and midpoint and its deforms
-                nodepair1 = outputs[0][0]
-                midpoint1IndexPath = outputs[0][1]
-                midpoint1 = outputs[0][2]
-                midpoint1Deforms = outputs[0][3]
-                # get node
-                for node in selected_nodes:
-                    if node.nr not in nodepair1:
-                        n3 = node
-                # get deforms for node
-                n3Deforms = model.node[n3.node]['deforms']
-                # get pulsatility
-                output2 = point_to_point_pulsatility(model, midpoint1, 
-                                    midpoint1Deforms, n3.node, n3Deforms)
-                # update labels
-                t1.text = '\b{Node pairs}: (%i %i) - (%i)' % (nodepair1[0],nodepair1[1],n3.nr)
-                t2.text = 'Midpoint-to-node Min: %1.2f mm' % output2[0][0]
-                t3.text = 'Midpoint-to-node Max: %1.2f mm' % output2[4][0]
-                t4.text = 'Midpoint-to-node Median: %1.2f mm' % output2[2]
-                t5.text = 'Midpoint-to-node Q1 and Q3: %1.2f | %1.2f mm' % (output2[1], output2[3])
-                t6.text = 'Midpoint-to-node Pulsatility: %1.2f mm (%1.2f %%)' % (output2[5][0],output2[5][1] )
-                t1.visible = True
-                t2.visible = True
-                t3.visible = True
-                t4.visible = True
-                t5.visible = True
-                t6.visible = True
-                # Store output including index nodes
-                output2.insert(0, nodepair1) # at the start
-                output2.insert(1, [n3.nr])
-                output2[8].insert(0, [midpoint1IndexPath])
-                output2[9].insert(0, [n3.nr])
-                if output2 not in storeOutput:
-                    storeOutput.append(output2)
-        # visualize analyzed nodes and deselect
+                        break  # edge found, to first for loop
+            # get index of nodepair and midpoint and its deforms
+            nodepair1 = output[0]
+            midpoint1IndexPath = output[1]
+            midpoint1 = output[2]
+            midpoint1Deforms = output[3]
+            # get node
+            for node in selected_nodes:
+                if node.nr not in nodepair1:
+                    n3 = node
+            # get deforms for node
+            n3Deforms = model.node[n3.node]['deforms']
+            # get pulsatility
+            output2 = point_to_point_pulsatility(model, midpoint1, 
+                                midpoint1Deforms, n3.node, n3Deforms)
+            # visualize midpoint
+            view = a.GetView()
+            point = vv.plot(midpoint1[0], midpoint1[1], midpoint1[2], 
+                            mc = 'm', ms = '.', mw = 8)
+            a.SetView(view)
+            # update labels
+            t1.text = '\b{Node pairs}: (%i %i) - (%i)' % (nodepair1[0],nodepair1[1],n3.nr)
+            t2.text = 'Midpoint-to-node Min: %1.2f mm' % output2[0][0]
+            t3.text = 'Midpoint-to-node Max: %1.2f mm' % output2[4][0]
+            t4.text = 'Midpoint-to-node Median: %1.2f mm' % output2[2]
+            t5.text = 'Midpoint-to-node Q1 and Q3: %1.2f | %1.2f mm' % (output2[1], output2[3])
+            t6.text = 'Midpoint-to-node Pulsatility: %1.2f mm (%1.2f %%)' % (output2[5][0],output2[5][1] )
+            t1.visible = True
+            t2.visible = True
+            t3.visible = True
+            t4.visible = True
+            t5.visible = True
+            t6.visible = True
+            # Store output including index nodes
+            output2.insert(0, nodepair1) # at the start
+            output2.insert(1, [n3.nr])
+            output2[8].insert(0, [midpoint1IndexPath])
+            output2[9].insert(0, [n3.nr])
+            if output2 not in storeOutput:
+                storeOutput.append(output2)
+        # Midpoint_to_midpoint analysis
+        if len(selected_nodes) == 4:
+            # get midpoints for the two edges
+            outputs = list()
+            # get nodepairs from order selected
+            for i in (0,2):
+                n1 = selected_nodes[i].node
+                n2 = selected_nodes[i+1].node
+                assert model.has_edge(n1, n2)
+                # get midpoint of edge and its deforms
+                output = get_midpoint_deforms_edge(model, n1, n2)
+                midpoint = output[2]
+                # store for both edges
+                outputs.append(output)
+                # visualize midpoint
+                view = a.GetView()
+                point = vv.plot(midpoint[0], midpoint[1], midpoint[2], 
+                                mc = 'm', ms = '.', mw = 8)
+                a.SetView(view)
+            assert len(outputs) == 2 # two midpoints should be found
+            # get midpoints and deforms
+            nodepair1 = outputs[0][0]
+            midpoint1IndexPath = outputs[0][1]
+            midpoint1 = outputs[0][2]
+            midpoint1Deforms = outputs[0][3]
+            nodepair2 = outputs[1][0]
+            midpoint2IndexPath = outputs[1][1]
+            midpoint2 = outputs[1][2]
+            midpoint2Deforms = outputs[1][3]
+            # get pulsatility
+            output2 = point_to_point_pulsatility(model, midpoint1, 
+                                midpoint1Deforms, midpoint2, midpoint2Deforms)
+            # update labels
+            t1.text = '\b{Node pairs}: (%i %i) - (%i %i)' % (nodepair1[0], nodepair1[1],
+                                                            nodepair2[0], nodepair2[1])
+            t2.text = 'Midpoint-to-midpoint Min: %1.2f mm' % output2[0][0]
+            t3.text = 'Midpoint-to-midpoint Max: %1.2f mm' % output2[4][0]
+            t4.text = 'Midpoint-to-midpoint Median: %1.2f mm' % output2[2]
+            t5.text = 'Midpoint-to-midpoint Q1 and Q3: %1.2f | %1.2f mm' % (output2[1], output2[3])
+            t6.text = 'Midpoint-to-midpoint Pulsatility: %1.2f mm (%1.2f %%)' % (output2[5][0], output2[5][1] )
+            t1.visible = True
+            t2.visible = True
+            t3.visible = True
+            t4.visible = True
+            t5.visible = True
+            t6.visible = True
+            # Store output including nodepairs of the midpoints
+            output2.insert(0, nodepair1) # at the start
+            output2.insert(1, nodepair2)
+            output2[8].insert(0, [midpoint1IndexPath])
+            output2[9].insert(0, [midpoint2IndexPath])
+            if output2 not in storeOutput:
+                storeOutput.append(output2)
+        # Visualize analyzed nodes and deselect
         for node in selected_nodes:
             node.faceColor = 'g'  # make green when analyzed
         selected_nodes.clear()
@@ -279,6 +291,7 @@ def get_midpoint_deforms_edge(model, n1, n2):
     edge = model.edge[n1][n2]
     path = edge['path']
     # find point closest to mid of line n1 to n2
+    #todo: perhaps improve with perpendicular plane to mid of line
     mid = (n1[0]+n2[0])/2, (n1[1]+n2[1])/2, (n1[2]+n2[2])/2
     # define vector from points to mid
     v = path - mid
