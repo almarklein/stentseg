@@ -3,6 +3,7 @@ Example demonstrating the stent segmentation algorithm on the stent CT
 volume that comes with visvis.
 """
 
+import numpy as np
 import visvis as vv
 from visvis import ssdf
 
@@ -14,7 +15,8 @@ vol = vv.volread('stent')
 vol = vv.Aarray(vol,(1,1,1))
 #stentvol = vv.ssdf.load(r'C:\Users\Maaike\Dropbox\UT MA3\Research Aortic Stent Grafts\Data_nonECG-gated\lspeas\lspeas_003.ssdf')
 #vol = vv.Aarray(stentvol.vol,stentvol.sampling)
-
+#stentvol = vv.ssdf.load('/home/almar/data/lspeas/LSPEAS_002/LSPEAS_002_1month_ring_avg3090.ssdf')
+#vol = vv.Aarray(stentvol.vol,stentvol.sampling)
 
 # Get parameters. Different scanners/protocols/stent material might need
 # different parameters. 
@@ -74,7 +76,7 @@ a1.camera = a2.camera = a3.camera
 # 
 test = vv.plot([0,0,0], axesAdjust=False, ls='', ms='.', mc='r', mw=15)
 if False:
-    node = sd._nodes3.nodes()[170]
+    node = sd._nodes3.nodes()[3]
     pp = vv.Pointset( np.array(list(node)).reshape(1,3) )
     test.SetPoints(pp)
 # Take a screenshot 

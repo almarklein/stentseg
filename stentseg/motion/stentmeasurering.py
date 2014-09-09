@@ -550,6 +550,43 @@ class MeasuringRing(vv.OrientableMesh):
 
 if __name__ == '__main__':
     
+    # Select the ssdf basedir
+    basedir = select_dir(os.getenv('LSPEAS_BASEDIR', ''),
+                        r'C:\Users\Maaike\Documents\UT MA3\LSPEAS_ssdf',)
+
+    # Select dataset to register
+    ptcode = 'LSPEAS_002'
+    #ctcode, nr = 'discharge', 1
+    ctcode, nr = '1month', 2
+    cropname = 'ring'
+    
+    # Load deformations
+    s = loadvol(basedir, ptcode, ctcode, cropname, 'deforms')
+    deforms = [s['deform%i'%(i*10)] for i in range(10)]
+    deforms = [[field[::2,::2,::2] for field in fields] for fields in deforms]
+    
+    # Load the stent model and mesh
+    s = loadmodel(basedir, ptcode, ctcode, cropname)
+    model = s.model
+    modelmesh = create_mesh(model, 0.9)  # Param is thickness
+    
+    # Prepare axes
+    a = vv.gca()
+    a.daspectAuto = False
+    a.daspect = 1, -1, -1
+    a.bgcolors = (0.2, 0.4, 0.6), 'k'
+    
+    # Create deformable mesh
+    dm = DeformableMesh(a, modelmesh)
+    dm.SetDeforms(*deforms)
+    dm.clim = 0, 5
+    dm.colormap = vv.CM_JET
+    vv.colorbar()
+    
+    # Instantiate measure ring
+    mr = MeasuringRing(modelmesh._vertices, , )
+    
+    ## Old
     # Load data
     patnr = 1
     dataDir = 'c:/almar/data/stentMotionData'
