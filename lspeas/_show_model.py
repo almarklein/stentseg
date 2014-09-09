@@ -19,8 +19,8 @@ basedir = select_dir(os.getenv('LSPEAS_BASEDIR', ''),
 
 # Select dataset to register
 ptcode = 'LSPEAS_002'
-ctcode, nr = 'discharge', 1
-# ctcode, nr = '1month', 2
+# ctcode, nr = 'discharge', 1
+ctcode, nr = '1month', 2
 cropname = 'ring'
 modelname = 'modelavgreg'
 
