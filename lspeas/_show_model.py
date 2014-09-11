@@ -9,16 +9,16 @@ from stentseg.utils.datahandling import select_dir, loadvol, loadmodel
 from pirt.utils.deformvis import DeformableTexture3D, DeformableMesh
 from stentseg.stentdirect.stentgraph import create_mesh
 from stentseg.motion.vis import create_mesh_with_deforms,remove_stent_from_volume
-import pirt 
-import skimage.morphology
-from skimage.morphology import reconstruction
+import pirt
+# import skimage.morphology
+# from skimage.morphology import reconstruction
 
 # Select the ssdf basedir
 basedir = select_dir(os.getenv('LSPEAS_BASEDIR', ''),
                      r'C:\Users\Maaike\Documents\UT MA3\LSPEAS_ssdf',)
 
 # Select dataset to register
-ptcode = 'LSPEAS_002'
+ptcode = 'LSPEAS_003'
 # ctcode, nr = 'discharge', 1
 ctcode, nr = '1month', 2
 cropname = 'ring'
