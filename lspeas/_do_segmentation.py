@@ -33,7 +33,7 @@ vol = s.vol
 
 # Initialize segmentation parameters
 stentType = 'anaconda'  # 'anacondaRing' runs stentgraph_anacondaRing.prune_redundant in Step3
-popNodes = True  # True when NOT using GUI
+cleanNodes = True  # True when NOT using GUI
 
 p = getDefaultParams(stentType)
 p.seed_threshold = 1500                 # step 1
@@ -54,7 +54,7 @@ sd = StentDirect(vol, p)
 # Perform the three steps of stentDirect
 sd.Step1()
 sd.Step2()
-sd.Step3(stentType, popNodes)
+sd.Step3(stentType, cleanNodes)
 
 # Create a mesh object for visualization (argument is strut tickness)
 bm = create_mesh(sd._nodes3, 0.6) # new
@@ -63,16 +63,15 @@ bm = create_mesh(sd._nodes3, 0.6) # new
 model = sd._nodes3
 
 # Visualize
-
 fig = vv.figure(3); vv.clf()
 fig.position = 0, 22, 1366, 706
-viewringcrop = {'azimuth': 105.3965517241379,
+viewringcrop = {'azimuth': 158.76671619613668,
  'daspect': (1.0, -1.0, -1.0),
- 'elevation': 31.457725947521887,
+ 'elevation': 40.40540540540541,
  'fov': 0.0,
- 'loc': (98.97817014708237, 103.62329297851174, 111.17764009804003),
+ 'loc': (140.99391104474705, 110.92390904403258, 100.60072175508655),
  'roll': 0.0,
- 'zoom': 0.025718541865111917}
+ 'zoom': 0.0332902282323454}
 
 # Show volume and model as graph
 a1 = vv.subplot(131)
@@ -140,6 +139,7 @@ from stentseg.motion.dynamic import incorporate_motion_nodes, incorporate_motion
 s = loadvol(basedir, ptcode, ctcode, cropname, 'deforms')
 deforms = [s['deform%i'%(i*10)] for i in range(10)]
 deforms = [pirt.DeformationFieldBackward(*fields) for fields in deforms]
+paramsreg = s.params
 
 # Load model
 s = loadmodel(basedir, ptcode, ctcode, cropname, 'model'+what)
@@ -152,4 +152,5 @@ incorporate_motion_edges(model, deforms, s.origin)
 # Save back
 filename = '%s_%s_%s_%s.ssdf' % (ptcode, ctcode, cropname, 'model'+what)
 s.model = model.pack()
+s.paramsreg = paramsreg
 ssdf.save(os.path.join(basedir, ptcode, filename), s)

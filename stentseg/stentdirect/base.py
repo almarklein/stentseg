@@ -188,7 +188,7 @@ class StentDirect:
         return nodes
     
     
-    def Step3(self, stentType=None, popNodes=True):
+    def Step3(self, stentType=None, cleanNodes=True):
         """ Step3()
         Process graph to remove unwanted edges.
         """
@@ -216,41 +216,42 @@ class StentDirect:
         # have a similar function and should be executed in this order.
         cur_edges = 0
         count = 0
-        if stentType == 'anacondaRing':
-            while cur_edges != nodes.number_of_edges():
-                count += 1
-                cur_edges = nodes.number_of_edges()
-                ene = params.graph_expectedNumberOfEdges
-                
-                stentgraph.prune_very_weak(nodes, params.graph_weakThreshold)
-                stentgraph.prune_weak(nodes, ene, params.graph_strongThreshold)
+        while cur_edges != nodes.number_of_edges():
+            count += 1
+            cur_edges = nodes.number_of_edges()
+            ene = params.graph_expectedNumberOfEdges
+            
+            stentgraph.prune_very_weak(nodes, params.graph_weakThreshold)
+            stentgraph.prune_weak(nodes, ene, params.graph_strongThreshold)
+            if stentType == 'anacondaRing':
                 stentgraph_anacondaRing.prune_redundant(nodes, params.graph_strongThreshold,
-                                                        params.graph_min_strutlength,
-                                                        params.graph_max_strutlength)
-                stentgraph.prune_clusters(nodes, params.graph_minimumClusterSize)
-                stentgraph.prune_tails(nodes, params.graph_trimLength)
-        else:
-            while cur_edges != nodes.number_of_edges():
-                count += 1
-                cur_edges = nodes.number_of_edges()
-                ene = params.graph_expectedNumberOfEdges
-                
-                stentgraph.prune_very_weak(nodes, params.graph_weakThreshold)
-                stentgraph.prune_weak(nodes, ene, params.graph_strongThreshold)
+                                                    params.graph_min_strutlength,
+                                                    params.graph_max_strutlength)
+            else:
                 stentgraph.prune_redundant(nodes, params.graph_strongThreshold)           
-                stentgraph.prune_clusters(nodes, params.graph_minimumClusterSize)
-                stentgraph.prune_tails(nodes, params.graph_trimLength)
-        if popNodes == True:
-            # todo: perhaps this needs to be inside the above loop?
-            stentgraph.pop_nodes(nodes)
-            stentgraph.add_corner_nodes(nodes)
-            stentgraph.add_nodes_at_crossings(nodes)
-            stentgraph.pop_nodes(nodes)  # because adding nodes can leave other redundant
-            stentgraph.smooth_paths(nodes)
+            stentgraph.prune_clusters(nodes, params.graph_minimumClusterSize)
+            stentgraph.prune_tails(nodes, params.graph_trimLength)
+            if cleanNodes == True:
+                stentgraph.pop_nodes(nodes)
+                stentgraph.add_corner_nodes(nodes)
+                stentgraph.add_nodes_at_crossings(nodes)
+                stentgraph.pop_nodes(nodes)  # because adding nodes can leave other redundant
+#                 # again prune_=> due to add crossings redundant triangles can be created
+#                 if stentType == 'anacondaRing':
+#                     stentgraph_anacondaRing.prune_redundant(nodes, params.graph_strongThreshold,
+#                                                         params.graph_min_strutlength,
+#                                                         params.graph_max_strutlength)
+#                 else:
+#                     stentgraph.prune_redundant(nodes, params.graph_strongThreshold)   
+#                 stentgraph.prune_clusters(nodes, params.graph_minimumClusterSize)
+#                 stentgraph.prune_tails(nodes, params.graph_trimLength)
+#                 stentgraph.pop_nodes(nodes)  # because removing edges can create degree 2 nodes
+        if cleanNodes == True:
+            stentgraph.smooth_paths(nodes) # do not smooth iterative based on changing edges
         t0 = time.time()-t_start
-        tmp = "Reduced to %i edges, "
+        tmp = "Reduced to %i edges and %i nodes, "
         tmp += "which took %1.2f s (%i iters)"
-        print(tmp % (nodes.number_of_edges(), t0, count))
+        print(tmp % (nodes.number_of_edges(), nodes.number_of_nodes(), t0, count))
         
         # Finish
         self._nodes3 = nodes

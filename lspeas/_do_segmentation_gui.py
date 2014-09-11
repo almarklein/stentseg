@@ -21,7 +21,7 @@ basedir = select_dir(os.getenv('LSPEAS_BASEDIR', ''),
 
 # Select dataset to register
 ptcode = 'LSPEAS_003'
-ctcode = 'discharge'
+ctcode = '1month'
 cropname = 'ring'
 what = 'avgreg'
 
@@ -34,7 +34,7 @@ vol = s.vol
 
 # Initialize segmentation parameters
 stentType = 'anaconda'  # 'anacondaRing' runs stentgraph_anacondaRing.prune_redundant in Step3
-popNodes = False  # False when using GUI: pop, add corner nodes and smooth after
+cleanNodes = False  # False when using GUI: clean nodes and smooth after correct/restore
 
 p = getDefaultParams(stentType)
 p.seed_threshold = 1500                 # step 1
@@ -55,20 +55,19 @@ sd = StentDirect(vol, p)
 # Perform the three steps of stentDirect
 sd.Step1()
 sd.Step2()
-sd.Step3(stentType, popNodes)
+sd.Step3(stentType, cleanNodes)
 
 # Visualize
-
 fig = vv.figure(4); vv.clf()
 fig.position = 0, 22, 1366, 706
 # fig.position = 1528.00, 123.00,  1246.00, 730.00
-viewringcrop = {'azimuth': 105.3965517241379,
+viewringcrop = {'azimuth': 158.76671619613668,
  'daspect': (1.0, -1.0, -1.0),
- 'elevation': 31.457725947521887,
+ 'elevation': 40.40540540540541,
  'fov': 0.0,
- 'loc': (98.97817014708237, 103.62329297851174, 111.17764009804003),
+ 'loc': (140.99391104474705, 110.92390904403258, 100.60072175508655),
  'roll': 0.0,
- 'zoom': 0.025718541865111917}
+ 'zoom': 0.0332902282323454}
 
 # Show volume and cleaned up graph
 a2 = vv.subplot(121)
@@ -138,10 +137,9 @@ def on_key(event):
         sd._nodes3.add_edge(select1,select2, cost = c, ctvalue = ct, path = p)
         l = _edge_length(sd._nodes3, select1, select2)
         # Visualize restored edge and deselect nodes
-        selected_nodes[1].faceColor = 'b'  # first [1] since list is modified
-        selected_nodes.remove(selected_nodes[1])
+        selected_nodes[1].faceColor = 'b'
         selected_nodes[0].faceColor = 'b'
-        selected_nodes.remove(selected_nodes[0])
+        selected_nodes.clear()
         t1.text = 'Edge ctvalue: \b{%1.2f HU}' % ct
         t2.text = 'Edge cost: \b{%1.7f }' % c
         t3.text = 'Edge length: \b{%1.2f mm}' % l
@@ -180,9 +178,12 @@ def on_key(event):
         a3.SetView(view)
     elif event.key == vv.KEY_ESCAPE:
         # ESCAPE will finish model
-        stentgraph.prune_clusters(sd._nodes3, 3) #remove residual nodes
+        stentgraph.prune_clusters(sd._nodes3, 3) #remove residual nodes/clusters 
+        #todo: minclustersize problem when analyzing anaconda stent? single ring 1 node?)
         stentgraph.pop_nodes(sd._nodes3)
         stentgraph.add_corner_nodes(sd._nodes3)
+        stentgraph.add_nodes_at_crossings(sd._nodes3)
+        stentgraph.pop_nodes(sd._nodes3)  # because adding nodes can leave other redundant
         stentgraph.smooth_paths(sd._nodes3)
         # Create mesh and visualize
         view = a3.GetView()
@@ -265,6 +266,7 @@ from stentseg.motion.dynamic import incorporate_motion_nodes, incorporate_motion
 s = loadvol(basedir, ptcode, ctcode, cropname, 'deforms')
 deforms = [s['deform%i'%(i*10)] for i in range(10)]
 deforms = [pirt.DeformationFieldBackward(*fields) for fields in deforms]
+paramsreg = s.params
 
 # Load model
 s = loadmodel(basedir, ptcode, ctcode, cropname, 'model'+what)
@@ -277,4 +279,5 @@ incorporate_motion_edges(model, deforms, s.origin)
 # Save back
 filename = '%s_%s_%s_%s.ssdf' % (ptcode, ctcode, cropname, 'model'+what)
 s.model = model.pack()
+s.paramsreg = paramsreg
 ssdf.save(os.path.join(basedir, ptcode, filename), s)
