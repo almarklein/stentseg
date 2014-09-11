@@ -429,7 +429,8 @@ def pop_nodes(graph):
             continue  # node popped as a cluster of three in _pop_node()
         if len(neighbours) == 2:
             if node not in neighbours:  # cannot pop if we only connect to self
-                if graph.node[node].get('nopop', False):
+                # todo: temporarily do not protect corner nodes
+                if 0:#graph.node[node].get('corner', False):
                     pass  # explicitly prevent popping
                 else:
                     _pop_node(graph, node)
@@ -537,7 +538,7 @@ def _add_corner_to_edge(graph, n1, n2, **kwargs):
         for i in I:
             tmp = tuple(path[i].flat)
             node2s.append(tmp)
-            graph.add_node(tmp, nopop=True)
+            graph.add_node(tmp, corner=True)
         node2s.append(n2)
         
         # Create new edges (and connect)
@@ -679,7 +680,7 @@ def _add_nodes_at_crossings_for_node(graph, node):
             graph.remove_edge(node, node1)
             graph.remove_edge(node, node2)
             # Add new edges
-            graph.add_node(new_node, corner=True)  # mark the node
+            graph.add_node(new_node, crossing=True)  # mark the node
             graph.add_edge(node, new_node, path=PointSet(commonpath), 
                     cost=min(edge1['cost'], edge2['cost']), 
                     ctvalue=max(edge1['ctvalue'], edge2['ctvalue']),)
