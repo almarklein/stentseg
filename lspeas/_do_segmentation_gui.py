@@ -13,15 +13,15 @@ from visvis import ssdf
 from stentseg.utils import PointSet
 from stentseg.utils.datahandling import select_dir, loadvol, loadmodel
 from stentseg.stentdirect.stentgraph import create_mesh
-from stentseg.stentdirect import StentDirect, getDefaultParams, stentgraph
+from stentseg.stentdirect import StentDirect, getDefaultParams, stentgraph, stentgraph_anacondaRing
 
 # Select the ssdf basedir
 basedir = select_dir(os.getenv('LSPEAS_BASEDIR', ''),
                      r'C:\Users\Maaike\Documents\UT MA3\LSPEAS_ssdf',)
 
 # Select dataset to register
-ptcode = 'LSPEAS_003'
-ctcode = '1month'
+ptcode = 'LSPEAS_002'
+ctcode = 'discharge'
 cropname = 'ring'
 what = 'avgreg'
 
@@ -37,16 +37,16 @@ stentType = 'anacondaRing'  # 'anacondaRing' runs stentgraph_anacondaRing.prune_
 cleanNodes = False  # False when using GUI: clean nodes and smooth after correct/restore
 
 p = getDefaultParams(stentType)
-p.seed_threshold = 1500                 # step 1
-p.mcp_speedFactor = 170                 # step 2, speed image (delta), costToCtValue
+p.seed_threshold = 1000                 # step 1
+p.mcp_speedFactor = 190                 # step 2, speed image (delta), costToCtValue
 p.mcp_maxCoverageFronts = 0.003         # step 2, base.py; replaces mcp_evolutionThreshold
-p.graph_weakThreshold = 1000            # step 3, stentgraph.prune_very_weak
+p.graph_weakThreshold = 500             # step 3, stentgraph.prune_very_weak
 p.graph_expectedNumberOfEdges = 3       # step 3, stentgraph.prune_weak
 p.graph_trimLength =  0                 # step 3, stentgraph.prune_tails
 p.graph_minimumClusterSize = 10         # step 3, stentgraph.prune_clusters
-p.graph_strongThreshold = 4600          # step 3, stentgraph.prune_weak and stentgraph.prune_redundant
-# p.graph_min_strutlength = 4            # step 3, stentgraph.prune_weak and stentgraph.prune_redundant
-# p.graph_max_strutlength = 10            # step 3, stentgraph.prune_weak and stentgraph.prune_redundant
+p.graph_strongThreshold = 3500          # step 3, stentgraph.prune_weak and stentgraph.prune_redundant
+p.graph_min_strutlength = 6            # step 3, stentgraph.prune_weak and stentgraph.prune_redundant
+p.graph_max_strutlength = 12            # step 3, stentgraph.prune_weak and stentgraph.prune_redundant
 # todo: write function to estimate maxCoverageFronts
 
 # Instantiate stentdirect segmenter object
@@ -55,11 +55,6 @@ sd = StentDirect(vol, p)
 # Perform the three steps of stentDirect
 sd.Step1()
 sd.Step2()
-if cleanNodes == False: # pop and add crossings here, not in base.py
-    # do not prune edges first, edges needed for GUI restore
-    stentgraph.pop_nodes(sd._nodes2)
-    stentgraph.add_nodes_at_crossings(sd._nodes2)
-    stentgraph.pop_nodes(sd._nodes2)  # because adding nodes can leave other redundant
 sd.Step3(stentType, cleanNodes)
 
 # Visualize
@@ -184,11 +179,21 @@ def on_key(event):
     elif event.key == vv.KEY_ESCAPE:
         # ESCAPE will finish model
         if cleanNodes == False: # clean here and not in base.py; use None to not clean?
+            stentgraph.pop_nodes(sd._nodes3)
+            stentgraph.add_nodes_at_crossings(sd._nodes3)
+            stentgraph.pop_nodes(sd._nodes3)  # because adding nodes can leave other redundant
+            if stentType == 'anacondaRing': # because adding nodes can leave other redundant
+                stentgraph_anacondaRing.prune_redundant(sd._nodes3, sd._params.graph_strongThreshold,
+                                                    sd._params.graph_min_strutlength,
+                                                    sd._params.graph_max_strutlength)
+            else:
+                stentgraph.prune_redundant(sd._nodes3, sd._params.graph_strongThreshold)
             stentgraph.pop_nodes(sd._nodes3) # because removing edges/add nodes can create degree 2 nodes
             stentgraph.add_corner_nodes(sd._nodes3)
-            stentgraph.smooth_paths(sd._nodes3)
         stentgraph.prune_clusters(sd._nodes3, sd._params.graph_minimumClusterSize) #remove residual nodes/clusters 
         #todo: minclustersize problem when analyzing anaconda stent? single ring 1 node?)
+        stentgraph.prune_tails(sd._nodes3, sd._params.graph_trimLength)
+        stentgraph.smooth_paths(sd._nodes3)
         # Create mesh and visualize
         view = a3.GetView()
         bm = create_mesh(sd._nodes3, 0.6)
