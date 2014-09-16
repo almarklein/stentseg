@@ -33,7 +33,7 @@ s = loadvol(basedir, ptcode, ctcode, cropname, what)
 vol = s.vol
 
 # Initialize segmentation parameters
-stentType = 'anaconda'  # 'anacondaRing' runs stentgraph_anacondaRing.prune_redundant in Step3
+stentType = 'anacondaRing'  # 'anacondaRing' runs stentgraph_anacondaRing.prune_redundant in Step3
 cleanNodes = False  # False when using GUI: clean nodes and smooth after correct/restore
 
 p = getDefaultParams(stentType)
@@ -55,6 +55,11 @@ sd = StentDirect(vol, p)
 # Perform the three steps of stentDirect
 sd.Step1()
 sd.Step2()
+if cleanNodes == False: # pop and add crossings here, not in base.py
+    # do not prune edges first, edges needed for GUI restore
+    stentgraph.pop_nodes(sd._nodes2)
+    stentgraph.add_nodes_at_crossings(sd._nodes2)
+    stentgraph.pop_nodes(sd._nodes2)  # because adding nodes can leave other redundant
 sd.Step3(stentType, cleanNodes)
 
 # Visualize
@@ -69,14 +74,14 @@ viewringcrop = {'azimuth': 158.76671619613668,
  'roll': 0.0,
  'zoom': 0.0332902282323454}
 
-# Show volume and cleaned up graph
+# Show volume and graph
 a2 = vv.subplot(121)
 t = vv.volshow(vol)
 t.clim = 0, 3000
 sd._nodes2.Draw(mc='b', lc='g') # draw seeded and MCP connected nodes
 vv.xlabel('x (mm)');vv.ylabel('y (mm)');vv.zlabel('z (mm)')
 
-# Show the mesh
+# Show cleaned up graph
 a3 = vv.subplot(122)
 a3.daspect = 1,-1,-1
 t = vv.volshow(vol)
@@ -114,7 +119,7 @@ t3.position = 0.1, 45, 0.5, 20
 t3.bgcolor = None
 t3.visible = False
 
-def on_key(event): 
+def on_key(event):
     if event.key == vv.KEY_DOWN:
         # hide nodes
         t1.visible = False
@@ -178,13 +183,12 @@ def on_key(event):
         a3.SetView(view)
     elif event.key == vv.KEY_ESCAPE:
         # ESCAPE will finish model
-        stentgraph.prune_clusters(sd._nodes3, 3) #remove residual nodes/clusters 
+        if cleanNodes == False: # clean here and not in base.py; use None to not clean?
+            stentgraph.pop_nodes(sd._nodes3) # because removing edges/add nodes can create degree 2 nodes
+            stentgraph.add_corner_nodes(sd._nodes3)
+            stentgraph.smooth_paths(sd._nodes3)
+        stentgraph.prune_clusters(sd._nodes3, sd._params.graph_minimumClusterSize) #remove residual nodes/clusters 
         #todo: minclustersize problem when analyzing anaconda stent? single ring 1 node?)
-        stentgraph.pop_nodes(sd._nodes3)
-        stentgraph.add_corner_nodes(sd._nodes3)
-        stentgraph.add_nodes_at_crossings(sd._nodes3)
-        stentgraph.pop_nodes(sd._nodes3)  # because adding nodes can leave other redundant
-        stentgraph.smooth_paths(sd._nodes3)
         # Create mesh and visualize
         view = a3.GetView()
         bm = create_mesh(sd._nodes3, 0.6)

@@ -214,13 +214,15 @@ class StentDirect:
         # not matter too much, although in practice there is a
         # difference. In particular the prune_weak and prune_redundant
         # have a similar function and should be executed in this order.
+        # todo: what is best order for anaconda?
         cur_edges = 0
         count = 0
+        ene = params.graph_expectedNumberOfEdges
         while cur_edges != nodes.number_of_edges():
             count += 1
             cur_edges = nodes.number_of_edges()
-            ene = params.graph_expectedNumberOfEdges
             
+            # prune edges prior to pop and add crossing nodes or many false nodes
             stentgraph.prune_very_weak(nodes, params.graph_weakThreshold)
             stentgraph.prune_weak(nodes, ene, params.graph_strongThreshold)
             if stentType == 'anacondaRing':
@@ -228,25 +230,22 @@ class StentDirect:
                                                     params.graph_min_strutlength,
                                                     params.graph_max_strutlength)
             else:
-                stentgraph.prune_redundant(nodes, params.graph_strongThreshold)           
-            stentgraph.prune_clusters(nodes, params.graph_minimumClusterSize)
-            stentgraph.prune_tails(nodes, params.graph_trimLength)
+                stentgraph.prune_redundant(nodes, params.graph_strongThreshold)          
             if cleanNodes == True:
                 stentgraph.pop_nodes(nodes)
-                stentgraph.add_corner_nodes(nodes)
                 stentgraph.add_nodes_at_crossings(nodes)
                 stentgraph.pop_nodes(nodes)  # because adding nodes can leave other redundant
-#                 # again prune_=> due to add crossings redundant triangles can be created
-#                 if stentType == 'anacondaRing':
-#                     stentgraph_anacondaRing.prune_redundant(nodes, params.graph_strongThreshold,
-#                                                         params.graph_min_strutlength,
-#                                                         params.graph_max_strutlength)
-#                 else:
-#                     stentgraph.prune_redundant(nodes, params.graph_strongThreshold)   
-#                 stentgraph.prune_clusters(nodes, params.graph_minimumClusterSize)
-#                 stentgraph.prune_tails(nodes, params.graph_trimLength)
-#                 stentgraph.pop_nodes(nodes)  # because removing edges can create degree 2 nodes
+                if stentType == 'anacondaRing': # because adding nodes can leave other redundant
+                    stentgraph_anacondaRing.prune_redundant(nodes, params.graph_strongThreshold,
+                                                        params.graph_min_strutlength,
+                                                        params.graph_max_strutlength)
+                else:
+                    stentgraph.prune_redundant(nodes, params.graph_strongThreshold)
+            stentgraph.prune_clusters(nodes, params.graph_minimumClusterSize)
+            stentgraph.prune_tails(nodes, params.graph_trimLength)
         if cleanNodes == True:
+            stentgraph.pop_nodes(nodes)  # because removing edges/add nodes can create degree 2 nodes
+            stentgraph.add_corner_nodes(nodes) # because adding corners inside loop creates more false nodes
             stentgraph.smooth_paths(nodes) # do not smooth iterative based on changing edges
         t0 = time.time()-t_start
         tmp = "Reduced to %i edges and %i nodes, "
