@@ -187,7 +187,11 @@ def prune_weak(graph, enc, ctvalue):
             
             # If this edge is "extra" as seen from both ends, we remove it
             if n1 in extra_edges2 and n2 in extra_edges1:
-                graph.remove_edge(n1, n2)
+                if (graph.node[n1].get('spared', True) and
+                   graph.node[n2].get('spared', True) ):
+                    pass  # explicitly prevent removal
+                else:
+                    graph.remove_edge(n1, n2)
 
 
 

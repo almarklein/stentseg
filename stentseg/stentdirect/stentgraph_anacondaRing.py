@@ -215,6 +215,9 @@ def _prune_redundant_edge(graph, n1, n2, min_ctvalue, min_strutlength, max_strut
                                         'with pathlength' , path2_l)
                                 print('********nn1**********')
                                 counter = True
+                                # mark spared edges; prevent removal in next iteration
+                                graph.add_node(n1, spared=True)
+                                graph.add_node(n2, spared =True)
                                 return counter                          
     if weak == 1:
 #         print('Eligable edge with' ,graph.edge[n1][n2],' is part of *weak* triangle so removed')
@@ -247,8 +250,11 @@ def _prune_redundant_edge(graph, n1, n2, min_ctvalue, min_strutlength, max_strut
 #                                         print('Neighbour edge with' ,graph.edge[node1][node2],
 #                                               'with pathlength' , path2_l)
 #                                         print('********nn2**********')
-                                        counter = True
-                                        return counter
+                                counter = True
+                                # mark spared edges; prevent removal in next iteration
+                                graph.add_node(n1, spared=True)
+                                graph.add_node(n2, spared =True)
+                                return counter
     if weak == 1:
         graph.remove_edge(n1, n2) 
         return counter
