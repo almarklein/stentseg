@@ -1,6 +1,9 @@
 """ LSPEAS proximal ring pulsatility and expansion module
 
 Module for obtaining node to node pulsatility in ECG gated CT of Anaconda
+Button interaction:
+ESCAPE: FINISH MODEL, GET MAX PULSATILITY OVERALL, STORE TO EXCEL 
+PageUp: STORE OUTPUT WITH MODEL (to ssdf)
 
 """
 
@@ -11,6 +14,9 @@ import numpy as np
 from stentseg.utils import PointSet
 from stentseg.stentdirect import stentgraph
 from visvis import Pointset # for meshes
+from stentseg.stentdirect.stentgraph import create_mesh
+from visvis.processing import lineToMesh, combineMeshes
+from visvis import ssdf
 
 # Select the ssdf basedir
 basedir = select_dir(os.getenv('LSPEAS_BASEDIR', ''),
@@ -18,7 +24,7 @@ basedir = select_dir(os.getenv('LSPEAS_BASEDIR', ''),
 
 # Select dataset to register
 ptcode = 'LSPEAS_003'
-ctcode = '1month'
+ctcode = 'discharge'
 cropname = 'ring'
 modelname = 'modelavgreg'
 
@@ -29,8 +35,9 @@ vol = s.vol
 # Load the stent model and mesh
 s2 = loadmodel(basedir, ptcode, ctcode, cropname, modelname)
 model = s2.model
+modelmesh = create_mesh(model, 0.6)  # Param is thickness
 
-#todo: for now, but show final mesh for displacement in mm using deforms saved with model
+#todo: for now, but show final mesh for displacement in mm using deforms saved with model or for pulsatility!
 # # Load deformations
 # import pirt
 # from stentseg.motion.vis import create_mesh_with_deforms
@@ -42,23 +49,25 @@ model = s2.model
 ## Start visualization and GUI
 
 fig = vv.figure(1); vv.clf()
-fig.position = 0.00, 22.00,  1366.00, 706.00
+# fig.position = 0.00, 22.00,  1366.00, 706.00
+fig.position = 8.00, 30.00,  824.00, 972.00
 a = vv.gca()
 a.axis.axisColor = 1,1,1
 a.axis.visible = False
 a.bgcolor = 0,0,0
 a.daspect = 1, -1, -1
-t = vv.volshow(vol, clim=(0, 4000), renderStyle='mip')
+lim = 3000
+t = vv.volshow(vol, clim=(0, lim), renderStyle='mip')
 model.Draw(mc='b', mw = 10, lc='g')
 vv.xlabel('x (mm)');vv.ylabel('y (mm)');vv.zlabel('z (mm)')
 vv.title('Model for LSPEAS %s  -  %s' % (ptcode[7:], ctcode))
-viewringcrop = {'azimuth': 158.76671619613668,
+viewringcrop = {'azimuth': 171.01336646750707,
  'daspect': (1.0, -1.0, -1.0),
- 'elevation': 40.40540540540541,
+ 'elevation': 41.11753384285574,
  'fov': 0.0,
- 'loc': (140.99391104474705, 110.92390904403258, 100.60072175508655),
+ 'loc': (83.64010879861203, 62.17468155660069, 76.92968729309737),
  'roll': 0.0,
- 'zoom': 0.0332902282323454}
+ 'zoom': 0.027512585315987943}
 
 # Add clickable nodes
 node_points = []
@@ -71,31 +80,31 @@ for i, node in enumerate(model.nodes()):
     node_points.append(node_point)
 
 # Initialize labels
-t0 = vv.Label(a, '\b{Node nr}: ', fontSize=11, color='b')
+t0 = vv.Label(a, '\b{Node nr}: ', fontSize=11, color='w')
 t0.position = 0.1, 5, 0.5, 20  # x (frac w), y, w (frac), h
 t0.bgcolor = None
 t0.visible = True
-t1 = vv.Label(a, '\b{Nodepair}: ', fontSize=11, color='b')
+t1 = vv.Label(a, '\b{Nodepair}: ', fontSize=11, color='w')
 t1.position = 0.1, 25, 0.5, 20  # x (frac w), y, w (frac), h
 t1.bgcolor = None
 t1.visible = False
-t2 = vv.Label(a, 'Node-to-node Min: ', fontSize=11, color='b')
+t2 = vv.Label(a, 'Node-to-node Min: ', fontSize=11, color='w')
 t2.position = 0.1, 45, 0.5, 20
 t2.bgcolor = None
 t2.visible = False
-t3 = vv.Label(a, 'Node-to-node Max: ', fontSize=11, color='b')
+t3 = vv.Label(a, 'Node-to-node Max: ', fontSize=11, color='w')
 t3.position = 0.1, 65, 0.5, 20
 t3.bgcolor = None
 t3.visible = False
-t4 = vv.Label(a, 'Node-to-node Median: ', fontSize=11, color='b')
+t4 = vv.Label(a, 'Node-to-node Median: ', fontSize=11, color='w')
 t4.position = 0.1, 85, 0.5, 20
 t4.bgcolor = None
 t4.visible = False
-t5 = vv.Label(a, 'Node-to-node Q1 and Q3: ', fontSize=11, color='b')
+t5 = vv.Label(a, 'Node-to-node Q1 and Q3: ', fontSize=11, color='w')
 t5.position = 0.1, 105, 0.5, 20
 t5.bgcolor = None
 t5.visible = False
-t6 = vv.Label(a, 'Node-to-node Pulsatility: ', fontSize=11, color='b')
+t6 = vv.Label(a, '\b{Node-to-node Pulsatility: }', fontSize=11, color='c')
 t6.position = 0.1, 125, 0.5, 20
 t6.bgcolor = None
 t6.visible = False
@@ -140,7 +149,7 @@ def on_key(event):
             t3.text = 'Node-to-node Max: %1.2f mm' % output[4][0]
             t4.text = 'Node-to-node Median: %1.2f mm' % output[2]
             t5.text = 'Node-to-node Q1 and Q3: %1.2f | %1.2f mm' % (output[1], output[3])
-            t6.text = 'Node-to-node Pulsatility: %1.2f mm (%1.2f %%)' % (output[5][0], output[5][1] )
+            t6.text = '\b{Node-to-node Pulsatility: %1.2f mm}' % (output[5][0] )
             t1.visible, t2.visible, t3.visible = True, True, True
             t4.visible, t5.visible, t6.visible = True, True, True
             # Store output including index/nr of nodes
@@ -186,7 +195,7 @@ def on_key(event):
             t3.text = 'Midpoint-to-node Max: %1.2f mm' % output2[4][0]
             t4.text = 'Midpoint-to-node Median: %1.2f mm' % output2[2]
             t5.text = 'Midpoint-to-node Q1 and Q3: %1.2f | %1.2f mm' % (output2[1], output2[3])
-            t6.text = 'Midpoint-to-node Pulsatility: %1.2f mm (%1.2f %%)' % (output2[5][0],output2[5][1] )
+            t6.text = '\b{Midpoint-to-node Pulsatility: %1.2f mm}' % (output2[5][0])
             t1.visible, t2.visible, t3.visible = True, True, True
             t4.visible, t5.visible, t6.visible = True, True, True
             # Store output including index nodes
@@ -237,7 +246,7 @@ def on_key(event):
             t3.text = 'Midpoint-to-midpoint Max: %1.2f mm' % output2[4][0]
             t4.text = 'Midpoint-to-midpoint Median: %1.2f mm' % output2[2]
             t5.text = 'Midpoint-to-midpoint Q1 and Q3: %1.2f | %1.2f mm' % (output2[1], output2[3])
-            t6.text = 'Midpoint-to-midpoint Pulsatility: %1.2f mm (%1.2f %%)' % (output2[5][0], output2[5][1] )
+            t6.text = '\b{Midpoint-to-midpoint Pulsatility: %1.2f mm}' % (output2[5][0])
             t1.visible, t2.visible, t3.visible = True, True, True
             t4.visible, t5.visible, t6.visible = True, True, True
             # Store output including nodepairs of the midpoints
@@ -273,7 +282,7 @@ def on_key(event):
         else:
             pathpoint1 = storeOutput[maxPIndexpoint_to_point][8][1] # coordinates of point1
             pathpoint2 = storeOutput[maxPIndexpoint_to_point][9][1] # coordinates of point2
-            storeOutput[maxPIndexpoint_to_point].append('max pulsatility (point_to_point) in model')
+            storeOutput[maxPIndexpoint_to_point].append('max pulsatility (predefined direction)')
             storeOutput.append(storeOutput[maxPIndexpoint_to_point])
         # update labels for max pulsatility
         t1.text = '\b{Node pair(s)}: (%s) - (%s)' % (str(storeOutput[-1][0]),str(storeOutput[-1][1]))
@@ -281,24 +290,45 @@ def on_key(event):
         t3.text = '[Max Pulsatility] Max: %1.2f mm' % storeOutput[-1][6][0]
         t4.text = '[Max Pulsatility] Median: %1.2f mm' % storeOutput[-1][4]
         t5.text = '[Max Pulsatility] Q1 and Q3: %1.2f | %1.2f mm' % (storeOutput[-1][3], storeOutput[-1][5])
-        t6.text = '[Max Pulsatility] Pulsatility: %1.2f mm (%1.2f %%)' % (storeOutput[-1][7][0], storeOutput[-1][7][1] )
+        t6.text = '\b{[Max Pulsatility] Pulsatility: %1.2f mm}' % (storeOutput[-1][7][0])
         t1.visible, t2.visible, t3.visible = True, True, True
         t4.visible, t5.visible, t6.visible = True, True, True
-        # visualize line of max pulsatility in model
+        # visualize
         view = a.GetView()
-        pp = Pointset(np.asarray([pathpoint1, pathpoint2]))  # visvis meshes do not work with PointSet
-        lineP = vv.solidLine(pp, radius = 0.4)
-        lineP.faceColor = 'c'
+        t = vv.volshow(vol, clim=(0, lim), renderStyle='mip')
+        # show mesh of model without deforms
+        m = vv.mesh(modelmesh)
+        m.faceColor = 'g'
+#         # show mesh of line max pulsatility without values
+#         pp = Pointset(np.asarray([pathpoint1, pathpoint2]))  # visvis meshes do not work with PointSet
+#         lineP = vv.solidLine(pp, radius = 0.3) # for mesh without values
+#         lineP.faceColor = 'm'
 #         # show mesh of model with deforms
 #         dm = vv.mesh(modelmesh)
 #         dm.clim = 0, 5
 #         dm.colormap = vv.CM_JET
 #         vv.colorbar()
+        # show line of max pulsatility as mesh with values
+        pp = Pointset(np.asarray([storeOutput[-1][8][1], storeOutput[-1][9][1]])) # pathpoint1 and 2
+        maxpulsatility = [storeOutput[-1][7][0]]
+        values = np.asarray([maxpulsatility,maxpulsatility]) # Nx1 ndarray 
+        meshline = lineToMesh(pp, 0.3, 8, values)
+        mline = vv.mesh(meshline)
+        mline.clim = 0, 1 # (mm)
+        mline.colormap = vv.CM_COOL
+        vv.colorbar()
         a.SetView(view)
         # Store to EXCEL
         storeOutputToExcel(storeOutput)
         for node_point in node_points:
             node_point.visible = False # show that store is ready
+    if event.key == vv.KEY_PAGEUP:
+        # Store Output back to ssdf with model
+        filename = '%s_%s_%s_%s.ssdf' % (ptcode, ctcode, cropname, modelname)
+        s2.model = model.pack()
+        s2.outputPulsatility = storeOutput
+        ssdf.save(os.path.join(basedir, ptcode, filename), s2)
+        print('storeOutput is saved to sddf of model')
                     
 selected_nodes = list()
 def select_node(event):
@@ -410,7 +440,7 @@ def edge_to_edge_max_pulsatility(model, nodepair1, nodepair2):
     for pathpoint2Index, pathpoint2 in enumerate(path2):
         if list(pathpoint2) == list(maxpulsatility_out[9][0]): # [9][0] pathpoint2
             maxpulsatility_out[9].insert(0, [pathpoint2Index])
-    maxpulsatility_out.append('max pulsatility (edge_to_edge) in model')
+    maxpulsatility_out.append('max pulsatility (edge_to_edge)')
     return maxpulsatility_out
 
 import xlsxwriter
