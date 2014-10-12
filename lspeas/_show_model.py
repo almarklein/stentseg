@@ -9,7 +9,9 @@ from stentseg.utils.datahandling import select_dir, loadvol, loadmodel
 from pirt.utils.deformvis import DeformableTexture3D, DeformableMesh
 from stentseg.stentdirect.stentgraph import create_mesh
 from stentseg.motion.vis import create_mesh_with_deforms,remove_stent_from_volume
+from stentseg.motion.vis import create_mesh_with_abs_displacement
 import pirt
+import numpy as np
 # import skimage.morphology
 # from skimage.morphology import reconstruction
 
@@ -27,18 +29,19 @@ modelname = 'modelavgreg'
 # Load deformations
 s = loadvol(basedir, ptcode, ctcode, cropname, 'deforms')
 deforms = [s['deform%i'%(i*10)] for i in range(10)]
-deformsMesh = [pirt.DeformationFieldBackward(*fields) for fields in deforms]
+# deformsMesh = [pirt.DeformationFieldBackward(*fields) for fields in deforms]
 deforms = [[field[::2,::2,::2] for field in fields] for fields in deforms]
 
 # Load the stent model and mesh
 s = loadmodel(basedir, ptcode, ctcode, cropname, modelname)
 model = s.model
-# modelmesh = create_mesh(model, 0.9)  # Param is thickness
-modelmesh = create_mesh_with_deforms(model, deformsMesh, s.origin, radius=0.9, fullPaths=True)
+# modelmesh = create_mesh(model, 1.0)  # Param is thickness
+# modelmesh = create_mesh_with_deforms(model, deformsMesh, s.origin, radius=1.0, fullPaths=True)
+modelmesh = create_mesh_with_abs_displacement(model, radius = 1.0, dimensions = 'xyz')
 
 # Load static CT image to add as reference
-s = loadvol(basedir, ptcode, ctcode, 'stent', 'avgreg')
-vol = s.vol
+s2 = loadvol(basedir, ptcode, ctcode, 'stent', 'avgreg')
+vol = s2.vol
 
 # Remove stent from vol for visualization
 # vol = remove_stent_from_volume(vol, model, stripSize=4)
@@ -82,51 +85,71 @@ for i, node in enumerate(model.nodes()):
     node_point.visible = False
     node_point.node = node
     node_point.nr = i
-    mov = model.node[node]['deforms']
-    d = (mov[:,0]**2 + mov[:,1]**2 + mov[:,2]**2)**0.5  # magnitude in mm
-    node_point.maxDeform = d.max()  # a measure of max deformation for point
-    node_point.sumDeform = d.sum()
+    nodeDeforms = model.node[node]['deforms']
+    nodepositions = node + nodeDeforms
+    # get displacement during cardiac cycle for node
+    vectors = []
+    npositions = len(nodepositions)
+    for j in range(npositions):
+        if j == npositions-1:  # -1 as range starts at 0
+            # vector from point at 90% RR to 0%% RR
+            vectors.append(nodepositions[j]-nodepositions[0])
+        else:
+            vectors.append(nodepositions[j]-nodepositions[j+1])
+    vectors = np.vstack(vectors)
+    dxyz = (vectors[:,0]**2 + vectors[:,1]**2 + vectors[:,2]**2)**0.5  # 3Dvector length in mm
+    dxy = (vectors[:,0]**2 + vectors[:,1]**2 )**0.5  # 2Dvector length in mm
+    dz = abs(vectors[:,2])  # 1Dvector length in mm
+    node_point.displacementXYZ = dxyz.sum() # displacement of node xyz
+    node_point.displacementXY = dxy.sum() # displacement of node xy
+    node_point.displacementZ = dz.sum() # displacement of node z
     node_points.append(node_point)
 
 # Create deformable mesh
 dm = DeformableMesh(a, modelmesh)
 dm.SetDeforms(*deforms)
-dm.clim = 0, 5
+dm.clim = 0, 4
 dm.colormap = vv.CM_JET
 vv.colorbar()
 
 # Run
 a.SetLimits()
 a.SetView(viewringcrop)
-dm.MotionPlay(0.1, 0.2)  # (10, 0.2) = each 10 ms do a step of 20%
+dm.MotionPlay(10, 0.5)  # (10, 0.2) = each 10 ms do a step of 20%
 dm.motionSplineType = 'B-spline'
 dm.motionAmplitude = 3.0  # For a mesh we can (more) safely increase amplitude
 #dm.faceColor = 'g'
 
 
 # Add clickable nodes
-t1 = vv.Label(a, 'Max of deformation vectors: ', fontSize=11, color='b')
-t1.position = 0.2, 5, 0.5, 20  # x (frac w), y, w (frac), h
+t0 = vv.Label(a, 'Node nr: ', fontSize=11, color='w')
+t0.position = 0.2, 5, 0.5, 20
+t0.bgcolor = None
+t0.visible = False
+t1 = vv.Label(a, 'Node displacement XYZ: ', fontSize=11, color='w')
+t1.position = 0.2, 25, 0.5, 20  # x (frac w), y, w (frac), h
 t1.bgcolor = None
 t1.visible = False
-t2 = vv.Label(a, 'Sum of deformation vectors: ', fontSize=11, color='b')
-t2.position = 0.2, 25, 0.5, 20
+t2 = vv.Label(a, 'Node displacement XY: ', fontSize=11, color='w')
+t2.position = 0.2, 45, 0.5, 20
 t2.bgcolor = None
 t2.visible = False
-t3 = vv.Label(a, 'Node nr: ', fontSize=11, color='b')
-t3.position = 0.2, 45, 0.5, 20
+t3 = vv.Label(a, 'Node displacement Z: ', fontSize=11, color='w')
+t3.position = 0.2, 65, 0.5, 20
 t3.bgcolor = None
 t3.visible = False
 
 
 def on_key(event): 
     if event.key == vv.KEY_DOWN:
+        t0.visible = False
         t1.visible = False
         t2.visible = False
         t3.visible = False
         for node_point in node_points:
             node_point.visible = False
     elif event.key == vv.KEY_UP:
+        t0.visible = True
         t1.visible = True
         t2.visible = True
         t3.visible = True
@@ -134,17 +157,21 @@ def on_key(event):
             node_point.visible = True
 
 def pick_node(event):
-    maxDeform = event.owner.maxDeform
-    sumDeform = event.owner.sumDeform
+    displacementXYZ = event.owner.displacementXYZ
+    displacementXY = event.owner.displacementXY
+    displacementZ = event.owner.displacementZ
     nodenr = event.owner.nr
-    t1.text = 'Max of deformation vectors: \b{%1.1f mm}' % maxDeform
-    t2.text = 'Sum of deformation vectors: \b{%1.1f mm}' % sumDeform
-    t3.text = 'Node nr: \b{%i}' % nodenr
+    t0.text = 'Node nr: \b{%i}' % nodenr
+    t1.text = 'Node displacement XYZ: \b{%1.1f mm}' % displacementXYZ
+    t2.text = 'Node displacement XY: \b{%1.1f mm}' % displacementXY
+    t3.text = 'Node displacement Z: \b{%1.1f mm}' % displacementZ
 
 def unpick_node(event):
-    t1.text = 'Max of deformation vectors:'
-    t2.text = 'Sum of deformation vectors:'
-    t3.text = 'Node nr: '
+    t0.text = 'Node nr: ' 
+    t1.text = 'Node displacement XYZ: ' 
+    t2.text = 'Node displacement XY: ' 
+    t3.text = 'Node displacement Z: '
+
 
 # Bind event handlers
 f.eventKeyDown.Bind(on_key)
