@@ -222,7 +222,7 @@ class StentDirect:
             count += 1
             cur_edges = nodes.number_of_edges()
             
-            # prune edges prior to pop and add crossing nodes or many false nodes
+            # prune edges prior to pop and add crossing nodes, otherwise many false nodes
             stentgraph.prune_very_weak(nodes, params.graph_weakThreshold)
             stentgraph.prune_weak(nodes, ene, params.graph_strongThreshold)
             if stentType == 'anacondaRing':
@@ -233,7 +233,8 @@ class StentDirect:
                 stentgraph.prune_redundant(nodes, params.graph_strongThreshold)          
             if cleanNodes == True:
                 stentgraph.pop_nodes(nodes)
-                stentgraph.add_nodes_at_crossings(nodes)
+                stentgraph.add_nodes_at_crossings(nodes) 
+                # mind that adding at crossing in first iteration can lead to uncleaned edges (degree 3 nodes)
                 stentgraph.pop_nodes(nodes)  # because adding nodes can leave other redundant
                 if stentType == 'anacondaRing': # because adding nodes can leave other redundant
                     stentgraph_anacondaRing.prune_redundant(nodes, params.graph_strongThreshold,

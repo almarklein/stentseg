@@ -83,6 +83,8 @@ def fit_ellipse(pp):
     
     Algorithm derived from:
     From http://nicky.vanforeest.com/misc/fitEllipse/fitEllipse.html.
+    Based on approach suggested by Fitzgibbon et al., Direct least squares 
+    fitting of ellipsees, 1996.
     """
     # Check
     if pp.ndim != 2:
@@ -364,7 +366,7 @@ if __name__ == '__main__':
         pp2.append(x, y)
         pp3.append(x, y, z)
     # With noise
-    pp2 += np.random.normal(0, 0.05, size=pp2.shape)
+    pp2 += np.random.normal(0, 0.15, size=pp2.shape)
     pp3 += np.random.normal(0, 0.15, size=pp3.shape)
     
     # Fit 2D 
@@ -402,11 +404,13 @@ if __name__ == '__main__':
     a.daspectAuto = False
     a.axis.showGrid = True
     vv.title('2D fitting')
+    vv.xlabel('x'); vv.ylabel('y')
     # Plot
     vv.plot(pp2, ls='', ms='.', mc='k')
-    vv.plot(sample_circle(c2), lc='r', lw=2)
+#     vv.plot(sample_circle(c2), lc='r', lw=2)
     vv.plot(sample_ellipse(e2), lc='b', lw=2)
-    vv.legend('2D points', 'Circle fit', 'Ellipse fit')
+#     vv.legend('2D points', 'Circle fit', 'Ellipse fit')
+    vv.legend('2D points', 'Ellipse fit')
     
     # 3D vis
     a = vv.subplot(122)
@@ -416,9 +420,10 @@ if __name__ == '__main__':
     vv.xlabel('x'); vv.ylabel('y'); vv.zlabel('z')
     # Plot
     vv.plot(pp3, ls='', ms='.', mc='k')
-    vv.plot(project_from_plane(pp3_2, plane), lc='r', ls='', ms='.', mc='y', mw=3)
-    vv.plot(project_from_plane(sample_circle(c3), plane), lc='r', lw=2)
+    vv.plot(project_from_plane(pp3_2, plane), lc='r', ls='', ms='.', mc='r', mw=4)
+#     vv.plot(project_from_plane(sample_circle(c3), plane), lc='r', lw=2)
     vv.plot(project_from_plane(sample_ellipse(e3), plane), lc='b', lw=2)
     vv.plot(np.array([p1, p2, p3, p4, p1]), lc='g', lw=2)
-    vv.legend('3D points', 'Projected points', 'Circle fit', 'Ellipse fit', 'Plane fit')
+#     vv.legend('3D points', 'Projected points', 'Circle fit', 'Ellipse fit', 'Plane fit')
+    vv.legend('3D points', 'Projected points', 'Ellipse fit', 'Plane fit')
     

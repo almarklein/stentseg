@@ -20,7 +20,7 @@ basedir = select_dir(os.getenv('LSPEAS_BASEDIR', ''),
                      r'C:\Users\Maaike\Documents\UT MA3\LSPEAS_ssdf',)
 
 # Select dataset to register
-ptcode = 'LSPEAS_002'
+ptcode = 'LSPEAS_003'
 ctcode = 'discharge'
 cropname = 'ring'
 what = 'avgreg'
@@ -33,18 +33,18 @@ s = loadvol(basedir, ptcode, ctcode, cropname, what)
 vol = s.vol
 
 # Initialize segmentation parameters
-stentType = 'anacondaRing'  # 'anacondaRing' runs stentgraph_anacondaRing.prune_redundant in Step3
+stentType = 'anaconda'  # 'anacondaRing' runs stentgraph_anacondaRing.prune_redundant in Step3
 cleanNodes = False  # False when using GUI: clean nodes and smooth after correct/restore
 
 p = getDefaultParams(stentType)
-p.seed_threshold = 1000                 # step 1
-p.mcp_speedFactor = 190                 # step 2, speed image (delta), costToCtValue
+p.seed_threshold = 1500                 # step 1
+p.mcp_speedFactor = 170                 # step 2, speed image (delta), costToCtValue
 p.mcp_maxCoverageFronts = 0.003         # step 2, base.py; replaces mcp_evolutionThreshold
-p.graph_weakThreshold = 500             # step 3, stentgraph.prune_very_weak
+p.graph_weakThreshold = 1000             # step 3, stentgraph.prune_very_weak
 p.graph_expectedNumberOfEdges = 3       # step 3, stentgraph.prune_weak
 p.graph_trimLength =  0                 # step 3, stentgraph.prune_tails
 p.graph_minimumClusterSize = 10         # step 3, stentgraph.prune_clusters
-p.graph_strongThreshold = 3500          # step 3, stentgraph.prune_weak and stentgraph.prune_redundant
+p.graph_strongThreshold = 4600          # step 3, stentgraph.prune_weak and stentgraph.prune_redundant
 p.graph_min_strutlength = 6            # step 3, stentgraph.prune_weak and stentgraph.prune_redundant
 p.graph_max_strutlength = 12            # step 3, stentgraph.prune_weak and stentgraph.prune_redundant
 # todo: write function to estimate maxCoverageFronts
@@ -101,15 +101,15 @@ for i, node in enumerate(sd._nodes3.nodes()):
 
 
 # Initialize labels
-t1 = vv.Label(a3, 'Edge ctvalue: ', fontSize=11, color='b')
+t1 = vv.Label(a3, 'Edge ctvalue: ', fontSize=11, color='c')
 t1.position = 0.1, 5, 0.5, 20  # x (frac w), y, w (frac), h
 t1.bgcolor = None
 t1.visible = False
-t2 = vv.Label(a3, 'Edge cost: ', fontSize=11, color='b')
+t2 = vv.Label(a3, 'Edge cost: ', fontSize=11, color='c')
 t2.position = 0.1, 25, 0.5, 20
 t2.bgcolor = None
 t2.visible = False
-t3 = vv.Label(a3, 'Edge length: ', fontSize=11, color='b')
+t3 = vv.Label(a3, 'Edge length: ', fontSize=11, color='c')
 t3.position = 0.1, 45, 0.5, 20
 t3.bgcolor = None
 t3.visible = False

@@ -20,7 +20,7 @@ basedir = select_dir(os.getenv('LSPEAS_BASEDIR', ''),
 
 # Select dataset to register
 ptcode = 'LSPEAS_003'
-ctcode = 'discharge'
+ctcode = '1month'
 cropname = 'ring'
 what = 'avgreg'
 
@@ -32,7 +32,7 @@ s = loadvol(basedir, ptcode, ctcode, cropname, what)
 vol = s.vol
 
 # Initialize segmentation parameters
-stentType = 'anaconda'  # 'anacondaRing' runs stentgraph_anacondaRing.prune_redundant in Step3
+stentType = 'anacondaRing'  # 'anacondaRing' runs stentgraph_anacondaRing.prune_redundant in Step3
 cleanNodes = True  # True when NOT using GUI
 
 p = getDefaultParams(stentType)
@@ -44,8 +44,8 @@ p.graph_expectedNumberOfEdges = 3       # step 3, stentgraph.prune_weak
 p.graph_trimLength =  0                 # step 3, stentgraph.prune_tails
 p.graph_minimumClusterSize = 10         # step 3, stentgraph.prune_clusters
 p.graph_strongThreshold = 4600          # step 3, stentgraph.prune_weak and stentgraph.prune_redundant
-# p.graph_min_strutlength = 5            # step 3, stentgraph.prune_weak and stentgraph.prune_redundant
-# p.graph_max_strutlength = 10            # step 3, stentgraph.prune_weak and stentgraph.prune_redundant
+p.graph_min_strutlength = 6            # step 3, stentgraph.prune_weak and stentgraph.prune_redundant
+p.graph_max_strutlength = 12            # step 3, stentgraph.prune_weak and stentgraph.prune_redundant
 # todo: write function to estimate maxCoverageFronts
 
 # Instantiate stentdirect segmenter object
@@ -78,14 +78,14 @@ a1 = vv.subplot(131)
 t = vv.volshow(vol)
 t.clim = 0, 2500
 # sd._nodes1.Draw(mc='g', mw = 6)       # draw seeded nodes
-sd._nodes2.Draw(mc='g', lc = 'g')    # draw seeded and MCP connected nodes
+sd._nodes2.Draw(mc='b', lc = 'g')    # draw seeded and MCP connected nodes
 
 # Show volume and cleaned up graph
 a2 = vv.subplot(132)
 t = vv.volshow(vol)
 t.clim = 0, 2500
 #sd._nodes2.Draw(mc='g', lc='r')
-sd._nodes3.Draw(mc='g', lc='g')
+sd._nodes3.Draw(mc='b', lc='g')
 vv.xlabel('x (mm)');vv.ylabel('y (mm)');vv.zlabel('z (mm)')
 
 # Show the mesh
