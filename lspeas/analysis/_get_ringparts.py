@@ -9,6 +9,7 @@ from stentseg.utils.datahandling import select_dir, loadvol, loadmodel
 import numpy as np
 from stentseg.utils import PointSet
 from stentseg.stentdirect import stentgraph
+from stentseg.stentdirect.stentgraph import create_mesh
 
 
 # Select the ssdf basedir
@@ -24,7 +25,10 @@ modelname = 'modelavgreg'
 # Load the stent model and mesh
 s2 = loadmodel(basedir, ptcode, ctcode, cropname, modelname)
 model = s2.model
-modeloriginal = model.copy()
+
+# Load static CT image to add as reference
+s = loadvol(basedir, ptcode, ctcode, cropname, 'avgreg')
+vol = s.vol
 
 ## Visualize 
 f = vv.figure(1); vv.clf()
@@ -42,13 +46,13 @@ model.Draw(mc='b', mw = 10, lc='g')
 
 vv.xlabel('x (mm)');vv.ylabel('y (mm)');vv.zlabel('z (mm)')
 vv.title('Model for LSPEAS %s  -  %s' % (ptcode[7:], ctcode))
-viewringcrop = {'azimuth': -68.20258814427977,
+viewringcrop = {'azimuth': 0.13322166255528733,
  'daspect': (1.0, -1.0, -1.0),
- 'elevation': 19.282744282744293,
+ 'elevation': 73.78378378378379,
  'fov': 0.0,
- 'loc': (109.39546280132387, 106.85695511791796, 59.00197909677347),
+ 'loc': (141.5058435276805, 185.37304726213267, 50.00189523378196),
  'roll': 0.0,
- 'zoom': 0.030437580943452218}
+ 'zoom': 0.018899343030128486}
 a.SetView(viewringcrop)
 
 ## Get hooks in vessel wall
@@ -57,19 +61,23 @@ a.SetView(viewringcrop)
 model_hooks = stentgraph.StentGraph()
 
 remove = True
+hooknodes = list() # remember nodes that belong to hooks 
 for n in model.nodes():
     if model.degree(n) == 1:
         neighbour = list(model.edge[n].keys())
         neighbour = neighbour[0]
-        assert model.degree(neighbour) == 4
+#         assert model.degree(neighbour) == 4 # not applicable when nodes repositioned at crossings
         c = model.edge[n][neighbour]['cost']
         ct = model.edge[n][neighbour]['ctvalue']
         p = model.edge[n][neighbour]['path']
         model_hooks.add_node(n, deforms = model.node[n]['deforms'])
         model_hooks.add_node(neighbour, deforms = model.node[neighbour]['deforms'])
         model_hooks.add_edge(n, neighbour, cost = c, ctvalue = ct, path = p)
+        hooknodes.append(neighbour)
         if remove == True:
             model.remove_node(n)
+# Pop remaining degree 2 nodes
+stentgraph.pop_nodes(model) 
 
 # Visualize
 model_hooks.Draw(mc='r', mw = 10, lc='r')
@@ -158,20 +166,28 @@ import networkx as nx
 model_2nd = model.copy()
 model_top = model.copy()
 # struts must be removed
-# must be at least 1 triangle of struts
 clusters = list(nx.connected_components(model))
 assert len(clusters) == 2  # 2 rings
-for cluster in clusters:
-    top = False
-    for topnode in topnodes:
-        if topnode in cluster:
-            top = True # cluster is top ring
-    if top == True:
-        model_2nd.remove_nodes_from(cluster)
-    else:
-        model_top.remove_nodes_from(cluster)
-
-# or use z axis for distinction
+# for i, cluster in enumerate(clusters):
+#     top = False
+#     for topnode in topnodes:
+#         if topnode in cluster:
+#             topcluster = cluster
+#             top = True # cluster is top ring
+#         if top == True:
+#     model_2nd.remove_nodes_from(cluster)
+#         else:
+#             model_top.remove_nodes_from(cluster)
+c1 = np.asarray(clusters[0])
+c1_z = c1[:,2] # x,y,z
+c2 = np.asarray(clusters[1])
+c2_z = c2[:,2] # x,y,z
+if c1_z.mean() < c2_z.mean(): # then cluster[0] is topring; daspect = 1,-1,-1
+    model_2nd.remove_nodes_from(clusters[0])
+    model_top.remove_nodes_from(clusters[1])
+else:
+    model_2nd.remove_nodes_from(clusters[1])
+    model_top.remove_nodes_from(clusters[0])
 
 # Visualize
 view = a.GetView()
@@ -180,7 +196,12 @@ a.axis.axisColor = 1,1,1
 a.axis.visible = False
 a.bgcolor = 0,0,0
 a.daspect = 1, -1, -1
+t = vv.volshow(vol, clim=(0, 4000), renderStyle='mip')
+# model.Draw(mc='b', mw = 10, lc='g')
+# model_top.Draw(mc='y', mw = 10, lc='y')
+# model_2nd.Draw(mc='c', mw = 10, lc='c')
+model_top.Draw(mc='b', mw = 10, lc='g')
+modelmesh = create_mesh(model_top, 0.6)  # Param is thickness
+m = vv.mesh(modelmesh)
+m.faceColor = 'g'
 a.SetView(view)
-model.Draw(mc='b', mw = 10, lc='g')
-model_top.Draw(mc='y', mw = 10, lc='y')
-model_2nd.Draw(mc='c', mw = 10, lc='c')
