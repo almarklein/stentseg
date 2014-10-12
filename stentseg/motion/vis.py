@@ -41,6 +41,57 @@ def create_mesh_with_values(g, radius=1.0, simplified=True):
         return None
 
 
+def create_mesh_with_abs_displacement(graph, radius = 1.0, dimensions = 'xyz'):
+    """ Create a Mesh object from the graph. The values of the mesh
+    encode the *absolute displacement* at the points on the *paths* in the graph.
+    Displacement can be the absolute displacement of a point in xyz, xy or z
+    direction over the cardiac cycle.
+    """ 
+    from visvis.processing import lineToMesh, combineMeshes
+    from visvis import Pointset  # lineToMesh does not like the new PointSet class
+    from stentseg.utils import PointSet
+    import numpy as np
+    
+    # Init list of meshes
+    meshes = []
+    
+    for n1,n2 in graph.edges():
+        # obtain path and deforms of edge
+        path = graph.edge[n1][n2]['path']
+        pathDeforms = graph.edge[n1][n2]['pathdeforms']
+        # get displacement during cardiac cycle for each point on path
+        pathDisplacements = []
+        for i, point in enumerate(path):
+            pointpositions = point + pathDeforms[i] # 10 phases, so 10 positions for each point
+            vectors = []
+            npositions = len(pointpositions)
+            for j in range(npositions):
+                if j == npositions-1:  # -1 as range starts at 0
+                    # vector from point at 90% RR to 0%% RR
+                    vectors.append(pointpositions[j]-pointpositions[0])
+                else:
+                    vectors.append(pointpositions[j]-pointpositions[j+1])
+            vectors = np.vstack(vectors)
+            if dimensions == 'xyz':
+                d = (vectors[:,0]**2 + vectors[:,1]**2 + vectors[:,2]**2)**0.5  # 3Dvector length in mm
+            elif dimensions == 'xy':
+                d = (vectors[:,0]**2 + vectors[:,1]**2 )**0.5  # 2Dvector length in mm
+            elif dimensions == 'z':
+                d = abs(vectors[:,2])  # 1Dvector length in mm
+            displacement = d.sum() # displacement of a point
+            pathDisplacements.append(displacement)
+        # create mesh for path
+        values = np.vstack(pathDisplacements)
+        path, values = Pointset(path), np.asarray(values)    
+        meshes.append( lineToMesh(path, radius, 8, values) )
+
+    # Combine meshes and return
+    if meshes:
+        return combineMeshes(meshes)
+    else:
+        return None
+
+
 def create_mesh_with_deforms(graph, deforms, origin, radius=1.0, fullPaths=True): 
     """ Create a Mesh object from the graph. The values of the mesh
     encode the *deformation* at the points on the *paths* in the graph.
@@ -61,7 +112,7 @@ def create_mesh_with_deforms(graph, deforms, origin, radius=1.0, fullPaths=True)
         # Obtain path of edge and make mesh
         if fullPaths:
             path = graph.edge[n1][n2]['path']
-            path = PointSet(path)  # Make a visvis pointset
+            path = PointSet(path)  # Make a new class PointSet
 
             # Get deformation for all points in path
             # todo: perhaps pirt *should* be aware of the origin!
