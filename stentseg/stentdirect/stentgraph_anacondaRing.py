@@ -121,7 +121,7 @@ def prune_redundant(graph, ctvalue, min_strutlength, max_strutlength):
     Remove redundant edges. 
     
     A connection is redundant if a weak connection (high mcp cost) 
-    connects two nodes which are already connected via two other nodes
+    connects two nodes which are already connected via two other edges
     wich are each stronger.
     
     In other words, this function tests each triangle of egdes and removes
