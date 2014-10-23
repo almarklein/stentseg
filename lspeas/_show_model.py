@@ -32,6 +32,15 @@ deforms = [s['deform%i'%(i*10)] for i in range(10)]
 # deformsMesh = [pirt.DeformationFieldBackward(*fields) for fields in deforms]
 deforms = [[field[::2,::2,::2] for field in fields] for fields in deforms]
 
+# These deforms are forward mapping. Turn into DeformationFields.
+# Also get the backwards mapping variants (i.e. the inverse deforms).
+# The forward mapping deforms should be used to deform meshes (since
+# the information is used to displace vertices). The backward mapping
+# deforms should be used to deform textures (since they are used in
+# interpolating the texture data).
+deforms_f = [pirt.DeformationFieldForward(f) for f in deforms]
+deforms_b = [f.as_backward() for f in fields_f]
+
 # Load the stent model and mesh
 s = loadmodel(basedir, ptcode, ctcode, cropname, modelname)
 model = s.model
@@ -53,9 +62,6 @@ vol = s2.vol
 # seed[np.where(seed == 0)] = vol2.max()
 # mask = vol2
 # vol = reconstruction(seed, mask, method='erosion')
-
-# todo: the deforms are stored in backward mapping (I think)
-# so we need to transform them to forward here.
 
 # Start vis
 f = vv.figure(nr); vv.clf()
@@ -107,7 +113,7 @@ for i, node in enumerate(model.nodes()):
 
 # Create deformable mesh
 dm = DeformableMesh(a, modelmesh)
-dm.SetDeforms(*deforms)
+dm.SetDeforms(*deforms_f)
 dm.clim = 0, 4
 dm.colormap = vv.CM_JET
 vv.colorbar()
