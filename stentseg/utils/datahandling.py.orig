@@ -10,7 +10,6 @@ import visvis as vv
 from visvis import ssdf
 from visvis.utils import cropper
 import os
-import sys
 import numpy as np
 
 
@@ -23,42 +22,6 @@ def select_dir(*dirs):
             return dir
     else:
         raise RuntimeError('None of the given dirs exists.')
-
-def renamedcm(dicom_basedir, ptcode, ctcode):
-    """ Renames 4D dcm data to shorter name using ptcode, ctcode and phase
-    Renames the filenames in all 10 volumes, keeps the (uid) folder names.
-    Also checks order of phases by reading the 90% volume.
-    """
-
-    dirname = os.path.join(dicom_basedir, ptcode, ptcode+'_'+ctcode)
-    
-    if not os.path.isdir(dirname):
-        raise RuntimeError('Could not find data for given input %s' % ptcode, ctcode)
-    
-    while True:
-        subfolder = os.listdir(dirname)
-        if len(subfolder) == 1:  # data should only contain one main uid folder
-            dirname = os.path.join(dirname, subfolder[0])
-        else:
-            break
-    
-    if not subfolder:
-        raise RuntimeError('Could not find any files for given input %s' % ptcode, ctcode)
-    
-    # Check order of phases
-    vol = imageio.volread(os.path.join(dirname,subfolder[9]), 'dicom')
-    assert '90%' in vol.meta.SeriesDescription
-    
-    # Rename files in all 10 subfolders
-    for volnr in range(0,10): # 0,10 for all phases from 0 up to 90%
-        dirsubfolder = os.path.join(dirname,subfolder[volnr])
-        perc = '%i%%' % (volnr*10)
-        i = 1  # initialize file numbering
-        for filename in os.listdir(dirsubfolder):
-            if 'dcm' in filename:
-                newFilename = '%s_%s_%s_%i.dcm' % (ptcode, ctcode, perc, i)
-                os.rename(os.path.join(dirsubfolder,filename), os.path.join(dirsubfolder, newFilename))
-                i +=1
 
 
 def loadvol(basedir, ptcode, ctcode, cropname, what='phases'):
@@ -77,11 +40,11 @@ def loadvol(basedir, ptcode, ctcode, cropname, what='phases'):
     return s
 
 
-def loadmodel(basedir, ptcode, ctcode, cropname, modelname='modelavgreg'):
+def loadmodel(basedir, ptcode, ctcode, cropname):
     """ Load stent model. An ssdf struct is returned.
     """
     # Load
-    fname = '%s_%s_%s_%s.ssdf' % (ptcode, ctcode, cropname, modelname)
+    fname = '%s_%s_%s_%s.ssdf' % (ptcode, ctcode, cropname, 'model')
     s = ssdf.load(os.path.join(basedir, ptcode, fname))
     # Turn into graph model
     from stentseg.stentdirect import stentgraph
@@ -105,7 +68,6 @@ def savecropvols(vols, basedir, ptcode, ctcode, cropname, stenttype):
     # Open cropper tool
     print('Set the appropriate cropping range for "%s" '
             'and click finish to continue' % cropname)
-    print('Loading... be patient')
     fig = vv.figure()
     fig.title = 'Cropping for "%s"' % cropname
     vol_crop = cropper.crop3d(vol0, fig)
@@ -182,7 +144,6 @@ def cropaveraged(basedir, ptcode, ctcode, crop_in='stent', what='avg5090', crop_
     # Open cropper tool
     print('Set the appropriate cropping range for "%s" '
             'and click finish to continue' % crop_out)
-    print('Loading... be patient')
     fig = vv.figure()
     fig.title = 'Cropping for "%s"' % crop_out
     vol_crop = cropper.crop3d(vol, fig)
