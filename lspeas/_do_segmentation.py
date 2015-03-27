@@ -16,34 +16,34 @@ from stentseg.stentdirect import StentDirect, getDefaultParams
 
 # Select the ssdf basedir
 basedir = select_dir(os.getenv('LSPEAS_BASEDIR', ''),
-                     r'C:\Users\Maaike\Documents\UT MA3\LSPEAS_ssdf',)
+                     r'D:\LSPEAS\LSPEAS_ssdf',)
 
 # Select dataset to register
-ptcode = 'LSPEAS_003'
-ctcode = '1month'
+ptcode = 'LSPEAS_004'
+ctcode = 'discharge'
 cropname = 'ring'
 what = 'avgreg'
 
 
-## Perform segmentation
-
 # Load volumes
 s = loadvol(basedir, ptcode, ctcode, cropname, what)
 vol = s.vol
+
+## Perform segmentation
 
 # Initialize segmentation parameters
 stentType = 'anacondaRing'  # 'anacondaRing' runs stentgraph_anacondaRing.prune_redundant in Step3
 cleanNodes = True  # True when NOT using GUI
 
 p = getDefaultParams(stentType)
-p.seed_threshold = 1500                 # step 1
-p.mcp_speedFactor = 170                 # step 2, speed image (delta), costToCtValue
-p.mcp_maxCoverageFronts = 0.003         # step 2, base.py; replaces mcp_evolutionThreshold
-p.graph_weakThreshold = 1000             # step 3, stentgraph.prune_very_weak
-p.graph_expectedNumberOfEdges = 3       # step 3, stentgraph.prune_weak
+p.seed_threshold = 750                 # step 1
+p.mcp_speedFactor = 180                 # step 2, speed image (delta), costToCtValue
+p.mcp_maxCoverageFronts = 0.007         # step 2, base.py; replaces mcp_evolutionThreshold
+p.graph_weakThreshold = 500             # step 3, stentgraph.prune_very_weak
+p.graph_expectedNumberOfEdges = 4       # step 3, stentgraph.prune_weak
 p.graph_trimLength =  0                 # step 3, stentgraph.prune_tails
 p.graph_minimumClusterSize = 10         # step 3, stentgraph.prune_clusters
-p.graph_strongThreshold = 4600          # step 3, stentgraph.prune_weak and stentgraph.prune_redundant
+p.graph_strongThreshold = 4000          # step 3, stentgraph.prune_weak and stentgraph.prune_redundant
 p.graph_min_strutlength = 6            # step 3, stentgraph.prune_weak and stentgraph.prune_redundant
 p.graph_max_strutlength = 12            # step 3, stentgraph.prune_weak and stentgraph.prune_redundant
 # todo: write function to estimate maxCoverageFronts
@@ -65,13 +65,7 @@ model = sd._nodes3
 # Visualize
 fig = vv.figure(3); vv.clf()
 fig.position = 0, 22, 1366, 706
-viewringcrop = {'azimuth': 158.76671619613668,
- 'daspect': (1.0, -1.0, -1.0),
- 'elevation': 40.40540540540541,
- 'fov': 0.0,
- 'loc': (140.99391104474705, 110.92390904403258, 100.60072175508655),
- 'roll': 0.0,
- 'zoom': 0.0332902282323454}
+#viewringcrop = 
 
 # Show volume and model as graph
 a1 = vv.subplot(131)
@@ -90,7 +84,7 @@ vv.xlabel('x (mm)');vv.ylabel('y (mm)');vv.zlabel('z (mm)')
 
 # Show the mesh
 a3 = vv.subplot(133)
-a3.daspect = 1,-1,-1
+a3.daspect = 1,1,-1
 m = vv.mesh(bm)
 m.faceColor = 'g'
 vv.xlabel('x (mm)');vv.ylabel('y (mm)');vv.zlabel('z (mm)')
@@ -98,7 +92,7 @@ vv.xlabel('x (mm)');vv.ylabel('y (mm)');vv.zlabel('z (mm)')
 # Use same camera
 a1.camera = a2.camera = a3.camera
 
-a1.SetView(viewringcrop)
+#a1.SetView(viewringcrop)
 
 switch = False
 a1.axis.visible = switch

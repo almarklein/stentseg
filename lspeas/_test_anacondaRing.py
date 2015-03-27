@@ -183,7 +183,7 @@ vv.zlabel('z')
 
 # Show volume and cleaned up
 a4 = vv.subplot(144)
-a4.daspect = 1,-1,-1
+a4.daspect = 1,1,-1
 t = vv.volshow(vol)
 #t.renderStyle = 'ray'
 t.clim = 0, 3000
@@ -205,7 +205,7 @@ a1.camera = a2.camera = a3.camera = a4.camera
 # a1.SetView(viewlegs)
 
 viewringcrop = {'azimuth': 103.35642000428354,
- 'daspect': (1.0, -1.0, -1.0),
+ 'daspect': (1.0, 1.0, -1.0),
  'elevation': 22.77944593951248,
  'fov': 0.0,
  'loc': (179.3373928028404, 98.45327580567643, 60.80823406568838),
@@ -213,7 +213,7 @@ viewringcrop = {'azimuth': 103.35642000428354,
  'zoom': 0.025718541865111827}
 a3.SetView(viewringcrop)
 
-#viewring = {'fov': 0.0, 'elevation': 17.01166180758017, 'zoom': 0.019322721160865336, 'roll': 0.0, 'daspect': (1.0, -1.0, -1.0), 'loc': (85.07098073292472, 61.048256073622596, 60.822988663458425), 'azimuth': 95.31034482758619}
+#viewring = {'fov': 0.0, 'elevation': 17.01166180758017, 'zoom': 0.019322721160865336, 'roll': 0.0, 'daspect': (1.0, 1.0, -1.0), 'loc': (85.07098073292472, 61.048256073622596, 60.822988663458425), 'azimuth': 95.31034482758619}
 #a1.SetView(viewring)
 
 # Take a screenshot 
