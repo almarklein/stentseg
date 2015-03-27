@@ -94,7 +94,6 @@ if __name__ == "__main__":
         # adjust slice z-position
         ds.ImagePositionPatient[2] = ImagePositionStart - (instance * s.vol.sampling[0]) # decreases in z direction top to bottom
         ds.SliceLocation = SliceLocationStart + (instance * s.vol.sampling[0])
-        #todo: fix order, one decreases, one increases with slices
         instance += 1
     
         # save ds
