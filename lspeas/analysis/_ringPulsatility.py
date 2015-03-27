@@ -20,11 +20,11 @@ from visvis import ssdf
 
 # Select the ssdf basedir
 basedir = select_dir(os.getenv('LSPEAS_BASEDIR', ''),
-                     r'C:\Users\Maaike\Documents\UT MA3\LSPEAS_ssdf',)
+                     r'D:\LSPEAS\LSPEAS_ssdf',)
 
 # Select dataset to register
-ptcode = 'LSPEAS_003'
-ctcode = 'discharge'
+ptcode = 'LSPEAS_002'
+ctcode = '6months'
 cropname = 'ring'
 modelname = 'modelavgreg'
 
@@ -55,22 +55,23 @@ a = vv.gca()
 a.axis.axisColor = 1,1,1
 a.axis.visible = False
 a.bgcolor = 0,0,0
-a.daspect = 1, -1, -1
+a.daspect = 1, 1, -1
 lim = 3000
 t = vv.volshow(vol, clim=(0, lim), renderStyle='mip')
 model.Draw(mc='b', mw = 10, lc='g')
 vv.xlabel('x (mm)');vv.ylabel('y (mm)');vv.zlabel('z (mm)')
 vv.title('Model for LSPEAS %s  -  %s' % (ptcode[7:], ctcode))
-viewringcrop = {'azimuth': 171.01336646750707,
- 'daspect': (1.0, -1.0, -1.0),
- 'elevation': 41.11753384285574,
+viewringcrop = {'zoom': 0.012834824098558318,
  'fov': 0.0,
- 'loc': (83.64010879861203, 62.17468155660069, 76.92968729309737),
- 'roll': 0.0,
- 'zoom': 0.027512585315987943}
+ 'daspect': (1.0, 1.0, -1.0),
+ 'loc': (139.818258268377, 170.0738625060885, 80.55734045456558),
+ 'elevation': 11.471611096074625,
+ 'azimuth': 25.71485900482051,
+ 'roll': 0.0}
 
 # Add clickable nodes
 node_points = []
+#todo: numbering of nodes not always exactly same order, some switches occur
 for i, node in enumerate(model.nodes()):
     node_point = vv.solidSphere(translation = (node), scaling = (0.6,0.6,0.6))
     node_point.faceColor = 'b'
@@ -448,7 +449,7 @@ def storeOutputToExcel(storeOutput):
     """Create file and add a worksheet or overwrite existing
     """
     # https://pypi.python.org/pypi/XlsxWriter
-    workbook = xlsxwriter.Workbook(r'C:\Users\Maaike\Desktop\storeOutputTemplate.xlsx')
+    workbook = xlsxwriter.Workbook(r'D:\Profiles\koenradesma\Dropbox\LSPEAS\Analysis\storeOutputTemplate.xlsx')
     worksheet = workbook.add_worksheet()
     # set column width
     worksheet.set_column('A:A', 15)
