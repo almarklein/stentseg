@@ -19,15 +19,22 @@ _precalculated_A2 = np.matrix(tmp)
 _precalculated_Ai2 = scipy.linalg.pinv(_precalculated_A2)
 del tmp
 
+# todo: can we not just use np.linalg.inv? speed?
+
 def fitLQ1(pp):
     """ fitLQ1(points) -> t_max, [a,b,c]
-    Fit quadratic polynom to three points in 1D.
-    points can be a 2D Pointset instance, resulting in a general
-    solution. If only 3 values are given (as list of numpy array),
-    they are assumed at t=(-1,0,1).
+    
+    Fit quadratic polynom to three points in 1D. Given points can be
+    Nx2 array representing 3 x-y positions, or simply 3 values (as list
+    of numpy array), which are assumed at t=(-1,0,1).
+    
+    Returns (delta, [a, b, c]), where delta is the delta location from
+    the center point where the maximum is found, and [a, b, c] represent
+    the fit polynomial.
     """
     if isinstance(pp, np.ndarray) and pp.ndim == 2:
         # Arbitraty position of values. Apply general approach
+        assert pp.shape == (3, 2)
         
         # Prepare A
         A = pp.Pointset(3)
@@ -46,6 +53,7 @@ def fitLQ1(pp):
     
     else:
         # Values defined at fixed positions (-1,0,1)
+        assert len(pp) == 3
         
         # Make suitable form multiplication
         B = np.matrix(pp[0:3]).transpose()
@@ -56,7 +64,8 @@ def fitLQ1(pp):
         x = -0.5 * P[1]/P[0]   
         # done
         return x, P
-  
+
+
 def fitLQ2(patch, sample=False):
     """ fitLQ2(patch) --> x_max, y_max
     
@@ -97,3 +106,8 @@ def fitLQ2(patch, sample=False):
         return x,y, vals 
     else:
         return x,y
+
+
+if __name__ == '__main__':
+    pass
+    

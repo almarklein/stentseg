@@ -13,13 +13,16 @@ import os, sys
 import numpy as np
 import scipy as sp, scipy.ndimage
 
-from stentseg.utils import PointSet
+from stentseg.utils import PointSet, quadraticfit
 
 
-def get_stent_likely_positions(data, th):
+def get_stent_likely_positions(data, th, subpixel=False):
     """ Get a pointset of positions that are likely to be on the stent.
     If the given data has a "sampling" attribute, the positions are
     scaled accordingly. 
+    
+    If subpixel is True, wil perform quadratic fitting to obtain
+    subpixel locations of the positions.
     
     Detection goes according to three criteria:
       * intensity above given threshold
@@ -34,16 +37,25 @@ def get_stent_likely_positions(data, th):
     indices = np.where(mask==2)  # Tuple of 1D arrays
     pp = PointSet( np.column_stack(reversed(indices)), dtype=np.float32)
     
+    # Fit to subpixels
+    if subpixel:
+        pp1 = pp
+        pp2 = PointSet(3)
+        for p in pp1:
+            x, y, z=p[0,:]
+            dz, _ = quadraticfit.fitLQ1( data[z-1:z+2, y, x] )
+            dy, _ = quadraticfit.fitLQ1( data[z, y-1:y+2, x] )
+            dx, _ = quadraticfit.fitLQ1( data[z, y, x-1:x+2] )
+            pp2.append(x+dx, y+dy, z+dz)
+        pp = pp2
+    
     # Correct for anisotropy and offset
     if hasattr(data, 'sampling'):
         pp *= PointSet( list(reversed(data.sampling)) ) 
     if hasattr(data, 'origin'):
-        # todo: or call it/support offset?
         pp += PointSet( list(reversed(data.origin)) ) 
     
     return pp
-
-
 
 
 def get_mask_with_stent_likely_positions(data, th):

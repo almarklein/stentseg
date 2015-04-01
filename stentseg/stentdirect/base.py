@@ -102,7 +102,7 @@ class StentDirect:
         
         # Detect points
         th = self._params.seed_threshold
-        pp = stentpoints3d.get_stent_likely_positions(self._vol, th)
+        pp = stentpoints3d.get_stent_likely_positions(self._vol, th, subpixel=True)
         
         # Create nodes object from found points
         nodes = stentgraph.StentGraph()
