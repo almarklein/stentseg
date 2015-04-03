@@ -72,7 +72,7 @@ viewringcrop = {'zoom': 0.012834824098558318,
 # Add clickable nodes
 node_points = []
 #todo: numbering of nodes not always exactly same order, some switches occur
-for i, node in enumerate(model.nodes()):
+for i, node in enumerate(sorted(model.nodes())):
     node_point = vv.solidSphere(translation = (node), scaling = (0.6,0.6,0.6))
     node_point.faceColor = 'b'
     node_point.visible = False
