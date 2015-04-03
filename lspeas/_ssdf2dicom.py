@@ -60,7 +60,6 @@ if __name__ == "__main__":
     # get dir of first subfolder (phase 0%)
     dirsubfolder = os.path.join(dirname,subfolder[0])
     # get first .dcm file
-    #todo: get first slice of cropped ssdf from s.croprange / s.origin?
     for filename in os.listdir(dirsubfolder):
         if 'dcm' in filename:
             base_filename = os.path.join(dirsubfolder,filename)
@@ -72,7 +71,6 @@ if __name__ == "__main__":
     
     ds = dicom.read_file(base_filename) # read original dicom file to get ds
     assert ds.InstanceNumber == 1 # first slice
-    ImagePositionStart = ds.ImagePositionPatient[2] # z position
     SliceLocationStart = ds.SliceLocation 
     instance = 0
     
@@ -93,11 +91,11 @@ if __name__ == "__main__":
         ds.SeriesDescription = cropname+' avgreg'
         # adjust slice z-position
         # note: originally the z-position is decreasing to match the "patient orientation"
-        ds.ImagePositionPatient[2] = - s.vol.origin[0] - (instance * s.vol.sampling[0]) # decreases in z direction top to bottom
+        ds.ImagePositionPatient[2] = - s.vol.origin[0] - (instance * s.vol.sampling[0]) # z-flipped
         ds.ImagePositionPatient[1] = s.vol.origin[1]
         ds.ImagePositionPatient[0] = s.vol.origin[2]
         ds.InstanceNumber = instance
-        ds.SliceLocation = SliceLocationStart + (instance * s.vol.sampling[0])
+        ds.SliceLocation = SliceLocationStart + (instance * s.vol.sampling[0]) # todo: we do not need this?
         instance += 1
     
         # save ds
@@ -107,7 +105,7 @@ if __name__ == "__main__":
         print("File saved.")
     
 
-#todo: fix start position image: relative to z position of slice in cropped vol?
+#todo: did we correctly fix start position: relative to z position of first slice in cropped vol avgreg?
 
 
 
