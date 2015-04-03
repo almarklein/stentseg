@@ -23,7 +23,6 @@ from visvis import ssdf
 # of pointsets
 vv.pypoints.SHOW_SUBTRACTBUG_WARNING = True 
 
-from . import stentgraph_old
 from . import stentpoints3d
 from .stentmcp import MCP_StentDirect
 from . import stentgraph, stentgraph_anacondaRing
