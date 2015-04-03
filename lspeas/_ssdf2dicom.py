@@ -30,8 +30,8 @@ if __name__ == "__main__":
                             r'D:\LSPEAS\BACKUP CTdata\LSPEAS_data\DICOM',
                             '/home/almar/data/dicom/stent_LPEAS',)    
     # Select dataset
-    ptcode = 'LSPEAS_001'
-    ctcode = 'pre'
+    ptcode = 'LSPEAS_003'
+    ctcode = '1month'
     cropname = 'stent'
     
     # Select basedirectory to load ssdf
@@ -92,7 +92,11 @@ if __name__ == "__main__":
         ds.Cols = ds.Columns = s.vol.shape[2]
         ds.SeriesDescription = cropname+' avgreg'
         # adjust slice z-position
-        ds.ImagePositionPatient[2] = ImagePositionStart - (instance * s.vol.sampling[0]) # decreases in z direction top to bottom
+        # note: originally the z-position is decreasing to match the "patient orientation"
+        ds.ImagePositionPatient[2] = - s.vol.origin[0] - (instance * s.vol.sampling[0]) # decreases in z direction top to bottom
+        ds.ImagePositionPatient[1] = s.vol.origin[1]
+        ds.ImagePositionPatient[0] = s.vol.origin[2]
+        ds.InstanceNumber = instance
         ds.SliceLocation = SliceLocationStart + (instance * s.vol.sampling[0])
         instance += 1
     
