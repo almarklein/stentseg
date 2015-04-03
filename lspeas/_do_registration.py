@@ -16,11 +16,11 @@ from stentseg.utils.datahandling import select_dir, loadvol, loadmodel
 
 # Select the ssdf basedir
 basedir = select_dir(os.getenv('LSPEAS_BASEDIR', ''),
-                     r'C:\Users\Maaike\Documents\UT MA3\LSPEAS_ssdf',)
+                     r'D:\LSPEAS\LSPEAS_ssdf',)
 
 # Select dataset to register
 ptcode = 'LSPEAS_002'
-ctcode = '1month'
+ctcode = 'pre'
 cropname = 'stent'
 
 # Load volumes

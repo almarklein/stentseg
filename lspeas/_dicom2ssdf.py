@@ -11,16 +11,17 @@ from stentseg.utils.datahandling import savecropvols, saveaveraged, cropaveraged
 # Select base directory for DICOM data
 
 # The stentseg datahandling module is agnostic about where the DICOM data is
-dicom_basedir = select_dir(r'H:\LSPEAS_data\DICOM',
-                           '/home/almar/data/dicom/stent_LPEAS',)
+# dicom_basedir = select_dir(r'E:\LSPEAS_data\DICOM',
+#                            '/home/almar/data/dicom/stent_LPEAS',)
+dicom_basedir = r'D:\LSPEAS\BACKUP CTdata\LSPEAS_data\DICOM'
 
 # Select the ssdf basedir
 basedir = select_dir(os.getenv('LSPEAS_BASEDIR', ''),
-                     r'C:\Users\Maaike\Documents\UT MA3\LSPEAS_ssdf',)
+                     r'D:\LSPEAS\LSPEAS_ssdf',)
 
 # Params Step A, B, C
 ctcode = 'pre'  # 'pre', 'discharge', '1month', '6months'
-ptcode = 'LSPEAS_002'
+ptcode = 'LSPEAS_003'
 
 # Params Step B, C (to save)
 cropnames = 'stent', 'ring'    # save crops of stent and/or ring
@@ -28,7 +29,7 @@ stenttype = 'anaconda'         # or 'endurant'
 # C: start and end phase in cardiac cycle to average (50,90 = 5 phases)
 phases = 30, 90
 
-# todo: use imageio instead when fixed
+# todo: use imageio.mvolread instead when fixed
 def readdcm(dirname):
     """ Function to read volumes while imageio suffers from "too may
     open files" bug.
@@ -50,13 +51,12 @@ def readdcm(dirname):
     vols = []
     for volnr in range(0,10): # 0,10 for all phases from 0 up to 90%
         vol = imageio.volread(os.path.join(dirname,subfolder[volnr]), 'dicom')
+        # check order of phases
+        perc = '%i%%' % (volnr*10)
+        assert perc in vol.meta.SeriesDescription
         vols.append(vol)
     #todo: Dit gaat niet gegarandeerd op de goede volgorde! Bij Almar (Linux?) niet namelijk
-    # Check order of phases
-    for i, vol in enumerate(vols):
-        perc = '%i%%' % (i*10)
-        assert perc in vol.meta.SeriesDescription
-        
+    
     return vols  
 
 
@@ -127,6 +127,6 @@ a = vv.gca()
 a.cameraType = '3d'
 a.daspect = 1,1,-1
 a.daspectAuto = False
-t = vv.volshow(vol)
-t.clim = 0, 2500
+t = vv.volshow(s1.vol80)
+t.clim = 0, 3000
 

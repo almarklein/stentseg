@@ -17,8 +17,8 @@ basedir = select_dir(os.getenv('LSPEAS_BASEDIR', ''),
                      r'C:\Users\Maaike\Documents\UT MA3\LSPEAS_ssdf',)
 
 # Select dataset to register
-ptcode = 'LSPEAS_002'
-ctcode = '1month'
+ptcode = 'LSPEAS_003'
+ctcode = 'discharge'
 cropname = 'ring'
 modelname = 'modelavgreg'
 
@@ -37,7 +37,8 @@ a = vv.gca()
 a.axis.axisColor = 1,1,1
 a.axis.visible = False
 a.bgcolor = 0,0,0
-a.daspect = 1, -1, -1
+a.daspect = 1, 1, -1
+# t = vv.volshow(vol, clim=(0, 4000), renderStyle='mip')
 model.Draw(mc='b', mw = 10, lc='g')
 #model_hooks.Draw(mc='r', mw = 10, lc='r')
 #model_struts.Draw(mc='m', mw = 10, lc='m')
@@ -46,13 +47,13 @@ model.Draw(mc='b', mw = 10, lc='g')
 
 vv.xlabel('x (mm)');vv.ylabel('y (mm)');vv.zlabel('z (mm)')
 vv.title('Model for LSPEAS %s  -  %s' % (ptcode[7:], ctcode))
-viewringcrop = {'azimuth': 0.13322166255528733,
- 'daspect': (1.0, -1.0, -1.0),
- 'elevation': 73.78378378378379,
+viewringcrop = {'azimuth': -102.0361691249633,
+ 'daspect': (1.0, 1.0, -1.0),
+ 'elevation': 22.02702702702704,
  'fov': 0.0,
- 'loc': (141.5058435276805, 185.37304726213267, 50.00189523378196),
+ 'loc': (91.66835291301516, 58.04696697525794, 72.30817046479933),
  'roll': 0.0,
- 'zoom': 0.018899343030128486}
+ 'zoom': 0.0334813390377975}
 a.SetView(viewringcrop)
 
 ## Get hooks in vessel wall
@@ -76,6 +77,7 @@ for n in model.nodes():
         hooknodes.append(neighbour)
         if remove == True:
             model.remove_node(n)
+
 # Pop remaining degree 2 nodes
 stentgraph.pop_nodes(model) 
 
@@ -86,9 +88,6 @@ model_hooks.Draw(mc='r', mw = 10, lc='r')
 from stentseg.stentdirect.stentgraph_anacondaRing import _edge_length
 
 model_struts = stentgraph.StentGraph()
-
-#stentgraph.pop_nodes(model) 
-#todo: haalt node niet weg en vindt dus geen vierkant (bij 002 discharge en 003 discharge)
 
 remove = True
 
@@ -182,7 +181,7 @@ c1 = np.asarray(clusters[0])
 c1_z = c1[:,2] # x,y,z
 c2 = np.asarray(clusters[1])
 c2_z = c2[:,2] # x,y,z
-if c1_z.mean() < c2_z.mean(): # then cluster[0] is topring; daspect = 1,-1,-1
+if c1_z.mean() < c2_z.mean(): # then cluster[0] is topring; daspect = 1, 1,-1
     model_2nd.remove_nodes_from(clusters[0])
     model_top.remove_nodes_from(clusters[1])
 else:
@@ -195,13 +194,13 @@ a.Clear()
 a.axis.axisColor = 1,1,1
 a.axis.visible = False
 a.bgcolor = 0,0,0
-a.daspect = 1, -1, -1
-t = vv.volshow(vol, clim=(0, 4000), renderStyle='mip')
+a.daspect = 1, 1, -1
+# t = vv.volshow(vol, clim=(0, 4000), renderStyle='mip')
 # model.Draw(mc='b', mw = 10, lc='g')
-# model_top.Draw(mc='y', mw = 10, lc='y')
-# model_2nd.Draw(mc='c', mw = 10, lc='c')
-model_top.Draw(mc='b', mw = 10, lc='g')
-modelmesh = create_mesh(model_top, 0.6)  # Param is thickness
-m = vv.mesh(modelmesh)
-m.faceColor = 'g'
+model_top.Draw(mc='y', mw = 10, lc='y')
+model_2nd.Draw(mc='c', mw = 10, lc='c')
+# model_top.Draw(mc='b', mw = 10, lc='g')
+# modelmesh = create_mesh(model_top, 0.6)  # Param is thickness
+# m = vv.mesh(modelmesh)
+# m.faceColor = 'g'
 a.SetView(view)

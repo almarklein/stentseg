@@ -20,8 +20,8 @@ basedir = select_dir(os.getenv('LSPEAS_BASEDIR', ''),
                      r'C:\Users\Maaike\Documents\UT MA3\LSPEAS_ssdf',)
 
 # Select dataset to register
-ptcode = 'LSPEAS_003'
-ctcode = 'discharge'
+ptcode = 'LSPEAS_001'
+ctcode = '6months'
 cropname = 'ring'
 what = 'avgreg'
 
@@ -33,18 +33,18 @@ s = loadvol(basedir, ptcode, ctcode, cropname, what)
 vol = s.vol
 
 # Initialize segmentation parameters
-stentType = 'anaconda'  # 'anacondaRing' runs stentgraph_anacondaRing.prune_redundant in Step3
+stentType = 'anacondaRing'  # 'anacondaRing' runs stentgraph_anacondaRing.prune_redundant in Step3
 cleanNodes = False  # False when using GUI: clean nodes and smooth after correct/restore
 
 p = getDefaultParams(stentType)
-p.seed_threshold = 1500                 # step 1
-p.mcp_speedFactor = 170                 # step 2, speed image (delta), costToCtValue
+p.seed_threshold = 1000                 # step 1
+p.mcp_speedFactor = 190                 # step 2, speed image (delta), costToCtValue
 p.mcp_maxCoverageFronts = 0.003         # step 2, base.py; replaces mcp_evolutionThreshold
-p.graph_weakThreshold = 1000             # step 3, stentgraph.prune_very_weak
+p.graph_weakThreshold = 500             # step 3, stentgraph.prune_very_weak
 p.graph_expectedNumberOfEdges = 3       # step 3, stentgraph.prune_weak
 p.graph_trimLength =  0                 # step 3, stentgraph.prune_tails
 p.graph_minimumClusterSize = 10         # step 3, stentgraph.prune_clusters
-p.graph_strongThreshold = 4600          # step 3, stentgraph.prune_weak and stentgraph.prune_redundant
+p.graph_strongThreshold = 3500          # step 3, stentgraph.prune_weak and stentgraph.prune_redundant
 p.graph_min_strutlength = 6            # step 3, stentgraph.prune_weak and stentgraph.prune_redundant
 p.graph_max_strutlength = 12            # step 3, stentgraph.prune_weak and stentgraph.prune_redundant
 # todo: write function to estimate maxCoverageFronts
@@ -62,7 +62,7 @@ fig = vv.figure(4); vv.clf()
 fig.position = 0, 22, 1366, 706
 # fig.position = 1528.00, 123.00,  1246.00, 730.00
 viewringcrop = {'azimuth': 158.76671619613668,
- 'daspect': (1.0, -1.0, -1.0),
+ 'daspect': (1.0, 1.0, -1.0),
  'elevation': 40.40540540540541,
  'fov': 0.0,
  'loc': (140.99391104474705, 110.92390904403258, 100.60072175508655),
@@ -78,7 +78,7 @@ vv.xlabel('x (mm)');vv.ylabel('y (mm)');vv.zlabel('z (mm)')
 
 # Show cleaned up graph
 a3 = vv.subplot(122)
-a3.daspect = 1,-1,-1
+a3.daspect = 1,1,-1
 t = vv.volshow(vol)
 t.clim = 0, 3000
 sd._nodes3.Draw(mc='b', lc = 'b')

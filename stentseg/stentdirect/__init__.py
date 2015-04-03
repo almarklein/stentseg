@@ -91,7 +91,7 @@ def getDefaultParams(stentType=''):
         params.mcp_maxCoverageFronts = 0.003
         params.graph_trimLength = 0
         # The length of the struts in anaconda proximal fixation rings
-        params.graph_min_strutlength = 7
+        params.graph_min_strutlength = 6
         params.graph_max_strutlength = 12
     elif stentType:
         raise ValueError('Unknown stent type %s' % stentType)

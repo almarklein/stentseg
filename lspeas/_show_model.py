@@ -8,7 +8,7 @@ import visvis as vv
 from stentseg.utils.datahandling import select_dir, loadvol, loadmodel
 from pirt.utils.deformvis import DeformableTexture3D, DeformableMesh
 from stentseg.stentdirect.stentgraph import create_mesh
-from stentseg.motion.vis import create_mesh_with_deforms,remove_stent_from_volume
+from stentseg.motion.vis import remove_stent_from_volume
 from stentseg.motion.vis import create_mesh_with_abs_displacement
 import pirt
 import numpy as np
@@ -17,19 +17,18 @@ import numpy as np
 
 # Select the ssdf basedir
 basedir = select_dir(os.getenv('LSPEAS_BASEDIR', ''),
-                     r'C:\Users\Maaike\Documents\UT MA3\LSPEAS_ssdf',)
+                     r'D:\LSPEAS\LSPEAS_ssdf',)
 
 # Select dataset to register
 ptcode = 'LSPEAS_003'
-# ctcode, nr = 'discharge', 1
-ctcode, nr = '1month', 2
+ctcode, nr = 'discharge', 1
+# ctcode, nr = 'pre', 2
 cropname = 'ring'
 modelname = 'modelavgreg'
 
-# Load deformations
+# Load deformations (forward for mesh)
 s = loadvol(basedir, ptcode, ctcode, cropname, 'deforms')
 deforms = [s['deform%i'%(i*10)] for i in range(10)]
-# deformsMesh = [pirt.DeformationFieldBackward(*fields) for fields in deforms]
 deforms = [[field[::2,::2,::2] for field in fields] for fields in deforms]
 
 # These deforms are forward mapping. Turn into DeformationFields.
@@ -45,15 +44,14 @@ deforms_b = [f.as_backward() for f in fields_f]
 s = loadmodel(basedir, ptcode, ctcode, cropname, modelname)
 model = s.model
 # modelmesh = create_mesh(model, 1.0)  # Param is thickness
-# modelmesh = create_mesh_with_deforms(model, deformsMesh, s.origin, radius=1.0, fullPaths=True)
-modelmesh = create_mesh_with_abs_displacement(model, radius = 1.0, dimensions = 'xyz')
+modelmesh = create_mesh_with_abs_displacement(model, radius = 1.0, dimensions = 'z')
 
 # Load static CT image to add as reference
-s2 = loadvol(basedir, ptcode, ctcode, 'stent', 'avgreg')
+s2 = loadvol(basedir, ptcode, ctcode, 'stent', 'avg3090')
 vol = s2.vol
 
 # Remove stent from vol for visualization
-# vol = remove_stent_from_volume(vol, model, stripSize=4)
+vol = remove_stent_from_volume(vol, model, stripSize=7)
 
 # todo: also create a way to show static ring thinner/transparent as reference 
 # vol2 = np.copy(vol)
@@ -65,25 +63,39 @@ vol = s2.vol
 
 # Start vis
 f = vv.figure(nr); vv.clf()
-f.position = 0, 22, 1366, 706
+if nr == 1:
+    f.position = 8.00, 30.00,  944.00, 1002.00
+else:
+    f.position = 968.00, 30.00,  944.00, 1002.00
 a = vv.gca()
 a.axis.axisColor = 1,1,1
 a.axis.visible = False
 a.bgcolor = 0,0,0
-a.daspect = 1, -1, -1
-t = vv.volshow(vol, clim=(0, 4000), renderStyle='mip')
-#vv.ColormapEditor(vv.gcf())
-#t.colormap = (0,0,0,0), (1,1,1,1) # 0 , 1500 clim
+a.daspect = 1, 1, -1
+t = vv.volshow(vol, clim=(0, 3000), renderStyle='iso')
+t.isoThreshold = 250
+# vv.ColormapEditor(vv.gcf())
+t.colormap = {'r': [(0.0, 0.0), (0.17727272, 1.0)],
+ 'g': [(0.0, 0.0), (0.27272728, 1.0)],
+ 'b': [(0.0, 0.0), (0.34545454, 1.0)],
+ 'a': [(0.0, 1.0), (1.0, 1.0)]}
+# t = vv.volshow2(vol)
+# t.clim = -550, 500
 vv.xlabel('x (mm)');vv.ylabel('y (mm)');vv.zlabel('z (mm)')
 vv.title('Model for LSPEAS %s  -  %s' % (ptcode[7:], ctcode))
-viewringcrop = {'azimuth': -166.8860353130016,
- 'daspect': (1.0, -1.0, -1.0),
- 'elevation': 8.783783783783782,
- 'fov': 0.0,
- 'loc': (113.99322808141005, 161.58640433480713, 73.92662200285992),
- 'roll': 0.0,
- 'zoom': 0.01066818643565108}
+# viewringcrop = {'azimuth': -166.8860353130016,
+#  'daspect': (1.0, 1.0, -1.0),
+#  'elevation': 8.783783783783782,
+#  'fov': 0.0,
+#  'loc': (113.99322808141005, 161.58640433480713, 73.92662200285992),
+#  'roll': 0.0,
+#  'zoom': 0.01066818643565108}
+# m = vv.mesh(modelmesh)
+# # m.faceColor = 'g'
+# m.clim = 0, 5
+# m.colormap = vv.CM_JET
 
+## Add motion
 node_points = []
 for i, node in enumerate(model.nodes()):
     node_point = vv.solidSphere(translation = (node), scaling = (1.1,1.1,1.1))
@@ -118,10 +130,10 @@ dm.clim = 0, 4
 dm.colormap = vv.CM_JET
 vv.colorbar()
 
-# Run
+# Run mesh
 a.SetLimits()
-a.SetView(viewringcrop)
-dm.MotionPlay(10, 0.5)  # (10, 0.2) = each 10 ms do a step of 20%
+# a.SetView(viewringcrop)
+dm.MotionPlay(5, 0.4)  # (10, 0.2) = each 10 ms do a step of 20%
 dm.motionSplineType = 'B-spline'
 dm.motionAmplitude = 3.0  # For a mesh we can (more) safely increase amplitude
 #dm.faceColor = 'g'
@@ -185,28 +197,21 @@ for node_point in node_points:
     node_point.eventEnter.Bind(pick_node)
     node_point.eventLeave.Bind(unpick_node)
 
-# # Record video
-# rec = vv.record(a)
-# #...
-# # Export
-# rec.Stop()
-# rec.Export('%s_%s_%s_%s.avi') % (ptcode, ctcode, cropname, 'model')
-
 # In stentseg.motion.vis are a few functions, but they need to be adjusted
 # to work with the new stent model.
 
 ## Turn on/off axis
-vv.figure(1); a1 = vv.gca(); vv.figure(2); a2= vv.gca()
-
-switch = False
-
-a1.axis.visible = switch
-a2.axis.visible = switch
+# vv.figure(1); a1 = vv.gca(); vv.figure(2); a2= vv.gca()
+# 
+# switch = False
+# 
+# a1.axis.visible = switch
+# a2.axis.visible = switch
 
 ## Use same camera when 2 models are running
-a1.camera = a2.camera
+# a1.camera = a2.camera
 
 ## Turn on/off moving mesh
 
-dm.visible = False
-dm.visible = True
+# dm.visible = False
+# dm.visible = True
