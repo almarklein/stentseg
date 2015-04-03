@@ -20,7 +20,7 @@ basedir = select_dir(os.getenv('LSPEAS_BASEDIR', ''),
                      r'D:\LSPEAS\LSPEAS_ssdf',)
 
 # Select dataset to register
-ptcode = 'LSPEAS_002'
+ptcode = 'LSPEAS_003'
 ctcode, nr = 'discharge', 1
 # ctcode, nr = 'pre', 2
 cropname = 'ring'
@@ -35,10 +35,10 @@ deforms = [[field[::2,::2,::2] for field in fields] for fields in deforms]
 s = loadmodel(basedir, ptcode, ctcode, cropname, modelname)
 model = s.model
 # modelmesh = create_mesh(model, 1.0)  # Param is thickness
-modelmesh = create_mesh_with_abs_displacement(model, radius = 1.0, dimensions = 'xyz')
+modelmesh = create_mesh_with_abs_displacement(model, radius = 1.0, dimensions = 'z')
 
 # Load static CT image to add as reference
-s2 = loadvol(basedir, ptcode, ctcode, 'stent', 'avgreg')
+s2 = loadvol(basedir, ptcode, ctcode, 'stent', 'avg3090')
 vol = s2.vol
 
 # Remove stent from vol for visualization
@@ -75,13 +75,13 @@ t.colormap = {'r': [(0.0, 0.0), (0.17727272, 1.0)],
 # t.clim = -550, 500
 vv.xlabel('x (mm)');vv.ylabel('y (mm)');vv.zlabel('z (mm)')
 vv.title('Model for LSPEAS %s  -  %s' % (ptcode[7:], ctcode))
-viewringcrop = {'azimuth': -166.8860353130016,
- 'daspect': (1.0, 1.0, -1.0),
- 'elevation': 8.783783783783782,
- 'fov': 0.0,
- 'loc': (113.99322808141005, 161.58640433480713, 73.92662200285992),
- 'roll': 0.0,
- 'zoom': 0.01066818643565108}
+# viewringcrop = {'azimuth': -166.8860353130016,
+#  'daspect': (1.0, 1.0, -1.0),
+#  'elevation': 8.783783783783782,
+#  'fov': 0.0,
+#  'loc': (113.99322808141005, 161.58640433480713, 73.92662200285992),
+#  'roll': 0.0,
+#  'zoom': 0.01066818643565108}
 # m = vv.mesh(modelmesh)
 # # m.faceColor = 'g'
 # m.clim = 0, 5
@@ -124,8 +124,8 @@ vv.colorbar()
 
 # Run mesh
 a.SetLimits()
-a.SetView(viewringcrop)
-dm.MotionPlay(10, 0.2)  # (10, 0.2) = each 10 ms do a step of 20%
+# a.SetView(viewringcrop)
+dm.MotionPlay(5, 0.4)  # (10, 0.2) = each 10 ms do a step of 20%
 dm.motionSplineType = 'B-spline'
 dm.motionAmplitude = 3.0  # For a mesh we can (more) safely increase amplitude
 #dm.faceColor = 'g'
@@ -193,17 +193,17 @@ for node_point in node_points:
 # to work with the new stent model.
 
 ## Turn on/off axis
-vv.figure(1); a1 = vv.gca(); vv.figure(2); a2= vv.gca()
-
-switch = False
-
-a1.axis.visible = switch
-a2.axis.visible = switch
+# vv.figure(1); a1 = vv.gca(); vv.figure(2); a2= vv.gca()
+# 
+# switch = False
+# 
+# a1.axis.visible = switch
+# a2.axis.visible = switch
 
 ## Use same camera when 2 models are running
-a1.camera = a2.camera
+# a1.camera = a2.camera
 
 ## Turn on/off moving mesh
 
-dm.visible = False
-dm.visible = True
+# dm.visible = False
+# dm.visible = True

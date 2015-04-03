@@ -30,8 +30,8 @@ if __name__ == "__main__":
                             r'D:\LSPEAS\BACKUP CTdata\LSPEAS_data\DICOM',
                             '/home/almar/data/dicom/stent_LPEAS',)    
     # Select dataset
-    ptcode = 'LSPEAS_002'
-    ctcode = '1month'
+    ptcode = 'LSPEAS_001'
+    ctcode = 'pre'
     cropname = 'stent'
     
     # Select basedirectory to load ssdf
