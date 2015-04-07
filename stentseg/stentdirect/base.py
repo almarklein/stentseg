@@ -101,7 +101,7 @@ class StentDirect:
         
         # Detect points
         th = self._params.seed_threshold
-        pp = stentpoints3d.get_stent_likely_positions(self._vol, th, subpixel=True)
+        pp = stentpoints3d.get_stent_likely_positions(self._vol, th)
         
         # Create nodes object from found points
         nodes = stentgraph.StentGraph()
@@ -246,7 +246,9 @@ class StentDirect:
         if cleanNodes == True:
             stentgraph.pop_nodes(nodes)  # because removing edges/add nodes can create degree 2 nodes
             stentgraph.add_corner_nodes(nodes) # because adding corners inside loop creates more false nodes
-            stentgraph.smooth_paths(nodes) # do not smooth iterative based on changing edges
+            nodes = self._refine_positions(nodes)
+            stentgraph.smooth_paths(nodes, 2) # do not smooth iterative based on changing edges
+            
         t0 = time.time()-t_start
         tmp = "Reduced to %i edges and %i nodes, "
         tmp += "which took %1.2f s (%i iters)"
@@ -258,6 +260,34 @@ class StentDirect:
             self.Draw(3)
         
         return nodes
+    
+    
+    def _refine_positions(self, nodes):
+        """ Refine positions by finding subpixel locations for nodes
+        and paths. Since the node locations are the keys in the graph,
+        we need to create a new graph.
+        """
+        
+        # Create a map from old to new positions
+        pp1 = nodes.nodes()
+        pp2 = stentpoints3d.get_subpixel_positions(self._vol, np.array(pp1))
+        M = {}
+        for i in range(pp2.shape[0]):
+            M[pp1[i]] = tuple(pp2[i].flat)
+        
+        # Make a copy, replacing the node locations
+        newnodes = stentgraph.StentGraph()
+        for n1 in nodes.nodes():
+            newnodes.add_node(M[n1], **nodes.node[n1])
+        for n1, n2 in nodes.edges():
+            newnodes.add_edge(M[n1], M[n2], **nodes.edge[n1][n2])
+        
+        # Refine paths to subpixel positions
+        for n1, n2 in newnodes.edges():
+            path = newnodes.edge[n1][n2]['path']
+            path[:] = stentpoints3d.get_subpixel_positions(self._vol, path)
+        
+        return newnodes
     
     
     def Go(self):
