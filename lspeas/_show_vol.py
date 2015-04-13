@@ -12,7 +12,7 @@ basedir = select_dir(os.getenv('LSPEAS_BASEDIR', ''),
                      r'D:\LSPEAS\LSPEAS_ssdf',)
 
 # Select dataset to register
-ptcode = 'LSPEAS_002'
+ptcode = 'LSPEAS_003'
 ctcode, nr = 'discharge', 1
 # ctcode, nr = 'pre', 2
 cropname = 'stent'
@@ -70,10 +70,14 @@ dt.clim = 0, 3000
 dt.isoThreshold = 400
 dt.renderStyle = 'iso'  # iso or mip work well
 dt.SetDeforms(*deforms_backward)
+dt.colormap = {'g': [(0.0, 0.0), (0.33636364, 1.0)],
+ 'b': [(0.0, 0.0), (0.49545455, 1.0)],
+ 'a': [(0.0, 1.0), (1.0, 1.0)],
+ 'r': [(0.0, 0.0), (0.22272727, 1.0)]}
 
 # Set limits and play!
 a.SetLimits()
-dt.MotionPlay(10, 0.3)  # (10, 0.2) = each 10 ms do a step of 20% ;(0.1,0.2)
+dt.MotionPlay(5, 0.4)  # (10, 0.2) = each 10 ms do a step of 20% ;(0.1,0.2)
                         # With 85 bpm every beat 706 ms; 141 ms per 20%  
 
 dt.motionSplineType = 'B-spline'
