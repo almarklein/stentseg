@@ -46,8 +46,11 @@ total: 5*64+32+16 = 368 MB
 import sys, os, time
 from visvis import ssdf
 
-from .base import StentDirect, StentDirect
+from .base import StentDirect
+from .stent_anaconda import AnacondaDirect
 
+
+# todo: define default params for each stent type on its own class.
 # Get default params
 def getDefaultParams(stentType=''):
     """ getDefaultParams()

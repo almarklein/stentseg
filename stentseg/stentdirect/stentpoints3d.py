@@ -16,13 +16,10 @@ import scipy as sp, scipy.ndimage
 from stentseg.utils import PointSet, quadraticfit
 
 
-def get_stent_likely_positions(data, th, subpixel=False):
+def get_stent_likely_positions(data, th):
     """ Get a pointset of positions that are likely to be on the stent.
     If the given data has a "sampling" attribute, the positions are
     scaled accordingly. 
-    
-    If subpixel is True, wil perform quadratic fitting to obtain
-    subpixel locations of the positions.
     
     Detection goes according to three criteria:
       * intensity above given threshold
@@ -36,18 +33,6 @@ def get_stent_likely_positions(data, th, subpixel=False):
     # Convert mask to points
     indices = np.where(mask==2)  # Tuple of 1D arrays
     pp = PointSet( np.column_stack(reversed(indices)), dtype=np.float32)
-    
-    # Fit to subpixels
-    if subpixel:
-        pp1 = pp
-        pp2 = PointSet(3)
-        for p in pp1:
-            x, y, z=p[0,:]
-            dz, _ = quadraticfit.fitLQ1( data[z-1:z+2, y, x] )
-            dy, _ = quadraticfit.fitLQ1( data[z, y-1:y+2, x] )
-            dx, _ = quadraticfit.fitLQ1( data[z, y, x-1:x+2] )
-            pp2.append(x+dx, y+dy, z+dz)
-        pp = pp2
     
     # Correct for anisotropy and offset
     if hasattr(data, 'sampling'):
@@ -118,3 +103,40 @@ def get_mask_with_stent_likely_positions(data, th):
     
     return mask
 
+
+def get_subpixel_positions(vol, pp):
+    """ Given a set of points, return a new set with the same positions,
+    but refined to their subpixel positions based on a quadratic fit.
+    """
+    # Ensure float32
+    pp = pp.astype(np.float32, copy=False)
+    
+    # Get origin and sampling
+    sampling = 1.0, 1.0, 1.0 
+    origin = 0.0, 0.0, 0.0
+    if hasattr(vol, 'sampling'):
+        sampling = vol.sampling
+    if hasattr(vol, 'origin'):
+        origin = vol.origin
+    
+    # ... in xyz order
+    sampling_xyz, origin_xyz =  np.flipud(sampling), np.flipud(origin)
+    
+    # Transform from world coordinates to volume indices
+    pp1 = ((pp - origin_xyz) / sampling_xyz + 0.25).astype('int32')
+    
+    # Fit in this domain
+    pp2 = np.zeros_like(pp1, np.float32)
+    for i in range(pp1.shape[0]):
+        x, y, z = pp1[i, :]
+        dz, _ = quadraticfit.fitLQ1( vol[z-1:z+2, y, x] )
+        dy, _ = quadraticfit.fitLQ1( vol[z, y-1:y+2, x] )
+        dx, _ = quadraticfit.fitLQ1( vol[z, y, x-1:x+2] )
+        dx = 0.0 if abs(dx) > 1.0 else dx
+        dy = 0.0 if abs(dy) > 1.0 else dy
+        dz = 0.0 if abs(dz) > 1.0 else dz
+        assert abs(dx) < 1 and abs(dy) < 1 and abs(dz) < 1
+        pp2[i] = x+dx, y+dy, z+dz
+    
+    # Transform to world coordinates
+    return pp2 * sampling_xyz + origin_xyz

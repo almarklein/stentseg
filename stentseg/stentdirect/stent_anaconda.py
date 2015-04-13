@@ -1,15 +1,8 @@
 """
-Next version for stentseg-specific graph class and functionality.
-Use networkx instead of vispy.util.graph.
-In progress. Step 1 and step2 of stentdirect work now.
-
-The functions in this module that strat with "prune" are intended to
-do no harm to the graph and it *should* be possible to apply them
-recursively and in any order to clean up a graph that represents a 
-stent.
+Implementation of StentDirect algorithm for the Anaconda stent graft
 
 Functions in this module are specific to the anaconda proximal ring
-Imports functions needed from stentgraph
+Imports functions needed from stentgraph 
 """
 
 from __future__ import print_function, division, absolute_import
@@ -20,13 +13,47 @@ import networkx as nx
 import visvis as vv
 from visvis import ssdf
 
-from stentseg.utils.new_pointset import PointSet
-from stentseg.utils import gaussfun
+from ..utils.new_pointset import PointSet
+from ..utils import gaussfun
 
-from stentseg.stentdirect.stentgraph import _sorted_neighbours
+from . import stentgraph
+from .stentgraph import _sorted_neighbours
+from .base import StentDirect
 
 
 SORTBY = 'cost'
+
+
+class AnacondaDirect(StentDirect):
+    """ An implementation of the StentDirect algorithm targeted at 
+    the Anaconda stent graft. In particular, the pruning algorithm is
+    modified.
+    """
+    
+    stentType = 'anaconda'
+    
+    def _Step3_iter(self, nodes, cleanNodes=True):
+        params = self._params
+        ene = params.graph_expectedNumberOfEdges
+        
+        # prune edges prior to pop and add crossing nodes, otherwise many false nodes
+        stentgraph.prune_very_weak(nodes, params.graph_weakThreshold)
+        stentgraph.prune_weak(nodes, ene, params.graph_strongThreshold)
+        
+        # Use our own pruning algorithm
+        prune_redundant(nodes, params.graph_strongThreshold,
+                               params.graph_min_strutlength,
+                               params.graph_max_strutlength)
+        if cleanNodes == True:
+            stentgraph.pop_nodes(nodes)
+            stentgraph.add_nodes_at_crossings(nodes) 
+            # mind that adding at crossing in first iteration can lead to uncleaned edges (degree 3 nodes)
+            stentgraph.pop_nodes(nodes)  # because adding nodes can leave other redundant
+            prune_redundant(nodes, params.graph_strongThreshold,
+                                   params.graph_min_strutlength,
+                                   params.graph_max_strutlength)
+        stentgraph.prune_clusters(nodes, params.graph_minimumClusterSize)
+        stentgraph.prune_tails(nodes, params.graph_trimLength)
 
 
 def prune_weak(graph, enc, ctvalue, min_strutlength, max_strutlength):
