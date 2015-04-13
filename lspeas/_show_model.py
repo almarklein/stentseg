@@ -37,8 +37,8 @@ deforms = [[field[::2,::2,::2] for field in fields] for fields in deforms]
 # the information is used to displace vertices). The backward mapping
 # deforms should be used to deform textures (since they are used in
 # interpolating the texture data).
-deforms_f = [pirt.DeformationFieldForward(f) for f in deforms]
-deforms_b = [f.as_backward() for f in fields_f]
+deforms_f = [pirt.DeformationFieldForward(*f) for f in deforms]
+deforms_b = [f.as_backward() for f in deforms_f]
 
 # Load the stent model and mesh
 s = loadmodel(basedir, ptcode, ctcode, cropname, modelname)
