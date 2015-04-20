@@ -12,7 +12,7 @@ from visvis import ssdf
 from stentseg.utils import PointSet
 from stentseg.utils.datahandling import select_dir, loadvol, loadmodel
 from stentseg.stentdirect.stentgraph import create_mesh
-from stentseg.stentdirect import StentDirect, getDefaultParams
+from stentseg.stentdirect import StentDirect, getDefaultParams, AnacondaDirect
 
 # Select the ssdf basedir
 basedir = select_dir(os.getenv('LSPEAS_BASEDIR', ''),
@@ -49,12 +49,13 @@ p.graph_max_strutlength = 12            # step 3, stentgraph.prune_weak and sten
 # todo: write function to estimate maxCoverageFronts
 
 # Instantiate stentdirect segmenter object
-sd = StentDirect(vol, p)
+sd = AnacondaDirect(vol, p) # inherit _Step3_iter from AnacondaDirect class
+#runtime warning using anacondadirect due to mesh creation, ignore
 
 # Perform the three steps of stentDirect
 sd.Step1()
 sd.Step2()
-sd.Step3(stentType, cleanNodes)
+sd.Step3(cleanNodes)
 
 # Create a mesh object for visualization (argument is strut tickness)
 bm = create_mesh(sd._nodes3, 0.6) # new
