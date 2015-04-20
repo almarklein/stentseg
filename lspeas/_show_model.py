@@ -95,9 +95,9 @@ vv.title('Model for LSPEAS %s  -  %s' % (ptcode[7:], ctcode))
 # m.clim = 0, 5
 # m.colormap = vv.CM_JET
 
-## Add motion
+# Add motion
 node_points = []
-for i, node in enumerate(model.nodes()):
+for i, node in enumerate(sorted(model.nodes())):
     node_point = vv.solidSphere(translation = (node), scaling = (1.1,1.1,1.1))
     node_point.faceColor = 'b'
     node_point.visible = False
@@ -133,7 +133,7 @@ vv.colorbar()
 # Run mesh
 a.SetLimits()
 # a.SetView(viewringcrop)
-dm.MotionPlay(5, 0.4)  # (10, 0.2) = each 10 ms do a step of 20%
+dm.MotionPlay(5, 0.8)  # (10, 0.2) = each 10 ms do a step of 20%
 dm.motionSplineType = 'B-spline'
 dm.motionAmplitude = 3.0  # For a mesh we can (more) safely increase amplitude
 #dm.faceColor = 'g'
