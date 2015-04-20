@@ -15,7 +15,7 @@ basedir = select_dir(os.getenv('LSPEAS_BASEDIR', ''),
 ptcode = 'LSPEAS_003'
 ctcode, nr = 'discharge', 1
 # ctcode, nr = 'pre', 2
-cropname = 'stent'
+cropname = 'ring'
 
 ## Show 3D movie, by alternating the 10 volumes
 
@@ -47,6 +47,7 @@ vol = s.vol
 # Load deformations (use backward mapping to deform texture 3D volume)
 s = loadvol(basedir, ptcode, ctcode, cropname, 'deforms')
 deforms_forward = [s['deform%i'%(i*10)] for i in range(10)]
+deforms_forward = [[field[::2,::2,::2] for field in fields] for fields in deforms_forward]
 deforms_forward = [pirt.DeformationFieldForward(*fields) for fields in deforms_forward] # wrap fields
 deforms_backward = [deform.as_backward() for deform in deforms_forward] # get backward mapping
 
@@ -77,7 +78,7 @@ dt.colormap = {'g': [(0.0, 0.0), (0.33636364, 1.0)],
 
 # Set limits and play!
 a.SetLimits()
-dt.MotionPlay(5, 0.4)  # (10, 0.2) = each 10 ms do a step of 20% ;(0.1,0.2)
+dt.MotionPlay(5, 0.8)  # (10, 0.2) = each 10 ms do a step of 20% ;(0.1,0.2)
                         # With 85 bpm every beat 706 ms; 141 ms per 20%  
 
 dt.motionSplineType = 'B-spline'

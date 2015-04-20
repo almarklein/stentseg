@@ -48,8 +48,6 @@ reg.register(verbose=1)
 t1 = time.time()
 print('Registration completed, which took %1.2f min.' % ((t1-t0)/60))
 
-# todo: in visualization, we need to multiply with -1, do we really have backward transforms?
-
 
 ## Store registration result
 
