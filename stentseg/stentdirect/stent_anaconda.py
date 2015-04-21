@@ -30,7 +30,7 @@ class AnacondaDirect(StentDirect):
     modified.
     """
     
-    stentType = 'anaconda'
+#     stentType = 'anaconda'
     
     def _Step3_iter(self, nodes, cleanNodes=True):
         params = self._params

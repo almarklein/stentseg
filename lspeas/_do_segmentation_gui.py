@@ -13,61 +13,58 @@ from visvis import ssdf
 from stentseg.utils import PointSet
 from stentseg.utils.datahandling import select_dir, loadvol, loadmodel
 from stentseg.stentdirect.stentgraph import create_mesh
-from stentseg.stentdirect import StentDirect, getDefaultParams, stentgraph, stentgraph_anacondaRing
+from stentseg.stentdirect import StentDirect, getDefaultParams, AnacondaDirect
 
 # Select the ssdf basedir
 basedir = select_dir(os.getenv('LSPEAS_BASEDIR', ''),
-                     r'C:\Users\Maaike\Documents\UT MA3\LSPEAS_ssdf',)
+                     r'D:\LSPEAS\LSPEAS_ssdf',)
 
 # Select dataset to register
-ptcode = 'LSPEAS_001'
-ctcode = '6months'
+ptcode = 'LSPEAS_003'
+ctcode = 'discharge'
 cropname = 'ring'
 what = 'avgreg'
 
-
-## Perform segmentation
 
 # Load volumes
 s = loadvol(basedir, ptcode, ctcode, cropname, what)
 vol = s.vol
 
+## Perform segmentation
+
 # Initialize segmentation parameters
-stentType = 'anacondaRing'  # 'anacondaRing' runs stentgraph_anacondaRing.prune_redundant in Step3
+stentType = 'anacondaRing'  # 'anacondaRing' runs modified pruning algorithm in Step3
 cleanNodes = False  # False when using GUI: clean nodes and smooth after correct/restore
 
 p = getDefaultParams(stentType)
-p.seed_threshold = 1000                 # step 1
-p.mcp_speedFactor = 190                 # step 2, speed image (delta), costToCtValue
+p.seed_threshold = 1500                 # step 1
+p.mcp_speedFactor = 170                 # step 2, speed image (delta), costToCtValue
 p.mcp_maxCoverageFronts = 0.003         # step 2, base.py; replaces mcp_evolutionThreshold
-p.graph_weakThreshold = 500             # step 3, stentgraph.prune_very_weak
+p.graph_weakThreshold = 1000             # step 3, stentgraph.prune_very_weak
 p.graph_expectedNumberOfEdges = 3       # step 3, stentgraph.prune_weak
 p.graph_trimLength =  0                 # step 3, stentgraph.prune_tails
 p.graph_minimumClusterSize = 10         # step 3, stentgraph.prune_clusters
-p.graph_strongThreshold = 3500          # step 3, stentgraph.prune_weak and stentgraph.prune_redundant
-p.graph_min_strutlength = 6            # step 3, stentgraph.prune_weak and stentgraph.prune_redundant
-p.graph_max_strutlength = 12            # step 3, stentgraph.prune_weak and stentgraph.prune_redundant
+p.graph_strongThreshold = 4600          # step 3, stentgraph.prune_weak and stentgraph.prune_redundant
+p.graph_min_strutlength = 6             # step 3, stent_anaconda prune_redundant
+p.graph_max_strutlength = 12            # step 3, stent_anaconda prune_redundant
 # todo: write function to estimate maxCoverageFronts
 
-# Instantiate stentdirect segmenter object
-sd = StentDirect(vol, p)
+if stentType == 'anacondaRing':
+        sd = AnacondaDirect(vol, p) # inherit _Step3_iter from AnacondaDirect class
+        #runtime warning using anacondadirect due to mesh creation, ignore
+else:
+        sd = StentDirect(vol, p)
 
 # Perform the three steps of stentDirect
 sd.Step1()
 sd.Step2()
-sd.Step3(stentType, cleanNodes)
+sd.Step3(cleanNodes)
 
 # Visualize
 fig = vv.figure(4); vv.clf()
 fig.position = 0, 22, 1366, 706
 # fig.position = 1528.00, 123.00,  1246.00, 730.00
-viewringcrop = {'azimuth': 158.76671619613668,
- 'daspect': (1.0, 1.0, -1.0),
- 'elevation': 40.40540540540541,
- 'fov': 0.0,
- 'loc': (140.99391104474705, 110.92390904403258, 100.60072175508655),
- 'roll': 0.0,
- 'zoom': 0.0332902282323454}
+# viewringcrop = 
 
 # Show volume and graph
 a2 = vv.subplot(121)
@@ -87,11 +84,12 @@ vv.xlabel('x (mm)');vv.ylabel('y (mm)');vv.zlabel('z (mm)')
 
 # Start visualization and GUI
 from visvis import Pointset
-from stentseg.stentdirect.stentgraph_anacondaRing import _edge_length
+from stentseg.stentdirect import stentgraph
+from stentseg.stentdirect.stent_anaconda import _edge_length, prune_redundant
 
 #Add clickable nodes
 node_points = []
-for i, node in enumerate(sd._nodes3.nodes()):
+for i, node in enumerate((sd._nodes3.nodes())):
     node_point = vv.solidSphere(translation = (node), scaling = (0.4,0.4,0.4))
     node_point.faceColor = 'b'
     node_point.visible = False
@@ -178,21 +176,20 @@ def on_key(event):
         a3.SetView(view)
     elif event.key == vv.KEY_ESCAPE:
         # ESCAPE will finish model
-        if cleanNodes == False: # clean here and not in base.py; use None to not clean?
-            stentgraph.pop_nodes(sd._nodes3)
-            stentgraph.add_nodes_at_crossings(sd._nodes3)
-            stentgraph.pop_nodes(sd._nodes3)  # because adding nodes can leave other redundant
-            if stentType == 'anacondaRing': # because adding nodes can leave other redundant
-                stentgraph_anacondaRing.prune_redundant(sd._nodes3, sd._params.graph_strongThreshold,
-                                                    sd._params.graph_min_strutlength,
-                                                    sd._params.graph_max_strutlength)
-            else:
-                stentgraph.prune_redundant(sd._nodes3, sd._params.graph_strongThreshold)
-            stentgraph.pop_nodes(sd._nodes3) # because removing edges/add nodes can create degree 2 nodes
-            stentgraph.add_corner_nodes(sd._nodes3)
+        stentgraph.pop_nodes(sd._nodes3)
+        stentgraph.add_nodes_at_crossings(sd._nodes3)
+        stentgraph.pop_nodes(sd._nodes3)  # because adding nodes can leave other redundant
+        if stentType == 'anacondaRing':
+            prune_redundant(sd._nodes3, sd._params.graph_strongThreshold,
+                                            sd._params.graph_min_strutlength,
+                                            sd._params.graph_max_strutlength)
+        else:
+            stentgraph.prune_redundant(sd._nodes3, sd._params.graph_strongThreshold)
+        stentgraph.pop_nodes(sd._nodes3) # because removing edges/add nodes can create degree 2 nodes
+        stentgraph.add_corner_nodes(sd._nodes3)
         stentgraph.prune_clusters(sd._nodes3, sd._params.graph_minimumClusterSize) #remove residual nodes/clusters 
-        #todo: minclustersize problem when analyzing anaconda stent? single ring 1 node?)
         stentgraph.prune_tails(sd._nodes3, sd._params.graph_trimLength)
+        sd._nodes3 = sd._RefinePositions(sd._nodes3) # subpixel locations 
         stentgraph.smooth_paths(sd._nodes3)
         # Create mesh and visualize
         view = a3.GetView()
@@ -232,7 +229,7 @@ switch = False
 a2.axis.visible = switch
 a3.axis.visible = switch
 
-a3.SetView(viewringcrop)
+# a3.SetView(viewringcrop)
 
 switch = False
 a2.axis.visible = switch
@@ -264,7 +261,7 @@ s2.model = model.pack()
 # Save
 filename = '%s_%s_%s_%s.ssdf' % (ptcode, ctcode, cropname, 'model'+what)
 ssdf.save(os.path.join(basedir, ptcode, filename), s2)
-
+print("model saved to disk.")
 
 ## Make model dynamic (and store/overwrite to disk)
 
@@ -290,3 +287,4 @@ filename = '%s_%s_%s_%s.ssdf' % (ptcode, ctcode, cropname, 'model'+what)
 s.model = model.pack()
 s.paramsreg = paramsreg
 ssdf.save(os.path.join(basedir, ptcode, filename), s)
+print("dynamic model saved to disk.")

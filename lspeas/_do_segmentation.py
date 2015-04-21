@@ -32,7 +32,7 @@ vol = s.vol
 ## Perform segmentation
 
 # Initialize segmentation parameters
-stentType = 'anacondaRing'  # 'anacondaRing' runs stentgraph_anacondaRing.prune_redundant in Step3
+stentType = 'anacondaRing'  # 'anacondaRing' runs modified pruning algorithm in Step3
 cleanNodes = True  # True when NOT using GUI
 
 p = getDefaultParams(stentType)
@@ -44,13 +44,16 @@ p.graph_expectedNumberOfEdges = 4       # step 3, stentgraph.prune_weak
 p.graph_trimLength =  0                 # step 3, stentgraph.prune_tails
 p.graph_minimumClusterSize = 10         # step 3, stentgraph.prune_clusters
 p.graph_strongThreshold = 4000          # step 3, stentgraph.prune_weak and stentgraph.prune_redundant
-p.graph_min_strutlength = 6            # step 3, stentgraph.prune_weak and stentgraph.prune_redundant
-p.graph_max_strutlength = 12            # step 3, stentgraph.prune_weak and stentgraph.prune_redundant
+p.graph_min_strutlength = 6             # step 3, stent_anaconda prune_redundant
+p.graph_max_strutlength = 12            # step 3, stent_anaconda prune_redundant
 # todo: write function to estimate maxCoverageFronts
 
 # Instantiate stentdirect segmenter object
-sd = AnacondaDirect(vol, p) # inherit _Step3_iter from AnacondaDirect class
-#runtime warning using anacondadirect due to mesh creation, ignore
+if stentType == 'anacondaRing':
+        sd = AnacondaDirect(vol, p) # inherit _Step3_iter from AnacondaDirect class
+        #runtime warning using anacondadirect due to mesh creation, ignore
+else:
+        sd = StentDirect(vol, p)
 
 # Perform the three steps of stentDirect
 sd.Step1()
@@ -123,7 +126,7 @@ s2.model = model.pack()
 # Save
 filename = '%s_%s_%s_%s.ssdf' % (ptcode, ctcode, cropname, 'model'+what)
 ssdf.save(os.path.join(basedir, ptcode, filename), s2)
-
+print("model saved to disk.")
 
 ## Make model dynamic (and store/overwrite to disk)
 
@@ -149,3 +152,4 @@ filename = '%s_%s_%s_%s.ssdf' % (ptcode, ctcode, cropname, 'model'+what)
 s.model = model.pack()
 s.paramsreg = paramsreg
 ssdf.save(os.path.join(basedir, ptcode, filename), s)
+print("dynamic model saved to disk.")
