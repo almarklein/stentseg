@@ -20,8 +20,8 @@ basedir = select_dir(os.getenv('LSPEAS_BASEDIR', ''),
                      r'D:\LSPEAS\LSPEAS_ssdf',)
 
 # Select dataset to register
-ptcode = 'LSPEAS_003'
-ctcode = 'discharge'
+ptcode = 'LSPEAS_001'
+ctcode = '6months'
 cropname = 'ring'
 what = 'avgreg'
 
@@ -33,18 +33,18 @@ vol = s.vol
 ## Perform segmentation
 
 # Initialize segmentation parameters
-stentType = 'anacondaRing'  # 'anacondaRing' runs modified pruning algorithm in Step3
+stentType = 'anaconda'  # 'anacondaRing' runs modified pruning algorithm in Step3
 cleanNodes = False  # False when using GUI: clean nodes and smooth after correct/restore
 
 p = getDefaultParams(stentType)
-p.seed_threshold = 1500                 # step 1
-p.mcp_speedFactor = 170                 # step 2, speed image (delta), costToCtValue
-p.mcp_maxCoverageFronts = 0.003         # step 2, base.py; replaces mcp_evolutionThreshold
-p.graph_weakThreshold = 1000             # step 3, stentgraph.prune_very_weak
+p.seed_threshold = 1000                 # step 1
+p.mcp_speedFactor = 190                 # step 2, speed image (delta), costToCtValue
+p.mcp_maxCoverageFronts = 0.004         # step 2, base.py; replaces mcp_evolutionThreshold
+p.graph_weakThreshold = 500             # step 3, stentgraph.prune_very_weak
 p.graph_expectedNumberOfEdges = 3       # step 3, stentgraph.prune_weak
 p.graph_trimLength =  0                 # step 3, stentgraph.prune_tails
 p.graph_minimumClusterSize = 10         # step 3, stentgraph.prune_clusters
-p.graph_strongThreshold = 4600          # step 3, stentgraph.prune_weak and stentgraph.prune_redundant
+p.graph_strongThreshold = 3500          # step 3, stentgraph.prune_weak and stentgraph.prune_redundant
 p.graph_min_strutlength = 6             # step 3, stent_anaconda prune_redundant
 p.graph_max_strutlength = 12            # step 3, stent_anaconda prune_redundant
 # todo: write function to estimate maxCoverageFronts
@@ -60,7 +60,13 @@ sd.Step1()
 sd.Step2()
 sd.Step3(cleanNodes)
 
-# Visualize
+
+## Visualize with GUI
+
+from visvis import Pointset
+from stentseg.stentdirect import stentgraph
+from stentseg.stentdirect.stent_anaconda import _edge_length, prune_redundant
+
 fig = vv.figure(4); vv.clf()
 fig.position = 0, 22, 1366, 706
 # fig.position = 1528.00, 123.00,  1246.00, 730.00
@@ -82,23 +88,8 @@ sd._nodes3.Draw(mc='b', lc = 'b')
 vv.xlabel('x (mm)');vv.ylabel('y (mm)');vv.zlabel('z (mm)')
 
 
-# Start visualization and GUI
-from visvis import Pointset
-from stentseg.stentdirect import stentgraph
-from stentseg.stentdirect.stent_anaconda import _edge_length, prune_redundant
-
-#Add clickable nodes
-node_points = []
-for i, node in enumerate((sd._nodes3.nodes())):
-    node_point = vv.solidSphere(translation = (node), scaling = (0.4,0.4,0.4))
-    node_point.faceColor = 'b'
-    node_point.visible = False
-    node_point.node = node
-    node_point.nr = i
-    node_points.append(node_point)
-
-
-# Initialize labels
+# Start GUI
+# initialize labels
 t1 = vv.Label(a3, 'Edge ctvalue: ', fontSize=11, color='c')
 t1.position = 0.1, 5, 0.5, 20  # x (frac w), y, w (frac), h
 t1.bgcolor = None
@@ -112,7 +103,15 @@ t3.position = 0.1, 45, 0.5, 20
 t3.bgcolor = None
 t3.visible = False
 
+
 def on_key(event):
+    """KEY commands for user interaction
+    UP/DOWN = show/hide nodes
+    ENTER   = restore edge [select 2 nodes]
+    DELETE  = remove edge [select 2 ndoes] or pop node [select 1 node]
+    CTRL    = clean nodes: pop, crossings, corner
+    ESCAPE  = FINISH: refine, smooth
+    """
     if event.key == vv.KEY_DOWN:
         # hide nodes
         t1.visible = False
@@ -151,31 +150,37 @@ def on_key(event):
         a3.SetView(view)
     if event.key == vv.KEY_DELETE:
         # remove edge
-        assert len(selected_nodes) == 2
-        select1 = selected_nodes[0].node
-        select2 = selected_nodes[1].node
-        c = sd._nodes3.edge[select1][select2]['cost']
-        ct = sd._nodes3.edge[select1][select2]['ctvalue']
-        p = sd._nodes3.edge[select1][select2]['path']
-        l = _edge_length(sd._nodes3, select1, select2)
-        sd._nodes3.remove_edge(select1, select2)
-        # Visualize removed edge, show keys and deselect nodes
-        selected_nodes[1].faceColor = 'b'
-        selected_nodes[0].faceColor = 'b'
-        selected_nodes.clear()
-        t1.text = 'Edge ctvalue: \b{%1.2f HU}' % ct
-        t2.text = 'Edge cost: \b{%1.7f }' % c
-        t3.text = 'Edge length: \b{%1.2f mm}' % l
-        t1.visible = True
-        t2.visible = True
-        t3.visible = True
-        view = a3.GetView()
-        pp = Pointset(p)
-        line = vv.solidLine(pp, radius = 0.2)
-        line.faceColor = 'r'
-        a3.SetView(view)
-    elif event.key == vv.KEY_ESCAPE:
-        # ESCAPE will finish model
+        if len(selected_nodes) == 2:
+            select1 = selected_nodes[0].node
+            select2 = selected_nodes[1].node
+            c = sd._nodes3.edge[select1][select2]['cost']
+            ct = sd._nodes3.edge[select1][select2]['ctvalue']
+            p = sd._nodes3.edge[select1][select2]['path']
+            l = _edge_length(sd._nodes3, select1, select2)
+            sd._nodes3.remove_edge(select1, select2)
+            # Visualize removed edge, show keys and deselect nodes
+            selected_nodes[1].faceColor = 'b'
+            selected_nodes[0].faceColor = 'b'
+            selected_nodes.clear()
+            t1.text = 'Edge ctvalue: \b{%1.2f HU}' % ct
+            t2.text = 'Edge cost: \b{%1.7f }' % c
+            t3.text = 'Edge length: \b{%1.2f mm}' % l
+            t1.visible = True
+            t2.visible = True
+            t3.visible = True
+            view = a3.GetView()
+            pp = Pointset(p)
+            line = vv.solidLine(pp, radius = 0.2)
+            line.faceColor = 'r'
+            a3.SetView(view)
+        if len(selected_nodes) == 1:
+            # pop node
+            select1 = selected_nodes[0].node
+            stentgraph._pop_node(sd._nodes3, select1) # asserts degree == 2
+            selected_nodes[0].faceColor = 'w'
+            selected_nodes.clear()
+    if event.key == vv.KEY_CONTROL:
+        # clean nodes
         stentgraph.pop_nodes(sd._nodes3)
         stentgraph.add_nodes_at_crossings(sd._nodes3)
         stentgraph.pop_nodes(sd._nodes3)  # because adding nodes can leave other redundant
@@ -189,18 +194,26 @@ def on_key(event):
         stentgraph.add_corner_nodes(sd._nodes3)
         stentgraph.prune_clusters(sd._nodes3, sd._params.graph_minimumClusterSize) #remove residual nodes/clusters 
         stentgraph.prune_tails(sd._nodes3, sd._params.graph_trimLength)
+        # visualize result
+        view = a3.GetView()
+        a3.Clear()
+        t = vv.volshow(vol, clim = (0, 3000))
+        sd._nodes3.Draw(mc='b', mw = 8, lc = 'g', lw = 0.2)
+        vv.xlabel('x'), vv.ylabel('y'), vv.zlabel('z')
+        a3.SetView(view)
+        print('----Press ESCAPE to FINISH model----')
+        print('----Close FIG and EXECUTE CELL again to REMOVE more edges/nodes----')
+    elif event.key == vv.KEY_ESCAPE:
+        # ESCAPE will FINISH model
         sd._nodes3 = sd._RefinePositions(sd._nodes3) # subpixel locations 
-        stentgraph.smooth_paths(sd._nodes3)
+        stentgraph.smooth_paths(sd._nodes3, 2)
         # Create mesh and visualize
         view = a3.GetView()
         bm = create_mesh(sd._nodes3, 0.6)
         a3.Clear()
-        t = vv.volshow(vol)
-        t.clim = 0, 3000
-        sd._nodes3.Draw(mc='b', mw = 8, lc = 'g', lw = 0.2)
-        vv.xlabel('x')
-        vv.ylabel('y')
-        vv.zlabel('z')
+        t = vv.volshow(vol, clim = (0, 3000))
+        sd._nodes3.Draw(mc='b', mw = 8, lc = 'w', lw = 0.2)
+        vv.xlabel('x'), vv.ylabel('y'), vv.zlabel('z')
         m = vv.mesh(bm)
         m.faceColor = 'g'
         a3.SetView(view)
@@ -215,12 +228,34 @@ def select_node(event):
     elif event.owner in selected_nodes:
         event.owner.faceColor = 'b'
         selected_nodes.remove(event.owner)
+
+def create_node_points(graph):
+    """ create node objects for gui
+    """
+    node_points = []
+    for i, node in enumerate(sorted(graph.nodes())):
+        node_point = vv.solidSphere(translation = (node), scaling = (0.4,0.4,0.4))
+        node_point.faceColor = 'b'
+        node_point.visible = False
+        node_point.node = node
+        node_point.nr = i
+        node_points.append(node_point)
+    return node_points
+
+#Add clickable nodes
+node_points = create_node_points(sd._nodes3)
     
 # Bind event handlers
 fig.eventKeyDown.Bind(on_key)
 for node_point in node_points:
     node_point.eventDoubleClick.Bind(select_node)
-
+print('')
+print('UP/DOWN = show/hide nodes')
+print('ENTER   = restore edge [select 2 nodes]')
+print('DELETE  = remove edge [select 2 ndoes] or pop node [select 1 node]')
+print('CTRL    = clean nodes: pop, crossings, corner')
+print('ESCAPE  = FINISH: refine, smooth')
+print('')
 
 # Use same camera
 a2.camera = a3.camera
@@ -234,6 +269,7 @@ a3.axis.visible = switch
 switch = False
 a2.axis.visible = switch
 a3.axis.visible = switch
+
 
 ## Store segmentation to disk
 
