@@ -179,10 +179,10 @@ def prune_redundant(graph, ctvalue, min_strutlength, max_strutlength):
         else:
             cntremove += 1   
     print()
-    print('This iteration %i eligable edges for removal were part of a *weak*' 
-          'triangle so removed' % (cntremove))
-    print('This iteration %i eligable edges for removal were part of a *strong*'
-          'triangle so NOT removed' % (cntspare))
+    print('This iteration %i redundant edges were part of a *weak*' 
+          'triangle so REMOVED' % (cntremove))
+    print('This iteration %i redundant edges were part of a *strong*'
+          'triangle so NOT REMOVED' % (cntspare))
     print()
 
 
@@ -233,13 +233,13 @@ def _prune_redundant_edge(graph, n1, n2, min_ctvalue, min_strutlength, max_strut
                         # Check if the triangle edges are proximal ring struts
                         if (min_strutlength < paths[0] < max_strutlength and 
                             min_strutlength < paths[1] < max_strutlength):
-                                print('Eligable edge with' , graph.edge[n1][n2],
-                                        'is part of *strong* triangle so NOT removed')
-                                print()
-                                print('Neighbour edge with' ,graph.edge[n1][node1],
-                                        'and pathlength', path1_l)
-                                print('Neighbour edge with' ,graph.edge[node1][node2],
-                                        'with pathlength' , path2_l)
+#                                 print('Eligable edge with' , graph.edge[n1][n2],
+#                                         'is part of *strong* triangle so NOT removed')
+#                                 print()
+#                                 print('Neighbour edge with' ,graph.edge[n1][node1],
+#                                         'and pathlength', path1_l)
+#                                 print('Neighbour edge with' ,graph.edge[node1][node2],
+#                                         'with pathlength' , path2_l)
                                 print('********nn1**********')
                                 counter = True
                                 # mark spared edges; prevent removal in next iteration
