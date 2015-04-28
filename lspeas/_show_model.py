@@ -53,13 +53,6 @@ vol = s2.vol
 # Remove stent from vol for visualization
 vol = remove_stent_from_volume(vol, model, stripSize=7)
 
-# todo: also create a way to show static ring thinner/transparent as reference 
-# vol2 = np.copy(vol)
-# seed = vol2*(vol2<1400) # erosion starts from seed image minima
-# # seed start moet original, deel te eroden moet max
-# seed[np.where(seed == 0)] = vol2.max()
-# mask = vol2
-# vol = reconstruction(seed, mask, method='erosion')
 
 # Start vis
 f = vv.figure(nr); vv.clf()
