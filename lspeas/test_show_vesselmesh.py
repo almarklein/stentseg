@@ -21,7 +21,8 @@ ctcode, nr = 'pre', 2
 cropname = 'stent'
 
 # Basedir for dicom from ssdf2dicom
-basedir2 = r'D:\LSPEAS\DICOMavgreg'
+basedir2 = select_dir(r'C:\DICOMavgreg_backup\DICOMavgreg',
+                     r'D:\LSPEAS\DICOMavgreg',)
 
 # Load volumes
 s = loadvol(basedir, ptcode, ctcode, cropname, 'phases') # from original dicom
