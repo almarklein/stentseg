@@ -61,17 +61,17 @@ def create_mesh_with_abs_displacement(graph, radius = 1.0, dimensions = 'xyz'):
         pathDeforms = graph.edge[n1][n2]['pathdeforms']
         # get displacement during cardiac cycle for each point on path
         pathDisplacements = []
-        for i, point in enumerate(path):
-            pointpositions = point + pathDeforms[i] # 10 phases, so 10 positions for each point
+        for pointDeforms in pathDeforms:
             vectors = []
-            npositions = len(pointpositions)
+            npositions = len(pointDeforms)
             for j in range(npositions):
                 if j == npositions-1:  # -1 as range starts at 0
                     # vector from point at 90% RR to 0%% RR
-                    vectors.append(pointpositions[j]-pointpositions[0])
+                    vectors.append(pointDeforms[j]-pointDeforms[0])
                 else:
-                    vectors.append(pointpositions[j]-pointpositions[j+1])
+                    vectors.append(pointDeforms[j]-pointDeforms[j+1])
             vectors = np.vstack(vectors)
+            #todo: param for sum or max displacement
             if dimensions == 'xyz':
                 d = (vectors[:,0]**2 + vectors[:,1]**2 + vectors[:,2]**2)**0.5  # 3Dvector length in mm
             elif dimensions == 'xy':
@@ -79,10 +79,10 @@ def create_mesh_with_abs_displacement(graph, radius = 1.0, dimensions = 'xyz'):
             elif dimensions == 'z':
                 d = abs(vectors[:,2])  # 1Dvector length in mm
             displacement = d.sum() # displacement of a point
-            pathDisplacements.append(displacement)
+            pathDisplacements.append(displacement)            
         # create mesh for path
         values = np.vstack(pathDisplacements)
-        path, values = Pointset(path), np.asarray(values)    
+        path, values = Pointset(path), np.asarray(values)   
         meshes.append( lineToMesh(path, radius, 8, values) )
 
     # Combine meshes and return
