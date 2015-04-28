@@ -20,13 +20,14 @@ basedir = select_dir(os.getenv('LSPEAS_BASEDIR', ''),
 
 # Select dataset to register
 ptcode = 'LSPEAS_003'
-# codes = ctcode1, ctcode2, ctcode3 = 'discharge', '1month', '6months'
+codes = ctcode1, ctcode2, ctcode3 = 'discharge', '1month', '6months'
 # codes = ctcode1, ctcode2 = 'discharge', '1month'
-codes = ctcode1 = 'discharge'
+# codes = ctcode1 = 'discharge'
 cropname = 'ring'
 modelname = 'modelavgreg'
 
 showAxis = False  # True or False
+showVol  = False
 
 # view1 = 
 #  
@@ -78,11 +79,13 @@ def get_graph_in_phase(graph, phasenr):
 f = vv.figure(1); vv.clf()
 f.position = 0.00, 22.00,  1920.00, 1018.00
 color = 'rgbmcrywgb'
+clim  = (0,2500)
 
 # 1 model
 if codes=='discharge' or codes=='1month' or codes=='6months':
     a = vv.gca()
-    t = vv.volshow(vol1, clim=(0, 2500), renderStyle='mip')
+    if showVol == True:
+        t = vv.volshow(vol1, clim=clim, renderStyle='mip')
     for phasenr in range(10):
         model_phase = get_graph_in_phase(s1.model, phasenr = phasenr)
 #         model_phase.Draw(mc=color[phasenr], mw = 10, lc=color[phasenr])
@@ -100,7 +103,8 @@ if codes=='discharge' or codes=='1month' or codes=='6months':
 # 2 models
 if len(codes) == 2:
     a1 = vv.subplot(121)
-    t = vv.volshow(vol1, clim=(0, 2500), renderStyle='mip')
+    if showVol == True:
+        t = vv.volshow(vol1, clim=clim, renderStyle='mip')
     for phasenr in range(10):
         model_phase = get_graph_in_phase(s1.model, phasenr = phasenr)
 #         model_phase.Draw(mc='', lw = 6, lc=color[phasenr])
@@ -110,7 +114,8 @@ if len(codes) == 2:
     vv.xlabel('x (mm)');vv.ylabel('y (mm)');vv.zlabel('z (mm)')
     vv.title('Model for LSPEAS %s  -  %s' % (ptcode[7:], ctcode1))
     a2 = vv.subplot(122)
-    t = vv.volshow(vol2, clim=(0, 2500), renderStyle='mip')
+    if showVol == True:
+        t = vv.volshow(vol2, clim=clim, renderStyle='mip')
     for phasenr in range(10):
         model_phase = get_graph_in_phase(s2.model, phasenr = phasenr)
 #         model_phase.Draw(mc='', lw = 6, lc=color[phasenr])
@@ -127,7 +132,8 @@ if len(codes) == 2:
 # 3 models
 if len(codes) == 3:
     a1 = vv.subplot(131)
-    t = vv.volshow(vol1, clim=(0, 2500), renderStyle='mip')
+    if showVol == True:
+        t = vv.volshow(vol1, clim=clim, renderStyle='mip')
     for phasenr in range(10):
         model_phase = get_graph_in_phase(s1.model, phasenr = phasenr)
 #         model_phase.Draw(mc='', lw = 6, lc=color[phasenr])
@@ -137,7 +143,8 @@ if len(codes) == 3:
     vv.xlabel('x (mm)');vv.ylabel('y (mm)');vv.zlabel('z (mm)')
     vv.title('Model for LSPEAS %s  -  %s' % (ptcode[7:], ctcode1))
     a2 = vv.subplot(132)
-    t = vv.volshow(vol2, clim=(0, 2500), renderStyle='mip')
+    if showVol == True:
+        t = vv.volshow(vol2, clim=clim, renderStyle='mip')
     for phasenr in range(10):
         model_phase = get_graph_in_phase(s2.model, phasenr = phasenr)
 #         model_phase.Draw(mc='', lw = 6, lc=color[phasenr])
@@ -147,7 +154,8 @@ if len(codes) == 3:
     vv.xlabel('x (mm)');vv.ylabel('y (mm)');vv.zlabel('z (mm)')
     vv.title('Model for LSPEAS %s  -  %s' % (ptcode[7:], ctcode2))
     a3 = vv.subplot(133)
-    t = vv.volshow(vol3, clim=(0, 2500), renderStyle='mip')
+    if showVol == True:
+        t = vv.volshow(vol3, clim=clim, renderStyle='mip')
     for phasenr in range(10):
         model_phase = get_graph_in_phase(s3.model, phasenr = phasenr)
 #         model_phase.Draw(mc='', lw = 6, lc=color[phasenr])
