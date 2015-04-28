@@ -14,11 +14,11 @@ from stentseg.stentdirect.stentgraph import create_mesh
 
 # Select the ssdf basedir
 basedir = select_dir(os.getenv('LSPEAS_BASEDIR', ''),
-                     r'C:\Users\Maaike\Documents\UT MA3\LSPEAS_ssdf',)
+                     r'D:\LSPEAS\LSPEAS_ssdf', r'F:\LSPEAS_ssdf_20150204')
 
 # Select dataset to register
 ptcode = 'LSPEAS_003'
-ctcode = 'discharge'
+ctcode = '6months'
 cropname = 'ring'
 modelname = 'modelavgreg'
 
@@ -47,14 +47,8 @@ model.Draw(mc='b', mw = 10, lc='g')
 
 vv.xlabel('x (mm)');vv.ylabel('y (mm)');vv.zlabel('z (mm)')
 vv.title('Model for LSPEAS %s  -  %s' % (ptcode[7:], ctcode))
-viewringcrop = {'azimuth': -102.0361691249633,
- 'daspect': (1.0, 1.0, -1.0),
- 'elevation': 22.02702702702704,
- 'fov': 0.0,
- 'loc': (91.66835291301516, 58.04696697525794, 72.30817046479933),
- 'roll': 0.0,
- 'zoom': 0.0334813390377975}
-a.SetView(viewringcrop)
+# viewringcrop = 
+# a.SetView(viewringcrop)
 
 ## Get hooks in vessel wall
 
@@ -85,7 +79,7 @@ stentgraph.pop_nodes(model)
 model_hooks.Draw(mc='r', mw = 10, lc='r')
 
 ## Get struts between top and 2nd ring
-from stentseg.stentdirect.stentgraph_anacondaRing import _edge_length
+from stentseg.stentdirect.stent_anaconda import _edge_length
 
 model_struts = stentgraph.StentGraph()
 
