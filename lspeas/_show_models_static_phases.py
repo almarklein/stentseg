@@ -51,29 +51,6 @@ if len(codes) == 3:
     vol3 = loadvol(basedir, ptcode, ctcode3, cropname, 'avgreg').vol
 
 
-def get_paths_in_phases(graph):
-    """ Get position of all paths in model for all phases
-    """
-    # initialize
-    paths_phases = [] # obtain paths in different phases
-    for phasenr in range(10): # 0-90%
-        paths_phase = []
-        for n1, n2 in graph.edges():
-            # obtain path and deforms of edge
-            path = graph.edge[n1][n2]['path']
-            pathDeforms = graph.edge[n1][n2]['pathdeforms']
-            # 
-            path_phase = []
-            for i, point in enumerate(path):
-                pointposition = point + pathDeforms[i][phasenr]
-                path_phase.append(pointposition) # points on path, one phase
-            paths_phase.append(path_phase) # append path for a phase
-        paths_phases.append(paths_phase)
-    return paths_phases
-
-paths_phases = get_paths_in_phases(s1.model)
-
-
 def get_graph_in_phase(graph, phasenr):
     """ Get position of model in a certain phase
     """
@@ -92,10 +69,8 @@ def get_graph_in_phase(graph, phasenr):
             path_phase.append(pointposition) # points on path, one phase
         model_phase.add_edge(n1_phase, n2_phase, path = np.asarray(path_phase), pathdeforms = np.asarray(pathDeforms))
         #todo: too many nodes are added to the graph
-        
 #     g.add_node(node, deforms=deforms)
 #     sd._nodes3.add_edge(select1,select2, cost = c, ctvalue = ct, path = p)
-        
     return model_phase
 
 
@@ -109,11 +84,10 @@ if codes=='discharge' or codes=='1month' or codes=='6months':
     a = vv.gca()
     t = vv.volshow(vol1, clim=(0, 2500), renderStyle='mip')
     for phasenr in range(10):
-#         vv.plot(path[:,0], path[:,1], path[:,2], lw = 3, lc = color[phasenr], ls = '-', ms = '', )
         model_phase = get_graph_in_phase(s1.model, phasenr = phasenr)
 #         model_phase.Draw(mc=color[phasenr], mw = 10, lc=color[phasenr])
 #         model_phase.Draw(mc='', lw = 6, lc=color[phasenr])
-        modelmesh1 = create_mesh_with_abs_displacement(model_phase, radius = 0.1, dimensions = 'xyz')
+        modelmesh1 = create_mesh_with_abs_displacement(model_phase, radius = 0.2, dimensions = 'xyz')
         m = vv.mesh(modelmesh1, colormap = vv.CM_JET, clim = (0,5))
     vv.colorbar()    
     vv.xlabel('x (mm)');vv.ylabel('y (mm)');vv.zlabel('z (mm)')
@@ -129,14 +103,20 @@ if len(codes) == 2:
     t = vv.volshow(vol1, clim=(0, 2500), renderStyle='mip')
     for phasenr in range(10):
         model_phase = get_graph_in_phase(s1.model, phasenr = phasenr)
-        model_phase.Draw(mc='', lw = 6, lc=color[phasenr])
+#         model_phase.Draw(mc='', lw = 6, lc=color[phasenr])
+        modelmesh1 = create_mesh_with_abs_displacement(model_phase, radius = 0.2, dimensions = 'xyz')
+        m = vv.mesh(modelmesh1, colormap = vv.CM_JET, clim = (0,5))
+    vv.colorbar() 
     vv.xlabel('x (mm)');vv.ylabel('y (mm)');vv.zlabel('z (mm)')
     vv.title('Model for LSPEAS %s  -  %s' % (ptcode[7:], ctcode1))
     a2 = vv.subplot(122)
     t = vv.volshow(vol2, clim=(0, 2500), renderStyle='mip')
     for phasenr in range(10):
         model_phase = get_graph_in_phase(s2.model, phasenr = phasenr)
-        model_phase.Draw(mc='', lw = 6, lc=color[phasenr])
+#         model_phase.Draw(mc='', lw = 6, lc=color[phasenr])
+        modelmesh2 = create_mesh_with_abs_displacement(model_phase, radius = 0.2, dimensions = 'xyz')
+        m = vv.mesh(modelmesh2, colormap = vv.CM_JET, clim = (0,5))
+    vv.colorbar() 
     vv.xlabel('x (mm)');vv.ylabel('y (mm)');vv.zlabel('z (mm)')
     vv.title('Model for LSPEAS %s  -  %s' % (ptcode[7:], ctcode2))
     a1.axis.axisColor= a2.axis.axisColor = 1,1,1
@@ -150,21 +130,30 @@ if len(codes) == 3:
     t = vv.volshow(vol1, clim=(0, 2500), renderStyle='mip')
     for phasenr in range(10):
         model_phase = get_graph_in_phase(s1.model, phasenr = phasenr)
-        model_phase.Draw(mc='', lw = 6, lc=color[phasenr])
+#         model_phase.Draw(mc='', lw = 6, lc=color[phasenr])
+        modelmesh1 = create_mesh_with_abs_displacement(model_phase, radius = 0.2, dimensions = 'xyz')
+        m = vv.mesh(modelmesh1, colormap = vv.CM_JET, clim = (0,5))
+    vv.colorbar() 
     vv.xlabel('x (mm)');vv.ylabel('y (mm)');vv.zlabel('z (mm)')
     vv.title('Model for LSPEAS %s  -  %s' % (ptcode[7:], ctcode1))
     a2 = vv.subplot(132)
     t = vv.volshow(vol2, clim=(0, 2500), renderStyle='mip')
     for phasenr in range(10):
         model_phase = get_graph_in_phase(s2.model, phasenr = phasenr)
-        model_phase.Draw(mc='', lw = 6, lc=color[phasenr])
+#         model_phase.Draw(mc='', lw = 6, lc=color[phasenr])
+        modelmesh2 = create_mesh_with_abs_displacement(model_phase, radius = 0.2, dimensions = 'xyz')
+        m = vv.mesh(modelmesh2, colormap = vv.CM_JET, clim = (0,5))
+    vv.colorbar() 
     vv.xlabel('x (mm)');vv.ylabel('y (mm)');vv.zlabel('z (mm)')
     vv.title('Model for LSPEAS %s  -  %s' % (ptcode[7:], ctcode2))
     a3 = vv.subplot(133)
     t = vv.volshow(vol3, clim=(0, 2500), renderStyle='mip')
     for phasenr in range(10):
         model_phase = get_graph_in_phase(s3.model, phasenr = phasenr)
-        model_phase.Draw(mc='', lw = 6, lc=color[phasenr])
+#         model_phase.Draw(mc='', lw = 6, lc=color[phasenr])
+        modelmesh3 = create_mesh_with_abs_displacement(model_phase, radius = 0.2, dimensions = 'xyz')
+        m = vv.mesh(modelmesh3, colormap = vv.CM_JET, clim = (0,5))
+    vv.colorbar() 
     vv.xlabel('x (mm)');vv.ylabel('y (mm)');vv.zlabel('z (mm)')
     vv.title('Model for LSPEAS %s  -  %s' % (ptcode[7:], ctcode3))
     a1.axis.axisColor= a2.axis.axisColor= a3.axis.axisColor = 1,1,1
