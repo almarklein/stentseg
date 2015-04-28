@@ -25,7 +25,7 @@ cropname = 'ring'
 modelname = 'modelavgreg'
 
 drawModelLines = True  # True or False
-showAxis = False
+showAxis = True
 
 # view1 = 
 #  
@@ -149,7 +149,7 @@ if len(codes) == 3:
 
 ## Axis on or off
 
-showAxis = False
+# showAxis = False
 if len(codes) == 1:
     a.axis.visible = showAxis
 if len(codes) == 2:

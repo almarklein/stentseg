@@ -11,6 +11,7 @@ from pirt.utils.deformvis import DeformableTexture3D, DeformableMesh
 from stentseg.stentdirect.stentgraph import create_mesh
 from stentseg.stentdirect import stentgraph
 from stentseg.motion.vis import create_mesh_with_abs_displacement
+from lspeas.get_anaconda_ringparts import get_model_rings
 import pirt
 import numpy as np
 
@@ -19,7 +20,7 @@ basedir = select_dir(os.getenv('LSPEAS_BASEDIR', ''),
                      r'D:\LSPEAS\LSPEAS_ssdf', r'F:\LSPEAS_ssdf_20150204')
 
 # Select dataset to register
-ptcode = 'LSPEAS_003'
+ptcode = 'LSPEAS_002'
 codes = ctcode1, ctcode2, ctcode3 = 'discharge', '1month', '6months'
 # codes = ctcode1, ctcode2 = 'discharge', '1month'
 # codes = ctcode1 = 'discharge'
@@ -39,16 +40,21 @@ showVol  = False
 # Load the stent model, create mesh, load CT image for reference
 # 1 model 
 s1 = loadmodel(basedir, ptcode, ctcode1, cropname, modelname)
+model1 = s1.model
+# models = get_model_rings(model1)
+# model1 = models[0]
 vol1 = loadvol(basedir, ptcode, ctcode1, cropname, 'avgreg').vol
 
 # 2 models
 if len(codes) == 2 or len(codes) == 3:
     s2 = loadmodel(basedir, ptcode, ctcode2, cropname, modelname)
+    model2 = s2.model
     vol2 = loadvol(basedir, ptcode, ctcode2, cropname, 'avgreg').vol
 
 # 3 models
 if len(codes) == 3:
     s3 = loadmodel(basedir, ptcode, ctcode3, cropname, modelname)
+    model3 = s3.model
     vol3 = loadvol(basedir, ptcode, ctcode3, cropname, 'avgreg').vol
 
 
@@ -87,7 +93,7 @@ if codes=='discharge' or codes=='1month' or codes=='6months':
     if showVol == True:
         t = vv.volshow(vol1, clim=clim, renderStyle='mip')
     for phasenr in range(10):
-        model_phase = get_graph_in_phase(s1.model, phasenr = phasenr)
+        model_phase = get_graph_in_phase(model1, phasenr = phasenr)
 #         model_phase.Draw(mc=color[phasenr], mw = 10, lc=color[phasenr])
 #         model_phase.Draw(mc='', lw = 6, lc=color[phasenr])
         modelmesh1 = create_mesh_with_abs_displacement(model_phase, radius = 0.2, dimensions = 'xyz')
@@ -106,7 +112,7 @@ if len(codes) == 2:
     if showVol == True:
         t = vv.volshow(vol1, clim=clim, renderStyle='mip')
     for phasenr in range(10):
-        model_phase = get_graph_in_phase(s1.model, phasenr = phasenr)
+        model_phase = get_graph_in_phase(model1, phasenr = phasenr)
 #         model_phase.Draw(mc='', lw = 6, lc=color[phasenr])
         modelmesh1 = create_mesh_with_abs_displacement(model_phase, radius = 0.2, dimensions = 'xyz')
         m = vv.mesh(modelmesh1, colormap = vv.CM_JET, clim = (0,5))
@@ -117,7 +123,7 @@ if len(codes) == 2:
     if showVol == True:
         t = vv.volshow(vol2, clim=clim, renderStyle='mip')
     for phasenr in range(10):
-        model_phase = get_graph_in_phase(s2.model, phasenr = phasenr)
+        model_phase = get_graph_in_phase(model2, phasenr = phasenr)
 #         model_phase.Draw(mc='', lw = 6, lc=color[phasenr])
         modelmesh2 = create_mesh_with_abs_displacement(model_phase, radius = 0.2, dimensions = 'xyz')
         m = vv.mesh(modelmesh2, colormap = vv.CM_JET, clim = (0,5))
@@ -135,7 +141,7 @@ if len(codes) == 3:
     if showVol == True:
         t = vv.volshow(vol1, clim=clim, renderStyle='mip')
     for phasenr in range(10):
-        model_phase = get_graph_in_phase(s1.model, phasenr = phasenr)
+        model_phase = get_graph_in_phase(model1, phasenr = phasenr)
 #         model_phase.Draw(mc='', lw = 6, lc=color[phasenr])
         modelmesh1 = create_mesh_with_abs_displacement(model_phase, radius = 0.2, dimensions = 'xyz')
         m = vv.mesh(modelmesh1, colormap = vv.CM_JET, clim = (0,5))
@@ -146,7 +152,7 @@ if len(codes) == 3:
     if showVol == True:
         t = vv.volshow(vol2, clim=clim, renderStyle='mip')
     for phasenr in range(10):
-        model_phase = get_graph_in_phase(s2.model, phasenr = phasenr)
+        model_phase = get_graph_in_phase(model2, phasenr = phasenr)
 #         model_phase.Draw(mc='', lw = 6, lc=color[phasenr])
         modelmesh2 = create_mesh_with_abs_displacement(model_phase, radius = 0.2, dimensions = 'xyz')
         m = vv.mesh(modelmesh2, colormap = vv.CM_JET, clim = (0,5))
@@ -157,7 +163,7 @@ if len(codes) == 3:
     if showVol == True:
         t = vv.volshow(vol3, clim=clim, renderStyle='mip')
     for phasenr in range(10):
-        model_phase = get_graph_in_phase(s3.model, phasenr = phasenr)
+        model_phase = get_graph_in_phase(model3, phasenr = phasenr)
 #         model_phase.Draw(mc='', lw = 6, lc=color[phasenr])
         modelmesh3 = create_mesh_with_abs_displacement(model_phase, radius = 0.2, dimensions = 'xyz')
         m = vv.mesh(modelmesh3, colormap = vv.CM_JET, clim = (0,5))

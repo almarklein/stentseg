@@ -4,7 +4,7 @@ Hooks, struts, 2nd ring, top ring
 """ 
 
 
-def get_model_hooks(model):
+def _get_model_hooks(model):
     """
     
     """
@@ -38,7 +38,7 @@ def get_model_hooks(model):
     return model_hooks, model_noHooks
     
 
-def get_model_struts(model_noHooks):
+def _get_model_struts(model):
     """Get struts between top and 2nd ring
     Finds triangles and quadrangles formed by the struts
     """
@@ -47,7 +47,9 @@ def get_model_struts(model_noHooks):
     # initialize
     model_noHooks_noStruts = model_noHooks.copy()
     model_struts = stentgraph.StentGraph()
-    
+    # remove hooks
+    models = get_model_hooks(model)
+    model_noHooks = models[1]
 #todo: simplify: use edge direction -> z high for struts
     # get edges that belong to struts and form triangles
     topnodes = list() # remember nodes that belong to top ring 
@@ -115,17 +117,18 @@ def get_model_struts(model_noHooks):
     return model_struts, model_noHooks_noStruts
 
 
-def get_model_rings(model_noHooks_noStruts):
+def get_model_rings(model):
     """Get top ring and 2nd ring
     """
     import networkx as nx
     
-    model = model_noHooks_noStruts
     model_2nd = model.copy()
     model_top = model.copy()
+    models = _get_model_struts(model)
+    model_noHooks_noStruts = models[1]
     
     # get clusters of nodes
-    clusters = list(nx.connected_components(model))
+    clusters = list(nx.connected_components(model_noHooks_noStruts))
     assert len(clusters) == 2  # 2 rings
     
     c1 = np.asarray(clusters[0])
