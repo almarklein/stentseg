@@ -15,7 +15,7 @@ import numpy as np
 
 # Select the ssdf basedir
 basedir = select_dir(os.getenv('LSPEAS_BASEDIR', ''),
-                     r'D:\LSPEAS\LSPEAS_ssdf',)
+                     r'D:\LSPEAS\LSPEAS_ssdf', r'F:\LSPEAS_ssdf_20150204')
 
 # Select dataset to register
 ptcode = 'LSPEAS_003'
@@ -42,7 +42,7 @@ modelmesh1 = create_mesh_with_abs_displacement(s1.model, radius = 1.0, dimension
 vol1 = loadvol(basedir, ptcode, ctcode1, cropname, 'avgreg').vol
 
 # 2 models
-if len(codes) == 2 or 3:
+if len(codes) == 2 or len(codes) == 3:
     s2 = loadmodel(basedir, ptcode, ctcode2, cropname, modelname)
 #     modelmesh2 = create_mesh(s2.model, 1.0)  # Param is thickness
     modelmesh2 = create_mesh_with_abs_displacement(s2.model, radius = 1.0, dimensions = 'xyz')
@@ -61,7 +61,7 @@ f = vv.figure(1); vv.clf()
 f.position = 0.00, 22.00,  1920.00, 1018.00
 
 # 1 model
-if len(codes) == 1:
+if codes=='discharge' or codes=='1month' or codes=='6months' :
     a = vv.gca()
     t = vv.volshow(vol1, clim=(0, 2500), renderStyle='mip')
     if drawModelLines == True:
@@ -158,9 +158,9 @@ if len(codes) == 3:
     a1.axis.visible= a2.axis.visible= a3.axis.visible = showAxis
 
 ## Set view
-a1.SetView(view1)
-a2.SetView(view2)
-a3.SetView(view3)
+# a1.SetView(view1)
+# a2.SetView(view2)
+# a3.SetView(view3)
 
 ## Use same camera
 #a1.camera = a2.camera = a3.camera
