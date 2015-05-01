@@ -96,6 +96,10 @@ def getDefaultParams(stentType=''):
         # The length of the struts in anaconda proximal fixation rings
         params.graph_min_strutlength = 6
         params.graph_max_strutlength = 12
+    elif stentType == 'endurant':
+        params.graph_expectedNumberOfEdges = 2
+    elif stentType == 'excluder':
+        params.graph_expectedNumberOfEdges = 2
     elif stentType:
         raise ValueError('Unknown stent type %s' % stentType)
 
