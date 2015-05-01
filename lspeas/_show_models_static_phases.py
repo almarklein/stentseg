@@ -1,6 +1,6 @@
 """ Script to show the stent model static during follow up
 Compare models up to 6 months (2 or 3 volumetric images)
-
+Run as script (for import within lspeas folder)
 """
 
 import os
@@ -11,24 +11,25 @@ from pirt.utils.deformvis import DeformableTexture3D, DeformableMesh
 from stentseg.stentdirect.stentgraph import create_mesh
 from stentseg.stentdirect import stentgraph
 from stentseg.motion.vis import create_mesh_with_abs_displacement
-from lspeas.get_anaconda_ringparts import get_model_rings
+from get_anaconda_ringparts import get_model_rings
 import pirt
 import numpy as np
 
 # Select the ssdf basedir
 basedir = select_dir(os.getenv('LSPEAS_BASEDIR', ''),
-                     r'D:\LSPEAS\LSPEAS_ssdf', r'F:\LSPEAS_ssdf_20150204')
+                     r'D:\LSPEAS\LSPEAS_ssdf', r'F:\LSPEAS_ssdf_BACKUP\LSPEAS_ssdf')
 
 # Select dataset to register
 ptcode = 'LSPEAS_002'
-codes = ctcode1, ctcode2, ctcode3 = 'discharge', '1month', '6months'
-# codes = ctcode1, ctcode2 = 'discharge', '1month'
+# codes = ctcode1, ctcode2, ctcode3 = 'discharge', '1month', '6months'
+codes = ctcode1, ctcode2 = 'discharge', '1month'
 # codes = ctcode1 = 'discharge'
 cropname = 'ring'
 modelname = 'modelavgreg'
 
 showAxis = False  # True or False
-showVol  = False
+showVol  = True
+ringpart = 1 # top=1 ; 2nd=2 ; None = both rings
 
 # view1 = 
 #  
@@ -41,20 +42,27 @@ showVol  = False
 # 1 model 
 s1 = loadmodel(basedir, ptcode, ctcode1, cropname, modelname)
 model1 = s1.model
-# models = get_model_rings(model1)
-# model1 = models[0]
+if ringpart:
+    models = get_model_rings(model1)
+    model1 = models[ringpart-1]
 vol1 = loadvol(basedir, ptcode, ctcode1, cropname, 'avgreg').vol
 
 # 2 models
 if len(codes) == 2 or len(codes) == 3:
     s2 = loadmodel(basedir, ptcode, ctcode2, cropname, modelname)
     model2 = s2.model
+    if ringpart:
+        models = get_model_rings(model2)
+        model2 = models[ringpart-1]
     vol2 = loadvol(basedir, ptcode, ctcode2, cropname, 'avgreg').vol
 
 # 3 models
 if len(codes) == 3:
     s3 = loadmodel(basedir, ptcode, ctcode3, cropname, modelname)
     model3 = s3.model
+    if ringpart:
+        models = get_model_rings(model3)
+        model3 = models[ringpart-1]
     vol3 = loadvol(basedir, ptcode, ctcode3, cropname, 'avgreg').vol
 
 
@@ -86,6 +94,7 @@ f = vv.figure(1); vv.clf()
 f.position = 0.00, 22.00,  1920.00, 1018.00
 color = 'rgbmcrywgb'
 clim  = (0,2500)
+radius = 0.5
 
 # 1 model
 if codes=='discharge' or codes=='1month' or codes=='6months':
@@ -96,7 +105,7 @@ if codes=='discharge' or codes=='1month' or codes=='6months':
         model_phase = get_graph_in_phase(model1, phasenr = phasenr)
 #         model_phase.Draw(mc=color[phasenr], mw = 10, lc=color[phasenr])
 #         model_phase.Draw(mc='', lw = 6, lc=color[phasenr])
-        modelmesh1 = create_mesh_with_abs_displacement(model_phase, radius = 0.2, dimensions = 'xyz')
+        modelmesh1 = create_mesh_with_abs_displacement(model_phase, radius = radius, dimensions = 'xyz')
         m = vv.mesh(modelmesh1, colormap = vv.CM_JET, clim = (0,5))
     vv.colorbar()    
     vv.xlabel('x (mm)');vv.ylabel('y (mm)');vv.zlabel('z (mm)')
@@ -114,7 +123,7 @@ if len(codes) == 2:
     for phasenr in range(10):
         model_phase = get_graph_in_phase(model1, phasenr = phasenr)
 #         model_phase.Draw(mc='', lw = 6, lc=color[phasenr])
-        modelmesh1 = create_mesh_with_abs_displacement(model_phase, radius = 0.2, dimensions = 'xyz')
+        modelmesh1 = create_mesh_with_abs_displacement(model_phase, radius = radius, dimensions = 'xyz')
         m = vv.mesh(modelmesh1, colormap = vv.CM_JET, clim = (0,5))
     vv.colorbar() 
     vv.xlabel('x (mm)');vv.ylabel('y (mm)');vv.zlabel('z (mm)')
@@ -125,7 +134,7 @@ if len(codes) == 2:
     for phasenr in range(10):
         model_phase = get_graph_in_phase(model2, phasenr = phasenr)
 #         model_phase.Draw(mc='', lw = 6, lc=color[phasenr])
-        modelmesh2 = create_mesh_with_abs_displacement(model_phase, radius = 0.2, dimensions = 'xyz')
+        modelmesh2 = create_mesh_with_abs_displacement(model_phase, radius = radius, dimensions = 'xyz')
         m = vv.mesh(modelmesh2, colormap = vv.CM_JET, clim = (0,5))
     vv.colorbar() 
     vv.xlabel('x (mm)');vv.ylabel('y (mm)');vv.zlabel('z (mm)')
@@ -143,7 +152,7 @@ if len(codes) == 3:
     for phasenr in range(10):
         model_phase = get_graph_in_phase(model1, phasenr = phasenr)
 #         model_phase.Draw(mc='', lw = 6, lc=color[phasenr])
-        modelmesh1 = create_mesh_with_abs_displacement(model_phase, radius = 0.2, dimensions = 'xyz')
+        modelmesh1 = create_mesh_with_abs_displacement(model_phase, radius = radius, dimensions = 'xyz')
         m = vv.mesh(modelmesh1, colormap = vv.CM_JET, clim = (0,5))
     vv.colorbar() 
     vv.xlabel('x (mm)');vv.ylabel('y (mm)');vv.zlabel('z (mm)')
@@ -154,7 +163,7 @@ if len(codes) == 3:
     for phasenr in range(10):
         model_phase = get_graph_in_phase(model2, phasenr = phasenr)
 #         model_phase.Draw(mc='', lw = 6, lc=color[phasenr])
-        modelmesh2 = create_mesh_with_abs_displacement(model_phase, radius = 0.2, dimensions = 'xyz')
+        modelmesh2 = create_mesh_with_abs_displacement(model_phase, radius = radius, dimensions = 'xyz')
         m = vv.mesh(modelmesh2, colormap = vv.CM_JET, clim = (0,5))
     vv.colorbar() 
     vv.xlabel('x (mm)');vv.ylabel('y (mm)');vv.zlabel('z (mm)')
@@ -165,7 +174,7 @@ if len(codes) == 3:
     for phasenr in range(10):
         model_phase = get_graph_in_phase(model3, phasenr = phasenr)
 #         model_phase.Draw(mc='', lw = 6, lc=color[phasenr])
-        modelmesh3 = create_mesh_with_abs_displacement(model_phase, radius = 0.2, dimensions = 'xyz')
+        modelmesh3 = create_mesh_with_abs_displacement(model_phase, radius = radius, dimensions = 'xyz')
         m = vv.mesh(modelmesh3, colormap = vv.CM_JET, clim = (0,5))
     vv.colorbar() 
     vv.xlabel('x (mm)');vv.ylabel('y (mm)');vv.zlabel('z (mm)')
@@ -177,7 +186,7 @@ if len(codes) == 3:
 
 ## Axis on or off
 
-showAxis = False
+# showAxis = True
 if len(codes) == 1:
     a.axis.visible = showAxis
 if len(codes) == 2:

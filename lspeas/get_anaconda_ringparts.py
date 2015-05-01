@@ -43,12 +43,12 @@ def _get_model_struts(model):
     Finds triangles and quadrangles formed by the struts
     """
     from stentseg.stentdirect.stent_anaconda import _edge_length
+    from stentseg.stentdirect import stentgraph
     
     # initialize
-    model_noHooks_noStruts = model_noHooks.copy()
     model_struts = stentgraph.StentGraph()
     # remove hooks
-    models = get_model_hooks(model)
+    models = _get_model_hooks(model)
     model_noHooks = models[1]
 #todo: simplify: use edge direction -> z high for struts
     # get edges that belong to struts and form triangles
@@ -112,7 +112,8 @@ def _get_model_struts(model):
                                     model_struts.add_edge(nodepair[0], nodepair[1], cost = c, ctvalue = ct, path = p, pathdeforms= pdeforms)
     
     # remove strut edges from model
-    model_noHooks_noStruts.remove_edges_from(model_struts.edges())
+    model_noHooks.remove_edges_from(model_struts.edges())
+    model_noHooks_noStruts = model_noHooks
     
     return model_struts, model_noHooks_noStruts
 
@@ -121,6 +122,7 @@ def get_model_rings(model):
     """Get top ring and 2nd ring
     """
     import networkx as nx
+    import numpy as np
     
     model_2nd = model.copy()
     model_top = model.copy()
