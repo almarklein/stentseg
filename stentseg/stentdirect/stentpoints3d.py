@@ -67,7 +67,7 @@ def get_mask_with_stent_likely_positions(data, th):
     
     # Criterium 1: voxel must be above th
     # Note that we omit the edges
-    mask[1:-1,1:-1,1:-1] = (data[1:-1,1:-1,1:-1] > th) * 3
+    mask[2:-2,2:-2,2:-2] = (data[2:-2,2:-2,2:-2] > th) * 3
     
     
     for z, y, x in zip(*np.where(mask==3)):
