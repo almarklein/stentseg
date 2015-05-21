@@ -11,21 +11,21 @@ from stentseg.utils.datahandling import savecropvols, saveaveraged, cropaveraged
 # Select base directory for DICOM data
 
 # The stentseg datahandling module is agnostic about where the DICOM data is
-# dicom_basedir = select_dir(r'E:\LSPEAS_data\DICOM',
-#                            '/home/almar/data/dicom/stent_LPEAS',)
-dicom_basedir = r'D:\LSPEAS\BACKUP CTdata\LSPEAS_data\DICOM'
+dicom_basedir = select_dir(r'E:\LSPEAS_data\DICOM',
+                           '/home/almar/data/dicom/stent_LPEAS',
+                           'D:\LSPEAS\LSPEAS_data_BACKUP\DICOM')
 
 # Select the ssdf basedir
 basedir = select_dir(os.getenv('LSPEAS_BASEDIR', ''),
                      r'D:\LSPEAS\LSPEAS_ssdf',)
 
 # Params Step A, B, C
-ctcode = 'pre'  # 'pre', 'discharge', '1month', '6months'
-ptcode = 'LSPEAS_003'
+ctcode = 'discharge'  # 'pre', 'discharge', '1month', '6months'
+ptcode = 'LSPEAS_024'
 
 # Params Step B, C (to save)
 cropnames = 'stent', 'ring'    # save crops of stent and/or ring
-stenttype = 'anaconda'         # or 'endurant'
+stenttype = 'excluder'         # or 'endurant' or 'excluder'
 # C: start and end phase in cardiac cycle to average (50,90 = 5 phases)
 phases = 30, 90
 
@@ -51,11 +51,10 @@ def readdcm(dirname):
     vols = []
     for volnr in range(0,10): # 0,10 for all phases from 0 up to 90%
         vol = imageio.volread(os.path.join(dirname,subfolder[volnr]), 'dicom')
-        # check order of phases
+        # check order of phases; gaat niet altijd goed namelijk, linux fout bv
         perc = '%i%%' % (volnr*10)
         assert perc in vol.meta.SeriesDescription
         vols.append(vol)
-    #todo: Dit gaat niet gegarandeerd op de goede volgorde! Bij Almar (Linux?) niet namelijk
     
     return vols  
 
@@ -66,17 +65,17 @@ def readdcm(dirname):
 vols = readdcm(os.path.join(dicom_basedir, ptcode, ptcode+'_'+ctcode))
 #vols = imageio.mvolread(os.path.join(dicom_basedir, ptcode, ptcode+'_'+ctcode), 'dicom')
 
-## Step B: Crop and Save SSDF
+# Step B: Crop and Save SSDF
 for cropname in cropnames:
     savecropvols(vols, basedir, ptcode, ctcode, cropname, stenttype)
 
-## Step C: Save average of a number of volumes (phases in cardiac cycle)
+# Step C: Save average of a number of volumes (phases in cardiac cycle)
 for cropname in cropnames:
     saveaveraged(basedir, ptcode, ctcode, cropname, phases)
 
 
 ## Additional: Crop from averaged volume
-cropaveraged(basedir, ptcode, ctcode, crop_in='stent', what='avg3090', crop_out= 'body')
+# cropaveraged(basedir, ptcode, ctcode, crop_in='stent', what='avg3090', crop_out= 'body')
 
 
 ## Test load ssdf and visualize
@@ -86,7 +85,7 @@ phase = 60
 avg = 'avg3090'
 
 s1 = loadvol(basedir, ptcode, ctcode, 'ring', what ='phases')
-s2 = loadvol(basedir, ptcode, ctcode, 'ring', avg)
+s2 = loadvol(basedir, ptcode, ctcode, 'stent', avg)
 #s3 = loadvol(basedir, ptcode, ctcode, 'stent', 'avg3090')
 
 
