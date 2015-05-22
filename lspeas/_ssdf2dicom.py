@@ -68,44 +68,27 @@ if __name__ == "__main__":
             base_filename = os.path.join(dirsubfolder,filename)
             break # for loop
     
-#     base_filename1 = r'D:\LSPEAS\BACKUP CTdata\LSPEAS_data\DICOM\LSPEAS_001\LSPEAS_001_pre\1.2.392.200036.9116.2.6.1.48.1214833767.1398126123.824416\1.2.392.200036.9116.2.6.1.48.1214833767.1398136609.851014\1.2.392.200036.9116.2.6.1.48.1214833767.1398136817.392211.dcm'
-    
-#     base_filename2 = r'D:\LSPEAS\BACKUP CTdata\LSPEAS_data\DICOM\LSPEAS_002\LSPEAS_002_pre\1.2.392.200036.9116.2.6.1.48.1214833767.1398122835.442544\1.2.392.200036.9116.2.6.1.48.1214833767.1398124575.640714\1.2.392.200036.9116.2.6.1.48.1214833767.1398124902.95575.dcm'   
-    
     ds = dicom.read_file(base_filename) # read original dicom file to get ds
     assert ds.InstanceNumber == 1 # first slice
-    SliceLocationStart = ds.SliceLocation 
-    instance = s.vol.shape[0]-1 #0
-    instancenr = 0
-#     ds2 = dicom.read_file(base_filename2)
+    instance = 0
 
-#     print("Setting file meta information...")
-#     # Populate required values for file meta information
-#     file_meta = Dataset()
-#     file_meta.MediaStorageSOPClassUID = '1.2.840.10008.5.1.4.1.1.2'  # CT Image Storage
-#     file_meta.MediaStorageSOPInstanceUID = "1.2.3"  # !! Need valid UID here for real work
-#     file_meta.ImplementationClassUID = "1.2.3.4"  # !!! Need valid UIDs here
-
-    # rewrite slices to ds
+    # Rewrite slices to ds
     for slice in s.vol:
         ds.PixelData = slice.astype('int16').tostring() # must be int, not float
         ds.Rows = s.vol.shape[1]
         ds.Cols = ds.Columns = s.vol.shape[2]
         ds.SeriesDescription = cropname+' avgreg'
         # adjust slice z-position
-        # note: originally the z-position is decreasing to match the "patient orientation"
-#         ds.ImagePositionPatient[2] = - s.vol.origin[0] - (instance * s.vol.sampling[0]) # z-flipped
-        ds.ImagePositionPatient[2] =  (s.vol.origin[0] + (instance * s.vol.sampling[0])) # z-flipped
-        ds.ImagePositionPatient[1] = s.vol.origin[1]
-        ds.ImagePositionPatient[0] = s.vol.origin[2]
-        ds.InstanceNumber = instancenr
-#         ds.SliceLocation = SliceLocationStart + (instance * s.vol.sampling[0]) # todo: we do not need this?
+        # note: in world coordinates the z-position is decreasing to match the "patient orientation"
+        ds.ImagePositionPatient[2] =  -(s.vol.origin[0] + (instance * s.vol.sampling[0])) # z-flipped
+        ds.ImagePositionPatient[1] = s.vol.origin[1] # y
+        ds.ImagePositionPatient[0] = s.vol.origin[2] # x
+        ds.InstanceNumber = instance
     
         # save ds
-        filename = '%s_%s_%s_%s%i.dcm' % (ptcode, ctcode, cropname, 'avgreg', instancenr)
+        filename = '%s_%s_%s_%s%i.dcm' % (ptcode, ctcode, cropname, 'avgreg', instance)
         print("Writing test file", filename)
         ds.save_as(os.path.join(basedir_save, ptcode, ptcode+'_'+ctcode, filename))
         print("File saved.")
         
-        instance += -1
-        instancenr += 1
+        instance += 1
