@@ -32,7 +32,7 @@ if __name__ == "__main__":
                             r'D:\LSPEAS\LSPEAS_data_BACKUP\DICOM',
                             '/home/almar/data/dicom/stent_LPEAS',)    
     # Select dataset
-    ptcode = 'LSPEAS_001'
+    ptcode = 'LSPEAS_003'
     ctcode = 'pre'
     cropname = 'stent'
     
@@ -89,6 +89,7 @@ if __name__ == "__main__":
         filename = '%s_%s_%s_%s%i.dcm' % (ptcode, ctcode, cropname, 'avgreg', instance)
         print("Writing test file", filename)
         ds.save_as(os.path.join(basedir_save, ptcode, ptcode+'_'+ctcode, filename))
-        print("File saved.")
+        print("Files saved to:")
+        print(os.path.join(basedir_save, ptcode, ptcode+'_'+ctcode))
         
         instance += 1
