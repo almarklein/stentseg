@@ -24,7 +24,7 @@ if __name__ == "__main__":
     
     # Select directory to save dicom
     basedir_save = select_dir(r'D:\LSPEAS\DICOMavgreg',
-                            r'F:\DICOMavgreg_working')
+                            r'F:\DICOMavgreg_toPC')
     
     # Select directory to load dicom
     # the stentseg datahandling module is agnostic about where the DICOM data is
@@ -32,9 +32,9 @@ if __name__ == "__main__":
                             r'D:\LSPEAS\LSPEAS_data_BACKUP\DICOM',
                             '/home/almar/data/dicom/stent_LPEAS',)    
     # Select dataset
-    ptcode = 'LSPEAS_003'
+    ptcode = 'LSPEAS_001'
     ctcode = 'pre'
-    cropname = 'stent'
+    cropname = 'ring'
     
     # Select basedirectory to load ssdf
     basedir_load = select_dir(os.getenv('LSPEAS_BASEDIR', ''),
@@ -69,7 +69,7 @@ if __name__ == "__main__":
             break # for loop
     
     ds = dicom.read_file(base_filename) # read original dicom file to get ds
-    assert ds.InstanceNumber == 1 # first slice
+#     assert ds.InstanceNumber == 1 # first slice
     instance = 0
 
     # Rewrite slices to ds
@@ -83,7 +83,7 @@ if __name__ == "__main__":
         ds.ImagePositionPatient[2] =  -(s.vol.origin[0] + (instance * s.vol.sampling[0])) # z-flipped
         ds.ImagePositionPatient[1] = s.vol.origin[1] # y
         ds.ImagePositionPatient[0] = s.vol.origin[2] # x
-        ds.InstanceNumber = instance
+        ds.InstanceNumber = instance + 1 # start at 1
     
         # save ds
         filename = '%s_%s_%s_%s%i.dcm' % (ptcode, ctcode, cropname, 'avgreg', instance)
