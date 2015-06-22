@@ -17,7 +17,8 @@ import numpy as np
 
 # Select the ssdf basedir
 basedir = select_dir(os.getenv('LSPEAS_BASEDIR', ''),
-                     r'D:\LSPEAS\LSPEAS_ssdf',)
+                     r'D:\LSPEAS\LSPEAS_ssdf',
+                     r'F:\LSPEAS_ssdf_backup')
 
 # Select dataset to register
 ptcode = 'LSPEAS_003'
@@ -25,6 +26,8 @@ ctcode, nr = 'discharge', 1
 # ctcode, nr = 'pre', 2
 cropname = 'ring'
 modelname = 'modelavgreg'
+motion = 'amplitude'
+dimension = 'z'
 
 # Load deformations (forward for mesh)
 s = loadvol(basedir, ptcode, ctcode, cropname, 'deforms')
@@ -44,7 +47,7 @@ deforms_b = [f.as_backward() for f in deforms_f]
 s = loadmodel(basedir, ptcode, ctcode, cropname, modelname)
 model = s.model
 # modelmesh = create_mesh(model, 1.0)  # Param is thickness
-modelmesh = create_mesh_with_abs_displacement(model, radius = 1.0, dimensions = 'z')
+modelmesh = create_mesh_with_abs_displacement(model, radius = 1.0, dimensions = dimension, motion = motion)
 
 # Load static CT image to add as reference
 s2 = loadvol(basedir, ptcode, ctcode, 'stent', 'avg3090')
@@ -75,7 +78,7 @@ t.colormap = {'r': [(0.0, 0.0), (0.17727272, 1.0)],
 # t = vv.volshow2(vol)
 # t.clim = -550, 500
 vv.xlabel('x (mm)');vv.ylabel('y (mm)');vv.zlabel('z (mm)')
-vv.title('Model for LSPEAS %s  -  %s' % (ptcode[7:], ctcode))
+vv.title('Model for LSPEAS %s  -  %s  (%s of motion in %s)' % (ptcode[7:], ctcode, motion, dimension))
 # viewringcrop = {'azimuth': -166.8860353130016,
 #  'daspect': (1.0, 1.0, -1.0),
 #  'elevation': 8.783783783783782,
@@ -119,14 +122,14 @@ for i, node in enumerate(sorted(model.nodes())):
 # Create deformable mesh
 dm = DeformableMesh(a, modelmesh)
 dm.SetDeforms(*deforms_f)
-dm.clim = 0, 4
+dm.clim = 0, 2
 dm.colormap = vv.CM_JET
 vv.colorbar()
 
 # Run mesh
 a.SetLimits()
 # a.SetView(viewringcrop)
-dm.MotionPlay(5, 0.8)  # (10, 0.2) = each 10 ms do a step of 20%
+dm.MotionPlay(5, 1)  # (10, 0.2) = each 10 ms do a step of 20%
 dm.motionSplineType = 'B-spline'
 dm.motionAmplitude = 3.0  # For a mesh we can (more) safely increase amplitude
 #dm.faceColor = 'g'
