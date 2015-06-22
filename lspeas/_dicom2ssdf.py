@@ -11,7 +11,7 @@ from stentseg.utils.datahandling import savecropvols, saveaveraged, cropaveraged
 # Select base directory for DICOM data
 
 # The stentseg datahandling module is agnostic about where the DICOM data is
-dicom_basedir = select_dir(r'E:\LSPEAS_data\DICOM',
+dicom_basedir = select_dir(r'F:\LSPEAS_data\DICOM',
                            '/home/almar/data/dicom/stent_LPEAS',
                            'D:\LSPEAS\LSPEAS_data_BACKUP\DICOM')
 
@@ -20,12 +20,12 @@ basedir = select_dir(os.getenv('LSPEAS_BASEDIR', ''),
                      r'D:\LSPEAS\LSPEAS_ssdf',)
 
 # Params Step A, B, C
-ctcode = 'discharge'  # 'pre', 'discharge', '1month', '6months'
-ptcode = 'LSPEAS_024'
+ctcode = '12months'  # 'pre', 'discharge', '1month', '6months', '12months'
+ptcode = 'LSPEAS_003'
 
 # Params Step B, C (to save)
 cropnames = 'stent', 'ring'    # save crops of stent and/or ring
-stenttype = 'excluder'         # or 'endurant' or 'excluder'
+stenttype = 'anaconda'         # or 'endurant' or 'excluder'
 # C: start and end phase in cardiac cycle to average (50,90 = 5 phases)
 phases = 30, 90
 
@@ -107,8 +107,15 @@ vv.zlabel('z')
 
 a2 = vv.subplot(122)
 a2.daspect = 1,1,-1
-t = vv.volshow(s2.vol)
-t.clim = 0, 2500
+# t = vv.volshow(s2.vol)
+# t.clim = 0, 2500
+t = vv.volshow(s2.vol, clim=(0, 3000), renderStyle='iso')
+t.isoThreshold = 250
+t.colormap = {'r': [(0.0, 0.0), (0.17727272, 1.0)],
+ 'g': [(0.0, 0.0), (0.27272728, 1.0)],
+ 'b': [(0.0, 0.0), (0.34545454, 1.0)],
+ 'a': [(0.0, 1.0), (1.0, 1.0)]}
+s = vv.volshow2(s2.vol, clim=(-550, 500))
 vv.xlabel('x')
 vv.ylabel('y')
 vv.zlabel('z')
@@ -120,12 +127,12 @@ a1.camera = a2.camera
 
 ## Visualize one volume
 
-fig = vv.figure(2); vv.clf()
-fig.position = 0, 22, 1366, 706
-a = vv.gca()
-a.cameraType = '3d'
-a.daspect = 1,1,-1
-a.daspectAuto = False
-t = vv.volshow(s1.vol80)
-t.clim = 0, 3000
+# fig = vv.figure(2); vv.clf()
+# fig.position = 0, 22, 1366, 706
+# a = vv.gca()
+# a.cameraType = '3d'
+# a.daspect = 1,1,-1
+# a.daspectAuto = False
+# t = vv.volshow(s1.vol80)
+# t.clim = 0, 3000
 
