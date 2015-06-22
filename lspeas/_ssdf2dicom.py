@@ -33,7 +33,7 @@ if __name__ == "__main__":
                             '/home/almar/data/dicom/stent_LPEAS',)    
     # Select dataset
     ptcode = 'LSPEAS_001'
-    ctcode = 'pre'
+    ctcode = '12months'
     cropname = 'ring'
     
     # Select basedirectory to load ssdf
@@ -70,6 +70,8 @@ if __name__ == "__main__":
     
     ds = dicom.read_file(base_filename) # read original dicom file to get ds
 #     assert ds.InstanceNumber == 1 # first slice
+    initialUID = ds.SOPInstanceUID
+    UIDtoReplace = ds.SOPInstanceUID.split('.')[-1]
     instance = 0
 
     # Rewrite slices to ds
@@ -84,12 +86,15 @@ if __name__ == "__main__":
         ds.ImagePositionPatient[1] = s.vol.origin[1] # y
         ds.ImagePositionPatient[0] = s.vol.origin[2] # x
         ds.InstanceNumber = instance + 1 # start at 1
-    
-        # save ds
-        filename = '%s_%s_%s_%s%i.dcm' % (ptcode, ctcode, cropname, 'avgreg', instance)
-        print("Writing test file", filename)
-        ds.save_as(os.path.join(basedir_save, ptcode, ptcode+'_'+ctcode, filename))
-        print("Files saved to:")
-        print(os.path.join(basedir_save, ptcode, ptcode+'_'+ctcode))
+        ds.SOPInstanceUID = initialUID.replace(UIDtoReplace, str(int(UIDtoReplace)+instance)) # unique for each slice
         
         instance += 1
+        
+        # save ds
+        filename = '%s_%s_%s_%s%i.dcm' % (ptcode, ctcode, cropname, 'avgreg', instance)
+        print("Writing slice", filename)
+        ds.save_as(os.path.join(basedir_save, ptcode, ptcode+'_'+ctcode, filename))
+    
+    print("Files saved to:")
+    print(os.path.join(basedir_save, ptcode, ptcode+'_'+ctcode))
+        
