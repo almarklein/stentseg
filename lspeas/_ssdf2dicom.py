@@ -28,12 +28,12 @@ if __name__ == "__main__":
     
     # Select directory to load dicom
     # the stentseg datahandling module is agnostic about where the DICOM data is
-    dicom_basedir = select_dir(r'F:\LSPEAS_data\DICOM',
-                            r'D:\LSPEAS\LSPEAS_data_BACKUP\DICOM',
+    dicom_basedir = select_dir(r'F:\LSPEAS_data\ECGgatedCT',
+                            r'D:\LSPEAS\LSPEAS_data_BACKUP\ECGgatedCT',
                             '/home/almar/data/dicom/stent_LPEAS',)    
     # Select dataset
-    ptcode = 'LSPEAS_001'
-    ctcode = '12months'
+    ptcode = 'LSPEAS_011'
+    ctcode = '6months'
     cropname = 'ring'
     
     # Select basedirectory to load ssdf
@@ -93,8 +93,8 @@ if __name__ == "__main__":
         # save ds
         filename = '%s_%s_%s_%s%i.dcm' % (ptcode, ctcode, cropname, 'avgreg', instance)
         print("Writing slice", filename)
-        ds.save_as(os.path.join(basedir_save, ptcode, ptcode+'_'+ctcode, filename))
+        ds.save_as(os.path.join(basedir_save, cropname, ptcode, ptcode+'_'+ctcode, filename))
     
     print("Files saved to:")
-    print(os.path.join(basedir_save, ptcode, ptcode+'_'+ctcode))
+    print(os.path.join(basedir_save, cropname, ptcode, ptcode+'_'+ctcode))
         
