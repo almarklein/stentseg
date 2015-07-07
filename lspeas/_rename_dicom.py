@@ -14,7 +14,7 @@ from stentseg.utils.datahandling import renamedcm
 # Select base directory for DICOM data
 
 # The stentseg datahandling module is agnostic about where the DICOM data is
-# dicom_basedir = select_dir(r'E:\LSPEAS_data\DICOM',
+# dicom_basedir = select_dir(r'E:\LSPEAS_data\ECGgatedCT',
 #                            '/home/almar/data/dicom/stent_LPEAS',)
 dicom_basedir = r'D:\LSPEAS\test_rename_dicom'
 

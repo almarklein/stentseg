@@ -11,20 +11,20 @@ from stentseg.utils.datahandling import savecropvols, saveaveraged, cropaveraged
 # Select base directory for DICOM data
 
 # The stentseg datahandling module is agnostic about where the DICOM data is
-dicom_basedir = select_dir(r'F:\LSPEAS_data\DICOM',
+dicom_basedir = select_dir(r'F:\LSPEAS_data\ECGgatedCT',
                            '/home/almar/data/dicom/stent_LPEAS',
-                           'D:\LSPEAS\LSPEAS_data_BACKUP\DICOM')
+                           'D:\LSPEAS\LSPEAS_data_BACKUP\ECGgatedCT')
 
 # Select the ssdf basedir
 basedir = select_dir(os.getenv('LSPEAS_BASEDIR', ''),
                      r'D:\LSPEAS\LSPEAS_ssdf',)
 
 # Params Step A, B, C
-ctcode = '12months'  # 'pre', 'discharge', '1month', '6months', '12months'
-ptcode = 'LSPEAS_003'
+ctcode = '6months'  # 'pre', 'discharge', '1month', '6months', '12months'
+ptcode = 'LSPEAS_011'
 
 # Params Step B, C (to save)
-cropnames = 'stent', 'ring'    # save crops of stent and/or ring
+cropnames = ['ring','stent']    # save crops of stent and/or ring
 stenttype = 'anaconda'         # or 'endurant' or 'excluder'
 # C: start and end phase in cardiac cycle to average (50,90 = 5 phases)
 phases = 30, 90
@@ -84,22 +84,26 @@ for cropname in cropnames:
 phase = 60
 avg = 'avg3090'
 
-s1 = loadvol(basedir, ptcode, ctcode, 'ring', what ='phases')
-s2 = loadvol(basedir, ptcode, ctcode, 'stent', avg)
-#s3 = loadvol(basedir, ptcode, ctcode, 'stent', 'avg3090')
+# s1 = loadvol(basedir, ptcode, ctcode, 'ring', what ='phases')
+s2 = loadvol(basedir, ptcode, ctcode, 'ring', avg)
+s3 = loadvol(basedir, ptcode, ctcode, 'stent', avg)
 
 
-## Visualize and compare
+# Visualize and compare
 
 import visvis as vv
 fig = vv.figure(1); vv.clf()
 fig.position = 0, 22, 1366, 706
 #fig.position = -1413.00, -2.00,  1366.00, 706.00
 a1 = vv.subplot(121)
-t = vv.volshow(s1['vol%i'% phase])
-t.clim = 0, 2500
-# t2 = vv.volshow(s3.vol)
-# t2.clim = 0, 2000
+# t = vv.volshow(s1['vol%i'% phase], clim=(0, 3000))
+t2 = vv.volshow(s3.vol, clim=(0, 3000), renderStyle='iso')
+t2.isoThreshold = 250
+t2.colormap = {'r': [(0.0, 0.0), (0.17727272, 1.0)],
+ 'g': [(0.0, 0.0), (0.27272728, 1.0)],
+ 'b': [(0.0, 0.0), (0.34545454, 1.0)],
+ 'a': [(0.0, 1.0), (1.0, 1.0)]}
+s = vv.volshow2(s3.vol, clim=(-550, 500))
 vv.xlabel('x')
 vv.ylabel('y')
 vv.zlabel('z')

@@ -15,17 +15,18 @@ import numpy as np
 
 # Select the ssdf basedir
 basedir = select_dir(os.getenv('LSPEAS_BASEDIR', ''),
-                     r'D:\LSPEAS\LSPEAS_ssdf', r'F:\LSPEAS_ssdf_20150204')
+                     r'D:\LSPEAS\LSPEAS_ssdf', r'F:\LSPEAS_ssdf_BACKUP\LSPEAS_ssdf')
 
 # Select dataset to register
-ptcode = 'LSPEAS_003'
+ptcode = 'LSPEAS_023'
 # codes = ctcode1, ctcode2, ctcode3 = 'discharge', '1month', '6months'
-codes = ctcode1, ctcode2 = 'discharge', '1month'
+# codes = ctcode1, ctcode2 = 'discharge', '1month'
+codes = ctcode1 = 'discharge'
 cropname = 'ring'
 modelname = 'modelavgreg'
 
-drawModelLines = True  # True or False
-showAxis = True
+drawModelLines = False  # True or False
+showAxis = False
 
 # view1 = 
 #  
@@ -85,7 +86,7 @@ if len(codes) == 2:
     if drawModelLines == True:
         s1.model.Draw(mc='b', mw = 10, lc='w')
     m = vv.mesh(modelmesh1)
-    #m.faceColor = 'g' # OR
+#     m.faceColor = 'g' # OR
     m.clim = 0, 5
     m.colormap = vv.CM_JET
     vv.colorbar()
