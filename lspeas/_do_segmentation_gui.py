@@ -20,8 +20,8 @@ basedir = select_dir(os.getenv('LSPEAS_BASEDIR', ''),
                      r'D:\LSPEAS\LSPEAS_ssdf',)
 
 # Select dataset to register
-ptcode = 'LSPEAS_001'
-ctcode = '6months'
+ptcode = 'LSPEAS_023'
+ctcode = 'discharge'
 cropname = 'ring'
 what = 'avgreg'
 
@@ -30,24 +30,26 @@ what = 'avgreg'
 s = loadvol(basedir, ptcode, ctcode, cropname, what)
 vol = s.vol
 
-## Perform segmentation
 
-# Initialize segmentation parameters
-stentType = 'anaconda'  # 'anacondaRing' runs modified pruning algorithm in Step3
-cleanNodes = False  # False when using GUI: clean nodes and smooth after correct/restore
+## Initialize segmentation parameters
+stentType = 'endurant'  # 'anacondaRing' runs modified pruning algorithm in Step3
 
 p = getDefaultParams(stentType)
-p.seed_threshold = 1000                 # step 1
-p.mcp_speedFactor = 190                 # step 2, speed image (delta), costToCtValue
+p.seed_threshold = 1500                 # step 1
+p.mcp_speedFactor = 170                 # step 2, speed image (delta), costToCtValue
 p.mcp_maxCoverageFronts = 0.004         # step 2, base.py; replaces mcp_evolutionThreshold
-p.graph_weakThreshold = 500             # step 3, stentgraph.prune_very_weak
-p.graph_expectedNumberOfEdges = 3       # step 3, stentgraph.prune_weak
-p.graph_trimLength =  0                 # step 3, stentgraph.prune_tails
-p.graph_minimumClusterSize = 10         # step 3, stentgraph.prune_clusters
-p.graph_strongThreshold = 3500          # step 3, stentgraph.prune_weak and stentgraph.prune_redundant
+p.graph_weakThreshold = 600             # step 3, stentgraph.prune_very_weak
+p.graph_expectedNumberOfEdges = 2       # step 3, stentgraph.prune_weak
+p.graph_trimLength =  2                 # step 3, stentgraph.prune_tails
+p.graph_minimumClusterSize = 20         # step 3, stentgraph.prune_clusters
+p.graph_strongThreshold = 3000          # step 3, stentgraph.prune_weak and stentgraph.prune_redundant
 p.graph_min_strutlength = 6             # step 3, stent_anaconda prune_redundant
 p.graph_max_strutlength = 12            # step 3, stent_anaconda prune_redundant
 # todo: write function to estimate maxCoverageFronts
+
+
+## Perform segmentation
+cleanNodes = False  # False when using GUI: clean nodes and smooth after correct/restore
 
 if stentType == 'anacondaRing':
         sd = AnacondaDirect(vol, p) # inherit _Step3_iter from AnacondaDirect class
@@ -68,7 +70,7 @@ from stentseg.stentdirect import stentgraph
 from stentseg.stentdirect.stent_anaconda import _edge_length, prune_redundant
 
 fig = vv.figure(4); vv.clf()
-fig.position = 0, 22, 1366, 706
+fig.position = 8.00, 30.00,  1267.00, 1002.00
 # fig.position = 1528.00, 123.00,  1246.00, 730.00
 # viewringcrop = 
 
@@ -108,7 +110,7 @@ def on_key(event):
     """KEY commands for user interaction
     UP/DOWN = show/hide nodes
     ENTER   = restore edge [select 2 nodes]
-    DELETE  = remove edge [select 2 ndoes] or pop node [select 1 node]
+    DELETE  = remove edge [select 2 nodes] or pop node [select 1 node]
     CTRL    = clean nodes: pop, crossings, corner
     ESCAPE  = FINISH: refine, smooth
     """
@@ -181,6 +183,7 @@ def on_key(event):
             selected_nodes.clear()
     if event.key == vv.KEY_CONTROL:
         # clean nodes
+        #todo: problem with pop for endurant
         stentgraph.pop_nodes(sd._nodes3)
         stentgraph.add_nodes_at_crossings(sd._nodes3)
         stentgraph.pop_nodes(sd._nodes3)  # because adding nodes can leave other redundant
@@ -192,7 +195,7 @@ def on_key(event):
             stentgraph.prune_redundant(sd._nodes3, sd._params.graph_strongThreshold)
         stentgraph.pop_nodes(sd._nodes3) # because removing edges/add nodes can create degree 2 nodes
         stentgraph.add_corner_nodes(sd._nodes3)
-        stentgraph.prune_clusters(sd._nodes3, sd._params.graph_minimumClusterSize) #remove residual nodes/clusters 
+        stentgraph.prune_clusters(sd._nodes3, 3) #remove residual nodes/clusters 
         stentgraph.prune_tails(sd._nodes3, sd._params.graph_trimLength)
         # visualize result
         view = a3.GetView()

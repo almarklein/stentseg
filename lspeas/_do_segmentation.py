@@ -16,10 +16,11 @@ from stentseg.stentdirect import StentDirect, getDefaultParams, AnacondaDirect
 
 # Select the ssdf basedir
 basedir = select_dir(os.getenv('LSPEAS_BASEDIR', ''),
-                     r'D:\LSPEAS\LSPEAS_ssdf',)
+                     r'D:\LSPEAS\LSPEAS_ssdf',
+                     r'F:\LSPEAS_ssdf_BACKUP\LSPEAS_ssdf')
 
 # Select dataset to register
-ptcode = 'LSPEAS_004'
+ptcode = 'LSPEAS_003'
 ctcode = 'discharge'
 cropname = 'ring'
 what = 'avgreg'
@@ -29,24 +30,26 @@ what = 'avgreg'
 s = loadvol(basedir, ptcode, ctcode, cropname, what)
 vol = s.vol
 
-## Perform segmentation
 
-# Initialize segmentation parameters
+## Initialize segmentation parameters
 stentType = 'anacondaRing'  # 'anacondaRing' runs modified pruning algorithm in Step3
-cleanNodes = True  # True when NOT using GUI
 
 p = getDefaultParams(stentType)
-p.seed_threshold = 750                 # step 1
-p.mcp_speedFactor = 180                 # step 2, speed image (delta), costToCtValue
-p.mcp_maxCoverageFronts = 0.007         # step 2, base.py; replaces mcp_evolutionThreshold
-p.graph_weakThreshold = 500             # step 3, stentgraph.prune_very_weak
-p.graph_expectedNumberOfEdges = 4       # step 3, stentgraph.prune_weak
+p.seed_threshold = 1500                 # step 1
+p.mcp_speedFactor = 170                 # step 2, speed image (delta), costToCtValue
+p.mcp_maxCoverageFronts = 0.003         # step 2, base.py; replaces mcp_evolutionThreshold
+p.graph_weakThreshold = 1000             # step 3, stentgraph.prune_very_weak
+p.graph_expectedNumberOfEdges = 3       # step 3, stentgraph.prune_weak
 p.graph_trimLength =  0                 # step 3, stentgraph.prune_tails
 p.graph_minimumClusterSize = 10         # step 3, stentgraph.prune_clusters
-p.graph_strongThreshold = 4000          # step 3, stentgraph.prune_weak and stentgraph.prune_redundant
+p.graph_strongThreshold = 4600          # step 3, stentgraph.prune_weak and stentgraph.prune_redundant
 p.graph_min_strutlength = 6             # step 3, stent_anaconda prune_redundant
 p.graph_max_strutlength = 12            # step 3, stent_anaconda prune_redundant
 # todo: write function to estimate maxCoverageFronts
+
+
+## Perform segmentation
+cleanNodes = True  # True when NOT using GUI
 
 # Instantiate stentdirect segmenter object
 if stentType == 'anacondaRing':
@@ -59,6 +62,7 @@ else:
 sd.Step1()
 sd.Step2()
 sd.Step3(cleanNodes)
+#todo: problem with pop for endurant
 
 # Create a mesh object for visualization (argument is strut tickness)
 bm = create_mesh(sd._nodes3, 0.6) # new
@@ -68,27 +72,30 @@ model = sd._nodes3
 
 # Visualize
 fig = vv.figure(3); vv.clf()
-fig.position = 0, 22, 1366, 706
+fig.position = 0.00, 22.00,  1920.00, 1018.00
 #viewringcrop = 
 
 # Show volume and model as graph
 a1 = vv.subplot(131)
 t = vv.volshow(vol)
 t.clim = 0, 2500
-# sd._nodes1.Draw(mc='g', mw = 6)       # draw seeded nodes
-sd._nodes2.Draw(mc='b', lc = 'g')    # draw seeded and MCP connected nodes
+sd._nodes1.Draw(mc='b', mw = 6)       # draw seeded nodes
+# sd._nodes2.Draw(mc='b', lc = 'g')    # draw seeded and MCP connected nodes
 
 # Show volume and cleaned up graph
 a2 = vv.subplot(132)
 t = vv.volshow(vol)
 t.clim = 0, 2500
-#sd._nodes2.Draw(mc='g', lc='r')
-sd._nodes3.Draw(mc='b', lc='g')
+sd._nodes2.Draw(mc='b', lc='g')
+# sd._nodes3.Draw(mc='b', lc='g')
 vv.xlabel('x (mm)');vv.ylabel('y (mm)');vv.zlabel('z (mm)')
 
 # Show the mesh
 a3 = vv.subplot(133)
 a3.daspect = 1,1,-1
+t = vv.volshow(vol)
+t.clim = 0, 2500
+sd._nodes3.Draw(mc='b', lc='g')
 m = vv.mesh(bm)
 m.faceColor = 'g'
 vv.xlabel('x (mm)');vv.ylabel('y (mm)');vv.zlabel('z (mm)')
