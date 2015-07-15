@@ -78,6 +78,9 @@ def getDefaultParams(stentType=''):
     # The size of tails to trim and clusters to remove
     params.graph_trimLength = 3             
     params.graph_minimumClusterSize = 8
+    # The th (vector) and angTh to detect corners
+    params.graph_angleVector = 5
+    params.graph_angleTh = 45
     
     # Stent type dependencies    
     if stentType == 'zenith':

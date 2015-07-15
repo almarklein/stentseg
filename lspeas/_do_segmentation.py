@@ -21,10 +21,9 @@ basedir = select_dir(os.getenv('LSPEAS_BASEDIR', ''),
 
 # Select dataset to register
 ptcode = 'LSPEAS_003'
-ctcode = 'discharge'
+ctcode = '1month'
 cropname = 'ring'
 what = 'avgreg'
-
 
 # Load volumes
 s = loadvol(basedir, ptcode, ctcode, cropname, what)
@@ -32,20 +31,21 @@ vol = s.vol
 
 
 ## Initialize segmentation parameters
-stentType = 'anacondaRing'  # 'anacondaRing' runs modified pruning algorithm in Step3
+stentType = 'anaconda'  # 'anacondaRing' runs modified pruning algorithm in Step3
 
 p = getDefaultParams(stentType)
 p.seed_threshold = 1500                 # step 1
 p.mcp_speedFactor = 170                 # step 2, speed image (delta), costToCtValue
 p.mcp_maxCoverageFronts = 0.003         # step 2, base.py; replaces mcp_evolutionThreshold
-p.graph_weakThreshold = 1000             # step 3, stentgraph.prune_very_weak
+p.graph_weakThreshold = 1000            # step 3, stentgraph.prune_very_weak
 p.graph_expectedNumberOfEdges = 3       # step 3, stentgraph.prune_weak
 p.graph_trimLength =  0                 # step 3, stentgraph.prune_tails
 p.graph_minimumClusterSize = 10         # step 3, stentgraph.prune_clusters
 p.graph_strongThreshold = 4600          # step 3, stentgraph.prune_weak and stentgraph.prune_redundant
-p.graph_min_strutlength = 6             # step 3, stent_anaconda prune_redundant
-p.graph_max_strutlength = 12            # step 3, stent_anaconda prune_redundant
-# todo: write function to estimate maxCoverageFronts
+# p.graph_min_strutlength = 6             # step 3, stent_anaconda prune_redundant
+# p.graph_max_strutlength = 12            # step 3, stent_anaconda prune_redundant
+p.graph_angleVector = 5                 # step 3, corner detect
+p.graph_angleTh = 45                    # step 3, corner detect
 
 
 ## Perform segmentation
@@ -95,7 +95,7 @@ a3 = vv.subplot(133)
 a3.daspect = 1,1,-1
 t = vv.volshow(vol)
 t.clim = 0, 2500
-sd._nodes3.Draw(mc='b', lc='g')
+sd._nodes3.Draw(mc='b', lc='w')
 m = vv.mesh(bm)
 m.faceColor = 'g'
 vv.xlabel('x (mm)');vv.ylabel('y (mm)');vv.zlabel('z (mm)')

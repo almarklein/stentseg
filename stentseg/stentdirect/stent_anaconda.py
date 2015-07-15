@@ -37,6 +37,7 @@ class AnacondaDirect(StentDirect):
         ene = params.graph_expectedNumberOfEdges
         
         # prune edges prior to pop and add crossing nodes, otherwise many false nodes
+        stentgraph.prune_clusters(nodes, params.graph_minimumClusterSize) # before pop nodes
         stentgraph.prune_very_weak(nodes, params.graph_weakThreshold)
         stentgraph.prune_weak(nodes, ene, params.graph_strongThreshold)
         
@@ -52,9 +53,8 @@ class AnacondaDirect(StentDirect):
             prune_redundant(nodes, params.graph_strongThreshold,
                                    params.graph_min_strutlength,
                                    params.graph_max_strutlength)
-        stentgraph.prune_clusters(nodes, params.graph_minimumClusterSize)
         stentgraph.prune_tails(nodes, params.graph_trimLength)
-
+        stentgraph.prune_clusters(nodes, params.graph_minimumClusterSize)
 
 def prune_weak(graph, enc, ctvalue, min_strutlength, max_strutlength):
     """ Remove weak edges, based on cost and number of expected edges (enc).

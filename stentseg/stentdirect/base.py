@@ -220,13 +220,15 @@ class StentDirect:
             cur_edges = nodes.number_of_edges()
             self._Step3_iter(nodes, cleanNodes)
         
-        # todo: turn cleanNodes arg into a parameter
         if cleanNodes == True:
+            stentgraph.add_nodes_at_crossings(nodes)
+            stentgraph.pop_nodes(nodes)
+            stentgraph.add_corner_nodes(nodes, th=params.graph_angleVector, angTh=params.graph_angleTh)
             stentgraph.pop_nodes(nodes)  # because removing edges/add nodes can create degree 2 nodes
-            stentgraph.add_corner_nodes(nodes) # because adding corners inside loop creates more false nodes
+            
             nodes = self._RefinePositions(nodes)
             stentgraph.smooth_paths(nodes, 2) # do not smooth iterative based on changing edges
-        
+            
         t0 = time.time()-t_start
         tmp = "Reduced to %i edges and %i nodes, "
         tmp += "which took %1.2f s (%i iters)"
@@ -251,19 +253,13 @@ class StentDirect:
         params = self._params
         ene = params.graph_expectedNumberOfEdges
         
-        # prune edges prior to pop and add crossing nodes, otherwise many false nodes
+        # prune prior to pop and add crossing nodes, otherwise false nodes/edges
+        # no pop in loop to prevent cluster removal of wire without crossings/corners
         stentgraph.prune_very_weak(nodes, params.graph_weakThreshold)
         stentgraph.prune_weak(nodes, ene, params.graph_strongThreshold)
         stentgraph.prune_redundant(nodes, params.graph_strongThreshold)          
-        if cleanNodes == True:
-            stentgraph.pop_nodes(nodes)
-            stentgraph.add_nodes_at_crossings(nodes) 
-            # mind that adding at crossing in first iteration can lead to uncleaned edges (degree 3 nodes)
-            stentgraph.pop_nodes(nodes)  # because adding nodes can leave other redundant
-            stentgraph.prune_redundant(nodes, params.graph_strongThreshold)
-        stentgraph.prune_clusters(nodes, params.graph_minimumClusterSize)
         stentgraph.prune_tails(nodes, params.graph_trimLength)
-    
+        stentgraph.prune_clusters(nodes, params.graph_minimumClusterSize)
     
     def _RefinePositions(self, nodes):
         """ Refine positions by finding subpixel locations for nodes

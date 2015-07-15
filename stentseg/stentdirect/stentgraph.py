@@ -433,9 +433,8 @@ def pop_nodes(graph):
             continue  # node popped as a cluster of three in _pop_node()
         if len(neighbours) == 2:
             if node not in neighbours:  # cannot pop if we only connect to self
-                # todo: temporarily do not protect corner nodes
-                if 0:#graph.node[node].get('corner', False):
-                    pass  # explicitly prevent popping
+                if graph.node[node].get('corner', False):
+                    pass  # explicitly prevent popping when corner=True
                 else:
                     _pop_node(graph, node)
 
@@ -571,12 +570,12 @@ def _add_corner_to_edge(graph, n1, n2, **kwargs):
                 _add_corner_to_edge(graph, *cnew, **kwargs)
 
 
-def add_corner_nodes(graph):
+def add_corner_nodes(graph, **kwargs):
     """ Detects positions on each edge where it bends and places a new
     node at these positions.
     """
     for n1, n2 in graph.edges():
-        _add_corner_to_edge(graph, n1, n2)
+        _add_corner_to_edge(graph, n1, n2, **kwargs)
 
 
 def _get_pairs_of_neighbours(graph, node):

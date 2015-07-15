@@ -38,14 +38,15 @@ p = getDefaultParams(stentType)
 p.seed_threshold = 1500                 # step 1
 p.mcp_speedFactor = 170                 # step 2, speed image (delta), costToCtValue
 p.mcp_maxCoverageFronts = 0.004         # step 2, base.py; replaces mcp_evolutionThreshold
-p.graph_weakThreshold = 600             # step 3, stentgraph.prune_very_weak
+p.graph_weakThreshold = 700             # step 3, stentgraph.prune_very_weak
 p.graph_expectedNumberOfEdges = 2       # step 3, stentgraph.prune_weak
 p.graph_trimLength =  2                 # step 3, stentgraph.prune_tails
 p.graph_minimumClusterSize = 20         # step 3, stentgraph.prune_clusters
-p.graph_strongThreshold = 3000          # step 3, stentgraph.prune_weak and stentgraph.prune_redundant
+p.graph_strongThreshold = 3500          # step 3, stentgraph.prune_weak and stentgraph.prune_redundant
 p.graph_min_strutlength = 6             # step 3, stent_anaconda prune_redundant
 p.graph_max_strutlength = 12            # step 3, stent_anaconda prune_redundant
-# todo: write function to estimate maxCoverageFronts
+p.graph_angleVector = 10                # step 3, corner detect
+p.graph_angleTh = 60                    # step 3, corner detect
 
 
 ## Perform segmentation
@@ -184,19 +185,17 @@ def on_key(event):
     if event.key == vv.KEY_CONTROL:
         # clean nodes
         #todo: problem with pop for endurant
-        stentgraph.pop_nodes(sd._nodes3)
         stentgraph.add_nodes_at_crossings(sd._nodes3)
-        stentgraph.pop_nodes(sd._nodes3)  # because adding nodes can leave other redundant
         if stentType == 'anacondaRing':
             prune_redundant(sd._nodes3, sd._params.graph_strongThreshold,
                                             sd._params.graph_min_strutlength,
                                             sd._params.graph_max_strutlength)
         else:
             stentgraph.prune_redundant(sd._nodes3, sd._params.graph_strongThreshold)
-        stentgraph.pop_nodes(sd._nodes3) # because removing edges/add nodes can create degree 2 nodes
         stentgraph.add_corner_nodes(sd._nodes3)
-        stentgraph.prune_clusters(sd._nodes3, 3) #remove residual nodes/clusters 
+        stentgraph.pop_nodes(sd._nodes3) # because removing edges/add nodes can create degree 2 nodes
         stentgraph.prune_tails(sd._nodes3, sd._params.graph_trimLength)
+        stentgraph.prune_clusters(sd._nodes3, 3) #remove residual nodes/clusters
         # visualize result
         view = a3.GetView()
         a3.Clear()
@@ -220,6 +219,7 @@ def on_key(event):
         m = vv.mesh(bm)
         m.faceColor = 'g'
         a3.SetView(view)
+        print('----DO NOT FORGET TO SAVE THE MODEL TO DISK; EXECUTE NEXT CELL----')
 
 selected_nodes = list()
 def select_node(event):
