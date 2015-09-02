@@ -239,7 +239,10 @@ def prune_clusters(graph, minsize):
     # Thanks to networkx this one is easy!
     for cluster in list(nx.connected_components(graph)):
         if len(cluster) < minsize:
-            graph.remove_nodes_from(cluster)
+            if cluster[0] in graph.nodes_with_selfloops(): #pop can create cluster of edge to self
+                pass # prevent removal
+            else:
+                graph.remove_nodes_from(cluster)
 
 
 
