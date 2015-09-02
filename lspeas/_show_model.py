@@ -26,7 +26,7 @@ ctcode, nr = 'discharge', 1
 # ctcode, nr = 'pre', 2
 cropname = 'ring'
 modelname = 'modelavgreg'
-motion = 'amplitude'
+motion = 'amplitude'  # amplitude or sum
 dimension = 'z'
 
 # Load deformations (forward for mesh)
