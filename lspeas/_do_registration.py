@@ -16,11 +16,12 @@ from stentseg.utils.datahandling import select_dir, loadvol, loadmodel
 
 # Select the ssdf basedir
 basedir = select_dir(os.getenv('LSPEAS_BASEDIR', ''),
-                     r'D:\LSPEAS\LSPEAS_ssdf',)
+                     r'D:\LSPEAS\LSPEAS_ssdf',
+                     r'F:\LSPEAS_ssdf_toPC')
 
 # Select dataset to register
-ptcode = 'LSPEAS_002'
-ctcode = 'pre'
+ptcode = 'LSPEAS_023'
+ctcode = '1month'
 cropname = 'stent'
 
 # Load volumes
@@ -45,8 +46,8 @@ reg.params.grid_sampling_factor = 0.5
 # Go!
 reg.register(verbose=1)
 
-t1 = time.time()
-print('Registration completed, which took %1.2f min.' % ((t1-t0)/60))
+# t1 = time.time()
+# print('Registration completed, which took %1.2f min.' % ((t1-t0)/60))
 
 
 ## Store registration result
@@ -74,7 +75,7 @@ s2.params = reg.params
 # Save
 filename = '%s_%s_%s_%s.ssdf' % (ptcode, ctcode, cropname, 'deforms')
 ssdf.save(os.path.join(basedir, ptcode, filename), s2)
-
+print("deforms saved to disk.")
 
 ## Store averaged volume, where the volumes are registered
 
@@ -104,3 +105,7 @@ s_avg.params = s2.params
 avg = 'avgreg'
 filename = '%s_%s_%s_%s.ssdf' % (ptcode, ctcode, cropname, avg)
 ssdf.save(os.path.join(basedir, ptcode, filename), s_avg)
+print("avgreg saved to disk.")
+
+t1 = time.time()
+print('Registration completed, which took %1.2f min.' % ((t1-t0)/60))

@@ -17,15 +17,16 @@ dicom_basedir = select_dir(r'F:\LSPEAS_data\ECGgatedCT',
 
 # Select the ssdf basedir
 basedir = select_dir(os.getenv('LSPEAS_BASEDIR', ''),
-                     r'D:\LSPEAS\LSPEAS_ssdf',)
+                     r'D:\LSPEAS\LSPEAS_ssdf',
+                     r'F:\LSPEAS_ssdf_toPC')
 
 # Params Step A, B, C
-ctcode = '6months'  # 'pre', 'discharge', '1month', '6months', '12months'
-ptcode = 'LSPEAS_011'
+ctcode = '6months'  # 'pre', 'discharge', '1month', '6months', '12months', x_Profx_Water_
+ptcode = 'LSPEAS_017'  # LSPEAS_00x or FANTOOM_xxx
+stenttype = 'anaconda'         # or 'endurant' or 'excluder'
 
 # Params Step B, C (to save)
 cropnames = ['ring','stent']    # save crops of stent and/or ring
-stenttype = 'anaconda'         # or 'endurant' or 'excluder'
 # C: start and end phase in cardiac cycle to average (50,90 = 5 phases)
 phases = 30, 90
 
@@ -62,8 +63,14 @@ def readdcm(dirname):
 ## Perform the steps A,B,C
 
 # Step A: Read DICOM
-vols = readdcm(os.path.join(dicom_basedir, ptcode, ptcode+'_'+ctcode))
-#vols = imageio.mvolread(os.path.join(dicom_basedir, ptcode, ptcode+'_'+ctcode), 'dicom')
+if 'FANTOOM' in ptcode:
+    dicom_basedir = os.path.join(dicom_basedir.replace('ECGgatedCT', ''), ptcode)
+    subfolder = os.listdir(dicom_basedir)
+    dicom_basedir = os.path.join(dicom_basedir, subfolder[0],ctcode)
+    vols = readdcm(dicom_basedir)
+else:
+    vols = readdcm(os.path.join(dicom_basedir, ptcode, ptcode+'_'+ctcode))
+    #vols = imageio.mvolread(os.path.join(dicom_basedir, ptcode, ptcode+'_'+ctcode), 'dicom')
 
 # Step B: Crop and Save SSDF
 for cropname in cropnames:
@@ -107,7 +114,9 @@ s = vv.volshow2(s3.vol, clim=(-550, 500))
 vv.xlabel('x')
 vv.ylabel('y')
 vv.zlabel('z')
-#vv.title('One volume at %i procent of cardiac cycle' % phase )
+# vv.title('One volume at %i procent of cardiac cycle' % phase )
+vv.title('Averaged volume %s' % avg ) 
+
 
 a2 = vv.subplot(122)
 a2.daspect = 1,1,-1
