@@ -32,9 +32,9 @@ if __name__ == "__main__":
                             r'D:\LSPEAS\LSPEAS_data_BACKUP\ECGgatedCT',
                             '/home/almar/data/dicom/stent_LPEAS',)    
     # Select dataset
-    ptcode = 'LSPEAS_011'
-    ctcode = '6months'
-    cropname = 'ring'
+    ptcode = 'LSPEAS_023'
+    ctcode = '1month'
+    cropname = 'stent'
     
     # Select basedirectory to load ssdf
     basedir_load = select_dir(os.getenv('LSPEAS_BASEDIR', ''),
@@ -95,6 +95,7 @@ if __name__ == "__main__":
         print("Writing slice", filename)
         ds.save_as(os.path.join(basedir_save, cropname, ptcode, ptcode+'_'+ctcode, filename))
     
+    print("Check: shape of avgreg vol=", vol.shape)
     print("Files saved to:")
     print(os.path.join(basedir_save, cropname, ptcode, ptcode+'_'+ctcode))
         
