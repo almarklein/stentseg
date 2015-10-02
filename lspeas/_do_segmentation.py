@@ -12,16 +12,16 @@ from visvis import ssdf
 from stentseg.utils import PointSet
 from stentseg.utils.datahandling import select_dir, loadvol, loadmodel
 from stentseg.stentdirect.stentgraph import create_mesh
-from stentseg.stentdirect import StentDirect, getDefaultParams, AnacondaDirect
+from stentseg.stentdirect import StentDirect, getDefaultParams, AnacondaDirect, EndurantDirect
 
 # Select the ssdf basedir
 basedir = select_dir(os.getenv('LSPEAS_BASEDIR', ''),
                      r'D:\LSPEAS\LSPEAS_ssdf',
-                     r'F:\LSPEAS_ssdf_BACKUP\LSPEAS_ssdf')
+                     r'F:\LSPEAS_ssdf_backup')
 
 # Select dataset to register
-ptcode = 'LSPEAS_003'
-ctcode = '1month'
+ptcode = 'LSPEAS_023'
+ctcode = 'discharge'
 cropname = 'ring'
 what = 'avgreg'
 
@@ -31,17 +31,17 @@ vol = s.vol
 
 
 ## Initialize segmentation parameters
-stentType = 'anaconda'  # 'anacondaRing' runs modified pruning algorithm in Step3
+stentType = 'endurant'  # 'anacondaRing' runs modified pruning algorithm in Step3
 
 p = getDefaultParams(stentType)
-p.seed_threshold = 1500                 # step 1
+p.seed_threshold = 1700                 # step 1
 p.mcp_speedFactor = 170                 # step 2, speed image (delta), costToCtValue
 p.mcp_maxCoverageFronts = 0.003         # step 2, base.py; replaces mcp_evolutionThreshold
 p.graph_weakThreshold = 1000            # step 3, stentgraph.prune_very_weak
-p.graph_expectedNumberOfEdges = 3       # step 3, stentgraph.prune_weak
+p.graph_expectedNumberOfEdges = 2       # step 3, stentgraph.prune_weak
 p.graph_trimLength =  0                 # step 3, stentgraph.prune_tails
 p.graph_minimumClusterSize = 10         # step 3, stentgraph.prune_clusters
-p.graph_strongThreshold = 4600          # step 3, stentgraph.prune_weak and stentgraph.prune_redundant
+p.graph_strongThreshold = 5000          # step 3, stentgraph.prune_weak and stentgraph.prune_redundant
 # p.graph_min_strutlength = 6             # step 3, stent_anaconda prune_redundant
 # p.graph_max_strutlength = 12            # step 3, stent_anaconda prune_redundant
 p.graph_angleVector = 5                 # step 3, corner detect
@@ -55,6 +55,8 @@ cleanNodes = True  # True when NOT using GUI
 if stentType == 'anacondaRing':
         sd = AnacondaDirect(vol, p) # inherit _Step3_iter from AnacondaDirect class
         #runtime warning using anacondadirect due to mesh creation, ignore
+elif stentType == 'endurant':
+        sd = EndurantDirect(vol, p)
 else:
         sd = StentDirect(vol, p)
 
@@ -62,7 +64,6 @@ else:
 sd.Step1()
 sd.Step2()
 sd.Step3(cleanNodes)
-#todo: problem with pop for endurant
 
 # Create a mesh object for visualization (argument is strut tickness)
 bm = create_mesh(sd._nodes3, 0.6) # new
@@ -134,6 +135,7 @@ s2.model = model.pack()
 filename = '%s_%s_%s_%s.ssdf' % (ptcode, ctcode, cropname, 'model'+what)
 ssdf.save(os.path.join(basedir, ptcode, filename), s2)
 print("model saved to disk.")
+
 
 ## Make model dynamic (and store/overwrite to disk)
 

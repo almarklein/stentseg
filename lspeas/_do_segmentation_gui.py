@@ -13,11 +13,12 @@ from visvis import ssdf
 from stentseg.utils import PointSet
 from stentseg.utils.datahandling import select_dir, loadvol, loadmodel
 from stentseg.stentdirect.stentgraph import create_mesh
-from stentseg.stentdirect import StentDirect, getDefaultParams, AnacondaDirect
+from stentseg.stentdirect import StentDirect, getDefaultParams, AnacondaDirect,EndurantDirect
 
 # Select the ssdf basedir
 basedir = select_dir(os.getenv('LSPEAS_BASEDIR', ''),
-                     r'D:\LSPEAS\LSPEAS_ssdf',)
+                     r'D:\LSPEAS\LSPEAS_ssdf',
+                     r'F:\LSPEAS_ssdf_backup')
 
 # Select dataset to register
 ptcode = 'LSPEAS_023'
@@ -45,8 +46,8 @@ p.graph_minimumClusterSize = 20         # step 3, stentgraph.prune_clusters
 p.graph_strongThreshold = 3500          # step 3, stentgraph.prune_weak and stentgraph.prune_redundant
 p.graph_min_strutlength = 6             # step 3, stent_anaconda prune_redundant
 p.graph_max_strutlength = 12            # step 3, stent_anaconda prune_redundant
-p.graph_angleVector = 10                # step 3, corner detect
-p.graph_angleTh = 60                    # step 3, corner detect
+p.graph_angleVector = 3                 # step 3, corner detect
+p.graph_angleTh = 20                    # step 3, corner detect
 
 
 ## Perform segmentation
@@ -55,6 +56,8 @@ cleanNodes = False  # False when using GUI: clean nodes and smooth after correct
 if stentType == 'anacondaRing':
         sd = AnacondaDirect(vol, p) # inherit _Step3_iter from AnacondaDirect class
         #runtime warning using anacondadirect due to mesh creation, ignore
+elif stentType == 'endurant':
+        sd = EndurantDirect(vol, p)
 else:
         sd = StentDirect(vol, p)
 
@@ -184,15 +187,14 @@ def on_key(event):
             selected_nodes.clear()
     if event.key == vv.KEY_CONTROL:
         # clean nodes
-        #todo: problem with pop for endurant
-        stentgraph.add_nodes_at_crossings(sd._nodes3)
+        #todo: problem with pop for endurant: solved pop before corner detect and adapted cluster removal
         if stentType == 'anacondaRing':
+            stentgraph.add_nodes_at_crossings(sd._nodes3)
             prune_redundant(sd._nodes3, sd._params.graph_strongThreshold,
                                             sd._params.graph_min_strutlength,
                                             sd._params.graph_max_strutlength)
-        else:
-            stentgraph.prune_redundant(sd._nodes3, sd._params.graph_strongThreshold)
-        stentgraph.add_corner_nodes(sd._nodes3)
+        stentgraph.pop_nodes(sd._nodes3) # pop before corner detect or angles can not be found
+        stentgraph.add_corner_nodes(sd._nodes3, th=sd._params.graph_angleVector, angTh=sd._params.graph_angleTh)
         stentgraph.pop_nodes(sd._nodes3) # because removing edges/add nodes can create degree 2 nodes
         stentgraph.prune_tails(sd._nodes3, sd._params.graph_trimLength)
         stentgraph.prune_clusters(sd._nodes3, 3) #remove residual nodes/clusters
