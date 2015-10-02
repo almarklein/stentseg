@@ -128,6 +128,8 @@ def savecropvols(vols, basedir, ptcode, ctcode, cropname, stenttype):
     s.origin = vol_crop.origin
     s.croprange = rz, ry, rx  # in world coordinates 
     s.stenttype = stenttype
+    s.ctcode = ctcode
+    s.ptcode = ptcode
     
     # Export and save
     for volnr in range(0,len(vols)):
@@ -165,6 +167,8 @@ def saveaveraged(basedir, ptcode, ctcode, cropname, phases):
     s_avg.origin = s.origin
     s_avg.stenttype = s.stenttype
     s_avg.croprange = s.croprange
+    s_avg.ctcode = s.ctcode
+    s_avg.ptcode = s.ptcode
 
     avg = 'avg'+ str(phases[0])+str(phases[1])
     filename = '%s_%s_%s_%s.ssdf' % (ptcode, ctcode, cropname, avg)
