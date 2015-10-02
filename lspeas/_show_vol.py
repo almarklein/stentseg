@@ -9,13 +9,14 @@ from pirt.utils.deformvis import DeformableTexture3D
 
 # Select the ssdf basedir
 basedir = select_dir(os.getenv('LSPEAS_BASEDIR', ''),
-                     r'D:\LSPEAS\LSPEAS_ssdf',)
+                     r'D:\LSPEAS\LSPEAS_ssdf',
+                     r'F:\LSPEAS_ssdf_backup')
 
 # Select dataset to register
-ptcode = 'LSPEAS_003'
+ptcode = 'LSPEAS_023'
 ctcode, nr = 'discharge', 1
 # ctcode, nr = 'pre', 2
-cropname = 'ring'
+cropname = 'stent'
 
 ## Show 3D movie, by alternating the 10 volumes
 
@@ -24,17 +25,24 @@ s = loadvol(basedir, ptcode, ctcode, cropname, 'phases')
 vols = [s['vol%i'%(i*10)] for i in range(10)]
 
 # Start vis
-f = vv.figure(1); vv.clf()
+f = vv.figure(2); vv.clf()
 a = vv.gca()
 a.daspect = 1, 1, -1
+a.axis.axisColor = 1,1,1
+a.axis.visible = False
+a.bgcolor = 0,0,0
 
 # Setup data container
 container = vv.MotionDataContainer(a)
 for vol in vols:
-    t = vv.volshow2(vol, clim=(-550, 500)) # -750, 1000
-#     t = vv.volshow(vol, clim=(0, 3000), renderStyle = 'mip')
-    #t.isoThreshold = 400               # iso or mip work well 
+#     t = vv.volshow2(vol, clim=(-550, 500)) # -750, 1000
+    t = vv.volshow(vol, clim=(0, 2500), renderStyle = 'mip')
+    t.isoThreshold = 300               # iso or mip work well 
     t.parent = container
+#     t.colormap = {'g': [(0.0, 0.0), (0.33636364, 1.0)],
+#     'b': [(0.0, 0.0), (0.49545455, 1.0)],
+#     'a': [(0.0, 1.0), (1.0, 1.0)],
+#     'r': [(0.0, 0.0), (0.22272727, 1.0)]}
 
 
 
@@ -68,7 +76,7 @@ vv.ColormapEditor(vv.gcf())
 # Setup motion container
 dt = DeformableTexture3D(a, vol)
 dt.clim = 0, 3000
-dt.isoThreshold = 400
+dt.isoThreshold = 300
 dt.renderStyle = 'iso'  # iso or mip work well
 dt.SetDeforms(*deforms_backward)
 dt.colormap = {'g': [(0.0, 0.0), (0.33636364, 1.0)],
