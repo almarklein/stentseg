@@ -18,16 +18,23 @@ import numpy as np
 # Select the ssdf basedir
 basedir = select_dir(os.getenv('LSPEAS_BASEDIR', ''),
                      r'D:\LSPEAS\LSPEAS_ssdf',
-                     r'F:\LSPEAS_ssdf_backup')
+                     r'F:\LSPEAS_ssdf_BACKUP')
 
 # Select dataset to register
-ptcode = 'LSPEAS_003'
+ptcode = 'LSPEAS_023'
 ctcode, nr = 'discharge', 1
 # ctcode, nr = 'pre', 2
 cropname = 'ring'
 modelname = 'modelavgreg'
-motion = 'amplitude'  # amplitude or sum
-dimension = 'z'
+motion = 'sum'  # amplitude or sum
+dimension = 'xyz'
+showVol  = 'ISO'  # MIP or ISO or 2D or None
+clim  = (0,3000)
+clim2 = (0,4)
+clim3 = -550,500
+isoTh = 250
+motionPlay = 5, 1  # each x ms, a step of x %
+
 
 # Load deformations (forward for mesh)
 s = loadvol(basedir, ptcode, ctcode, cropname, 'deforms')
@@ -53,9 +60,17 @@ modelmesh = create_mesh_with_abs_displacement(model, radius = 1.0, dimensions = 
 s2 = loadvol(basedir, ptcode, ctcode, 'stent', 'avg3090')
 vol = s2.vol
 
-# Remove stent from vol for visualization
-vol = remove_stent_from_volume(vol, model, stripSize=7)
 
+def show_ctvolume(vol, model, isoTh=250):
+    if showVol == 'MIP':
+        t = vv.volshow(vol, clim=clim, renderStyle='mip')
+    elif showVol == 'ISO':
+        vol = remove_stent_from_volume(vol, model, stripSize=7) # rings are removed for vis.
+        t = vv.volshow(vol,clim=clim, renderStyle='iso')
+        t.isoThreshold = isoTh; t.colormap = colormap
+        # vv.ColormapEditor(vv.gcf())
+    elif showVol == '2D':
+        t = vv.volshow2(vol); t.clim = clim3
 
 # Start vis
 f = vv.figure(nr); vv.clf()
@@ -63,20 +78,16 @@ if nr == 1:
     f.position = 8.00, 30.00,  944.00, 1002.00
 else:
     f.position = 968.00, 30.00,  944.00, 1002.00
+colormap = {'r': [(0.0, 0.0), (0.17727272, 1.0)],
+ 'g': [(0.0, 0.0), (0.27272728, 1.0)],
+ 'b': [(0.0, 0.0), (0.34545454, 1.0)],
+ 'a': [(0.0, 1.0), (1.0, 1.0)]}
 a = vv.gca()
 a.axis.axisColor = 1,1,1
 a.axis.visible = False
 a.bgcolor = 0,0,0
 a.daspect = 1, 1, -1
-t = vv.volshow(vol, clim=(0, 3000), renderStyle='iso')
-t.isoThreshold = 250
-# vv.ColormapEditor(vv.gcf())
-t.colormap = {'r': [(0.0, 0.0), (0.17727272, 1.0)],
- 'g': [(0.0, 0.0), (0.27272728, 1.0)],
- 'b': [(0.0, 0.0), (0.34545454, 1.0)],
- 'a': [(0.0, 1.0), (1.0, 1.0)]}
-# t = vv.volshow2(vol)
-# t.clim = -550, 500
+show_ctvolume(vol, model, isoTh = isoTh)
 vv.xlabel('x (mm)');vv.ylabel('y (mm)');vv.zlabel('z (mm)')
 vv.title('Model for LSPEAS %s  -  %s  (%s of motion in %s)' % (ptcode[7:], ctcode, motion, dimension))
 # viewringcrop = {'azimuth': -166.8860353130016,
@@ -122,14 +133,14 @@ for i, node in enumerate(sorted(model.nodes())):
 # Create deformable mesh
 dm = DeformableMesh(a, modelmesh)
 dm.SetDeforms(*deforms_f)
-dm.clim = 0, 2
+dm.clim = clim2
 dm.colormap = vv.CM_JET
 vv.colorbar()
 
 # Run mesh
 a.SetLimits()
 # a.SetView(viewringcrop)
-dm.MotionPlay(5, 1)  # (10, 0.2) = each 10 ms do a step of 20%
+dm.MotionPlay(motionPlay[0], motionPlay[1])  # (10, 0.2) = each 10 ms do a step of 20%
 dm.motionSplineType = 'B-spline'
 dm.motionAmplitude = 3.0  # For a mesh we can (more) safely increase amplitude
 #dm.faceColor = 'g'
