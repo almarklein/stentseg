@@ -48,6 +48,7 @@ from visvis import ssdf
 
 from .base import StentDirect
 from .stent_anaconda import AnacondaDirect
+from .stent_endurant import EndurantDirect
 
 
 # todo: define default params for each stent type on its own class.
