@@ -68,8 +68,6 @@ sd.Step3(cleanNodes)
 # Create a mesh object for visualization (argument is strut tickness)
 bm = create_mesh(sd._nodes3, 0.6) # new
 
-# Get graph model
-model = sd._nodes3
 
 # Visualize
 fig = vv.figure(3); vv.clf()
@@ -112,6 +110,9 @@ a2.axis.visible = switch
 a3.axis.visible = switch
 
 ## Store segmentation to disk
+
+# Get graph model
+model = sd._nodes3
 
 # Build struct
 s2 = vv.ssdf.new()
