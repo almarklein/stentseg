@@ -218,3 +218,22 @@ def remove_stent_from_volume(vol, graph, stripSize=5):
             vol2[z-stripSize:z+stripSize2+1, y-stripSize:y+stripSize+1, x-stripSize:x+stripSize+1] = 0
             # remove less in distal direction -> stripSize2
     return vol2
+    
+
+def show_ctvolume(vol, model, showVol, clim = (0,2500), isoTh=250, clim3 =(-550,500)):
+    """ Different ways to visualize the CT volume as reference
+    """
+    import visvis as vv
+    
+    colormap = {'r': [(0.0, 0.0), (0.17727272, 1.0)],
+                'g': [(0.0, 0.0), (0.27272728, 1.0)],
+                'b': [(0.0, 0.0), (0.34545454, 1.0)],
+                'a': [(0.0, 1.0), (1.0, 1.0)]}
+    if showVol == 'MIP':
+        t = vv.volshow(vol, clim=clim, renderStyle='mip')
+    elif showVol == 'ISO':
+        vol = remove_stent_from_volume(vol, model, stripSize=7) # rings are removed for vis.
+        t = vv.volshow(vol,clim=clim, renderStyle='iso')
+        t.isoThreshold = isoTh; t.colormap = colormap
+    elif showVol == '2D':
+        t = vv.volshow2(vol); t.clim = clim3

@@ -17,3 +17,4 @@ from .vis import create_mesh_with_values
 from .vis import create_mesh_with_deforms
 from .vis import convert_mesh_values_to_angle_change
 from .vis import remove_stent_from_volume
+from .vis import show_ctvolume
