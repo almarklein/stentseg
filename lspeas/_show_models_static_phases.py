@@ -11,7 +11,7 @@ from pirt.utils.deformvis import DeformableTexture3D, DeformableMesh
 from stentseg.stentdirect.stentgraph import create_mesh
 from stentseg.stentdirect import stentgraph
 from stentseg.motion.vis import create_mesh_with_abs_displacement
-from get_anaconda_ringparts import get_model_rings
+from get_anaconda_ringparts import get_model_struts, get_model_rings
 from stentseg.motion.vis import remove_stent_from_volume, show_ctvolume
 import pirt
 import numpy as np
@@ -22,16 +22,16 @@ basedir = select_dir(os.getenv('LSPEAS_BASEDIR', ''),
 
 # Select dataset to register
 ptcode = 'LSPEAS_003'
-codes = ctcode1, ctcode2, ctcode3, ctcode4 = 'discharge', '1month', '6months', '12months'
+# codes = ctcode1, ctcode2, ctcode3, ctcode4 = 'discharge', '1month', '6months', '12months'
 # codes = ctcode1, ctcode2, ctcode3 = 'discharge', '1month', '6months'
 # codes = ctcode1, ctcode2 = 'discharge', '1month'
-# codes = ctcode1 = 'discharge'
+codes = ctcode1 = 'discharge'
 cropname = 'ring'
 modelname = 'modelavgreg'
 
 showAxis = False  # True or False
-showVol  = '2D'  # MIP or ISO or 2D or None
-ringpart = None # top=1 ; 2nd=2 ; None = both rings
+showVol  = 'ISO'  # MIP or ISO or 2D or None
+ringpart = 2 # R1=1 ; R2=2 ; None = all
 
 # view1 = 
 #  
@@ -45,8 +45,9 @@ ringpart = None # top=1 ; 2nd=2 ; None = both rings
 s1 = loadmodel(basedir, ptcode, ctcode1, cropname, modelname)
 model1 = s1.model
 if ringpart:
-    models = get_model_rings(model1)
-    model1 = models[ringpart-1]
+    models = get_model_struts(model1, nstruts = 8)
+    modelRs = get_model_rings(models[2]) # model_R1R2
+    model1 = modelRs[ringpart-1] # R1 or R2
 vol1 = loadvol(basedir, ptcode, ctcode1, cropname, 'avgreg').vol
 
 # 2 models
@@ -54,8 +55,9 @@ if len(codes) == 2 or len(codes) == 3 or len(codes) == 4:
     s2 = loadmodel(basedir, ptcode, ctcode2, cropname, modelname)
     model2 = s2.model
     if ringpart:
-        models = get_model_rings(model2)
-        model2 = models[ringpart-1]
+        models = get_model_struts(model2, nstruts = 8)
+        modelRs = get_model_rings(models[2]) # model_R1R2
+        model2 = modelRs[ringpart-1] # R1 or R2
     vol2 = loadvol(basedir, ptcode, ctcode2, cropname, 'avgreg').vol
 
 # 3 models
@@ -63,8 +65,9 @@ if len(codes) == 3 or len(codes) == 4:
     s3 = loadmodel(basedir, ptcode, ctcode3, cropname, modelname)
     model3 = s3.model
     if ringpart:
-        models = get_model_rings(model3)
-        model3 = models[ringpart-1]
+        models = get_model_struts(model3, nstruts = 8)
+        modelRs = get_model_rings(models[2]) # model_R1R2
+        model3 = modelRs[ringpart-1] # R1 or R2
     vol3 = loadvol(basedir, ptcode, ctcode3, cropname, 'avgreg').vol
 
 # 4 models
@@ -72,8 +75,9 @@ if len(codes) == 4:
     s4 = loadmodel(basedir, ptcode, ctcode4, cropname, modelname)
     model4 = s4.model
     if ringpart:
-        models = get_model_rings(model4)
-        model4 = models[ringpart-1]
+        models = get_model_struts(model4, nstruts = 8)
+        modelRs = get_model_rings(models[2]) # model_R1R2
+        model4 = modelRs[ringpart-1] # R1 or R2
     vol4 = loadvol(basedir, ptcode, ctcode4, cropname, 'avgreg').vol
 
 
@@ -85,16 +89,15 @@ def get_graph_in_phase(graph, phasenr):
     for n1, n2 in graph.edges():
         # obtain path and deforms of nodes and edge
         path = graph.edge[n1][n2]['path']
-        pathDeforms = graph.edge[n1][n2]['pathdeforms']
-        n1_phase = tuple((n1 + pathDeforms[0][phasenr]).flat)
-        n2_phase = tuple((n2 + pathDeforms[-1][phasenr]).flat)
+        pathDeforms = graph.edge[n1][n2]['pathdeforms'] # todo: problem for R2
         # obtain path in phase
         path_phase = []
         for i, point in enumerate(path):
             pointposition = point + pathDeforms[i][phasenr]
             path_phase.append(pointposition) # points on path, one phase
+        n1_phase, n2_phase = tuple(path_phase[0]), tuple(path_phase[-1]) # position of nodes
         model_phase.add_edge(n1_phase, n2_phase, path = np.asarray(path_phase), pathdeforms = np.asarray(pathDeforms))
-        #todo: too many nodes are added to the graph
+        #todo: too many nodes are added to the graph [solved; n2_phase different from path[-1] door afronden oid ]
 #     g.add_node(node, deforms=deforms)
 #     sd._nodes3.add_edge(select1,select2, cost = c, ctvalue = ct, path = p)
     return model_phase
@@ -104,7 +107,7 @@ def get_graph_in_phase(graph, phasenr):
 f = vv.figure(1); vv.clf()
 f.position = 0.00, 22.00,  1920.00, 1018.00
 color = 'rgbmcrywgb'
-clim0  = (0,2500)
+clim0  = (0,3500)
 clim2 = (0,4)
 clim3 = -550,500
 radius = 0.07
