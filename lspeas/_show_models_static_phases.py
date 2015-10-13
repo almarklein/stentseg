@@ -97,7 +97,6 @@ def get_graph_in_phase(graph, phasenr):
             path_phase.append(pointposition) # points on path, one phase
         n1_phase, n2_phase = tuple(path_phase[0]), tuple(path_phase[-1]) # position of nodes
         model_phase.add_edge(n1_phase, n2_phase, path = np.asarray(path_phase), pathdeforms = np.asarray(pathDeforms))
-        #todo: too many nodes are added to the graph [solved; n2_phase different from path[-1] door afronden oid ]
 #     g.add_node(node, deforms=deforms)
 #     sd._nodes3.add_edge(select1,select2, cost = c, ctvalue = ct, path = p)
     return model_phase
