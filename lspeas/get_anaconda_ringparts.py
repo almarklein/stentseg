@@ -35,9 +35,6 @@ def _get_model_hooks(model):
             add_nodes_edge_to_newmodel(model_hooks,model,n,neighbour)
             hooknodes.append(neighbour)
             model_noHooks.remove_node(n) # this also removes the connecting edge
-    # pop remaining degree 2 nodes
-#     stentgraph.pop_nodes(model_noHooks) 
-#todo: pop is problem: no (path)deforms taken into account
     
     return model_hooks, model_noHooks
     

@@ -89,7 +89,7 @@ def get_graph_in_phase(graph, phasenr):
     for n1, n2 in graph.edges():
         # obtain path and deforms of nodes and edge
         path = graph.edge[n1][n2]['path']
-        pathDeforms = graph.edge[n1][n2]['pathdeforms'] # todo: problem for R2
+        pathDeforms = graph.edge[n1][n2]['pathdeforms']
         # obtain path in phase
         path_phase = []
         for i, point in enumerate(path):
