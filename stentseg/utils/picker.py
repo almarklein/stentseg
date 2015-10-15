@@ -3,6 +3,9 @@ Provides pick3d().
 
 Example:
 
+    import visvis as vv
+    from stentseg.utils.picker import pick3d
+    
     vol = vv.Aarray(vv.volread('stent'))
     a = vv.gca()
     t = vv.volshow(vol)
@@ -113,9 +116,14 @@ def pick3d(axes, vol):
 
     Given an Axes object and a volume (an Aarray), will show the value,
     index and position of the voxel with maximum intentity under the
-    cursor when doing a SHIFT+RIGHTCLICK.
+    cursor when doing a SHIFT+RIGHTCLICK. Returns the label object, so
+    that it can be re-positioned.
     
-    Returns the label object, so that it can be re-positioned.
+    Assumptions:
+    * ThreeDCamera is in use and in orthographic mode (no perspective).
+    * The volume does not have any transformations w.r.t the axes,
+      except for the implicit transformations defined by its sampling
+      and origin.
     """
     assert hasattr(vol, 'sampling'), 'Vol must be an Aarray.'
     
