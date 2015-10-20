@@ -20,11 +20,12 @@ from visvis import ssdf
 
 # Select the ssdf basedir
 basedir = select_dir(os.getenv('LSPEAS_BASEDIR', ''),
-                     r'D:\LSPEAS\LSPEAS_ssdf',)
+                     r'D:\LSPEAS\LSPEAS_ssdf',
+                     r'F:\LSPEAS_ssdf_backup')
 
 # Select dataset to register
-ptcode = 'LSPEAS_002'
-ctcode = '6months'
+ptcode = 'LSPEAS_023'
+ctcode = 'discharge'
 cropname = 'ring'
 modelname = 'modelavgreg'
 
@@ -449,7 +450,7 @@ def storeOutputToExcel(storeOutput):
     """Create file and add a worksheet or overwrite existing
     """
     # https://pypi.python.org/pypi/XlsxWriter
-    workbook = xlsxwriter.Workbook(r'D:\Profiles\koenradesma\Dropbox\LSPEAS\Analysis\storeOutputTemplate.xlsx')
+    workbook = xlsxwriter.Workbook(r'C:\Users\Maaike\Desktop\storeOutputTemplate.xlsx')
     worksheet = workbook.add_worksheet()
     # set column width
     worksheet.set_column('A:A', 15)
@@ -500,6 +501,6 @@ for node_point in node_points:
     node_point.eventLeave.Bind(unpick_node)
 
 # Set view
-a.SetView(viewringcrop)
+# a.SetView(viewringcrop)
 
 

@@ -221,7 +221,7 @@ class StentDirect:
             self._Step3_iter(nodes, cleanNodes)
         
         if cleanNodes == True:
-#             stentgraph.add_nodes_at_crossings(nodes) # not with endurant,only for anaconda?
+#             stentgraph.add_nodes_at_crossings(nodes) # not with endurant,only for anaconda or other when needed?
             stentgraph.pop_nodes(nodes) # pop before corner detect or angles can not be found
             stentgraph.add_corner_nodes(nodes, th=params.graph_angleVector, angTh=params.graph_angleTh)
             stentgraph.pop_nodes(nodes)  # because removing edges/add nodes can create degree 2 nodes
@@ -284,7 +284,9 @@ class StentDirect:
         # Refine paths to subpixel positions
         for n1, n2 in newnodes.edges():
             path = newnodes.edge[n1][n2]['path']
-            path[:] = stentpoints3d.get_subpixel_positions(self._vol, path)
+            newpath = stentpoints3d.get_subpixel_positions(self._vol, path)
+            newnodes.edge[n1][n2]['path'] = newpath
+            assert n1 == tuple(newpath[0].flat) or n1 == tuple(newpath[-1].flat)
         
         return newnodes
     

@@ -55,9 +55,9 @@ def get_model_struts(model, nstruts=8):
     model_h_s = model_hooks.copy() # struts added to hook model
     model_struts = stentgraph.StentGraph()
     directions = []
-    for n1, n2 in model.edges():
+    for n1, n2 in model_noHooks.edges():
         e_length = _edge_length(model, n1, n2)
-        if (4.5 < e_length < 12): # OLB21 is 4.5-5.5mm
+        if (3 < e_length < 12): # struts OLB21 are 4.5-5.5mm OLB34 9-9.5
             vector = np.subtract(n1,n2) # nodes, paths in x,y,z
             vlength = np.sqrt(vector[0]**2+vector[1]**2+vector[2]**2)
             direction = abs(vector / vlength)
@@ -74,6 +74,7 @@ def get_model_struts(model, nstruts=8):
     
     model_R1R2 = model_noHooks.copy()
     model_R1R2.remove_edges_from(model_struts.edges())
+    print('************')
     
     return model_struts, model_hooks, model_R1R2, model_h_s
 
