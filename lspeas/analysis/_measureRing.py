@@ -1,4 +1,4 @@
-"""
+""" Script to measure ring dynamics
 
 run as script
 
@@ -9,9 +9,8 @@ import visvis as vv
 from stentseg.utils.datahandling import select_dir, loadvol, loadmodel
 from stentseg.stentdirect.stentgraph import create_mesh
 from stentseg.motion.vis import show_ctvolume
-# from _utils_GUI import get_edge_attributes, set_edge_labels, on_key
 
-sys.path.insert(0, os.path.abspath('..')) # todo: fix import error [solved with sys path; run as script]
+sys.path.insert(0, os.path.abspath('..'))
 from get_anaconda_ringparts import get_model_struts,get_model_rings,add_nodes_edge_to_newmodel 
 import _utils_GUI
 
