@@ -13,15 +13,16 @@ from stentseg.utils import PointSet
 from stentseg.utils.datahandling import select_dir, loadvol, loadmodel
 from stentseg.stentdirect.stentgraph import create_mesh
 from stentseg.stentdirect import StentDirect, getDefaultParams, AnacondaDirect, EndurantDirect
+from stentseg.utils.picker import pick3d
 
 # Select the ssdf basedir
 basedir = select_dir(os.getenv('LSPEAS_BASEDIR', ''),
                      r'D:\LSPEAS\LSPEAS_ssdf',
-                     r'F:\LSPEAS_ssdf_backup')
+                     r'F:\LSPEAS_ssdf_backup',r'G:\LSPEAS_ssdf_backup')
 
 # Select dataset to register
-ptcode = 'LSPEAS_023'
-ctcode = 'discharge'
+ptcode = 'FANTOOM_20150625'
+ctcode = '5_Prof6_Water_Thorax_Pos2'
 cropname = 'ring'
 what = 'avgreg'
 
@@ -34,18 +35,18 @@ vol = s.vol
 stentType = 'endurant'  # 'anacondaRing' runs modified pruning algorithm in Step3
 
 p = getDefaultParams(stentType)
-p.seed_threshold = 1700                 # step 1
-p.mcp_speedFactor = 170                 # step 2, speed image (delta), costToCtValue
-p.mcp_maxCoverageFronts = 0.003         # step 2, base.py; replaces mcp_evolutionThreshold
-p.graph_weakThreshold = 1000            # step 3, stentgraph.prune_very_weak
-p.graph_expectedNumberOfEdges = 2       # step 3, stentgraph.prune_weak
-p.graph_trimLength =  0                 # step 3, stentgraph.prune_tails
+p.seed_threshold = 600                 # step 1
+p.mcp_speedFactor = 110                 # step 2, speed image (delta), costToCtValue
+p.mcp_maxCoverageFronts = 0.006         # step 2, base.py; replaces mcp_evolutionThreshold
+p.graph_weakThreshold = 500            # step 3, stentgraph.prune_very_weak
+p.graph_expectedNumberOfEdges = 3       # step 3, stentgraph.prune_weak
+p.graph_trimLength =  2                 # step 3, stentgraph.prune_tails
 p.graph_minimumClusterSize = 10         # step 3, stentgraph.prune_clusters
 p.graph_strongThreshold = 5000          # step 3, stentgraph.prune_weak and stentgraph.prune_redundant
 # p.graph_min_strutlength = 6             # step 3, stent_anaconda prune_redundant
 # p.graph_max_strutlength = 12            # step 3, stent_anaconda prune_redundant
 p.graph_angleVector = 5                 # step 3, corner detect
-p.graph_angleTh = 45                    # step 3, corner detect
+p.graph_angleTh = 40                    # step 3, corner detect
 
 
 ## Perform segmentation
@@ -72,19 +73,20 @@ bm = create_mesh(sd._nodes3, 0.6) # new
 # Visualize
 fig = vv.figure(3); vv.clf()
 fig.position = 0.00, 22.00,  1920.00, 1018.00
+clim = (0,2500)
 #viewringcrop = 
 
 # Show volume and model as graph
 a1 = vv.subplot(131)
-t = vv.volshow(vol)
-t.clim = 0, 2500
+t = vv.volshow(vol, clim=clim)
+pick3d(vv.gca(), vol)
 sd._nodes1.Draw(mc='b', mw = 6)       # draw seeded nodes
 # sd._nodes2.Draw(mc='b', lc = 'g')    # draw seeded and MCP connected nodes
 
 # Show volume and cleaned up graph
 a2 = vv.subplot(132)
-t = vv.volshow(vol)
-t.clim = 0, 2500
+t = vv.volshow(vol, clim=clim)
+pick3d(vv.gca(), vol)
 sd._nodes2.Draw(mc='b', lc='g')
 # sd._nodes3.Draw(mc='b', lc='g')
 vv.xlabel('x (mm)');vv.ylabel('y (mm)');vv.zlabel('z (mm)')
@@ -92,8 +94,8 @@ vv.xlabel('x (mm)');vv.ylabel('y (mm)');vv.zlabel('z (mm)')
 # Show the mesh
 a3 = vv.subplot(133)
 a3.daspect = 1,1,-1
-t = vv.volshow(vol)
-t.clim = 0, 2500
+t = vv.volshow(vol, clim=clim)
+pick3d(vv.gca(), vol)
 sd._nodes3.Draw(mc='b', lc='w')
 m = vv.mesh(bm)
 m.faceColor = 'g'
@@ -108,6 +110,10 @@ switch = False
 a1.axis.visible = switch
 a2.axis.visible = switch
 a3.axis.visible = switch
+
+## Prevent save when 'run as script'
+print('Model not yet saved to disk, run next cells')
+1/0
 
 ## Store segmentation to disk
 

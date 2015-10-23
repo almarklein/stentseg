@@ -14,11 +14,12 @@ from stentseg.utils import PointSet
 from stentseg.utils.datahandling import select_dir, loadvol, loadmodel
 from stentseg.stentdirect.stentgraph import create_mesh
 from stentseg.stentdirect import StentDirect, getDefaultParams, AnacondaDirect,EndurantDirect
+from stentseg.utils.picker import pick3d
 
 # Select the ssdf basedir
 basedir = select_dir(os.getenv('LSPEAS_BASEDIR', ''),
                      r'D:\LSPEAS\LSPEAS_ssdf',
-                     r'F:\LSPEAS_ssdf_backup')
+                     r'F:\LSPEAS_ssdf_backup',r'G:\LSPEAS_ssdf_backup')
 
 # Select dataset to register
 ptcode = 'LSPEAS_023'
@@ -75,21 +76,21 @@ from stentseg.stentdirect.stent_anaconda import _edge_length, prune_redundant
 
 fig = vv.figure(4); vv.clf()
 fig.position = 8.00, 30.00,  1267.00, 1002.00
-# fig.position = 1528.00, 123.00,  1246.00, 730.00
+clim = (0,3000)
 # viewringcrop = 
 
 # Show volume and graph
 a2 = vv.subplot(121)
-t = vv.volshow(vol)
-t.clim = 0, 3000
+t = vv.volshow(vol, clim=clim)
+pick3d(vv.gca(), vol)
 sd._nodes2.Draw(mc='b', lc='g') # draw seeded and MCP connected nodes
 vv.xlabel('x (mm)');vv.ylabel('y (mm)');vv.zlabel('z (mm)')
 
 # Show cleaned up graph
 a3 = vv.subplot(122)
 a3.daspect = 1,1,-1
-t = vv.volshow(vol)
-t.clim = 0, 3000
+t = vv.volshow(vol, clim=clim)
+pick3d(vv.gca(), vol)
 sd._nodes3.Draw(mc='b', lc = 'b')
 vv.xlabel('x (mm)');vv.ylabel('y (mm)');vv.zlabel('z (mm)')
 
@@ -201,7 +202,8 @@ def on_key(event):
         # visualize result
         view = a3.GetView()
         a3.Clear()
-        t = vv.volshow(vol, clim = (0, 3000))
+        t = vv.volshow(vol, clim=clim)
+        pick3d(vv.gca(), vol)
         sd._nodes3.Draw(mc='b', mw = 8, lc = 'g', lw = 0.2)
         vv.xlabel('x'), vv.ylabel('y'), vv.zlabel('z')
         a3.SetView(view)
@@ -215,7 +217,8 @@ def on_key(event):
         view = a3.GetView()
         bm = create_mesh(sd._nodes3, 0.6)
         a3.Clear()
-        t = vv.volshow(vol, clim = (0, 3000))
+        t = vv.volshow(vol, clim=clim)
+        pick3d(vv.gca(), vol)
         sd._nodes3.Draw(mc='b', mw = 8, lc = 'w', lw = 0.2)
         vv.xlabel('x'), vv.ylabel('y'), vv.zlabel('z')
         m = vv.mesh(bm)
@@ -275,6 +278,9 @@ switch = False
 a2.axis.visible = switch
 a3.axis.visible = switch
 
+## Prevent save when 'run as script'
+print('Model not yet saved to disk, run next cells')
+1/0
 
 ## Store segmentation to disk
 
