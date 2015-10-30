@@ -9,16 +9,15 @@ import visvis as vv
 from stentseg.utils.datahandling import select_dir, loadvol, loadmodel
 from pirt.utils.deformvis import DeformableTexture3D, DeformableMesh
 from stentseg.stentdirect.stentgraph import create_mesh
-from stentseg.stentdirect import stentgraph
 from stentseg.motion.vis import create_mesh_with_abs_displacement
 from get_anaconda_ringparts import get_model_struts, get_model_rings
-from stentseg.motion.vis import remove_stent_from_volume, show_ctvolume
+from stentseg.motion.vis import remove_stent_from_volume, show_ctvolume, get_graph_in_phase
 import pirt
-import numpy as np
 
 # Select the ssdf basedir
 basedir = select_dir(os.getenv('LSPEAS_BASEDIR', ''),
-                     r'D:\LSPEAS\LSPEAS_ssdf', r'F:\LSPEAS_ssdf_BACKUP')
+                     r'D:\LSPEAS\LSPEAS_ssdf', 
+                     r'F:\LSPEAS_ssdf_backup',r'G:\LSPEAS_ssdf_backup')
 
 # Select dataset to register
 ptcode = 'LSPEAS_003'
@@ -31,7 +30,7 @@ modelname = 'modelavgreg'
 
 showAxis = False  # True or False
 showVol  = 'ISO'  # MIP or ISO or 2D or None
-ringpart = 2 # R1=1 ; R2=2 ; None = all
+ringpart = 1 # R1=1 ; R2=2 ; None = all
 
 # view1 = 
 #  
@@ -79,27 +78,6 @@ if len(codes) == 4:
         modelRs = get_model_rings(models[2]) # model_R1R2
         model4 = modelRs[ringpart-1] # R1 or R2
     vol4 = loadvol(basedir, ptcode, ctcode4, cropname, 'avgreg').vol
-
-
-def get_graph_in_phase(graph, phasenr):
-    """ Get position of model in a certain phase
-    """
-    # initialize
-    model_phase = stentgraph.StentGraph()
-    for n1, n2 in graph.edges():
-        # obtain path and deforms of nodes and edge
-        path = graph.edge[n1][n2]['path']
-        pathDeforms = graph.edge[n1][n2]['pathdeforms']
-        # obtain path in phase
-        path_phase = []
-        for i, point in enumerate(path):
-            pointposition = point + pathDeforms[i][phasenr]
-            path_phase.append(pointposition) # points on path, one phase
-        n1_phase, n2_phase = tuple(path_phase[0]), tuple(path_phase[-1]) # position of nodes
-        model_phase.add_edge(n1_phase, n2_phase, path = np.asarray(path_phase), pathdeforms = np.asarray(pathDeforms))
-#     g.add_node(node, deforms=deforms)
-#     sd._nodes3.add_edge(select1,select2, cost = c, ctvalue = ct, path = p)
-    return model_phase
 
 
 ## Visualize

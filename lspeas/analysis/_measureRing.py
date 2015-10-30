@@ -8,7 +8,7 @@ import os
 import visvis as vv
 from stentseg.utils.datahandling import select_dir, loadvol, loadmodel
 from stentseg.stentdirect.stentgraph import create_mesh
-from stentseg.motion.vis import show_ctvolume
+from stentseg.motion.vis import show_ctvolume, get_graph_in_phase
 
 sys.path.insert(0, os.path.abspath('..'))
 from get_anaconda_ringparts import get_model_struts,get_model_rings,add_nodes_edge_to_newmodel 
@@ -20,7 +20,7 @@ basedir = select_dir(os.getenv('LSPEAS_BASEDIR', ''),
                      r'F:\LSPEAS_ssdf_backup')
 
 # Select dataset to register
-ptcode = 'LSPEAS_011'
+ptcode = 'LSPEAS_003'
 ctcode = 'discharge'
 cropname = 'ring'
 modelname = 'modelavgreg'
@@ -112,7 +112,7 @@ def on_key(event):
         view = a.GetView()
         pp = Pointset(p)  # visvis meshes do not work with PointSet
         line = vv.solidLine(pp, radius = 0.2)
-        line.faceColor = 'g'
+        line.faceColor = 'y'
         a.SetView(view)
     if event.key == vv.KEY_DELETE:
         # remove edge
@@ -174,25 +174,10 @@ def ringparts(ringpart = True):
         models[0] = get_model_struts(model, nstruts=nstruts) # [0] tuple in list
         modelsR1R2[0] = get_model_rings(models[0][2]) # [2]=model_R1R2
 
-# Get ring parts
-ringparts(ringpart=ringpart)
-
-# Area and cyclic change
-
-
-# 3D, longitudinal and lateral motion
-
-
-# Angle hook-strut and cyclic change
-
-
-# Curvature rings 
-
-
-
-## Visualize ring parts
 
 def figparts():
+    """ Visualize ring parts
+    """
     fig = vv.figure(4);
     fig.position = 8.00, 30.00,  944.00, 1002.00
     vv.clf()
@@ -221,5 +206,112 @@ def figparts():
     
     a0.camera = a1.camera
 
-if ringpart:
-    figparts()
+
+def fit3D(model):
+    from stentseg.utils import fitting
+    from stentseg.utils.new_pointset import PointSet
+    pp3 = PointSet(3)
+    for n1, n2 in model.edges(): # mind that node point duplicates are added
+        path = model.edge[n1][n2]['path']
+        for p in path: 
+            pp3.append(p)
+    plane = fitting.fit_plane(pp3) # todo: plane niet intuitief door saddle ring; maakt aantal punten uit?? toch loodrecht op centerline stent?
+    pp3_2 = fitting.project_to_plane(pp3, plane)
+    c3 = fitting.fit_circle(pp3_2)
+    e3 = fitting.fit_ellipse(pp3_2)
+    print('area circle 3D: % 1.2f' % fitting.area(c3))
+    print('area ellipse 3D: % 1.2f' % fitting.area(e3))
+    
+    return pp3, plane, pp3_2, e3
+
+
+def fig3Dfit(fitted):
+    from stentseg.utils import fitting
+    import numpy as np
+    pp3,plane,pp3_2,e3 = fitted[0],fitted[1],fitted[2],fitted[3]
+    f = vv.figure(); vv.clf()
+    f.position = 968.00, 30.00,  944.00, 1002.00
+    a = vv.gca()
+    show_ctvolume(vol, model, showVol=showVol, clim=clim0, isoTh=isoTh, clim3=clim3)
+    vv.xlabel('x (mm)');vv.ylabel('y (mm)');vv.zlabel('z (mm)')
+    vv.title('Analysis for model LSPEAS %s  -  %s' % (ptcode[7:], ctcode))
+    a.axis.axisColor= 1,1,1
+    a.bgcolor= 0,0,0
+    a.daspect= 1, 1, -1  # z-axis flipped
+    a.axis.visible = showAxis
+    # For visualization, calculate 4 points on rectangle that lies on the plane
+    x1, x2 = pp3.min(0)[0]-0.3, pp3.max(0)[0]+0.3
+    y1, y2 = pp3.min(0)[1]-0.3, pp3.max(0)[1]+0.3
+    p1 = x1, y1, -(x1*plane[0] + y1*plane[1] + plane[3]) / plane[2]
+    p2 = x2, y1, -(x2*plane[0] + y1*plane[1] + plane[3]) / plane[2]
+    p3 = x2, y2, -(x2*plane[0] + y2*plane[1] + plane[3]) / plane[2]
+    p4 = x1, y2, -(x1*plane[0] + y2*plane[1] + plane[3]) / plane[2]
+    
+    vv.plot(pp3, ls='', ms='.', mc='y')
+    vv.plot(fitting.project_from_plane(pp3_2, plane), lc='r', ls='', ms='.', mc='r', mw=4)
+    #     vv.plot(fitting.project_from_plane(fitting.sample_circle(c3), plane), lc='r', lw=2)
+    vv.plot(fitting.project_from_plane(fitting.sample_ellipse(e3), plane), lc='b', lw=2)
+    vv.plot(np.array([p1, p2, p3, p4, p1]), lc='g', lw=2)
+    #     vv.legend('3D points', 'Projected points', 'Circle fit', 'Ellipse fit', 'Plane fit')
+    vv.legend('3D points', 'Projected points', 'Ellipse fit', 'Plane fit')
+
+
+
+
+
+
+
+
+if __name__ == '__main__':
+
+    # Get ring parts
+    ringparts(ringpart=ringpart)
+    
+    # Visualize ring parts
+    if ringpart:
+        figparts()
+        
+    # Area and cyclic change
+    if ringpart:
+        # fit plane and ellipse
+        R1 = modelsR1R2[0][0]
+        R2 = modelsR1R2[0][1]
+        modelsR1R2 = modelsR1R2[0]
+        fittedR1, fittedR2, fittedR1R2 = fit3D(R1), fit3D(R2), fit3D(models[0][2]) # [2]=model_R1R2 
+        fig3Dfit(fittedR1)
+        fig3Dfit(fittedR2)
+        fig3Dfit(fittedR1R2)    
+        # cyclic change
+        e3R1 = fittedR1[3] # 5 elements x0, y0, res1, res2, phi
+        
+        f = vv.figure(); vv.clf()
+        f.position = 968.00, 30.00,  944.00, 1002.00
+        a = vv.gca()
+        show_ctvolume(vol, model, showVol=showVol, clim=clim0, isoTh=isoTh, clim3=clim3)
+        color = 'rgbmcrywgb'
+        for phasenr in range(10):
+            model_phase = get_graph_in_phase(R1, phasenr = phasenr)
+#             model_phase.Draw(mc=color[phasenr], mw = 10, lc=color[phasenr])
+            model_phase.Draw(mc='', lc=color[phasenr])
+        a.axis.axisColor= 1,1,1
+        a.bgcolor= 0,0,0
+        a.daspect= 1, 1, -1  # z-axis flipped
+        a.axis.visible = showAxis
+    
+    
+    
+    # 3D, longitudinal and lateral motion
+    
+    
+    # Angle hook-strut and cyclic change
+    
+    
+    # Curvature rings 
+
+
+
+
+
+
+    
+    

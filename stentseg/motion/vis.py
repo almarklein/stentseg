@@ -237,3 +237,27 @@ def show_ctvolume(vol, model, showVol, clim = (0,2500), isoTh=250, clim3 =(-550,
         t.isoThreshold = isoTh; t.colormap = colormap
     elif showVol == '2D':
         t = vv.volshow2(vol); t.clim = clim3
+
+        
+def get_graph_in_phase(graph, phasenr):
+    """ Get position of model in a certain phase
+    """
+    from stentseg.stentdirect import stentgraph
+    import numpy as np
+    
+    # initialize
+    model_phase = stentgraph.StentGraph()
+    for n1, n2 in graph.edges():
+        # obtain path and deforms of nodes and edge
+        path = graph.edge[n1][n2]['path']
+        pathDeforms = graph.edge[n1][n2]['pathdeforms']
+        # obtain path in phase
+        path_phase = []
+        for i, point in enumerate(path):
+            pointposition = point + pathDeforms[i][phasenr]
+            path_phase.append(pointposition) # points on path, one phase
+        n1_phase, n2_phase = tuple(path_phase[0]), tuple(path_phase[-1]) # position of nodes
+        model_phase.add_edge(n1_phase, n2_phase, path = np.asarray(path_phase), pathdeforms = np.asarray(pathDeforms))
+    return model_phase
+    
+    
