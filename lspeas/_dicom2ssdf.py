@@ -11,18 +11,18 @@ from stentseg.utils.datahandling import savecropvols, saveaveraged, cropaveraged
 # Select base directory for DICOM data
 
 # The stentseg datahandling module is agnostic about where the DICOM data is
-dicom_basedir = select_dir(r'F:\LSPEAS_data\ECGgatedCT',
+dicom_basedir = select_dir(r'G:\LSPEAS_data\ECGgatedCT',
                            '/home/almar/data/dicom/stent_LPEAS',
                            'D:\LSPEAS\LSPEAS_data_BACKUP\ECGgatedCT')
 
 # Select the ssdf basedir
 basedir = select_dir(os.getenv('LSPEAS_BASEDIR', ''),
                      r'D:\LSPEAS\LSPEAS_ssdf',
-                     r'F:\LSPEAS_ssdf_toPC')
+                     r'G:\LSPEAS_ssdf_toPC')
 
 # Params Step A, B, C
-ctcode = '6months'  # 'pre', 'discharge', '1month', '6months', '12months', x_Profx_Water_
-ptcode = 'LSPEAS_017'  # LSPEAS_00x or FANTOOM_xxx
+ctcode = 'Prof0'  # 'pre', 'discharge', '1month', '6months', '12months', x_Profx_Water_
+ptcode = 'FANTOOM_20151202'  # LSPEAS_00x or FANTOOM_xxx
 stenttype = 'anaconda'         # or 'endurant' or 'excluder'
 
 # Params Step B, C (to save)

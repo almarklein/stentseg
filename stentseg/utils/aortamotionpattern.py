@@ -75,6 +75,7 @@ def get_motion_pattern(*, A=1, T=1, N=20, top=0.35, offset=0.1, extra=None):
 def plot_pattern(tt, aa):
     """ Helper function to plot the pattern.
     """
+    import visvis as vv
     
     T = tt[-1] + tt[1]
     amax = max(aa)
@@ -98,20 +99,21 @@ if __name__ == '__main__':
     
     vv.figure(1); vv.clf();
     
-    vv.subplot(321); vv.title('default')
+    a0=vv.subplot(321); vv.title('default')
     plot_pattern(*get_motion_pattern())
     
-    vv.subplot(322); vv.title('A=2')
+    a1=vv.subplot(322); vv.title('A=2')
     plot_pattern(*get_motion_pattern(A=2))
     
-    vv.subplot(323); vv.title('T=0.6')
+    a2=vv.subplot(323); vv.title('T=0.6')
     plot_pattern(*get_motion_pattern(T=0.6))
     
-    vv.subplot(324); vv.title('N=10')
+    a3=vv.subplot(324); vv.title('N=10')
     plot_pattern(*get_motion_pattern(N=10))
+    a3.axis.showGrid = True
     
-    vv.subplot(325); vv.title('Extra blob')
+    a4=vv.subplot(325); vv.title('Extra blob')
     plot_pattern(*get_motion_pattern(extra=(0.3, 0.8, 0.03)))
     
-    vv.subplot(326); vv.title('Change more')
+    a5=vv.subplot(326); vv.title('Change more')
     plot_pattern(*get_motion_pattern(A=0.4, T=1.22, N=40, extra=(0.3, 0.8, 0.01)))
