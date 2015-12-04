@@ -330,8 +330,7 @@ def _prune_redundant_edge(graph, n1, n2, min_ctvalue, min_strutlength, max_strut
     # Do not allow connections to same node. Note: such edges should
     # not be produced by the MCP alg, but we check them to be sure
     if n1 == n2:
-        print('Warning: detected node that was connected to itself.')
-        graph.remove_edge(n1, n2)
+        print('Warning: detected node that was connected to itself; node is not removed')
         return counter
     # Get neighbours for n1 and n2
     nn1 = set(graph.edge[n1].keys())
