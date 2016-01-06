@@ -24,30 +24,35 @@ if __name__ == "__main__":
     
     # Select directory to save dicom
     basedir_save = select_dir(r'D:\LSPEAS\DICOMavgreg',
-                            r'F:\DICOMavgreg_toPC')
+                            r'G:\DICOMavgreg_toPC')
     
     # Select directory to load dicom
     # the stentseg datahandling module is agnostic about where the DICOM data is
-    dicom_basedir = select_dir(r'F:\LSPEAS_data\ECGgatedCT',
+    dicom_basedir = select_dir(r'G:\LSPEAS_data\ECGgatedCT',
                             r'D:\LSPEAS\LSPEAS_data_BACKUP\ECGgatedCT',
                             '/home/almar/data/dicom/stent_LPEAS',)    
     # Select dataset
-    ptcode = 'LSPEAS_023'
-    ctcode = '1month'
-    cropname = 'stent'
+    ptcode = 'FANTOOM_20151202'
+    ctcode = 'Prof0'
+    cropname = 'ring'
+    
+    if 'FANTOOM' in ptcode:
+        dirname = os.path.join(dicom_basedir.replace('ECGgatedCT', ''), ptcode)
+        subfolder = os.listdir(dirname)
+        dirname = os.path.join(dirname, subfolder[0],ctcode)
+    else:
+        dirname = os.path.join(dicom_basedir, ptcode, ptcode+'_'+ctcode)
     
     # Select basedirectory to load ssdf
     basedir_load = select_dir(os.getenv('LSPEAS_BASEDIR', ''),
                         r'D:\LSPEAS\LSPEAS_ssdf',
-                        r'F:\LSPEAS_ssdf_backup')
+                        r'G:\LSPEAS_ssdf_backup')
     
     # Load ssdf
     s = loadvol(basedir_load, ptcode, ctcode, cropname, 'avgreg')
     vol = s.vol
     
     # Read dicom file to rewrite slices from s
-    dirname = os.path.join(dicom_basedir, ptcode, ptcode+'_'+ctcode)
-    
     if not os.path.isdir(dirname):
         raise RuntimeError('Could not find data for given input %s' % ptcode, ctcode)
     
@@ -93,9 +98,15 @@ if __name__ == "__main__":
         # save ds
         filename = '%s_%s_%s_%s%i.dcm' % (ptcode, ctcode, cropname, 'avgreg', instance)
         print("Writing slice", filename)
-        ds.save_as(os.path.join(basedir_save, cropname, ptcode, ptcode+'_'+ctcode, filename))
+        if 'FANTOOM' in ptcode:
+            ds.save_as(os.path.join(basedir_save, cropname, ptcode, ctcode, filename))
+        else:
+            ds.save_as(os.path.join(basedir_save, cropname, ptcode, ptcode+'_'+ctcode, filename))
     
     print("Check: shape of avgreg vol=", vol.shape)
     print("Files saved to:")
-    print(os.path.join(basedir_save, cropname, ptcode, ptcode+'_'+ctcode))
+    if 'FANTOOM' in ptcode:
+            print(os.path.join(basedir_save, cropname, ptcode, ctcode))
+    else:
+        print(os.path.join(basedir_save, cropname, ptcode, ptcode+'_'+ctcode))
         
