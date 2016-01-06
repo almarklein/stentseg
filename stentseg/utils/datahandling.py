@@ -155,7 +155,12 @@ def saveaveraged(basedir, ptcode, ctcode, cropname, phases):
     s = ssdf.load(file_in)
     s_avg = ssdf.new()
     averaged = np.zeros(s.vol0.shape, np.float64)
-    phaserange = range(phases[0],phases[1]+10,10)
+    if phases[1]<phases[0]:
+        phaserange = list(range(0,100,10))
+        for i in range(phases[1]+10,phases[0],10):
+            phaserange.remove(i)
+    else:
+        phaserange = range(phases[0],phases[1]+10,10)
     for phase in phaserange:
         averaged += s['vol%i'% phase]
         s_avg['meta%i'% phase] = s['meta%i'% phase]
