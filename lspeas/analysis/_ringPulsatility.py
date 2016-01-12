@@ -21,11 +21,11 @@ from visvis import ssdf
 # Select the ssdf basedir
 basedir = select_dir(os.getenv('LSPEAS_BASEDIR', ''),
                      r'D:\LSPEAS\LSPEAS_ssdf',
-                     r'F:\LSPEAS_ssdf_backup')
+                     r'F:\LSPEAS_ssdf_backup',r'G:\LSPEAS_ssdf_backup')
 
 # Select dataset to register
-ptcode = 'LSPEAS_023'
-ctcode = 'discharge'
+ptcode = 'FANTOOM_20151202'
+ctcode = 'Prof3'
 cropname = 'ring'
 modelname = 'modelavgreg'
 
@@ -38,14 +38,6 @@ s2 = loadmodel(basedir, ptcode, ctcode, cropname, modelname)
 model = s2.model
 modelmesh = create_mesh(model, 0.6)  # Param is thickness
 
-#todo: for now, but show final mesh for displacement in mm using deforms saved with model or for pulsatility!
-# # Load deformations
-# import pirt
-# from stentseg.motion.vis import create_mesh_with_deforms
-# s3 = loadvol(basedir, ptcode, ctcode, cropname, 'deforms')
-# deforms = [s3['deform%i'%(i*10)] for i in range(10)]
-# deformsMesh = [pirt.DeformationFieldBackward(*fields) for fields in deforms]
-# modelmesh = create_mesh_with_deforms(model, deformsMesh, s2.origin, radius=0.6, fullPaths=True)
 
 ## Start visualization and GUI
 
@@ -72,7 +64,7 @@ viewringcrop = {'zoom': 0.012834824098558318,
 
 # Add clickable nodes
 node_points = []
-#todo: numbering of nodes not always exactly same order, some switches occur
+#todo: numbering of nodes not matching labels and excel output
 for i, node in enumerate(sorted(model.nodes())):
     node_point = vv.solidSphere(translation = (node), scaling = (0.6,0.6,0.6))
     node_point.faceColor = 'b'
@@ -363,7 +355,6 @@ def get_midpoint_deforms_edge(model, n1, n2):
     edge = model.edge[n1][n2]
     path = edge['path']
     # find point closest to mid of line n1 to n2
-    #todo: perhaps improve with perpendicular plane to mid of line; point closest to plane
     mid = (n1[0]+n2[0])/2, (n1[1]+n2[1])/2, (n1[2]+n2[2])/2
     # define vector from points to mid
     v = path - mid
