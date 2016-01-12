@@ -2,8 +2,8 @@
 
 Module for obtaining node to node pulsatility in ECG gated CT of Anaconda
 Button interaction:
+ENTER: calculate distances and pulsatility between selected nodes
 ESCAPE: FINISH MODEL, GET MAX PULSATILITY OVERALL, STORE TO EXCEL 
-PageUp: STORE OUTPUT WITH MODEL (to ssdf)
 
 """
 
@@ -46,7 +46,7 @@ fig = vv.figure(1); vv.clf()
 fig.position = 8.00, 30.00,  824.00, 972.00
 a = vv.gca()
 a.axis.axisColor = 1,1,1
-a.axis.visible = False
+a.axis.visible = True
 a.bgcolor = 0,0,0
 a.daspect = 1, 1, -1
 lim = 3000
@@ -64,7 +64,6 @@ viewringcrop = {'zoom': 0.012834824098558318,
 
 # Add clickable nodes
 node_points = []
-#todo: numbering of nodes not matching labels and excel output
 for i, node in enumerate(sorted(model.nodes())):
     node_point = vv.solidSphere(translation = (node), scaling = (0.6,0.6,0.6))
     node_point.faceColor = 'b'
@@ -74,7 +73,7 @@ for i, node in enumerate(sorted(model.nodes())):
     node_points.append(node_point)
 
 # Initialize labels
-t0 = vv.Label(a, '\b{Node nr}: ', fontSize=11, color='w')
+t0 = vv.Label(a, '\b{Node nr|location}: ', fontSize=11, color='w')
 t0.position = 0.1, 5, 0.5, 20  # x (frac w), y, w (frac), h
 t0.bgcolor = None
 t0.visible = True
@@ -316,14 +315,8 @@ def on_key(event):
         storeOutputToExcel(storeOutput)
         for node_point in node_points:
             node_point.visible = False # show that store is ready
-    if event.key == vv.KEY_PAGEUP:
-        # Store Output back to ssdf with model
-        filename = '%s_%s_%s_%s.ssdf' % (ptcode, ctcode, cropname, modelname)
-        s2.model = model.pack()
-        s2.outputPulsatility = storeOutput
-        ssdf.save(os.path.join(basedir, ptcode, filename), s2)
-        print('storeOutput is saved to sddf of model')
-                    
+
+
 selected_nodes = list()
 def select_node(event):
     """ select and deselect nodes by Double Click
@@ -337,10 +330,11 @@ def select_node(event):
 
 def pick_node(event):
     nodenr = event.owner.nr
-    t0.text = '\b{Node nr}: %i' % nodenr
+    node = event.owner.node
+    t0.text = '\b{Node nr|location}: %i | x=%1.3f y=%1.3f z=%1.3f' % (nodenr,node[0],node[1],node[2])
 
 def unpick_node(event):
-    t0.text = '\b{Node nr}: '
+    t0.text = '\b{Node nr|location}: '
 
 def get_midpoint_deforms_edge(model, n1, n2):
     """ Get midpoint of a given edge
@@ -348,8 +342,8 @@ def get_midpoint_deforms_edge(model, n1, n2):
     midpoint with its deforms
     """
     # get index of nodes which are in fixed order
-    n1index = model.nodes().index(n1)
-    n2index = model.nodes().index(n2)
+    n1index = sorted(model.nodes()).index(n1) # sort to match node_point numbering
+    n2index = sorted(model.nodes()).index(n2) # sort to match node_point numbering
     nindex = [n1index, n2index]
     # get path
     edge = model.edge[n1][n2]
@@ -406,8 +400,12 @@ def edge_to_edge_max_pulsatility(model, nodepair1, nodepair2):
     valley-to-valley or mid-to-mid on ring. Good to visualize line of maxP
     """ 
     # get path
-    edge1 = model.edge[model.nodes()[nodepair1[0]]][model.nodes()[nodepair1[1]]]
-    edge2 = model.edge[model.nodes()[nodepair2[0]]][model.nodes()[nodepair2[1]]]
+    n1_1 = sorted(model.nodes())[nodepair1[0]] # sort to match node_point numbering 
+    n2_1 = sorted(model.nodes())[nodepair1[1]] # nodepair = [12,13] for example
+    n1_2 = sorted(model.nodes())[nodepair2[0]]
+    n2_2 = sorted(model.nodes())[nodepair2[1]]
+    edge1 = model.edge[n1_1][n2_1]
+    edge2 = model.edge[n1_2][n2_2]
     path1 = edge1['path']
     path2 = edge2['path']
     # Get puls for every combination of points on both edges
@@ -441,7 +439,7 @@ def storeOutputToExcel(storeOutput):
     """Create file and add a worksheet or overwrite existing
     """
     # https://pypi.python.org/pypi/XlsxWriter
-    workbook = xlsxwriter.Workbook(r'C:\Users\Maaike\Desktop\storeOutputTemplate.xlsx')
+    workbook = xlsxwriter.Workbook(r'D:\Profiles\koenradesma\Desktop\storeOutputTemplate.xlsx')
     worksheet = workbook.add_worksheet()
     # set column width
     worksheet.set_column('A:A', 15)
