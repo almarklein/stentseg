@@ -41,16 +41,17 @@ def create_mesh_with_values(g, radius=1.0, simplified=True):
         return None
 
 
-def create_mesh_with_abs_displacement(graph, radius = 1.0, dimensions = 'xyz', motion = 'sum'):
+def create_mesh_with_abs_displacement(graph, radius = 1.0, dim = 'z', motion = 'sum'):
     """ Create a Mesh object from the graph. The values of the mesh
     encode the *absolute displacement* at the points on the *paths* in the graph.
-    Displacement can be the absolute displacement of a point in xyz, xy or z
+    Displacement can be the absolute displacement of a point in xyz, xy, z, y, or x
     direction over the cardiac cycle.
     """ 
     from visvis.processing import lineToMesh, combineMeshes
     from visvis import Pointset  # lineToMesh does not like the new PointSet class
     from stentseg.utils import PointSet
     import numpy as np
+    from stentseg.motion.displacement import _calculateAmplitude, _calculateSumMotion
     
     # Init list of meshes
     meshes = []
@@ -62,39 +63,12 @@ def create_mesh_with_abs_displacement(graph, radius = 1.0, dimensions = 'xyz', m
         # get displacement during cardiac cycle for each point on path
         pathDisplacements = []
         for pointDeforms in pathDeforms:
-            if motion == 'amplitude': # max amplitude between pointpositions
-                for point in path:
-                    pointIndices = point + pointDeforms # 10 positions for each point
-                    amplitude = []
-                    for i, indice in enumerate(pointIndices):
-                        vectors = indice - pointIndices
-                        if dimensions == 'xyz':
-                            d = (vectors[:,0]**2 + vectors[:,1]**2 + vectors[:,2]**2)**0.5  # 3Dvector length in mm
-                        elif dimensions == 'xy':
-                            d = (vectors[:,0]**2 + vectors[:,1]**2 )**0.5  # 2Dvector length in mm
-                        elif dimensions == 'z':
-                            d = abs(vectors[:,2])  # 1Dvector length in mm
-                        amplitude.append(d.max())
-                    maxamplitude = max(amplitude) # for point
-                pathDisplacements.append(maxamplitude)
+            if motion == 'amplitude': # max distance between two pointpositions
+                dmax = _calculateAmplitude(pointDeforms, dim=dim)[0]
+                pathDisplacements.append(dmax)
             elif motion == 'sum':
-                vectors = []
-                npositions = len(pointDeforms)
-                for j in range(npositions):
-                    if j == npositions-1:  # -1 as range starts at 0
-                        # vector from point at 90% RR to 0%% RR
-                        vectors.append(pointDeforms[j]-pointDeforms[0])
-                    else:
-                        vectors.append(pointDeforms[j]-pointDeforms[j+1])
-                vectors = np.vstack(vectors)
-                if dimensions == 'xyz':
-                    d = (vectors[:,0]**2 + vectors[:,1]**2 + vectors[:,2]**2)**0.5  # 3Dvector length in mm
-                elif dimensions == 'xy':
-                    d = (vectors[:,0]**2 + vectors[:,1]**2 )**0.5  # 2Dvector length in mm
-                elif dimensions == 'z':
-                    d = abs(vectors[:,2])  # 1Dvector length in mm
-                displacement = d.sum() # displacement of a point
-                pathDisplacements.append(displacement)            
+                dsum = _calculateSumMotion(pointDeforms, dim=dim)
+                pathDisplacements.append(dsum)            
         # create mesh for path
         values = np.vstack(pathDisplacements)
         path, values = Pointset(path), np.asarray(values)   
