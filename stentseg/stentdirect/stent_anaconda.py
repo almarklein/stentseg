@@ -141,7 +141,7 @@ def get_mask_with_stent_likely_positions(data, th):
     # pure-Python, installation and modification are much easier!
     # It has been tested that this algorithm produces the same results
     # as the Cython version.
-    
+    import numpy as np
     print('get mask for seedpoints anacondaRing is used')
     # Init mask
     mask = np.zeros_like(data, np.uint8)
@@ -150,7 +150,7 @@ def get_mask_with_stent_likely_positions(data, th):
     # Note that we omit the edges
     mask[3:-3,3:-3,3:-3] = (data[3:-3,3:-3,3:-3] > th) * 3
     
-    
+    vals = []
     for z, y, x in zip(*np.where(mask==3)):
         
         # Only proceed if this voxel is "free"
@@ -177,15 +177,25 @@ def get_mask_with_stent_likely_positions(data, th):
             # Criterium 3: one neighbour must be above th
             if themax <= th:
                 continue
-            
+            # todo: not robust, try mean based (median based too many outliers)
             # Criterium 4: seed must not be placed in tantalum marker
-            if val > data.max()*0.5: # seed in tantalum marker
-                print(val)
-                continue
+#             if val > data.max()*0.5: # seed in tantalum marker
+#                 print(val)
+#                 continue
             
             # Set, and suppress stent points at direct neighbours
             mask[z-1:z+2, y-1:y+2, x-1:x+2] = 1
             mask[z,y,x] = 2
+            
+            vals.append(data[z,y,x])
+    
+    # remove outlier markers
+    for z, y, x in zip(*np.where(mask==2)):
+        val = data[z,y,x]
+        #mean-based method
+        if val-np.mean(vals) > 2.5* np.std(vals):
+            mask[z,y,x] = 1
+            print("seed with value {} removed".format(val) )
     
     return mask
 
@@ -314,8 +324,8 @@ def prune_redundant(graph, ctvalue, min_strutlength, max_strutlength):
         else:
             cntremove += 1   
     print()
-    print('This iteration %i redundant edges were part of a *weak*' 
-          'triangle so REMOVED' % (cntremove))
+#     print('This iteration %i redundant edges were part of a *weak*' 
+#           'triangle so REMOVED' % (cntremove))
     print('This iteration %i redundant edges were part of a *strong*'
           'triangle so NOT REMOVED' % (cntspare))
     print()
@@ -362,10 +372,23 @@ def _prune_redundant_edge(graph, n1, n2, min_ctvalue, min_strutlength, max_strut
                         path1_l = _edge_length(graph, n1, node1)
                         path2_l = _edge_length(graph, node1, node2)
                         paths = [path0_l, path1_l, path2_l]
+                        paths2 = paths.copy()
                         paths.sort(reverse = True) # longest first
+                        # directions
+                        v0 = np.subtract(n1,node2)# nodes, paths in x,y,z
+                        v1 = np.subtract(n1,node1) 
+                        v2 = np.subtract(node1,node2)
+                        dir0 = abs(v0 / np.sqrt(v0[0]**2+v0[1]**2+v0[2]**2))
+                        dir1 = abs(v1 / np.sqrt(v1[0]**2+v1[1]**2+v1[2]**2))
+                        dir2 = abs(v2 / np.sqrt(v2[0]**2+v2[1]**2+v2[2]**2))
+                        dirs = [dir0, dir1, dir2]
+                        ir = paths2.index(paths[2]) # ring edge
+                        is1 = paths2.index(paths[0])
+                        is2 = paths2.index(paths[1])
                         # Check if the triangle edges are proximal ring struts
                         if (min_strutlength < paths[0] < max_strutlength and 
-                            min_strutlength < paths[1] < max_strutlength):
+                            min_strutlength < paths[1] < max_strutlength and
+                            dirs[ir][2]<dirs[is1][2] and dirs[ir][2]<dirs[is2][2]):
 #                                 print('Eligable edge with' , graph.edge[n1][n2],
 #                                         'is part of *strong* triangle so NOT removed')
 #                                 print()
@@ -398,10 +421,23 @@ def _prune_redundant_edge(graph, n1, n2, min_ctvalue, min_strutlength, max_strut
                         path1_l = _edge_length(graph, n2, node1)
                         path2_l = _edge_length(graph, node1, node2)
                         paths = [path0_l, path1_l, path2_l]
+                        paths2 = paths.copy()
                         paths.sort(reverse = True) # longest first
+                        # directions
+                        v0 = np.subtract(n2,node2)# nodes, paths in x,y,z
+                        v1 = np.subtract(n2,node1) 
+                        v2 = np.subtract(node1,node2)
+                        dir0 = abs(v0 / np.sqrt(v0[0]**2+v0[1]**2+v0[2]**2))
+                        dir1 = abs(v1 / np.sqrt(v1[0]**2+v1[1]**2+v1[2]**2))
+                        dir2 = abs(v2 / np.sqrt(v2[0]**2+v2[1]**2+v2[2]**2))
+                        dirs = [dir0, dir1, dir2]
+                        ir = paths2.index(paths[2]) # ring edge
+                        is1 = paths2.index(paths[0])
+                        is2 = paths2.index(paths[1])
                         # Check if the triangle edges are proximal ring struts
                         if (min_strutlength < paths[0] < max_strutlength and 
-                            min_strutlength < paths[1] < max_strutlength):
+                            min_strutlength < paths[1] < max_strutlength and
+                            dirs[ir][2]<dirs[is1][2] and dirs[ir][2]<dirs[is2][2]):
 #                                         print('Eligable edge with' , graph.edge[n1][n2],
 #                                               'is part of *strong* triangle so NOT removed')
 #                                         print()
