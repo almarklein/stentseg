@@ -8,27 +8,27 @@ from stentseg.utils.datahandling import select_dir, loadvol
 from stentseg.utils.datahandling import savecropvols, saveaveraged, cropaveraged
 
 
-# Select base directory for DICOM data
+# Select base directory for LOADING DICOM data
 
 # The stentseg datahandling module is agnostic about where the DICOM data is
-dicom_basedir = select_dir(r'G:\LSPEAS_data\ECGgatedCT',
-                           '/home/almar/data/dicom/stent_LPEAS',
-                           'D:\LSPEAS\LSPEAS_data_BACKUP\ECGgatedCT')
+dicom_basedir = select_dir(r'F:\LSPEAS_data\ECGgatedCT',
+                            'D:\LSPEAS\LSPEAS_data_BACKUP\ECGgatedCT')
 
-# Select the ssdf basedir
+# Select the ssdf basedir for SAVING
 basedir = select_dir(os.getenv('LSPEAS_BASEDIR', ''),
                      r'D:\LSPEAS\LSPEAS_ssdf',
-                     r'G:\LSPEAS_ssdf_toPC')
+                     r'F:\LSPEAS_ssdf_toPC')
 
 # Params Step A, B, C
-ctcode = 'Prof0'  # 'pre', 'discharge', '1month', '6months', '12months', x_Profx_Water_
-ptcode = 'FANTOOM_20151202'  # LSPEAS_00x or FANTOOM_xxx
+ctcode = '12months'  # 'pre', 'discharge', '1month', '6months', '12months', x_Profx_Water_
+ptcode = 'LSPEAS_018'  # LSPEAS_00x or FANTOOM_xxx
 stenttype = 'anaconda'         # or 'endurant' or 'excluder'
+scanner = 'toshiba' # 'toshiba' or 'siemens' - different output data structure
 
 # Params Step B, C (to save)
 cropnames = ['ring','stent']    # save crops of stent and/or ring
-# C: start and end phase in cardiac cycle to average (50,90 = 5 phases)
-phases = 30, 90
+# C: start and end phase in cardiac cycle to average (50,90=5 phases;60-20=7)
+phases = 70, 20
 
 # todo: use imageio.mvolread instead when fixed
 def readdcm(dirname):
@@ -55,7 +55,10 @@ def readdcm(dirname):
         # check order of phases; gaat niet altijd goed namelijk, linux fout bv
         perc = '%i%%' % (volnr*10)
         assert perc in vol.meta.SeriesDescription
+        
         vols.append(vol)
+        if volnr>0:
+            assert vol.shape==vols[0].shape
     
     return vols  
 
@@ -63,14 +66,31 @@ def readdcm(dirname):
 ## Perform the steps A,B,C
 
 # Step A: Read DICOM
-if 'FANTOOM' in ptcode:
-    dicom_basedir = os.path.join(dicom_basedir.replace('ECGgatedCT', ''), ptcode)
-    subfolder = os.listdir(dicom_basedir)
-    dicom_basedir = os.path.join(dicom_basedir, subfolder[0],ctcode)
-    vols = readdcm(dicom_basedir)
-else:
-    vols = readdcm(os.path.join(dicom_basedir, ptcode, ptcode+'_'+ctcode))
-    #vols = imageio.mvolread(os.path.join(dicom_basedir, ptcode, ptcode+'_'+ctcode), 'dicom')
+if scanner == 'toshiba':
+    if 'FANTOOM' in ptcode:
+        dicom_basedir = os.path.join(dicom_basedir.replace('ECGgatedCT', ''), ptcode)
+        subfolder = os.listdir(dicom_basedir)
+        dicom_basedir = os.path.join(dicom_basedir, subfolder[0],ctcode)
+        vols = readdcm(dicom_basedir)
+    else:
+        vols = readdcm(os.path.join(dicom_basedir, ptcode, ptcode+'_'+ctcode))
+        #vols = imageio.mvolread(os.path.join(dicom_basedir, ptcode, ptcode+'_'+ctcode), 'dicom')
+
+if scanner == 'siemens':
+    if 'FANTOOM' in ptcode:
+        dicom_basedir = os.path.join(dicom_basedir.replace('ECGgatedCT', ''), ptcode)
+        vols = imageio.mvolread(os.path.join(dicom_basedir,ctcode), 'dicom')
+        for perc, vol in enumerate(vols):
+            perc = '%i%%' % (perc*10)
+            assert perc in vol.meta.SeriesDescription
+            assert vol.shape == vols[0].shape
+    else:
+        dicom_basedir = os.path.join(dicom_basedir,ptcode,ptcode+'_'+ctcode)
+        vols = imageio.mvolread(dicom_basedir, 'dicom')
+        for perc, vol in enumerate(vols):
+            perc = '%i%%' % (perc*10)
+            assert perc in vol.meta.SeriesDescription
+            assert vol.shape == vols[0].shape
 
 # Step B: Crop and Save SSDF
 for cropname in cropnames:
@@ -89,7 +109,7 @@ for cropname in cropnames:
 
 # Load one volume/phase from ssdf with phases
 phase = 60
-avg = 'avg3090'
+avg = 'avg7020'
 
 # s1 = loadvol(basedir, ptcode, ctcode, 'ring', what ='phases')
 s2 = loadvol(basedir, ptcode, ctcode, 'ring', avg)
