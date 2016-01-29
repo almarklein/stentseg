@@ -14,6 +14,8 @@ from stentseg.utils.datahandling import select_dir, loadvol, loadmodel
 from stentseg.stentdirect.stentgraph import create_mesh
 from stentseg.stentdirect import StentDirect, getDefaultParams, AnacondaDirect, EndurantDirect
 from stentseg.utils.picker import pick3d
+from stentseg.apps.graph_manualprune import interactiveClusterRemovalGraph
+import _utils_GUI # run as script
 
 # Select the ssdf basedir
 basedir = select_dir(os.getenv('LSPEAS_BASEDIR', ''),
@@ -21,8 +23,8 @@ basedir = select_dir(os.getenv('LSPEAS_BASEDIR', ''),
                      r'F:\LSPEAS_ssdf_backup',r'G:\LSPEAS_ssdf_backup')
 
 # Select dataset to register
-ptcode = 'FANTOOM_20150625'
-ctcode = '5_Prof6_Water_Thorax_Pos2'
+ptcode = 'LSPEAS_011'
+ctcode = '12months'
 cropname = 'ring'
 what = 'avgreg'
 
@@ -32,25 +34,26 @@ vol = s.vol
 
 
 ## Initialize segmentation parameters
-stentType = 'endurant'  # 'anacondaRing' runs modified pruning algorithm in Step3
+stentType = 'anacondaRing'  # 'anacondaRing' runs modified pruning algorithm in Step3
 
 p = getDefaultParams(stentType)
-p.seed_threshold = 600                 # step 1
-p.mcp_speedFactor = 110                 # step 2, speed image (delta), costToCtValue
-p.mcp_maxCoverageFronts = 0.006         # step 2, base.py; replaces mcp_evolutionThreshold
-p.graph_weakThreshold = 500            # step 3, stentgraph.prune_very_weak
+p.seed_threshold = 1500                 # step 1
+p.mcp_speedFactor = 170                 # step 2, speed image (delta), costToCtValue
+p.mcp_maxCoverageFronts = 0.003         # step 2, base.py; replaces mcp_evolutionThreshold
+p.graph_weakThreshold = 800            # step 3, stentgraph.prune_very_weak
 p.graph_expectedNumberOfEdges = 3       # step 3, stentgraph.prune_weak
-p.graph_trimLength =  2                 # step 3, stentgraph.prune_tails
+p.graph_trimLength =  0                 # step 3, stentgraph.prune_tails
 p.graph_minimumClusterSize = 10         # step 3, stentgraph.prune_clusters
-p.graph_strongThreshold = 5000          # step 3, stentgraph.prune_weak and stentgraph.prune_redundant
-# p.graph_min_strutlength = 6             # step 3, stent_anaconda prune_redundant
-# p.graph_max_strutlength = 12            # step 3, stent_anaconda prune_redundant
+p.graph_strongThreshold = 4000          # step 3, stentgraph.prune_weak and stentgraph.prune_redundant
+p.graph_min_strutlength = 6             # step 3, stent_anaconda prune_redundant
+p.graph_max_strutlength = 12            # step 3, stent_anaconda prune_redundant
 p.graph_angleVector = 5                 # step 3, corner detect
-p.graph_angleTh = 40                    # step 3, corner detect
+p.graph_angleTh = 35                    # step 3, corner detect
 
 
 ## Perform segmentation
-cleanNodes = True  # True when NOT using GUI
+cleanNodes = True  # True when NOT using GUI with restore option
+guiRemove = True # option to remove nodes/edges but takes longer
 
 # Instantiate stentdirect segmenter object
 if stentType == 'anacondaRing':
@@ -73,7 +76,7 @@ bm = create_mesh(sd._nodes3, 0.6) # new
 # Visualize
 fig = vv.figure(3); vv.clf()
 fig.position = 0.00, 22.00,  1920.00, 1018.00
-clim = (0,2500)
+clim = (0,2000)
 #viewringcrop = 
 
 # Show volume and model as graph
@@ -99,6 +102,7 @@ pick3d(vv.gca(), vol)
 sd._nodes3.Draw(mc='b', lc='w')
 m = vv.mesh(bm)
 m.faceColor = 'g'
+_utils_GUI.vis_spared_edges(sd._nodes3)
 vv.xlabel('x (mm)');vv.ylabel('y (mm)');vv.zlabel('z (mm)')
 
 # Use same camera
@@ -110,6 +114,115 @@ switch = False
 a1.axis.visible = switch
 a2.axis.visible = switch
 a3.axis.visible = switch
+
+## GUI to remove
+from visvis import Pointset
+from stentseg.stentdirect import stentgraph
+from stentseg.stentdirect.stent_anaconda import _edge_length
+
+# initialize labels
+t1 = vv.Label(a3, 'Edge ctvalue: ', fontSize=11, color='c')
+t1.position = 0.1, 5, 0.5, 20  # x (frac w), y, w (frac), h
+t1.bgcolor = None
+t1.visible = False
+t2 = vv.Label(a3, 'Edge cost: ', fontSize=11, color='c')
+t2.position = 0.1, 25, 0.5, 20
+t2.bgcolor = None
+t2.visible = False
+t3 = vv.Label(a3, 'Edge length: ', fontSize=11, color='c')
+t3.position = 0.1, 45, 0.5, 20
+t3.bgcolor = None
+t3.visible = False
+
+def on_key(event):
+    """KEY commands for user interaction
+    UP/DOWN = show/hide nodes
+    DELETE  = remove edge [select 2 nodes] or pop node [select 1 node]
+    ALT     = SHOW RESULT: remove residual clusters, refine, smooth
+    """
+    if event.key == vv.KEY_DOWN:
+        # hide nodes
+        t1.visible = False
+        t2.visible = False
+        t3.visible = False
+        for node_point in node_points:
+            node_point.visible = False
+    if event.key == vv.KEY_UP:
+        # show nodes
+        for node_point in node_points:
+            node_point.visible = True
+    if event.key == vv.KEY_DELETE:
+        # remove edge
+        if len(selected_nodes) == 2:
+            select1 = selected_nodes[0].node
+            select2 = selected_nodes[1].node
+            c = sd._nodes3.edge[select1][select2]['cost']
+            ct = sd._nodes3.edge[select1][select2]['ctvalue']
+            p = sd._nodes3.edge[select1][select2]['path']
+            l = _edge_length(sd._nodes3, select1, select2)
+            sd._nodes3.remove_edge(select1, select2)
+            # Visualize removed edge, show keys and deselect nodes
+            selected_nodes[1].faceColor = 'b'
+            selected_nodes[0].faceColor = 'b'
+            selected_nodes.clear()
+            t1.text = 'Edge ctvalue: \b{%1.2f HU}' % ct
+            t2.text = 'Edge cost: \b{%1.7f }' % c
+            t3.text = 'Edge length: \b{%1.2f mm}' % l
+            t1.visible = True
+            t2.visible = True
+            t3.visible = True
+            view = a3.GetView()
+            pp = Pointset(p)
+            line = vv.solidLine(pp, radius = 0.2)
+            line.faceColor = 'r'
+            a3.SetView(view)
+        if len(selected_nodes) == 1:
+            # pop node
+            select1 = selected_nodes[0].node
+            stentgraph._pop_node(sd._nodes3, select1) # asserts degree == 2
+            selected_nodes[0].faceColor = 'w'
+            selected_nodes.clear()
+    elif event.key == vv.KEY_ALT:
+        # ALT will FINISH model
+        stentgraph.prune_clusters(sd._nodes3, 3) #remove residual nodes/clusters
+        # Create mesh and visualize
+        view = a3.GetView()
+        bm = create_mesh(sd._nodes3, 0.6)
+        a3.Clear()
+        t = vv.volshow(vol, clim=clim)
+        pick3d(vv.gca(), vol)
+        sd._nodes3.Draw(mc='b', mw = 8, lc = 'w', lw = 0.2)
+        vv.xlabel('x'), vv.ylabel('y'), vv.zlabel('z')
+        m = vv.mesh(bm)
+        m.faceColor = 'g'
+        a3.SetView(view)
+        print('----DO NOT FORGET TO SAVE THE MODEL TO DISK; EXECUTE NEXT CELL----')
+
+selected_nodes = list()
+def select_node(event):
+    """ select and deselect nodes by Double Click
+    """
+    if event.owner not in selected_nodes:
+        event.owner.faceColor = 'r'
+        selected_nodes.append(event.owner)
+    elif event.owner in selected_nodes:
+        event.owner.faceColor = 'b'
+        selected_nodes.remove(event.owner)
+
+#Add clickable nodes
+if guiRemove==True:
+        node_points = _utils_GUI.create_node_points(sd._nodes3, scale=0.7)
+        
+        # Bind event handlers
+        fig.eventKeyDown.Bind(on_key)
+        for node_point in node_points:
+                node_point.eventDoubleClick.Bind(select_node)
+        print('')
+        print('UP/DOWN = show/hide nodes')
+        print('DELETE  = remove edge [select 2 ndoes] or pop node [select 1 node]')
+        print('ALT  = SHOW RESULT: remove residual clusters, mesh')
+        print('')
+
 
 ## Prevent save when 'run as script'
 print('Model not yet saved to disk, run next cells')
@@ -141,7 +254,7 @@ s2.model = model.pack()
 # Save
 filename = '%s_%s_%s_%s.ssdf' % (ptcode, ctcode, cropname, 'model'+what)
 ssdf.save(os.path.join(basedir, ptcode, filename), s2)
-print("model saved to disk.")
+print('saved to disk as {}.'.format(filename) )
 
 
 ## Make model dynamic (and store/overwrite to disk)
@@ -168,4 +281,4 @@ filename = '%s_%s_%s_%s.ssdf' % (ptcode, ctcode, cropname, 'model'+what)
 s.model = model.pack()
 s.paramsreg = paramsreg
 ssdf.save(os.path.join(basedir, ptcode, filename), s)
-print("dynamic model saved to disk.")
+print('saved to disk as {}.'.format(filename) )

@@ -15,6 +15,8 @@ from stentseg.utils.datahandling import select_dir, loadvol, loadmodel
 from stentseg.stentdirect.stentgraph import create_mesh
 from stentseg.stentdirect import StentDirect, getDefaultParams, AnacondaDirect,EndurantDirect
 from stentseg.utils.picker import pick3d
+from stentseg.apps.graph_manualprune import interactiveClusterRemovalGraph
+import _utils_GUI # run as script
 
 # Select the ssdf basedir
 basedir = select_dir(os.getenv('LSPEAS_BASEDIR', ''),
@@ -52,7 +54,7 @@ p.graph_angleTh = 20                    # step 3, corner detect
 
 
 ## Perform segmentation
-cleanNodes = False  # False when using GUI: clean nodes and smooth after correct/restore
+cleanNodes = False  # False when using GUI with restore: clean nodes and smooth after correct/restore
 
 if stentType == 'anacondaRing':
         sd = AnacondaDirect(vol, p) # inherit _Step3_iter from AnacondaDirect class
@@ -76,7 +78,7 @@ from stentseg.stentdirect.stent_anaconda import _edge_length, prune_redundant
 
 fig = vv.figure(4); vv.clf()
 fig.position = 8.00, 30.00,  1267.00, 1002.00
-clim = (0,3000)
+clim = (0,2000)
 # viewringcrop = 
 
 # Show volume and graph
@@ -191,9 +193,9 @@ def on_key(event):
         #todo: problem with pop for endurant: solved pop before corner detect and adapted cluster removal
         if stentType == 'anacondaRing':
             stentgraph.add_nodes_at_crossings(sd._nodes3)
-            prune_redundant(sd._nodes3, sd._params.graph_strongThreshold,
-                                            sd._params.graph_min_strutlength,
-                                            sd._params.graph_max_strutlength)
+#             prune_redundant(sd._nodes3, sd._params.graph_strongThreshold,
+#                                             sd._params.graph_min_strutlength,
+#                                             sd._params.graph_max_strutlength)
         stentgraph.pop_nodes(sd._nodes3) # pop before corner detect or angles can not be found
         stentgraph.add_corner_nodes(sd._nodes3, th=sd._params.graph_angleVector, angTh=sd._params.graph_angleTh)
         stentgraph.pop_nodes(sd._nodes3) # because removing edges/add nodes can create degree 2 nodes
@@ -237,21 +239,9 @@ def select_node(event):
         event.owner.faceColor = 'b'
         selected_nodes.remove(event.owner)
 
-def create_node_points(graph):
-    """ create node objects for gui
-    """
-    node_points = []
-    for i, node in enumerate(sorted(graph.nodes())):
-        node_point = vv.solidSphere(translation = (node), scaling = (0.4,0.4,0.4))
-        node_point.faceColor = 'b'
-        node_point.visible = False
-        node_point.node = node
-        node_point.nr = i
-        node_points.append(node_point)
-    return node_points
 
 #Add clickable nodes
-node_points = create_node_points(sd._nodes3)
+node_points = _utils_GUI.create_node_points(sd._nodes3)
     
 # Bind event handlers
 fig.eventKeyDown.Bind(on_key)
@@ -308,7 +298,7 @@ s2.model = model.pack()
 # Save
 filename = '%s_%s_%s_%s.ssdf' % (ptcode, ctcode, cropname, 'model'+what)
 ssdf.save(os.path.join(basedir, ptcode, filename), s2)
-print("model saved to disk.")
+print('saved to disk as {}.'.format(filename) )
 
 ## Make model dynamic (and store/overwrite to disk)
 
@@ -334,4 +324,4 @@ filename = '%s_%s_%s_%s.ssdf' % (ptcode, ctcode, cropname, 'model'+what)
 s.model = model.pack()
 s.paramsreg = paramsreg
 ssdf.save(os.path.join(basedir, ptcode, filename), s)
-print("dynamic model saved to disk.")
+print('saved to disk as {}.'.format(filename) )
