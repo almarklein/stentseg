@@ -49,7 +49,7 @@ from visvis import ssdf
 from .base import StentDirect
 from .stent_anaconda import AnacondaDirect
 from .stent_endurant import EndurantDirect
-
+from .stent_nellix import NellixDirect
 
 # todo: define default params for each stent type on its own class.
 # Get default params
@@ -104,6 +104,9 @@ def getDefaultParams(stentType=''):
         params.graph_expectedNumberOfEdges = 2
     elif stentType == 'excluder':
         params.graph_expectedNumberOfEdges = 2
+    elif stentType == 'nellix':
+        params.graph_expectedNumberOfEdges = 2
+        params.seedSampleSize = 60
     elif stentType:
         raise ValueError('Unknown stent type %s' % stentType)
 

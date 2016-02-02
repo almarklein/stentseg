@@ -134,6 +134,9 @@ def savecropvols(vols, basedir, ptcode, ctcode, cropname, stenttype):
     # Export and save
     for volnr in range(0,len(vols)):
         phase = volnr*10
+        if len(vols) == 2: # when only diastolic/systolic volume
+            phase = vols[volnr].meta.SeriesDescription[:2] # '78%, iDose'
+            phase = int(phase)
         s['vol%i'% phase]  = vols[volnr][rz[0]:rz[1], ry[0]:ry[1], rx[0]:rx[1]]
         s['meta%i'% phase] = vols[volnr].meta
         vols[volnr].meta.PixelData = None  # avoid ssdf warning

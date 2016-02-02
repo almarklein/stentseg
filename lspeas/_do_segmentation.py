@@ -12,48 +12,53 @@ from visvis import ssdf
 from stentseg.utils import PointSet
 from stentseg.utils.datahandling import select_dir, loadvol, loadmodel
 from stentseg.stentdirect.stentgraph import create_mesh
-from stentseg.stentdirect import StentDirect, getDefaultParams, AnacondaDirect, EndurantDirect
+from stentseg.stentdirect import StentDirect, getDefaultParams, AnacondaDirect, EndurantDirect, NellixDirect
 from stentseg.utils.picker import pick3d
 from stentseg.apps.graph_manualprune import interactiveClusterRemovalGraph
 import _utils_GUI # run as script
 
 # Select the ssdf basedir
-basedir = select_dir(os.getenv('LSPEAS_BASEDIR', ''),
-                     r'D:\LSPEAS\LSPEAS_ssdf',
-                     r'F:\LSPEAS_ssdf_backup',r'G:\LSPEAS_ssdf_backup')
+# basedir = select_dir(os.getenv('LSPEAS_BASEDIR', ''),
+#                      r'D:\LSPEAS\LSPEAS_ssdf',
+#                      r'F:\LSPEAS_ssdf_backup',r'G:\LSPEAS_ssdf_backup')
+basedir = r'D:\LSPEAS\Nellix_chevas\CHEVAS_SSDF'
 
 # Select dataset to register
-ptcode = 'LSPEAS_011'
+ptcode = 'chevas_01'
 ctcode = '12months'
 cropname = 'ring'
-what = 'avgreg'
+what = 'phases' # avgreg
 
 # Load volumes
 s = loadvol(basedir, ptcode, ctcode, cropname, what)
-vol = s.vol
+# vol = s.vol
+vol = s.vol40
+what = 'vol40'
 
+f = vv.figure(2)
+vv.hist(vol, bins = 1000)
 
 ## Initialize segmentation parameters
-stentType = 'anacondaRing'  # 'anacondaRing' runs modified pruning algorithm in Step3
+stentType = 'nellix'  # 'anacondaRing' runs modified pruning algorithm in Step3
 
 p = getDefaultParams(stentType)
-p.seed_threshold = 1500                 # step 1
-p.mcp_speedFactor = 170                 # step 2, speed image (delta), costToCtValue
+p.seed_threshold = [3070]        # step 1 [lower th] or [lower th, higher th]
+p.mcp_speedFactor = 100                 # step 2, speed image (delta), costToCtValue
 p.mcp_maxCoverageFronts = 0.003         # step 2, base.py; replaces mcp_evolutionThreshold
-p.graph_weakThreshold = 800            # step 3, stentgraph.prune_very_weak
-p.graph_expectedNumberOfEdges = 3       # step 3, stentgraph.prune_weak
-p.graph_trimLength =  0                 # step 3, stentgraph.prune_tails
-p.graph_minimumClusterSize = 10         # step 3, stentgraph.prune_clusters
-p.graph_strongThreshold = 4000          # step 3, stentgraph.prune_weak and stentgraph.prune_redundant
-p.graph_min_strutlength = 6             # step 3, stent_anaconda prune_redundant
-p.graph_max_strutlength = 12            # step 3, stent_anaconda prune_redundant
+p.graph_weakThreshold = 2850             # step 3, stentgraph.prune_very_weak
+p.graph_expectedNumberOfEdges = 2       # step 3, stentgraph.prune_weak
+p.graph_trimLength =  1                 # step 3, stentgraph.prune_tails
+p.graph_minimumClusterSize = 5         # step 3, stentgraph.prune_clusters
+p.graph_strongThreshold = 10000          # step 3, stentgraph.prune_weak and stentgraph.prune_redundant
+# p.graph_min_strutlength = 6             # step 3, stent_anaconda prune_redundant
+# p.graph_max_strutlength = 12            # step 3, stent_anaconda prune_redundant
 p.graph_angleVector = 5                 # step 3, corner detect
-p.graph_angleTh = 35                    # step 3, corner detect
-
+p.graph_angleTh = 20                    # step 3, corner detect
+p.seedSampleSize = 60                  # step 1, nellix
 
 ## Perform segmentation
 cleanNodes = True  # True when NOT using GUI with restore option
-guiRemove = True # option to remove nodes/edges but takes longer
+guiRemove = False # option to remove nodes/edges but takes longer
 
 # Instantiate stentdirect segmenter object
 if stentType == 'anacondaRing':
@@ -61,8 +66,10 @@ if stentType == 'anacondaRing':
         #runtime warning using anacondadirect due to mesh creation, ignore
 elif stentType == 'endurant':
         sd = EndurantDirect(vol, p)
+elif stentType == 'nellix':
+        sd = NellixDirect(vol, p)
 else:
-        sd = StentDirect(vol, p)
+        sd = StentDirect(vol, p) 
 
 # Perform the three steps of stentDirect
 sd.Step1()
@@ -76,7 +83,7 @@ bm = create_mesh(sd._nodes3, 0.6) # new
 # Visualize
 fig = vv.figure(3); vv.clf()
 fig.position = 0.00, 22.00,  1920.00, 1018.00
-clim = (0,2000)
+clim = (0,3300)
 #viewringcrop = 
 
 # Show volume and model as graph
@@ -99,9 +106,9 @@ a3 = vv.subplot(133)
 a3.daspect = 1,1,-1
 t = vv.volshow(vol, clim=clim)
 pick3d(vv.gca(), vol)
-sd._nodes3.Draw(mc='b', lc='w')
-m = vv.mesh(bm)
-m.faceColor = 'g'
+sd._nodes3.Draw(mc='b', lc='g')
+# m = vv.mesh(bm)
+# m.faceColor = 'g'
 _utils_GUI.vis_spared_edges(sd._nodes3)
 vv.xlabel('x (mm)');vv.ylabel('y (mm)');vv.zlabel('z (mm)')
 
@@ -122,15 +129,15 @@ from stentseg.stentdirect.stent_anaconda import _edge_length
 
 # initialize labels
 t1 = vv.Label(a3, 'Edge ctvalue: ', fontSize=11, color='c')
-t1.position = 0.1, 5, 0.5, 20  # x (frac w), y, w (frac), h
+t1.position = 0.1, 25, 0.5, 20  # x (frac w), y, w (frac), h
 t1.bgcolor = None
 t1.visible = False
 t2 = vv.Label(a3, 'Edge cost: ', fontSize=11, color='c')
-t2.position = 0.1, 25, 0.5, 20
+t2.position = 0.1, 45, 0.5, 20
 t2.bgcolor = None
 t2.visible = False
 t3 = vv.Label(a3, 'Edge length: ', fontSize=11, color='c')
-t3.position = 0.1, 45, 0.5, 20
+t3.position = 0.1, 65, 0.5, 20
 t3.bgcolor = None
 t3.visible = False
 
