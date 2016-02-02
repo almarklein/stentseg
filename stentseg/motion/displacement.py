@@ -55,8 +55,8 @@ def _calculateSumMotion(pointpositions, dim = 'x'):
 
 
 def calculateMeanAmplitude(points,pointsDeforms, dim = 'x'):
-    """ Calcutale the mean amplitude of motion for the model nodes during a
-    cardiac cycle
+    """ Calculate the mean amplitude of motion for a set of points (e.g. nodes 
+    of model) during a cardiac cycle
     """
     meanAmplitude = []
     for i, point in enumerate(points):
@@ -73,6 +73,7 @@ def calculateMeanAmplitude(points,pointsDeforms, dim = 'x'):
             meanAmplitude.append(dmax_y)
         elif dim=='x':
             meanAmplitude.append(dmax_x)
-    return np.mean(meanAmplitude), np.std(meanAmplitude)
+    return np.mean(meanAmplitude), np.std(meanAmplitude), min(meanAmplitude), max(meanAmplitude)
+
     
     
