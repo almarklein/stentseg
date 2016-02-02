@@ -27,6 +27,7 @@ modelname = 'modelavgreg'
 
 drawModelLines = False  # True or False
 showAxis = False
+dimensions = 'z'
 
 # view1 = 
 #  
@@ -39,21 +40,21 @@ showAxis = False
 # 1 model 
 s1 = loadmodel(basedir, ptcode, ctcode1, cropname, modelname)
 # modelmesh1 = create_mesh(s1.model, 1.0)  # Param is thickness
-modelmesh1 = create_mesh_with_abs_displacement(s1.model, radius = 1.0, dimensions = 'xyz')
+modelmesh1 = create_mesh_with_abs_displacement(s1.model, radius = 1.0, dim=dimensions)
 vol1 = loadvol(basedir, ptcode, ctcode1, cropname, 'avgreg').vol
 
 # 2 models
 if len(codes) == 2 or len(codes) == 3:
     s2 = loadmodel(basedir, ptcode, ctcode2, cropname, modelname)
 #     modelmesh2 = create_mesh(s2.model, 1.0)  # Param is thickness
-    modelmesh2 = create_mesh_with_abs_displacement(s2.model, radius = 1.0, dimensions = 'xyz')
+    modelmesh2 = create_mesh_with_abs_displacement(s2.model, radius = 1.0, dim=dimensions)
     vol2 = loadvol(basedir, ptcode, ctcode2, cropname, 'avgreg').vol
 
 # 3 models
 if len(codes) == 3:
     s3 = loadmodel(basedir, ptcode, ctcode3, cropname, modelname)
 #     modelmesh3 = create_mesh(s3.model, 1.0)  # Param is thickness   
-    modelmesh3 = create_mesh_with_abs_displacement(s3.model, radius = 1.0, dimensions = 'xyz')
+    modelmesh3 = create_mesh_with_abs_displacement(s3.model, radius = 1.0, dim=dimensions)
     vol3 = loadvol(basedir, ptcode, ctcode3, cropname, 'avgreg').vol
 
 
@@ -65,7 +66,7 @@ clim = (0,2500)
 clim2 = 0,5
 
 # 1 model
-if codes=='discharge' or codes=='1month' or codes=='6months' :
+if codes==ctcode1 :
     a = vv.gca()
     t = vv.volshow(vol1, clim=clim, renderStyle='mip')
     if drawModelLines == True:

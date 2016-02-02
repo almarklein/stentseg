@@ -20,17 +20,17 @@ basedir = select_dir(os.getenv('LSPEAS_BASEDIR', ''),
                      r'F:\LSPEAS_ssdf_backup',r'G:\LSPEAS_ssdf_backup')
 
 # Select dataset to register
-ptcode = 'LSPEAS_003'
+ptcode = 'FANTOOM_20151202'
 # codes = ctcode1, ctcode2, ctcode3, ctcode4 = 'discharge', '1month', '6months', '12months'
 # codes = ctcode1, ctcode2, ctcode3 = 'discharge', '1month', '6months'
 # codes = ctcode1, ctcode2 = 'discharge', '1month'
-codes = ctcode1 = 'discharge'
+codes = ctcode1 = 'Prof3'
 cropname = 'ring'
 modelname = 'modelavgreg'
 
 showAxis = False  # True or False
 showVol  = 'ISO'  # MIP or ISO or 2D or None
-ringpart = 1 # R1=1 ; R2=2 ; None = all
+ringpart = None # R1=1 ; R2=2 ; None = all
 
 # view1 = 
 #  
@@ -85,14 +85,14 @@ f = vv.figure(1); vv.clf()
 f.position = 0.00, 22.00,  1920.00, 1018.00
 color = 'rgbmcrywgb'
 clim0  = (0,3500)
-clim2 = (0,4)
+clim2 = (0,1.5)
 clim3 = -550,500
 radius = 0.07
-dimensions = 'xyz'
+dimensions = 'z'
 isoTh = 250
 
 # 1 model
-if codes=='discharge' or codes=='1month' or codes=='6months' or codes=='12months':
+if codes==ctcode1:
     a = vv.gca()
     show_ctvolume(vol1, model1, showVol=showVol, clim=clim0, isoTh=isoTh, clim3=clim3)
     for phasenr in range(10):
@@ -101,7 +101,7 @@ if codes=='discharge' or codes=='1month' or codes=='6months' or codes=='12months
 #         model_phase.Draw(mc='', lw = 6, lc=color[phasenr])
 #         modelmesh1 = create_mesh(model_phase, radius = radius)
 #         m = vv.mesh(modelmesh1); m.faceColor = color[phasenr]
-        modelmesh1 = create_mesh_with_abs_displacement(model_phase, radius = radius, dimensions = dimensions)
+        modelmesh1 = create_mesh_with_abs_displacement(model_phase, radius = radius, dim = dimensions)
         m = vv.mesh(modelmesh1, colormap = vv.CM_JET, clim = clim2)
     vv.colorbar()    
     vv.xlabel('x (mm)');vv.ylabel('y (mm)');vv.zlabel('z (mm)')
@@ -118,7 +118,7 @@ if len(codes) == 2:
     for phasenr in range(10):
         model_phase = get_graph_in_phase(model1, phasenr = phasenr)
 #         model_phase.Draw(mc='', lw = 6, lc=color[phasenr])
-        modelmesh1 = create_mesh_with_abs_displacement(model_phase, radius = radius, dimensions = dimensions)
+        modelmesh1 = create_mesh_with_abs_displacement(model_phase, radius = radius, dim = dimensions)
         m = vv.mesh(modelmesh1, colormap = vv.CM_JET, clim = clim2)
     vv.colorbar() 
     vv.xlabel('x (mm)');vv.ylabel('y (mm)');vv.zlabel('z (mm)')
@@ -128,7 +128,7 @@ if len(codes) == 2:
     for phasenr in range(10):
         model_phase = get_graph_in_phase(model2, phasenr = phasenr)
 #         model_phase.Draw(mc='', lw = 6, lc=color[phasenr])
-        modelmesh2 = create_mesh_with_abs_displacement(model_phase, radius = radius, dimensions = dimensions)
+        modelmesh2 = create_mesh_with_abs_displacement(model_phase, radius = radius, dim = dimensions)
         m = vv.mesh(modelmesh2, colormap = vv.CM_JET, clim = clim2)
     vv.colorbar() 
     vv.xlabel('x (mm)');vv.ylabel('y (mm)');vv.zlabel('z (mm)')
@@ -145,7 +145,7 @@ if len(codes) == 3:
     for phasenr in range(10):
         model_phase = get_graph_in_phase(model1, phasenr = phasenr)
 #         model_phase.Draw(mc='', lw = 6, lc=color[phasenr])
-        modelmesh1 = create_mesh_with_abs_displacement(model_phase, radius = radius, dimensions = dimensions)
+        modelmesh1 = create_mesh_with_abs_displacement(model_phase, radius = radius, dim = dimensions)
         m = vv.mesh(modelmesh1, colormap = vv.CM_JET, clim = clim2)
     vv.colorbar() 
     vv.xlabel('x (mm)');vv.ylabel('y (mm)');vv.zlabel('z (mm)')
@@ -155,7 +155,7 @@ if len(codes) == 3:
     for phasenr in range(10):
         model_phase = get_graph_in_phase(model2, phasenr = phasenr)
 #         model_phase.Draw(mc='', lw = 6, lc=color[phasenr])
-        modelmesh2 = create_mesh_with_abs_displacement(model_phase, radius = radius, dimensions = dimensions)
+        modelmesh2 = create_mesh_with_abs_displacement(model_phase, radius = radius, dim = dimensions)
         m = vv.mesh(modelmesh2, colormap = vv.CM_JET, clim = clim2)
     vv.colorbar() 
     vv.xlabel('x (mm)');vv.ylabel('y (mm)');vv.zlabel('z (mm)')
@@ -165,7 +165,7 @@ if len(codes) == 3:
     for phasenr in range(10):
         model_phase = get_graph_in_phase(model3, phasenr = phasenr)
 #         model_phase.Draw(mc='', lw = 6, lc=color[phasenr])
-        modelmesh3 = create_mesh_with_abs_displacement(model_phase, radius = radius, dimensions = dimensions)
+        modelmesh3 = create_mesh_with_abs_displacement(model_phase, radius = radius, dim = dimensions)
         m = vv.mesh(modelmesh3, colormap = vv.CM_JET, clim = clim2)
     vv.colorbar() 
     vv.xlabel('x (mm)');vv.ylabel('y (mm)');vv.zlabel('z (mm)')
@@ -182,7 +182,7 @@ if len(codes) == 4:
     for phasenr in range(10):
         model_phase = get_graph_in_phase(model1, phasenr = phasenr)
 #         model_phase.Draw(mc='', lw = 3, lc=color[phasenr])
-        modelmesh1 = create_mesh_with_abs_displacement(model_phase, radius = radius, dimensions = dimensions)
+        modelmesh1 = create_mesh_with_abs_displacement(model_phase, radius = radius, dim = dimensions)
         m = vv.mesh(modelmesh1, colormap = vv.CM_JET, clim = clim2)
     vv.colorbar() 
     vv.xlabel('x (mm)');vv.ylabel('y (mm)');vv.zlabel('z (mm)')
@@ -192,7 +192,7 @@ if len(codes) == 4:
     for phasenr in range(10):
         model_phase = get_graph_in_phase(model2, phasenr = phasenr)
 #         model_phase.Draw(mc='', lw = 6, lc=color[phasenr])
-        modelmesh2 = create_mesh_with_abs_displacement(model_phase, radius = radius, dimensions = dimensions)
+        modelmesh2 = create_mesh_with_abs_displacement(model_phase, radius = radius, dim = dimensions)
         m = vv.mesh(modelmesh2, colormap = vv.CM_JET, clim = clim2)
     vv.colorbar() 
     vv.xlabel('x (mm)');vv.ylabel('y (mm)');vv.zlabel('z (mm)')
@@ -202,7 +202,7 @@ if len(codes) == 4:
     for phasenr in range(10):
         model_phase = get_graph_in_phase(model3, phasenr = phasenr)
 #         model_phase.Draw(mc='', lw = 6, lc=color[phasenr])
-        modelmesh3 = create_mesh_with_abs_displacement(model_phase, radius = radius, dimensions = dimensions)
+        modelmesh3 = create_mesh_with_abs_displacement(model_phase, radius = radius, dim = dimensions)
         m = vv.mesh(modelmesh3, colormap = vv.CM_JET, clim = clim2)
     vv.colorbar() 
     vv.xlabel('x (mm)');vv.ylabel('y (mm)');vv.zlabel('z (mm)')
@@ -212,7 +212,7 @@ if len(codes) == 4:
     for phasenr in range(10):
         model_phase = get_graph_in_phase(model4, phasenr = phasenr)
 #         model_phase.Draw(mc='', lw = 6, lc=color[phasenr])
-        modelmesh4 = create_mesh_with_abs_displacement(model_phase, radius = radius, dimensions = dimensions)
+        modelmesh4 = create_mesh_with_abs_displacement(model_phase, radius = radius, dim = dimensions)
         m = vv.mesh(modelmesh4, colormap = vv.CM_JET, clim = clim2)
     vv.colorbar() 
     vv.xlabel('x (mm)');vv.ylabel('y (mm)');vv.zlabel('z (mm)')
