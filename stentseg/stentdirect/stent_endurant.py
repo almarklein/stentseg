@@ -1,3 +1,4 @@
+# 2014-2016 Maaike Koenrades
 """
 Implementation of StentDirect algorithm for the Endurant stent graft
 
@@ -27,14 +28,14 @@ SORTBY = 'cost'
 class EndurantDirect(StentDirect):
     """ An implementation of the StentDirect algorithm targeted at 
     the Endurant stent graft.
-    Rationale: markers are placed next to wire, prevent seed placement here
+    Modification: markers are placed next to wire, prevent seed placement here
     """
     
     def Step1(self):
         """ Step1()
         Detect seed points.
         """
-        
+        print('get mask for seedpoints ENDURANT is used')
         # Check if we can go
         if self._vol is None or self._params is None:
             raise ValueError('Data or params not yet given.')
@@ -112,15 +113,15 @@ def get_mask_with_stent_likely_positions(data, th):
     # It has been tested that this algorithm produces the same results
     # as the Cython version.
     
-    print('get mask for seedpoints endurant is used')
+    import numpy as np
     # Init mask
     mask = np.zeros_like(data, np.uint8)
     
-    # Criterium 1: voxel must be above th
+    # Criterium 1A: voxel must be above th
     # Note that we omit the edges
-    mask[3:-3,3:-3,3:-3] = (data[3:-3,3:-3,3:-3] > th) * 3
+    mask[3:-3,3:-3,3:-3] = (data[3:-3,3:-3,3:-3] > th[0]) * 3
     
-    
+    values = []
     for z, y, x in zip(*np.where(mask==3)):
         
         # Only proceed if this voxel is "free"
@@ -145,16 +146,31 @@ def get_mask_with_stent_likely_positions(data, th):
                 continue
             
             # Criterium 3: one neighbour must be above th
-            if themax <= th:
+            if themax <= th[0]:
                 continue
             
-            # Criterium 4: seed must not be placed in tantalum marker
-            if val > data.max()*0.5: # seed in tantalum marker
-                print(val)
-                continue
+            # Criterium 1B: voxel must be below upper seed th, if given
+            if len(th) ==2:
+                if val > th[1]:
+                    print('Seed removed by higher th: ',(z,y,x),'ctvalue=', val)
+                    continue
             
-            # Set, and suppress stent points at direct neighbours
+            # Set, and suppress stent points at direct neightbours
             mask[z-1:z+2, y-1:y+2, x-1:x+2] = 1
             mask[z,y,x] = 2
+            values.append(data[z,y,x])
+    
+    # remove outlier markers
+    if len(th) == 1: # no upper seed threshold given
+        for z, y, x in zip(*np.where(mask==2)):
+            val = data[z,y,x]
+            #mean-based method
+            if val-np.mean(values) > 2.5* np.std(values):
+                mask[z,y,x] = 1
+                values.remove(val)
+                print("seed with value {} removed as outlier".format(val) )
+    
+    print()
+    print('Seed ctvalues: {}'.format(sorted(values)))
     
     return mask

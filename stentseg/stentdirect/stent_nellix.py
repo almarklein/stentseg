@@ -1,3 +1,4 @@
+# 2014-2016 Maaike Koenrades
 """
 Implementation of StentDirect algorithm for the Endurant stent graft
 
@@ -58,13 +59,13 @@ class NellixDirect(StentDirect):
             print('Found %i seed points, which took %1.2f s.' % (len(nodes), t1-t0))
         
         # todo: test this way of sampling; better not random?
-#         # Sample nodes
-#         n = 200
-#         nodesp = nodes.nodes().copy()
-#         nodes = stentgraph.StentGraph()
-#         rand_sample = [ nodesp[i] for i in sorted(random.sample(range(len(nodesp)), n)) ]
-#         for node in rand_sample:
-#             nodes.add_node(node)
+        # Sample nodes
+        n = 200
+        nodesp = nodes.nodes().copy()
+        nodes = stentgraph.StentGraph()
+        rand_sample = [ nodesp[i] for i in sorted(random.sample(range(len(nodesp)), n)) ]
+        for node in rand_sample:
+            nodes.add_node(node)
         
         # Store the nodes
         self._nodes1 = nodes

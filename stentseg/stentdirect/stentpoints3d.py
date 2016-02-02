@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # Copyright (c) 2014, Almar Klein
 # Distributed under the (new) BSD License. See LICENSE.txt for more info.
-
+# Modifications 2014-2016 Maaike Koenrades
 """ Module stentpoints3d
 
 Detect points on the stent from a 3D dataset containing the stent.
@@ -65,11 +65,11 @@ def get_mask_with_stent_likely_positions(data, th):
     # Init mask
     mask = np.zeros_like(data, np.uint8)
     
-    # Criterium 1: voxel must be above th
+    # Criterium 1A: voxel must be above th
     # Note that we omit the edges
-    mask[3:-3,3:-3,3:-3] = (data[3:-3,3:-3,3:-3] > th) * 3
+    mask[3:-3,3:-3,3:-3] = (data[3:-3,3:-3,3:-3] > th[0]) * 3
     
-    
+    values = []
     for z, y, x in zip(*np.where(mask==3)):
         
         # Only proceed if this voxel is "free"
@@ -94,12 +94,22 @@ def get_mask_with_stent_likely_positions(data, th):
                 continue
             
             # Criterium 3: one neighbour must be above th
-            if themax <= th:
+            if themax <= th[0]:
                 continue
+            
+            # Criterium 1B: voxel must be below upper seed th, if given
+            if len(th) ==2:
+                if val > th[1]:
+                    print('Seed removed by higher th: ',(z,y,x),'ctvalue=', val)
+                    continue
             
             # Set, and suppress stent points at direct neightbours
             mask[z-1:z+2, y-1:y+2, x-1:x+2] = 1
             mask[z,y,x] = 2
+            values.append(data[z,y,x])
+    
+    print()
+    print('Seed ctvalues: {}'.format(sorted(values)))
     
     return mask
 
