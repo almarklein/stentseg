@@ -17,6 +17,7 @@ from visvis import Pointset # for meshes
 from stentseg.stentdirect.stentgraph import create_mesh
 from visvis.processing import lineToMesh, combineMeshes
 from visvis import ssdf
+from stentseg.utils.picker import pick3d
 
 # Select the ssdf basedir
 basedir = select_dir(os.getenv('LSPEAS_BASEDIR', ''),
@@ -24,8 +25,8 @@ basedir = select_dir(os.getenv('LSPEAS_BASEDIR', ''),
                      r'F:\LSPEAS_ssdf_backup',r'G:\LSPEAS_ssdf_backup')
 
 # Select dataset to register
-ptcode = 'FANTOOM_20151202'
-ctcode = 'Prof3'
+ptcode = 'LSPEAS_011'
+ctcode = '12months'
 cropname = 'ring'
 modelname = 'modelavgreg'
 
@@ -49,8 +50,9 @@ a.axis.axisColor = 1,1,1
 a.axis.visible = True
 a.bgcolor = 0,0,0
 a.daspect = 1, 1, -1
-lim = 3000
+lim = 2500
 t = vv.volshow(vol, clim=(0, lim), renderStyle='mip')
+pick3d(vv.gca(), vol)
 model.Draw(mc='b', mw = 10, lc='g')
 vv.xlabel('x (mm)');vv.ylabel('y (mm)');vv.zlabel('z (mm)')
 vv.title('Model for LSPEAS %s  -  %s' % (ptcode[7:], ctcode))
@@ -74,31 +76,31 @@ for i, node in enumerate(sorted(model.nodes())):
 
 # Initialize labels
 t0 = vv.Label(a, '\b{Node nr|location}: ', fontSize=11, color='w')
-t0.position = 0.1, 5, 0.5, 20  # x (frac w), y, w (frac), h
+t0.position = 0.1, 25, 0.5, 20  # x (frac w), y, w (frac), h
 t0.bgcolor = None
 t0.visible = True
 t1 = vv.Label(a, '\b{Nodepair}: ', fontSize=11, color='w')
-t1.position = 0.1, 25, 0.5, 20  # x (frac w), y, w (frac), h
+t1.position = 0.1, 45, 0.5, 20  # x (frac w), y, w (frac), h
 t1.bgcolor = None
 t1.visible = False
 t2 = vv.Label(a, 'Node-to-node Min: ', fontSize=11, color='w')
-t2.position = 0.1, 45, 0.5, 20
+t2.position = 0.1, 65, 0.5, 20
 t2.bgcolor = None
 t2.visible = False
 t3 = vv.Label(a, 'Node-to-node Max: ', fontSize=11, color='w')
-t3.position = 0.1, 65, 0.5, 20
+t3.position = 0.1, 85, 0.5, 20
 t3.bgcolor = None
 t3.visible = False
 t4 = vv.Label(a, 'Node-to-node Median: ', fontSize=11, color='w')
-t4.position = 0.1, 85, 0.5, 20
+t4.position = 0.1, 105, 0.5, 20
 t4.bgcolor = None
 t4.visible = False
 t5 = vv.Label(a, 'Node-to-node Q1 and Q3: ', fontSize=11, color='w')
-t5.position = 0.1, 105, 0.5, 20
+t5.position = 0.1, 125, 0.5, 20
 t5.bgcolor = None
 t5.visible = False
 t6 = vv.Label(a, '\b{Node-to-node Pulsatility: }', fontSize=11, color='c')
-t6.position = 0.1, 125, 0.5, 20
+t6.position = 0.1, 145, 0.5, 20
 t6.bgcolor = None
 t6.visible = False
 
