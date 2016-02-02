@@ -25,7 +25,8 @@ def patternToExcel(tt0, aa0, profile='profile0'):
     """
     import xlsxwriter
     # https://pypi.python.org/pypi/XlsxWriter
-    workbook = xlsxwriter.Workbook(r'D:\Profiles\koenradesma\Dropbox\UTdrive\LSPEAS\Phantom validation\QRM Software\patternoutput.xlsx')
+#     workbook = xlsxwriter.Workbook(r'C:\Users\Maaike\Dropbox\UTdrive\LSPEAS\Phantom validation\QRM Software\LSPEAS-motion-profiles\patternoutput.xlsx')
+    workbook = xlsxwriter.Workbook(r'D:\Profiles\koenradesma\Dropbox\UTdrive\LSPEAS\Phantom validation\QRM Software\LSPEAS-motion-profiles\patternoutput.xlsx')
     worksheet = workbook.add_worksheet()
     # set column width
     worksheet.set_column('C:E', 15)
@@ -66,11 +67,11 @@ tt0,aa0 = get_motion_pattern(A=1.2, T=0.85714, N=20, top=0.35)
 correctoffset(aa0)
 
 #profile1
-tt1,aa1 = get_motion_pattern(A=1.2, T=1.2, N=20, top=0.35)
+tt1,aa1 = get_motion_pattern(A=1.0, T=1.2, N=20, top=0.35)
 correctoffset(aa1)
 
 #profile2
-tt2,aa2 = get_motion_pattern(A=1.2, T=0.6, N=20, top=0.35)
+tt2,aa2 = get_motion_pattern(A=1.35, T=0.6, N=20, top=0.35)
 correctoffset(aa2)
 
 #profile3
@@ -109,47 +110,47 @@ a3.SetLimits(rangeX=(-1.2,1.2), rangeY=(-0.1,1.3))
 ## B series
 
 #profile0
-tt0,aa0 = get_motion_pattern(A=0.2, T=0.85714, N=20, top=0.35)
-correctoffset(aa0)
+# tt0,aa0 = get_motion_pattern()
+# correctoffset(aa0)
 
 #profile1
-tt1,aa1 = get_motion_pattern(A=0.4, T=0.85714, N=20, top=0.35)
+tt1,aa1 = get_motion_pattern(A=0.7, T=0.8, N=20, top=0.35)
 correctoffset(aa1)
 
 #profile2
-tt2,aa2 = get_motion_pattern(A=0.7, T=0.85714, N=20, top=0.35)
+tt2,aa2 = get_motion_pattern(A=0.8, T=0.8, N=20, top=0.35)
 correctoffset(aa2)
 
 #profile3 - zit ook in A series
-tt3,aa3 = get_motion_pattern(A=1.2, T=0.85714, N=20, top=0.35)
+tt3,aa3 = get_motion_pattern(A=1.2, T=0.8, N=20, top=0.35)
 correctoffset(aa3)
 
 #profile4
-tt4,aa4 = get_motion_pattern(A=2.0, T=0.85714, N=20, top=0.35)
+tt4,aa4 = get_motion_pattern(A=2.0, T=0.8, N=20, top=0.35)
 correctoffset(aa4)
 
 #profile5
 # extra = ampl, t peak top in perc T, sigma in perc T(a * G(t-b)_c)
-tt5,aa5 = get_motion_pattern(A=1.2, T=0.85714, N=20, top=0.35, extra=(0.4, 0.80, 0.021))
+tt5,aa5 = get_motion_pattern(A=2.0, T=0.8, N=20, top=0.35, extra=(0.7, 0.8, 0.05))
 correctoffset(aa5)
 
 #profile6
-tt6,aa6 = get_motion_pattern(A=1.2, T=0.85714, N=20, top=0.35, extra=(0.4, 0.80, 0.042)) 
+tt6,aa6 = get_motion_pattern(A=2.0, T=0.8, N=20, top=0.35, extra=(0.7, 0.8, 0.09)) 
 correctoffset(aa6)
 
 #profile7
-tt7,aa7 = get_motion_pattern(A=1.2, T=0.85714, N=20, top=0.35, extra=(0.4, 0.80, 0.085)) 
-correctoffset(aa7)
+# tt7,aa7 = get_motion_pattern() 
+# correctoffset(aa7)
 
 
 import visvis as vv
 
-vv.figure(2); vv.clf();
+vv.figure(4); vv.clf();
 
-a0 = vv.subplot(241); vv.title('profile0')
-plot_pattern(*(tt0,aa0))
-a0.SetLimits(rangeX=(-1.2,1.2), rangeY=(-0.1,2))
-a0.axis.showGrid = True
+# a0 = vv.subplot(241); vv.title('profile0')
+# plot_pattern(*(tt0,aa0))
+# a0.SetLimits(rangeX=(-1.2,1.2), rangeY=(-0.1,2))
+# a0.axis.showGrid = True
 
 a1 = vv.subplot(242); vv.title('profile1')
 plot_pattern(*(tt1,aa1))
@@ -181,20 +182,20 @@ plot_pattern(*(tt6,aa6))
 a6.axis.showGrid = True
 a6.SetLimits(rangeX=(-1.2,1.2), rangeY=(-0.1,2))
 
-a7 = vv.subplot(248); vv.title('profile7')
-plot_pattern(*(tt7,aa7))
-a7.axis.showGrid = True
-a7.SetLimits(rangeX=(-1.2,1.2), rangeY=(-0.1,2))
+# a7 = vv.subplot(248); vv.title('profile7')
+# plot_pattern(*(tt7,aa7))
+# a7.axis.showGrid = True
+# a7.SetLimits(rangeX=(-1.2,1.2), rangeY=(-0.1,2))
 
 
 
 
 ##
-#1/0
+1/0
 
 ## Store to excel
 
 
-#patternToExcel(tt4, aa4, profile='profile4')
+patternToExcel(tt1, aa1, profile='profile1')
 
 

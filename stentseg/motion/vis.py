@@ -41,7 +41,7 @@ def create_mesh_with_values(g, radius=1.0, simplified=True):
         return None
 
 
-def create_mesh_with_abs_displacement(graph, radius = 1.0, dim = 'z', motion = 'sum'):
+def create_mesh_with_abs_displacement(graph, radius = 1.0, dim = 'z', motion = 'amplitude'):
     """ Create a Mesh object from the graph. The values of the mesh
     encode the *absolute displacement* at the points on the *paths* in the graph.
     Displacement can be the absolute displacement of a point in xyz, xy, z, y, or x

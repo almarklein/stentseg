@@ -22,20 +22,20 @@ if __name__ == '__main__':
     from stentseg.utils.datahandling import select_dir, loadvol, loadmodel
 
     # Select the ssdf basedir
-    basedir = select_dir(os.getenv('LSPEAS_BASEDIR', ''),
-                        r'D:\LSPEAS\LSPEAS_ssdf',
+    basedir = select_dir(r'D:\LSPEAS\LSPEAS_ssdf',
                         r'F:\LSPEAS_ssdf_backup',r'G:\LSPEAS_ssdf_backup')
     
     # Dir to save mesh
-    savedir = r'C:\Users\Maaike\Desktop' 
+    savedir = select_dir(r'D:\LSPEAS\LSPEAS_mesh')
     
     # Select dataset to register
-    ptcode = 'LSPEAS_003'
+    ptcode = 'LSPEAS_009'
     ctcode = 'discharge'
     cropname = 'ring'
     modelname = 'modelavgreg'
     
     # Save mesh
+    savedir = os.path.join(savedir, ptcode)
     model2mesh(basedir,savedir,ptcode,ctcode,cropname,modelname=modelname)
     print('mesh saved to %s' % savedir )
     

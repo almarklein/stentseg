@@ -11,6 +11,7 @@ def interactiveClusterRemovalGraph(graph, radius=0.7,
     Returns the axes in which the meshes are drawn.
     
     """
+    import visvis as vv
     import networkx as nx
     from stentseg.stentdirect import stentgraph
     from stentseg.stentdirect.stentgraph import create_mesh
