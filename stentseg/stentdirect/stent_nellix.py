@@ -48,24 +48,23 @@ class NellixDirect(StentDirect):
         pp = get_stent_likely_positions(self._vol, th) # call below
         
         # Create nodes object from found points
-        nodes = stentgraph.StentGraph()
+        seedlist = []
         for p in pp:
             p_as_tuple = tuple(p.flat) # todo: perhaps seed detector should just yield list of tuples.
-            nodes.add_node(p_as_tuple)
+            seedlist.append(p_as_tuple)
+        
+        # todo: test sampling by order in z; and try cluster dectect scipy.cluster
+        # Sample nodes
+        s = sorted(seedlist, key=lambda x: x[2]) # order z
+        ss = s[::self._params.seedSampleRate]
+        nodes = stentgraph.StentGraph()
+        for node in ss:
+            nodes.add_node(node)
         
         t1 = time.time()
         if self._verbose:
             print()
             print('Found %i seed points, which took %1.2f s.' % (len(nodes), t1-t0))
-        
-        # todo: test this way of sampling; better not random?
-        # Sample nodes
-        n = 200
-        nodesp = nodes.nodes().copy()
-        nodes = stentgraph.StentGraph()
-        rand_sample = [ nodesp[i] for i in sorted(random.sample(range(len(nodesp)), n)) ]
-        for node in rand_sample:
-            nodes.add_node(node)
         
         # Store the nodes
         self._nodes1 = nodes

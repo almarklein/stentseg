@@ -21,12 +21,12 @@ import _utils_GUI # run as script
 # basedir = select_dir(os.getenv('LSPEAS_BASEDIR', ''),
 #                      r'D:\LSPEAS\LSPEAS_ssdf',
 #                      r'F:\LSPEAS_ssdf_backup',r'G:\LSPEAS_ssdf_backup')
-basedir = r'D:\LSPEAS\Nellix_chevas\CHEVAS_SSDF'
+basedir = r'D:\LSPEAS\Nellix_dyna\DYNA_SSDF'
 
 # Select dataset to register
-ptcode = 'chevas_01'
-ctcode = '12months'
-cropname = 'ring'
+ptcode = 'dyna_nellix_01'
+ctcode = 'POSTOP'
+cropname = 'prox'
 what = 'phases' # avgreg
 
 # Load volumes
@@ -35,26 +35,26 @@ s = loadvol(basedir, ptcode, ctcode, cropname, what)
 vol = s.vol40
 what = 'vol40'
 
-f = vv.figure(2)
-vv.hist(vol, bins = 1000)
+# f = vv.figure(2)
+# vv.hist(vol, bins = 1000)
 
 ## Initialize segmentation parameters
 stentType = 'nellix'  # 'anacondaRing' runs modified pruning algorithm in Step3
 
 p = getDefaultParams(stentType)
 p.seed_threshold = [3070]        # step 1 [lower th] or [lower th, higher th]
-p.mcp_speedFactor = 100                 # step 2, speed image (delta), costToCtValue
-p.mcp_maxCoverageFronts = 0.003         # step 2, base.py; replaces mcp_evolutionThreshold
-p.graph_weakThreshold = 2850             # step 3, stentgraph.prune_very_weak
+p.mcp_speedFactor = 120                 # step 2, costToCtValue; lower less cost for lower HU; higher more cost for lower HU
+p.mcp_maxCoverageFronts = 0.002         # step 2, base.py; replaces mcp_evolutionThreshold
+p.graph_weakThreshold = 2995             # step 3, stentgraph.prune_very_weak
 p.graph_expectedNumberOfEdges = 2       # step 3, stentgraph.prune_weak
 p.graph_trimLength =  1                 # step 3, stentgraph.prune_tails
-p.graph_minimumClusterSize = 5         # step 3, stentgraph.prune_clusters
+p.graph_minimumClusterSize = 3         # step 3, stentgraph.prune_clusters
 p.graph_strongThreshold = 10000          # step 3, stentgraph.prune_weak and stentgraph.prune_redundant
 # p.graph_min_strutlength = 6             # step 3, stent_anaconda prune_redundant
 # p.graph_max_strutlength = 12            # step 3, stent_anaconda prune_redundant
-p.graph_angleVector = 5                 # step 3, corner detect
-p.graph_angleTh = 20                    # step 3, corner detect
-p.seedSampleSize = 60                  # step 1, nellix
+p.graph_angleVector = 3                 # step 3, corner detect
+p.graph_angleTh = 10                    # step 3, corner detect
+p.seedSampleRate = 7                  # step 1, nellix
 
 ## Perform segmentation
 cleanNodes = True  # True when NOT using GUI with restore option
@@ -83,7 +83,7 @@ bm = create_mesh(sd._nodes3, 0.6) # new
 # Visualize
 fig = vv.figure(3); vv.clf()
 fig.position = 0.00, 22.00,  1920.00, 1018.00
-clim = (0,3300)
+clim = (0,3000)
 #viewringcrop = 
 
 # Show volume and model as graph
@@ -218,7 +218,7 @@ def select_node(event):
 
 #Add clickable nodes
 if guiRemove==True:
-        node_points = _utils_GUI.create_node_points(sd._nodes3, scale=0.7)
+        node_points = _utils_GUI.create_node_points(sd._nodes3, scale=0.6)
         
         # Bind event handlers
         fig.eventKeyDown.Bind(on_key)
