@@ -37,8 +37,8 @@ deforms_f = [pirt.DeformationFieldForward(*f) for f in deforms]
 # Load mesh
 basedir2 = select_dir(r'C:\MedData\LSPEAS_Mimics',
                 r'F:\LSPEAS_Mimics_backup',
-                r'K:\LSPEAS_Mimics_backup')
-mesh = vv.meshRead(os.path.join(basedir2, ptcode, meshfile))
+                r'E:\LSPEAS_Mimics_backup')
+mesh = vv.meshRead(os.path.join(basedir2, ptcode+'_'+ctcode, meshfile))
 # z is negative, must be flipped to match dicom orientation
 for vertice in mesh._vertices:
     vertice[-1] = vertice[-1]*-1
@@ -65,7 +65,7 @@ t = vv.volshow2(volavg, clim=(-550, 500)) # -750, 1000
 
 # Create deformable mesh
 dm = DeformableMesh(a, mesh)
-dm.SetDeforms(*deforms_f)
+dm.SetDeforms(*[list(reversed(deform)) for deform in deforms_f])
 dm.clim = 0, 4
 dm.colormap = vv.CM_JET
 vv.colorbar()
@@ -75,5 +75,5 @@ a.SetLimits()
 # a.SetView(viewringcrop)
 dm.MotionPlay(5, 1)  # (10, 0.2) = each 10 ms do a step of 20%
 dm.motionSplineType = 'B-spline'
-dm.motionAmplitude = 3.0  # For a mesh we can (more) safely increase amplitude
+dm.motionAmplitude = 1.0  # For a mesh we can (more) safely increase amplitude
 dm.faceColor = 'g'

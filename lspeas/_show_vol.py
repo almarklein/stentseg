@@ -13,7 +13,7 @@ basedir = select_dir(os.getenv('LSPEAS_BASEDIR', ''),
                      r'F:\LSPEAS_ssdf_backup',r'G:\LSPEAS_ssdf_backup')
 
 # Select dataset to register
-ptcode = 'LSPEAS_005'
+ptcode = 'LSPEAS_003'
 # ctcode, nr = 'ZProfA3', 1
 ctcode, nr = '1month', 2
 cropname = 'stent'
@@ -23,6 +23,7 @@ cropname = 'stent'
 # Load volumes
 s = loadvol(basedir, ptcode, ctcode, cropname, 'phases')
 vols = [s['vol%i'%(i*10)] for i in range(10)]
+# vols = [s.vol40, s.vol78]
 
 # Start vis
 f = vv.figure(3); vv.clf()
@@ -37,7 +38,7 @@ vv.title('ECG-gated CT scan LSPEAS %s  -  %s' % (ptcode[7:], ctcode))
 container = vv.MotionDataContainer(a)
 for vol in vols:
     #     t = vv.volshow2(vol, clim=(-550, 500)) # -750, 1000
-    t = vv.volshow(vol, clim=(0, 2500), renderStyle = 'mip')
+    t = vv.volshow(vol, clim=(0, 3000), renderStyle = 'mip')
     t.isoThreshold = 300               # iso or mip work well 
     t.parent = container
 #     t.colormap = {'g': [(0.0, 0.0), (0.33636364, 1.0)],
@@ -79,7 +80,7 @@ dt = DeformableTexture3D(a, vol)
 dt.clim = 0, 3000
 dt.isoThreshold = 300
 dt.renderStyle = 'iso'  # iso or mip work well
-dt.SetDeforms(*deforms_backward)
+dt.SetDeforms(*[list(reversed(deform)) for deform in deforms_backward])
 dt.colormap = {'g': [(0.0, 0.0), (0.33636364, 1.0)],
  'b': [(0.0, 0.0), (0.49545455, 1.0)],
  'a': [(0.0, 1.0), (1.0, 1.0)],

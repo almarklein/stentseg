@@ -21,10 +21,10 @@ basedir = select_dir(os.getenv('LSPEAS_BASEDIR', ''),
                      r'F:\LSPEAS_ssdf_BACKUP',r'G:\LSPEAS_ssdf_BACKUP')
 
 # Select dataset to register
-# ptcode = 'LSPEAS_005'
-ptcode = 'FANTOOM_20151206'
-ctcode, nr = 'ZProfB6', 1
-# ctcode, nr = '1month', 1
+# ptcode = 'LSPEAS_004'
+ptcode = 'QRM_FANTOOM_20160121'
+ctcode, nr = 'ZA0-70-1.2', 1
+# ctcode, nr = '6months', 1
 cropname = 'ring'
 modelname = 'modelavgreg'
 motion = 'amplitude'  # amplitude or sum
@@ -118,8 +118,8 @@ meanAmplitudeY=calculateMeanAmplitude(points,pointsDeforms, dim='y')
 meanAmplitudeX=calculateMeanAmplitude(points,pointsDeforms, dim='x')
 
 # Create deformable mesh
-dm = DeformableMesh(a, modelmesh)
-dm.SetDeforms(*deforms_f)
+dm = DeformableMesh(a, modelmesh) # in x,y,z
+dm.SetDeforms(*[list(reversed(deform)) for deform in deforms_f]) # from z,y,x to x,y,z
 dm.clim = clim2
 dm.colormap = vv.CM_JET
 vv.colorbar()
@@ -129,7 +129,7 @@ a.SetLimits()
 # a.SetView(viewringcrop)
 dm.MotionPlay(motionPlay[0], motionPlay[1])  # (10, 0.2) = each 10 ms do a step of 20%
 dm.motionSplineType = 'B-spline'
-dm.motionAmplitude = 2.0  # For a mesh we can (more) safely increase amplitude
+dm.motionAmplitude = 1.0  # For a mesh we can (more) safely increase amplitude
 #dm.faceColor = 'g'
 
 
