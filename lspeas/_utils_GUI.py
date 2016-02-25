@@ -37,14 +37,14 @@ def create_node_points(graph, scale=0.4):
         node_points.append(node_point)
     return node_points
 
-def create_node_points_with_amplitude(graph):
+def create_node_points_with_amplitude(graph, scale =0.4):
     """ create node objects for gui and calculate motion amplitude for each node
     """
     from stentseg.motion.displacement import _calculateAmplitude
     pointsDeforms = []
     node_points = []
     for i, node in enumerate(sorted(graph.nodes())):
-        node_point = vv.solidSphere(translation = (node), scaling = (1.1,1.1,1.1))
+        node_point = vv.solidSphere(translation = (node), scaling = (scale,scale,scale))
         node_point.faceColor = 'b'
         node_point.visible = False
         node_point.node = node
