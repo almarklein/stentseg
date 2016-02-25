@@ -20,13 +20,13 @@ basedir = select_dir(os.getenv('LSPEAS_BASEDIR', ''),
                      r'F:\LSPEAS_ssdf_toPC')
 
 # Params Step A, B, C
-ctcode = '12months'  # 'pre', 'discharge', '1month', '6months', '12months', x_Profx_Water_
-ptcode = 'LSPEAS_018'  # LSPEAS_00x or FANTOOM_xxx
+ctcode = 'ZA2-100-1.35'  # 'pre', 'discharge', '1month', '6months', '12months', x_Profx_Water_
+ptcode = 'QRM_FANTOOM_20160121'  # LSPEAS_00x or FANTOOM_xxx
 stenttype = 'anaconda'         # or 'endurant' or 'excluder'
-scanner = 'toshiba' # 'toshiba' or 'siemens' - different output data structure
+dicomStructure = 'imaFolders' # 'dcmFolders' or 'imaFolder' or 'imaFolders' - different output data structure
 
 # Params Step B, C (to save)
-cropnames = ['ring','stent']    # save crops of stent and/or ring
+cropnames = ['ring']    # save crops of stent and/or ring
 # C: start and end phase in cardiac cycle to average (50,90=5 phases;60-20=7)
 phases = 70, 20
 
@@ -57,8 +57,7 @@ def readdcm(dirname):
         assert perc in vol.meta.SeriesDescription
         
         vols.append(vol)
-        if volnr>0:
-            assert vol.shape==vols[0].shape
+        assert vol.shape==vols[0].shape
     
     return vols  
 
@@ -66,31 +65,40 @@ def readdcm(dirname):
 ## Perform the steps A,B,C
 
 # Step A: Read DICOM
-if scanner == 'toshiba':
+if dicomStructure == 'dcmFolders': #toshiba from workstation
     if 'FANTOOM' in ptcode:
         dicom_basedir = os.path.join(dicom_basedir.replace('ECGgatedCT', ''), ptcode)
-        subfolder = os.listdir(dicom_basedir)
+        subfolder = os.listdir(dicom_basedir) # folder UID
         dicom_basedir = os.path.join(dicom_basedir, subfolder[0],ctcode)
         vols = readdcm(dicom_basedir)
     else:
         vols = readdcm(os.path.join(dicom_basedir, ptcode, ptcode+'_'+ctcode))
-        #vols = imageio.mvolread(os.path.join(dicom_basedir, ptcode, ptcode+'_'+ctcode), 'dicom')
+#   vols = imageio.mvolread(os.path.join(dicom_basedir, ptcode, ptcode+'_'+ctcode), 'dicom')
 
-if scanner == 'siemens':
+if dicomStructure == 'imaFolder': #siemens from workstation
     if 'FANTOOM' in ptcode:
         dicom_basedir = os.path.join(dicom_basedir.replace('ECGgatedCT', ''), ptcode)
-        vols = imageio.mvolread(os.path.join(dicom_basedir,ctcode), 'dicom')
-        for perc, vol in enumerate(vols):
-            perc = '%i%%' % (perc*10)
-            assert perc in vol.meta.SeriesDescription
-            assert vol.shape == vols[0].shape
+        vols = imageio.mvolread(os.path.join(dicom_basedir,ctcode), 'dicom') # todo: error on memory >1GB of data after upgrade imageio
+#         r = imageio.get_reader(os.path.join(dicom_basedir,ctcode,subfolder))
     else:
         dicom_basedir = os.path.join(dicom_basedir,ptcode,ptcode+'_'+ctcode)
-        vols = imageio.mvolread(dicom_basedir, 'dicom')
-        for perc, vol in enumerate(vols):
-            perc = '%i%%' % (perc*10)
-            assert perc in vol.meta.SeriesDescription
-            assert vol.shape == vols[0].shape
+        vols = imageio.mvolread(dicom_basedir, 'dicom')  # todo: error on memory >1GB of data  
+    for i, vol in enumerate(vols):
+        assert vol.shape == vols[0].shape
+        assert str(i*10) in vol.meta.SeriesDescription # 0% , 10% etc.
+
+if dicomStructure == 'imaFolders': #toshiba from synapse
+    if 'FANTOOM' in ptcode:
+        dicom_basedir = os.path.join(dicom_basedir.replace('ECGgatedCT', ''), ptcode)
+    else:
+        dicom_basedir = os.path.join(dicom_basedir,ptcode,ptcode+'_'+ctcode)    
+    vols = []
+    subfolders = os.listdir(os.path.join(dicom_basedir,ctcode))
+    for i, subfolder in enumerate(subfolders): # read per folder to avoid PermissionError: [Errno 13] Permission denied with imageio.get_reader
+        vol = imageio.volread(os.path.join(dicom_basedir,ctcode,subfolder), 'dicom') # error on memory>1GB of data with mvolread
+        vols.append(vol)
+        assert vol.shape == vols[0].shape
+        assert str(i*10) in vol.meta.SeriesDescription # 0% , 10% etc.
 
 # Step B: Crop and Save SSDF
 for cropname in cropnames:
@@ -113,7 +121,7 @@ avg = 'avg7020'
 
 # s1 = loadvol(basedir, ptcode, ctcode, 'ring', what ='phases')
 s2 = loadvol(basedir, ptcode, ctcode, 'ring', avg)
-s3 = loadvol(basedir, ptcode, ctcode, 'stent', avg)
+s3 = loadvol(basedir, ptcode, ctcode, 'ring', avg)
 
 
 # Visualize and compare
