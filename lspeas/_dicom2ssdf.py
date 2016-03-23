@@ -1,3 +1,6 @@
+""" Load ECG gated data and save to ssdf format
+
+"""
 
 import os
 import sys
@@ -20,14 +23,14 @@ basedir = select_dir(os.getenv('LSPEAS_BASEDIR', ''),
                      r'F:\LSPEAS_ssdf_toPC')
 
 # Params Step A, B, C
-ctcode = 'ZA2-100-1.35'  # 'pre', 'discharge', '1month', '6months', '12months', x_Profx_Water_
-ptcode = 'QRM_FANTOOM_20160121'  # LSPEAS_00x or FANTOOM_xxx
-stenttype = 'anaconda'         # or 'endurant' or 'excluder'
-dicomStructure = 'imaFolders' # 'dcmFolders' or 'imaFolder' or 'imaFolders' - different output data structure
+ctcode = '12months'  # 'pre', 'discharge', '1month', '6months', '12months', x_Profx_Water_
+ptcode = 'LSPEAS_023'  # LSPEAS_00x or FANTOOM_xxx
+stenttype = 'endurant'         # 'anaconda 'or 'endurant' or 'excluder'
+dicomStructure = 'imaFolder' # 'dcmFolders' or 'imaFolder' or 'imaFolders' - different output data structure
 
 # Params Step B, C (to save)
-cropnames = ['ring']    # save crops of stent and/or ring
-# C: start and end phase in cardiac cycle to average (50,90=5 phases;60-20=7)
+cropnames = ['stent','ring']    # save crops of stent and/or ring
+# C: start and end phase in cardiac cycle to average (50,90=5 phases;70,20=6)
 phases = 70, 20
 
 # todo: use imageio.mvolread instead when fixed
@@ -82,10 +85,16 @@ if dicomStructure == 'imaFolder': #siemens from workstation
 #         r = imageio.get_reader(os.path.join(dicom_basedir,ctcode,subfolder))
     else:
         dicom_basedir = os.path.join(dicom_basedir,ptcode,ptcode+'_'+ctcode)
-        vols = imageio.mvolread(dicom_basedir, 'dicom')  # todo: error on memory >1GB of data  
+#         vols = imageio.mvolread(dicom_basedir, 'dicom')  # todo: error on memory >1GB of data; use get_reader
+        reader = imageio.get_reader(dicom_basedir)
+        vols = []
+        for serie in reader.series:
+            vol = serie.get_numpy_array()
+            if vol.ndim == 3 and vol.shape[0]>300 and serie.sampling[0] <= 0.5: # phase contains at least 300 slices
+                vols.append(imageio.core.Image(vol,meta=serie.info))
     for i, vol in enumerate(vols):
         assert vol.shape == vols[0].shape
-        assert str(i*10) in vol.meta.SeriesDescription # 0% , 10% etc.
+#         assert str(i*10) in vol.meta.SeriesDescription # 0% , 10% etc. # tag does not exist in siemens data anymore
 
 if dicomStructure == 'imaFolders': #toshiba from synapse
     if 'FANTOOM' in ptcode:
@@ -121,7 +130,7 @@ avg = 'avg7020'
 
 # s1 = loadvol(basedir, ptcode, ctcode, 'ring', what ='phases')
 s2 = loadvol(basedir, ptcode, ctcode, 'ring', avg)
-s3 = loadvol(basedir, ptcode, ctcode, 'ring', avg)
+s3 = loadvol(basedir, ptcode, ctcode, 'stent', avg)
 
 
 # Visualize and compare
