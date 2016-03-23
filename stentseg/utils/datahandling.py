@@ -94,7 +94,7 @@ def loadmodel(basedir, ptcode, ctcode, cropname, modelname='modelavgreg'):
 def savecropvols(vols, basedir, ptcode, ctcode, cropname, stenttype):
     """ Step B: Crop and Save SSDF
     Input: vols from Step A
-    Save 10 volumes (cardiac cycle phases) in one ssdf file
+    Save 2 or 10 volumes (cardiac cycle phases) in one ssdf file
     Cropper tool opens to manually set the appropriate cropping range in x,y,z
     Click 'finish' to continue saving
     Meta information (dicom), origin, stenttype and cropping range are saved
@@ -112,7 +112,7 @@ def savecropvols(vols, basedir, ptcode, ctcode, cropname, stenttype):
     fig.Destroy()
     
     if vol_crop.shape == vol0.shape:
-        raise RuntimeError('User cancelled (no crop)')
+        raise RuntimeError('User did not crop')
     
     # Calculate crop range from origin
     rz = int(vol_crop.origin[0] / vol_crop.sampling[0] + 0.5)
@@ -132,18 +132,25 @@ def savecropvols(vols, basedir, ptcode, ctcode, cropname, stenttype):
     s.ptcode = ptcode
     
     # Export and save
-    for volnr in range(0,len(vols)):
-        phase = volnr*10
-        if len(vols) == 2: # when only diastolic/systolic volume
-            phase = vols[volnr].meta.SeriesDescription[:2] # '78%, iDose'
-            phase = int(phase)
-        s['vol%i'% phase]  = vols[volnr][rz[0]:rz[1], ry[0]:ry[1], rx[0]:rx[1]]
-        s['meta%i'% phase] = vols[volnr].meta
-        vols[volnr].meta.PixelData = None  # avoid ssdf warning
-        
-    filename = '%s_%s_%s_phases.ssdf' % (ptcode, ctcode, cropname)
+    if len(vols) == 1: # when static ct
+        s.vol = vols[0][rz[0]:rz[1], ry[0]:ry[1], rx[0]:rx[1]]
+        s.meta = vols[0].meta
+        vols[0].meta.PixelData = None  # avoid ssdf warning
+        filename = '%s_%s_%s_phase.ssdf' % (ptcode, ctcode, cropname)
+    else: # dynamic ct
+        for volnr in range(0,len(vols)):
+            phase = volnr*10
+            if len(vols) == 2: # when only diastolic/systolic volume
+                phase = vols[volnr].meta.SeriesDescription[:2] # '78%, iDose'
+                phase = int(phase)
+            s['vol%i'% phase]  = vols[volnr][rz[0]:rz[1], ry[0]:ry[1], rx[0]:rx[1]]
+            s['meta%i'% phase] = vols[volnr].meta
+            vols[volnr].meta.PixelData = None  # avoid ssdf warning
+        filename = '%s_%s_%s_phases.ssdf' % (ptcode, ctcode, cropname)
     file_out = os.path.join(basedir,ptcode, filename )
     ssdf.save(file_out, s)
+    print()
+    print('ssdf saved to {}.'.format(file_out) )
 
 
 def saveaveraged(basedir, ptcode, ctcode, cropname, phases):
