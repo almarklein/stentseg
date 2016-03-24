@@ -81,18 +81,16 @@ if dicomStructure == 'dcmFolders': #toshiba from workstation
 if dicomStructure == 'imaFolder': #siemens from workstation
     if 'FANTOOM' in ptcode:
         dicom_basedir = os.path.join(dicom_basedir.replace('ECGgatedCT', ''), ptcode)
-        vols = imageio.mvolread(os.path.join(dicom_basedir,ctcode), 'dicom') # todo: error on memory >1GB of data after upgrade imageio
-#         r = imageio.get_reader(os.path.join(dicom_basedir,ctcode,subfolder))
+        vols = [vol for vol in imageio.get_reader(os.path.join(dicom_basedir,ctcode), 'DICOM', 'V')]
     else:
         dicom_basedir = os.path.join(dicom_basedir,ptcode,ptcode+'_'+ctcode)
-#         vols = imageio.mvolread(dicom_basedir, 'dicom')  # todo: error on memory >1GB of data; use get_reader
-        reader = imageio.get_reader(dicom_basedir)
+        vols2 = [vol2 for vol2 in imageio.get_reader(dicom_basedir, 'DICOM', 'V')]
         vols = []
-        for serie in reader.series:
-            vol = serie.get_numpy_array()
-            if vol.ndim == 3 and vol.shape[0]>300 and serie.sampling[0] <= 0.5: # phase contains at least 300 slices
-                vols.append(imageio.core.Image(vol,meta=serie.info))
+        for vol in vols2:
+            if vol.ndim == 3 and vol.shape[0]>300 and vol.meta.sampling[0] <= 0.5: # phase should comply with this 
+                vols.append(vol) # keep only gated phases
     for i, vol in enumerate(vols):
+        print(vol.meta.sampling)
         assert vol.shape == vols[0].shape
 #         assert str(i*10) in vol.meta.SeriesDescription # 0% , 10% etc. # tag does not exist in siemens data anymore
 
