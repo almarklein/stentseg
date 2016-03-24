@@ -21,10 +21,10 @@ basedir = select_dir(os.getenv('LSPEAS_BASEDIR', ''),
                      r'F:\LSPEAS_ssdf_BACKUP',r'G:\LSPEAS_ssdf_BACKUP')
 
 # Select dataset to register
-# ptcode = 'LSPEAS_004'
-ptcode = 'QRM_FANTOOM_20160121'
-ctcode, nr = 'ZA0-70-1.2', 1
-# ctcode, nr = '6months', 1
+ptcode = 'LSPEAS_002'
+# ptcode = 'QRM_FANTOOM_20160121'
+# ctcode, nr = 'ZA0-70-1.2', 1
+ctcode, nr = 'discharge', 1
 cropname = 'ring'
 modelname = 'modelavgreg'
 motion = 'amplitude'  # amplitude or sum
@@ -59,9 +59,11 @@ model = s.model
 modelmesh = create_mesh_with_abs_displacement(model, radius = 1.0, dim = dimension, motion = motion)
 
 # Load static CT image to add as reference
-s2 = loadvol(basedir, ptcode, ctcode, 'stent', staticref)
+try:
+    s2 = loadvol(basedir, ptcode, ctcode, 'stent', staticref)
+except FileNotFoundError:
+    s2 = loadvol(basedir, ptcode, ctcode, 'stent', 'avg3090')
 vol = s2.vol
-
 
 
 # Start vis
