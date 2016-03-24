@@ -185,6 +185,28 @@ def pick3d(axes, vol):
     return label
 
 
+def label2worldcoordinates(label):
+    l = label.text.replace(' ->',',')
+    l = l.replace('At','')
+    ls = l.split(',')
+    z = float(ls[0].replace('z=', '') )
+    y = float(ls[1].replace('y=', '') )
+    x = float(ls[2].replace('x=', '') )
+    print('point world z,y,x: {},{},{}.'.format(z,y,x))
+    return [x,y,z]
+
+
+def label2volindices(label):
+    l = label.text.replace(']','[,')
+    ls = l.split('[')
+    lsc = ls[1].split(',')
+    z = int(lsc[0])
+    y = int(lsc[1])
+    x = int(lsc[2])
+    print('point indices z,y,x: {},{},{}.'.format(z,y,x))
+    return [x,y,z]
+
+
 if __name__ == '__main__':
     vol = vv.Aarray(vv.volread('stent'), (0.5, 0.5, 0.5), (100, 40, 10))
     a = vv.gca()
