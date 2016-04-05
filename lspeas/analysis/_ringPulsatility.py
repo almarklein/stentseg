@@ -24,9 +24,13 @@ basedir = select_dir(os.getenv('LSPEAS_BASEDIR', ''),
                      r'D:\LSPEAS\LSPEAS_ssdf',
                      r'F:\LSPEAS_ssdf_backup',r'G:\LSPEAS_ssdf_backup')
 
+# Select location storeOutputTemplate EXCEL file
+exceldir = select_dir(r'C:\Users\Maaike\Desktop',
+            r'D:\Profiles\koenradesma\Desktop')
+
 # Select dataset to register
-ptcode = 'LSPEAS_011'
-ctcode = '12months'
+ptcode = 'QRM_FANTOOM_20160121'
+ctcode = 'ZA2-100-1.35'
 cropname = 'ring'
 modelname = 'modelavgreg'
 
@@ -37,14 +41,13 @@ vol = s.vol
 # Load the stent model and mesh
 s2 = loadmodel(basedir, ptcode, ctcode, cropname, modelname)
 model = s2.model
-modelmesh = create_mesh(model, 0.6)  # Param is thickness
+modelmesh = create_mesh(model, 0.4)  # Param is thickness
 
 
 ## Start visualization and GUI
 
 fig = vv.figure(1); vv.clf()
-# fig.position = 0.00, 22.00,  1366.00, 706.00
-fig.position = 8.00, 30.00,  824.00, 972.00
+fig.position = 968.00, 30.00,  944.00, 1002.00
 a = vv.gca()
 a.axis.axisColor = 1,1,1
 a.axis.visible = True
@@ -306,15 +309,15 @@ def on_key(event):
         # show line of max pulsatility as mesh with values
         pp = Pointset(np.asarray([storeOutput[-1][8][1], storeOutput[-1][9][1]])) # pathpoint1 and 2
         maxpulsatility = [storeOutput[-1][7][0]]
-        values = np.asarray([maxpulsatility,maxpulsatility]) # Nx1 ndarray 
-        meshline = lineToMesh(pp, 0.3, 8, values)
-        mline = vv.mesh(meshline)
-        mline.clim = 0, 1 # (mm)
-        mline.colormap = vv.CM_COOL
-        vv.colorbar()
+#         values = np.asarray([maxpulsatility,maxpulsatility]) # Nx1 ndarray 
+#         meshline = lineToMesh(pp, 0.3, 8, values)
+#         mline = vv.mesh(meshline)
+#         mline.clim = 0, 1 # (mm)
+#         mline.colormap = vv.CM_COOL
+#         vv.colorbar()
         a.SetView(view)
         # Store to EXCEL
-        storeOutputToExcel(storeOutput)
+        storeOutputToExcel(storeOutput,exceldir)
         for node_point in node_points:
             node_point.visible = False # show that store is ready
 
@@ -356,10 +359,25 @@ def get_midpoint_deforms_edge(model, n1, n2):
     v = path - mid
     dist_to_mid = ( (v[:,0]**2 + v[:,1]**2 + v[:,2]**2)**0.5 ).reshape(-1,1)
     # get point on path closest to mid
-    midpointIndex =  list(dist_to_mid).index(dist_to_mid.min() )
+    midpointIndex =  list(dist_to_mid).index(dist_to_mid.min() ) # index on path
     midpoint = path[midpointIndex]
     # get deforms of midpoint
     midpointDeforms = model.edge[n1][n2]['pathdeforms'][midpointIndex]
+#     if (len(path) % 2 == 0): #even; middle of 2 closest pathpoints to get actual mid
+#         dist_to_mid[midpointIndex] = dist_to_mid.max()+100 # replace for distance > max
+#         midpointIndex2 =  list(dist_to_mid).index(dist_to_mid.min() ) # index on path
+#         midpoint2 = path[midpointIndex2]
+#         # if neighbors on this path, find mid point and deforms
+#         if abs(midpointIndex - midpointIndex2) == 1:
+#             midpoint = (midpoint + midpoint2) / 2
+#             midpointDeforms2 = model.edge[n1][n2]['pathdeforms'][midpointIndex2]
+#             midpointDeforms = (midpointDeforms + midpointDeforms2) / 2
+#             midpointIndex = [midpointIndex,midpointIndex2]
+#         else: # take only closest as midpoint
+#             midpointIndex = [midpointIndex] # return as array, similar to when even pathlength
+#     else: # odd, expected one pathpoint closest to mid of line
+#         midpointIndex = [midpointIndex] # return as array, similar to when even pathlength
+    
     return [nindex, midpointIndex, midpoint, midpointDeforms]
 
 def point_to_point_pulsatility(point1, point1Deforms, 
@@ -437,11 +455,11 @@ def edge_to_edge_max_pulsatility(model, nodepair1, nodepair2):
     return maxpulsatility_out
 
 import xlsxwriter
-def storeOutputToExcel(storeOutput):
+def storeOutputToExcel(storeOutput, exceldir):
     """Create file and add a worksheet or overwrite existing
     """
     # https://pypi.python.org/pypi/XlsxWriter
-    workbook = xlsxwriter.Workbook(r'D:\Profiles\koenradesma\Desktop\storeOutputTemplate.xlsx')
+    workbook = xlsxwriter.Workbook(os.path.join(exceldir,'storeOutputTemplate.xlsx'))
     worksheet = workbook.add_worksheet()
     # set column width
     worksheet.set_column('A:A', 15)
