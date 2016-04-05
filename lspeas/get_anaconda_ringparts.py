@@ -57,12 +57,12 @@ def get_model_struts(model, nstruts=8):
     directions = []
     for n1, n2 in model_noHooks.edges():
         e_length = _edge_length(model, n1, n2)
-        if (3 < e_length < 12): # struts OLB21 are 4.5-5.5mm OLB34 9-9.5
+        if (3.5 < e_length < 12): # struts OLB21 are 4.5-5.5mm OLB34 9-9.5
             vector = np.subtract(n1,n2) # nodes, paths in x,y,z
             vlength = np.sqrt(vector[0]**2+vector[1]**2+vector[2]**2)
             direction = abs(vector / vlength)
             directions.append([direction, n1, n2]) # direction and nodes
-            print(direction)
+#             print(direction)
     d = np.asarray(directions) # n x 3 (direction,n1,n2) x 3 (xyz)
     ds = sorted(d[:,0,2], reverse = True) # highest z direction first
     for i in range(nstruts):
@@ -74,9 +74,9 @@ def get_model_struts(model, nstruts=8):
     
     model_R1R2 = model_noHooks.copy()
     model_R1R2.remove_edges_from(model_struts.edges())
-    print('************')
+#     print('************')
     
-    return model_struts, model_hooks, model_R1R2, model_h_s
+    return model_struts, model_hooks, model_R1R2, model_h_s, model_noHooks
 
 
 def get_model_rings(model_R1R2):
