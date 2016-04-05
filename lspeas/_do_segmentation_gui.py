@@ -10,13 +10,12 @@ import numpy as np
 import visvis as vv
 from visvis import ssdf
 
-from stentseg.utils import PointSet
+from stentseg.utils import PointSet, _utils_GUI
 from stentseg.utils.datahandling import select_dir, loadvol, loadmodel
 from stentseg.stentdirect.stentgraph import create_mesh
 from stentseg.stentdirect import StentDirect, getDefaultParams, AnacondaDirect,EndurantDirect
 from stentseg.utils.picker import pick3d
 from stentseg.apps.graph_manualprune import interactiveClusterRemovalGraph
-import _utils_GUI # run as script
 
 # Select the ssdf basedir
 basedir = select_dir(os.getenv('LSPEAS_BASEDIR', ''),

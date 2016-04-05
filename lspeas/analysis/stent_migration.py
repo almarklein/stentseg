@@ -8,7 +8,7 @@ from stentseg.stentdirect.stentgraph import create_mesh
 from stentseg.motion.vis import show_ctvolume
 sys.path.insert(0, os.path.abspath('..'))
 from get_anaconda_ringparts import get_model_struts,get_model_rings,add_nodes_edge_to_newmodel 
-import _utils_GUI
+from stentseg.utils import _utils_GUI
 from stentseg.utils.picker import pick3d
 
 #todo: from outline to script:
@@ -18,9 +18,10 @@ from stentseg.utils.picker import pick3d
 
 # select the ssdf basedir
 basedir = select_dir(r'D:\LSPEAS\LSPEAS_ssdf',
-                     r'F:\LSPEAS_ssdf_backup')
+                     r'F:\LSPEAS_ssdf_backup', r'G:\LSPEAS_ssdf_backup')
                      
-basedirMesh = select_dir(r'D:\LSPEAS\LSPEAS_vessel')
+basedirMesh = select_dir(r'D:\LSPEAS\LSPEAS_vessel',
+                            'F:\LSPEAS_vessel_backup')
 
 # select dataset
 ptcode = 'LSPEAS_003'
@@ -40,7 +41,7 @@ radius = 0.07
 isoTh = 250
 
 # Load static CT image to add as reference
-s = loadvol(basedir, ptcode, ctcode1, cropname, 'avgreg')
+s = loadvol(basedir, ptcode, ctcode1, 'stent', 'avgreg')
 vol1 = s.vol
 s = loadvol(basedir, ptcode, ctcode2, cropname, 'avgreg')
 vol2 = s.vol
