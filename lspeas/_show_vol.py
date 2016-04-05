@@ -22,8 +22,11 @@ cropname = 'stent'
 
 # Load volumes
 s = loadvol(basedir, ptcode, ctcode, cropname, 'phases')
-vols = [s['vol%i'%(i*10)] for i in range(10)]
-# vols = [s.vol40, s.vol78]
+# vols = [s['vol%i'%(i*10)] for i in range(10)]
+vols = []
+for key in dir(s):
+    if key.startswith('vol'):
+        vols.append(s[key])
 
 # Start vis
 f = vv.figure(3); vv.clf()
