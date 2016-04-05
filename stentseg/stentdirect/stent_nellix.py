@@ -48,18 +48,23 @@ class NellixDirect(StentDirect):
         pp = get_stent_likely_positions(self._vol, th) # call below
         
         # Create nodes object from found points
-        seedlist = []
+        nodes = stentgraph.StentGraph()
         for p in pp:
             p_as_tuple = tuple(p.flat) # todo: perhaps seed detector should just yield list of tuples.
-            seedlist.append(p_as_tuple)
+            nodes.add_node(p_as_tuple)
         
-        # todo: test sampling by order in z; and try cluster dectect scipy.cluster
-        # Sample nodes
-        s = sorted(seedlist, key=lambda x: x[2]) # order z
-        ss = s[::self._params.seedSampleRate]
-        nodes = stentgraph.StentGraph()
-        for node in ss:
-            nodes.add_node(node)
+#         seedlist = []
+#         for p in pp:
+#             p_as_tuple = tuple(p.flat) # todo: perhaps seed detector should just yield list of tuples.
+#             seedlist.append(p_as_tuple)
+        
+#         # todo: test sampling by order in z; and try cluster dectect scipy.cluster
+#         # Sample nodes
+#         s = sorted(seedlist, key=lambda x: x[2]) # order z
+#         ss = s[::self._params.seedSampleRate]
+#         nodes = stentgraph.StentGraph()
+#         for node in ss:
+#             nodes.add_node(node)
         
         t1 = time.time()
         if self._verbose:
@@ -127,8 +132,11 @@ def get_mask_with_stent_likely_positions(data, th):
     
     # Criterium 1A: voxel must be above th
     # Note that we omit the edges
-    mask[20:-20,20:-20,20:-20] = (data[20:-20,20:-20,20:-20] > th[0]) * 3
+    mask[25:-25,25:-25,25:-25] = (data[25:-25,25:-25,25:-25] > th[0]) * 3
     
+    cnt = 0
+    seed = None
+    seeds = []
     values = []
     for z, y, x in zip(*np.where(mask==3)):
         
@@ -163,13 +171,26 @@ def get_mask_with_stent_likely_positions(data, th):
                     print('Seed removed by higher th: ',(z,y,x),'ctvalue=', val)
                     continue
             
-            # Set, and suppress stent points at direct neightbours
+            # Criterium 4: seed must be at least 5 voxels away from other seeds
+            if not seed == None:
+                newseed = np.asarray([z,y,x])
+                v = seeds - newseed
+                d = (v[:,0]**2 + v[:,1]**2 + v[:,2]**2)**0.5 # np.linalg.norm(v) # magnitude
+                if d.min() < 5:
+                    cnt+=1
+                    continue
+            seed = np.asarray([z,y,x])
+            seeds.append(seed)
+            
+            # Set, and suppress stent points at direct neighbours
             mask[z-1:z+2, y-1:y+2, x-1:x+2] = 1
             mask[z,y,x] = 2
             values.append(data[z,y,x])
     
     print()
     print('Seed ctvalues: {}'.format(sorted(values)))
+    print('-------')
+    print('Seeds removed by criterium 4: {}'.format(cnt))
     
     return mask
     

@@ -1,7 +1,8 @@
 """ Script to do the segmentation and store the result.
 A Graphical User Interface allows to restore and remove edges
 
-Do not run file but execute cells (overwrites!)
+Saves model at bottom of script.
+When run as script it will overwrite existing ssdf. [now a 1/0 break at line 273 to prevent this]
 """
 
 import os
@@ -299,14 +300,19 @@ filename = '%s_%s_%s_%s.ssdf' % (ptcode, ctcode, cropname, 'model'+what)
 ssdf.save(os.path.join(basedir, ptcode, filename), s2)
 print('saved to disk as {}.'.format(filename) )
 
+
 ## Make model dynamic (and store/overwrite to disk)
 
 import pirt
 from stentseg.motion.dynamic import incorporate_motion_nodes, incorporate_motion_edges  
 
 # Load deforms
-s = loadvol(basedir, ptcode, ctcode, cropname, 'deforms')
-deforms = [s['deform%i'%(i*10)] for i in range(10)]
+s = loadvol(basedir, ptcode, ctcode, cropname, '2deforms')
+deformkeys = []
+for key in dir(s):
+    if key.startswith('deform'):
+        deformkeys.append(key)
+deforms = [s[key] for key in deformkeys]
 deforms = [pirt.DeformationFieldBackward(*fields) for fields in deforms]
 paramsreg = s.params
 
@@ -324,3 +330,4 @@ s.model = model.pack()
 s.paramsreg = paramsreg
 ssdf.save(os.path.join(basedir, ptcode, filename), s)
 print('saved to disk as {}.'.format(filename) )
+

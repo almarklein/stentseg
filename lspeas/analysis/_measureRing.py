@@ -6,79 +6,17 @@ run as script
 import sys
 import os
 import visvis as vv
+from stentseg.utils import _utils_GUI
 from stentseg.utils.datahandling import select_dir, loadvol, loadmodel
 from stentseg.stentdirect.stentgraph import create_mesh
 from stentseg.motion.vis import show_ctvolume, get_graph_in_phase
+from stentseg.apps.graph_manualprune import interactiveClusterRemovalGraph
+from stentseg.stentdirect import stentgraph
+import numpy as np
 
 sys.path.insert(0, os.path.abspath('..'))
 from get_anaconda_ringparts import get_model_struts,get_model_rings,add_nodes_edge_to_newmodel 
-import _utils_GUI
 
-# Select the ssdf basedir
-basedir = select_dir(os.getenv('LSPEAS_BASEDIR', ''),
-                     r'D:\LSPEAS\LSPEAS_ssdf',
-                     r'F:\LSPEAS_ssdf_backup')
-
-# Select dataset to register
-ptcode = 'LSPEAS_003'
-ctcode = 'discharge'
-cropname = 'ring'
-modelname = 'modelavgreg'
-
-# Load static CT image to add as reference
-s = loadvol(basedir, ptcode, ctcode, cropname, 'avgreg')
-vol = s.vol
-
-# Load the stent model and mesh
-s2 = loadmodel(basedir, ptcode, ctcode, cropname, modelname)
-model = s2.model
-modelmesh = create_mesh(model, 0.6)  # Param is thickness
-
-
-showAxis = False  # True or False
-showVol  = 'MIP'  # MIP or ISO or 2D or None
-ringpart = True # True; False
-nstruts = 8
-clim0  = (0,4000)
-clim2 = (0,4)
-clim3 = -550,500
-radius = 0.07
-dimensions = 'xyz'
-isoTh = 250
-
-
-## Visualize with GUI
-f = vv.figure(3); vv.clf()
-f.position = 968.00, 30.00,  944.00, 1002.00
-a = vv.gca()
-show_ctvolume(vol, model, showVol=showVol, clim=clim0, isoTh=isoTh, clim3=clim3)
-model.Draw(mc='b', mw = 10, lc='g')
-vv.xlabel('x (mm)');vv.ylabel('y (mm)');vv.zlabel('z (mm)')
-vv.title('Analysis for model LSPEAS %s  -  %s' % (ptcode[7:], ctcode))
-a.axis.axisColor= 1,1,1
-a.bgcolor= 0,0,0
-a.daspect= 1, 1, -1  # z-axis flipped
-a.axis.visible = showAxis
-
-## Initialize labels GUI
-from visvis import Pointset
-from stentseg.stentdirect import stentgraph
-
-t1 = vv.Label(a, 'Edge ctvalue: ', fontSize=11, color='c')
-t1.position = 0.1, 5, 0.5, 20  # x (frac w), y, w (frac), h
-t1.bgcolor = None
-t1.visible = False
-t2 = vv.Label(a, 'Edge cost: ', fontSize=11, color='c')
-t2.position = 0.1, 25, 0.5, 20
-t2.bgcolor = None
-t2.visible = False
-t3 = vv.Label(a, 'Edge length: ', fontSize=11, color='c')
-t3.position = 0.1, 45, 0.5, 20
-t3.bgcolor = None
-t3.visible = False
-
-#Add clickable nodes
-node_points = _utils_GUI.create_node_points(model) 
 
 def on_key(event):
     """KEY commands for user interaction
@@ -103,7 +41,7 @@ def on_key(event):
         select1 = selected_nodes[0].node
         select2 = selected_nodes[1].node
         c, ct, p, l = _utils_GUI.get_edge_attributes(model, select1, select2)
-        # Visualize edge and deselect nodes
+        # visualize edge and deselect nodes
         selected_nodes[1].faceColor = 'b'
         selected_nodes[0].faceColor = 'b'
         selected_nodes.clear()
@@ -121,7 +59,7 @@ def on_key(event):
         select2 = selected_nodes[1].node
         c, ct, p, l = _utils_GUI.get_edge_attributes(model, select1, select2)
         model.remove_edge(select1, select2)
-        # Visualize removed edge, show keys and deselect nodes
+        # visualize removed edge, show keys and deselect nodes
         selected_nodes[1].faceColor = 'b'
         selected_nodes[0].faceColor = 'b'
         selected_nodes.clear()
@@ -157,23 +95,13 @@ def select_node(event):
         event.owner.faceColor = 'b'
         selected_nodes.remove(event.owner)
 
-f.eventKeyDown.Bind(on_key)
-for node_point in node_points:
-    node_point.eventDoubleClick.Bind(select_node)
-print('')
-print('UP/DOWN = show/hide nodes')
-print('ENTER   = show edge and attribute values [select 2 nodes]')
-print('DELETE  = remove edge [select 2 nodes]')
-print('CTRL    = replace intially created ringparts')
-print('')
-
 
 models, modelsR1R2 = [None], [None] #init to modify variable in on_key
 def ringparts(ringpart = True):
     if ringpart:
         models[0] = get_model_struts(model, nstruts=nstruts) # [0] tuple in list
         modelsR1R2[0] = get_model_rings(models[0][2]) # [2]=model_R1R2
-
+        
 
 def figparts():
     """ Visualize ring parts
@@ -207,30 +135,36 @@ def figparts():
     a0.camera = a1.camera
 
 
-def fit3D(model):
+def _fit3D(model):
     from stentseg.utils import fitting
     from stentseg.utils.new_pointset import PointSet
     pp3 = PointSet(3)
-    for n1, n2 in model.edges(): # mind that node point duplicates are added
-        path = model.edge[n1][n2]['path']
-        for p in path: 
-            pp3.append(p)
+    l, l2 = 0, 0
+    # todo: get edge point and nodes separate: endurant no edges when split
+    for n in model.nodes():
+        pp3.append(n)
+    for n1, n2 in model.edges():
+        path = model.edge[n1][n2]['path'][1:-1] # do not include nodes to prevent duplicates
+        for p in path:
+            if p not in pp3: # redundant?
+                pp3.append(p)
     plane = fitting.fit_plane(pp3) # todo: plane niet intuitief door saddle ring; maakt aantal punten uit?? toch loodrecht op centerline stent?
     pp3_2 = fitting.project_to_plane(pp3, plane)
-    c3 = fitting.fit_circle(pp3_2)
+#     c3 = fitting.fit_circle(pp3_2)
     e3 = fitting.fit_ellipse(pp3_2)
-    print('area circle 3D: % 1.2f' % fitting.area(c3))
-    print('area ellipse 3D: % 1.2f' % fitting.area(e3))
+#     print('area circle 3D: % 1.2f' % fitting.area(c3))
+#     print('area ellipse 3D: % 1.2f' % fitting.area(e3))
     
     return pp3, plane, pp3_2, e3
 
 
-def fig3Dfit(fitted):
+def vis3Dfit(fitted):
+    """Visualize ellipse fit in 3D with CT volume
+    input variable from _fit3D
+    """
     from stentseg.utils import fitting
     import numpy as np
     pp3,plane,pp3_2,e3 = fitted[0],fitted[1],fitted[2],fitted[3]
-    f = vv.figure(); vv.clf()
-    f.position = 968.00, 30.00,  944.00, 1002.00
     a = vv.gca()
     show_ctvolume(vol, model, showVol=showVol, clim=clim0, isoTh=isoTh, clim3=clim3)
     vv.xlabel('x (mm)');vv.ylabel('y (mm)');vv.zlabel('z (mm)')
@@ -255,14 +189,167 @@ def fig3Dfit(fitted):
     #     vv.legend('3D points', 'Projected points', 'Circle fit', 'Ellipse fit', 'Plane fit')
     vv.legend('3D points', 'Projected points', 'Ellipse fit', 'Plane fit')
 
+def vis2Dfit(fitted):
+    """Visualize ellipse fit in 2D
+    input variable from _fit3D
+    """
+    from stentseg.utils import fitting
+    import numpy as np
+    plane,pp3_2,e3 = fitted[1],fitted[2],fitted[3]
+    # endpoints axis
+    x0,y0,res1,res2,phi = e3[0], e3[1], e3[2], e3[3], e3[4]
+    dxax1 = np.cos(phi)*res1 
+    dyax1 = np.sin(phi)*res1
+    dxax2 = np.cos(phi+0.5*np.pi)*res2 
+    dyax2 = np.sin(phi+0.5*np.pi)*res2
+    p1ax1, p2ax1 = (x0+dxax1, y0+dyax1), (x0-dxax1, y0-dyax1)
+    p1ax2, p2ax2 = (x0+dxax2, y0+dyax2), (x0-dxax2, y0-dyax2)
+      
+    a = vv.gca()
+    vv.xlabel('x (mm)');vv.ylabel('y (mm)')
+    vv.title('Analysis for model LSPEAS %s  -  %s' % (ptcode[7:], ctcode))
+    a.axis.axisColor= 0,0,0
+    a.bgcolor= 0,0,0
+    a.axis.visible = showAxis
+    a.daspectAuto = False
+    a.axis.showGrid = True
+    vv.plot(pp3_2, ls='', ms='.', mc='r', mw=4)
+    vv.plot(fitting.sample_ellipse(e3), lc='b', lw=2)
+    vv.plot(np.array([p1ax1, p2ax1]), lc='g', lw=2) # major axis
+    vv.plot(np.array([p1ax2, p2ax2]), lc='g', lw=2) # minor axis
+    vv.legend('3D points projected to plane', 'Ellipse fit on projected points')
 
+def calculateAreaChange(model, mname):
+    import numpy as np
+    areas, res1s, res2s, phis = [], [], [], []
+    #todo: change axis change definition 
+    for phasenr in range(10):
+        model_phase = get_graph_in_phase(model, phasenr = phasenr)
+        fitted = _fit3D(model_phase)
+        e3 = fitted[3] # [3] is e3 with 5 elements x0, y0, res1, res2, phi
+        area = fitting.area(e3)
+        areas.append(area)
+        res1s.append(e3[2])
+        res2s.append(e3[3])
+        phis.append(e3[4])
+        
+    areaMax = max(areas)
+    areaMin = min(areas)
+    areaChangemm = areaMax-areaMin
+    areaChangepr = 100*(areaMax-areaMin) / areaMin
+    des1Min, des1Max = 2*min(res1s), 2*max(res1s)
+    des1Change = des1Max - des1Min
+    des2Min, des2Max = 2*min(res2s), 2*max(res2s)
+    des2Change = des2Max - des2Min
+    phiMin, phiMax = min(phis)*180.0/np.pi, max(phis)*180.0/np.pi # degrees
+    phiChange = phiMax - phiMin
+    print('   ')
+    print('=== Ring measurements %s ===' % mname)
+    print('Min area: %1.1f mm2' % areaMin)
+    print('Max area: %1.1f mm2' % areaMax)
+    print('Area change: %1.1f mm2 ; %1.1f%%' % (areaChangemm, areaChangepr))
+    print('Minor axis: %1.1f-%1.1f (%1.2f) mm' % (des2Min, des2Max, des2Change) )
+    print('Major axis: %1.1f-%1.1f (%1.2f) mm' % (des1Min, des1Max, des1Change) )
+    print('Angle axis: %1.1f-%1.1f (%1.1f) degrees' % (phiMin, phiMax, abs(phiChange))    )
+    
+    return areaMax, areaMin, areaChangemm, areaChangepr
 
+def getTopBottomNodesZring(model,nTop=5,nBot=5):
+    """Get top and bottom nodes in endurant proximal ring
+    return graphs
+    """
+    nSorted = np.asarray(sorted(model.nodes(), key=lambda x: x[2])) # sort by z ascending
+    nTop = nSorted[:nTop]
+    nBot = nSorted[nBot:]
+    m_nTop = stentgraph.StentGraph()
+    m_nBot = stentgraph.StentGraph()
+    for p in nTop:
+        m_nTop.add_node(tuple(p.flat))
+    for p in nBot:
+        m_nBot.add_node(tuple(p.flat))
+    
+    return m_nTop, m_nBot
+    
 
-
-
-
+##
 
 if __name__ == '__main__':
+
+    from stentseg.utils import fitting
+    
+    # Select the ssdf basedir
+    basedir = select_dir(os.getenv('LSPEAS_BASEDIR', ''),
+                        r'D:\LSPEAS\LSPEAS_ssdf',
+                        r'F:\LSPEAS_ssdf_backup', r'G:\LSPEAS_ssdf_backup')
+    
+    # Select dataset to register
+    ptcode = 'LSPEAS_023'
+    ctcode = 'discharge'
+    cropname = 'ring'
+    modelname = 'modelavgreg'
+    
+    # Load static CT image to add as reference
+    s = loadvol(basedir, ptcode, ctcode, cropname, 'avgreg')
+    vol = s.vol
+    
+    # Load the stent model and mesh
+    s2 = loadmodel(basedir, ptcode, ctcode, cropname, modelname)
+    model = s2.model
+    modelmesh = create_mesh(model, 0.6)  # Param is thickness
+    
+    showAxis = True  # True or False
+    showVol  = 'MIP'  # MIP or ISO or 2D or None
+    ringpart = False # True; False
+    nstruts = 8
+    clim0  = (0,3000)
+    clim2 = (0,4)
+    clim3 = -550,500
+    radius = 0.07
+    dimensions = 'xyz'
+    isoTh = 250
+
+    ## Visualize with GUI
+    f = vv.figure(3); vv.clf()
+    f.position = 968.00, 30.00,  944.00, 1002.00
+    a = vv.gca()
+    show_ctvolume(vol, model, showVol=showVol, clim=clim0, isoTh=isoTh, clim3=clim3)
+    model.Draw(mc='b', mw = 10, lc='g')
+    vv.xlabel('x (mm)');vv.ylabel('y (mm)');vv.zlabel('z (mm)')
+    vv.title('Analysis for model LSPEAS %s  -  %s' % (ptcode[7:], ctcode))
+    a.axis.axisColor= 1,1,1
+    a.bgcolor= 0,0,0
+    a.daspect= 1, 1, -1  # z-axis flipped
+    a.axis.visible = showAxis
+    
+    # Initialize labels GUI
+    from visvis import Pointset
+    from stentseg.stentdirect import stentgraph
+    
+    t1 = vv.Label(a, 'Edge ctvalue: ', fontSize=11, color='c')
+    t1.position = 0.1, 5, 0.5, 20  # x (frac w), y, w (frac), h
+    t1.bgcolor = None
+    t1.visible = False
+    t2 = vv.Label(a, 'Edge cost: ', fontSize=11, color='c')
+    t2.position = 0.1, 25, 0.5, 20
+    t2.bgcolor = None
+    t2.visible = False
+    t3 = vv.Label(a, 'Edge length: ', fontSize=11, color='c')
+    t3.position = 0.1, 45, 0.5, 20
+    t3.bgcolor = None
+    t3.visible = False
+    
+    #Add clickable nodes
+    node_points = _utils_GUI.create_node_points(model)
+    
+    f.eventKeyDown.Bind(on_key)
+    for node_point in node_points:
+        node_point.eventDoubleClick.Bind(select_node)
+    print('')
+    print('UP/DOWN = show/hide nodes')
+    print('ENTER   = show edge and attribute values [select 2 nodes]')
+    print('DELETE  = remove edge [select 2 nodes]')
+    print('CTRL    = replace intially created ringparts')
+    print('')
 
     # Get ring parts
     ringparts(ringpart=ringpart)
@@ -271,37 +358,83 @@ if __name__ == '__main__':
     if ringpart:
         figparts()
         
-    # Area and cyclic change
+    # Area and cyclic change -- ellipse fit
     if ringpart:
         # fit plane and ellipse
         R1 = modelsR1R2[0][0]
         R2 = modelsR1R2[0][1]
-        modelsR1R2 = modelsR1R2[0]
-        fittedR1, fittedR2, fittedR1R2 = fit3D(R1), fit3D(R2), fit3D(models[0][2]) # [2]=model_R1R2 
-        fig3Dfit(fittedR1)
-        fig3Dfit(fittedR2)
-        fig3Dfit(fittedR1R2)    
-        # cyclic change
-        e3R1 = fittedR1[3] # 5 elements x0, y0, res1, res2, phi
-        
+        fittedR1, fittedR2, fittedR1R2 = _fit3D(R1), _fit3D(R2), _fit3D(models[0][4]) # [4]=model_noHooks
+        print("------------")
         f = vv.figure(); vv.clf()
-        f.position = 968.00, 30.00,  944.00, 1002.00
-        a = vv.gca()
-        show_ctvolume(vol, model, showVol=showVol, clim=clim0, isoTh=isoTh, clim3=clim3)
-        color = 'rgbmcrywgb'
-        for phasenr in range(10):
-            model_phase = get_graph_in_phase(R1, phasenr = phasenr)
-#             model_phase.Draw(mc=color[phasenr], mw = 10, lc=color[phasenr])
-            model_phase.Draw(mc='', lc=color[phasenr])
-        a.axis.axisColor= 1,1,1
-        a.bgcolor= 0,0,0
-        a.daspect= 1, 1, -1  # z-axis flipped
-        a.axis.visible = showAxis
+        f.position = 258.00, 30.00,  1654.00, 1002.00
+        a1 = vv.subplot(231)
+        vis3Dfit(fittedR1)
+        a2 = vv.subplot(232)
+        vis3Dfit(fittedR2)
+        a3 = vv.subplot(233)
+        vis3Dfit(fittedR1R2)
+        a1.camera = a2.camera = a3.camera
+        a1b = vv.subplot(2,3,4)
+        vis2Dfit(fittedR1)
+        a2b = vv.subplot(2,3,5)
+        vis2Dfit(fittedR2)
+        a3b = vv.subplot(2,3,6)
+        vis2Dfit(fittedR1R2)    
+        # cyclic change
+        A_R1 = calculateAreaChange(R1, 'R1')
+        A_R2 = calculateAreaChange(R2, 'R2')
+        A_noHooks = calculateAreaChange(models[0][4],'R1R2struts')
+    else:
+        m_nTop, m_nBot = getTopBottomNodesZring(model,nTop=5,nBot=5)
+        fittednTop = _fit3D(m_nTop)
+        fittednBot = _fit3D(m_nBot)
+        print("------------")
+        f = vv.figure(); vv.clf()
+        f.position = 258.00, 30.00,  1654.00, 1002.00
+        a1 = vv.subplot(221)
+        vis3Dfit(fittednTop)
+        a1b = vv.subplot(222)
+        vis2Dfit(fittednTop)
+        a2 = vv.subplot(223)
+        vis3Dfit(fittednBot)
+        a2b = vv.subplot(224)
+        vis2Dfit(fittednBot)
+        # todo: area and axis ellipse
+        # cyclic change
+#         A_nTop = calculateAreaChange(m_nTop, 'top')
+#         A_nBot = calculateAreaChange(m_nBot, 'bottom')
+        print('here')
+        
+#         f = vv.figure(); vv.clf()
+#         f.position = 968.00, 30.00,  944.00, 1002.00
+#         a = vv.gca()
+#         show_ctvolume(vol[:,vol.shape[1]*0.65:,:], model, showVol=showVol, clim=clim0, isoTh=isoTh, clim3=clim3)
+#         color = 'rgbmcrywgb'
+#         for phasenr in range(10):
+#             model_phase = get_graph_in_phase(R1, phasenr = phasenr)
+#             model_phase.Draw(mc=color[phasenr], lc=color[phasenr])
+#         a.axis.axisColor= 1,1,1
+#         a.bgcolor= 0,0,0
+#         a.daspect= 1, 1, -1  # z-axis flipped
+#         a.axis.visible = True
     
     
+#     # 3D, longitudinal and lateral motion
+#     from stentseg.utils.new_pointset import PointSet
+#     pp3 = PointSet(3)
+#     for n1, n2 in R1.edges():
+#         path = model.edge[n1][n2]['path']
+#         for p in path:
+#             if p not in path: 
+#                 pp3.append(p)
     
-    # 3D, longitudinal and lateral motion
+#     
+#     dmax = 0.0
+#     for i in range()
     
+    
+#     print('Longitudinal motion: %1.1f mm' % zMotion)
+#     print('Motion magnitude: %1.1f mm' % motionMag)
     
     # Angle hook-strut and cyclic change
     
@@ -309,9 +442,3 @@ if __name__ == '__main__':
     # Curvature rings 
 
 
-
-
-
-
-    
-    

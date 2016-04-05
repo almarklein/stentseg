@@ -21,26 +21,31 @@ basedir = select_dir(os.getenv('LSPEAS_BASEDIR', ''),
                      r'F:\LSPEAS_ssdf_BACKUP',r'G:\LSPEAS_ssdf_BACKUP')
 
 # Select dataset to register
-ptcode = 'LSPEAS_002'
+ptcode = 'LSPEAS_005'
 # ptcode = 'QRM_FANTOOM_20160121'
 # ctcode, nr = 'ZA0-70-1.2', 1
-ctcode, nr = 'discharge', 1
+ctcode, nr = '1month', 1
 cropname = 'ring'
 modelname = 'modelavgreg'
 motion = 'amplitude'  # amplitude or sum
-dimension = 'z'
+dimension = 'xyz'
 showVol  = 'MIP'  # MIP or ISO or 2D or None
 clim0  = (0,3000)
 clim2 = (0,1.5)
 clim3 = -550,500
 isoTh = 250
-motionPlay = 5, 0.8  # each x ms, a step of x %
+motionPlay = 5, 0.9  # each x ms, a step of x %
 staticref =  'avg7020'# 'avg7020'
 
 
 # Load deformations (forward for mesh)
 s = loadvol(basedir, ptcode, ctcode, cropname, 'deforms')
-deforms = [s['deform%i'%(i*10)] for i in range(10)]
+# deforms = [s['deform%i'%(i*10)] for i in range(10)]
+deformkeys = []
+for key in dir(s):
+    if key.startswith('deform'):
+        deformkeys.append(key)
+deforms = [s[key] for key in deformkeys]
 deforms = [[field[::2,::2,::2] for field in fields] for fields in deforms]
 
 # These deforms are forward mapping. Turn into DeformationFields.
@@ -66,7 +71,7 @@ except FileNotFoundError:
 vol = s2.vol
 
 
-# Start vis
+## Start vis
 f = vv.figure(nr); vv.clf()
 if nr == 1:
     f.position = 8.00, 30.00,  944.00, 1002.00
@@ -74,7 +79,7 @@ else:
     f.position = 968.00, 30.00,  944.00, 1002.00
 a = vv.gca()
 a.axis.axisColor = 1,1,1
-a.axis.visible = True
+a.axis.visible = False
 a.bgcolor = 0,0,0
 a.daspect = 1, 1, -1
 show_ctvolume(vol, model, showVol=showVol, clim=clim0, isoTh=isoTh, clim3=clim3)

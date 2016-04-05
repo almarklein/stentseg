@@ -8,19 +8,19 @@ from stentseg.utils.datahandling import savecropvols, saveaveraged
 
 
 # Select base directory for LOADING DICOM data
-dicom_basedir = r'D:\LSPEAS\Nellix_dyna\DICOM\Dyna_Nellix_01_POSTOP\4-6-2015\DICOM\0000E1E6\AA3E8896\AA189EB2'
+dicom_basedir = r'D:\LSPEAS\Nellix_chevas\DICOM\chevas_01_12months\10phases'
 
-ptcode = 'DYNA_NELLIX_01' 
-ctcode = 'POSTOP'  # 'pre', 'post_x'
+ptcode = 'chevas_01' 
+ctcode = '12months'  # 'pre', 'post_x', '12months'
 stenttype = 'nellix'      
 
 # Select base directory to SAVE SSDF
-basedir = r'D:\LSPEAS\Nellix_dyna\DYNA_SSDF'
+basedir = r'D:\LSPEAS\Nellix_chevas\CHEVAS_SSDF'
 
 # Set which crops to save
 cropnames = ['prox','stent'] # ['ring'] or ['ring','stent'] or ..
 
-# Step A: read single volumes to get vols:
+## Step A: read single volumes to get vols:
 folder1 = '0000DA00'
 folder2 = '00003E1A'
 vol1 = imageio.volread(os.path.join(dicom_basedir, folder1), 'dicom')
@@ -39,17 +39,29 @@ for vol in vols:
     vol.meta.PatientID = 'anonymous'
     print(vol.meta.SeriesDescription,'-', vol.meta.sampling)
 
+## Step A: read 10 volumes to get vols
 
-# Step B: Crop and Save SSDF
+vols2 = [vol2 for vol2 in imageio.get_reader(dicom_basedir, 'DICOM', 'V')]
+vols = [None] * 10
+for i, vol in enumerate(vols2):
+    print(vol.meta.sampling)
+    phase = int(vol.meta.SeriesDescription[:1])
+    vols[phase] = vol
+for j, vol in enumerate(vols):
+    print(vol.meta.SeriesDescription)
+    assert vol.shape == vols[0].shape
+    assert str(j*10) in vol.meta.SeriesDescription # 0% , 10% etc. 
+
+## Step B: Crop and Save SSDF
 for cropname in cropnames:
     savecropvols(vols, basedir, ptcode, ctcode, cropname, stenttype)
 
 
 ## Visualize result
 
-s1 = loadvol(basedir, ptcode, ctcode, cropnames[0], what ='phases')
+s1 = loadvol(basedir, ptcode, ctcode, cropnames[0], what ='10phases')
 vol1 = s1.vol40
-vol2 = s1.vol78
+vol2 = s1.vol90
 
 # Visualize and compare
 colormap = {'r': [(0.0, 0.0), (0.17727272, 1.0)],

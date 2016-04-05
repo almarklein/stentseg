@@ -18,7 +18,7 @@ cropname = 'prox'
 ## Show 3D movie, by alternating the 10 volumes
 
 # Load volumes
-s = loadvol(basedir, ptcode, ctcode, cropname, 'phases')
+s = loadvol(basedir, ptcode, ctcode, cropname, '10phases')
 vols = []
 for key in dir(s):
     if key.startswith('vol'):
@@ -50,11 +50,11 @@ for vol in vols:
 ## Show 3D movie, by showing one volume that is moved by motion fields
 
 # Load volume
-s = loadvol(basedir, ptcode, ctcode, cropname, 'avgreg')
+s = loadvol(basedir, ptcode, ctcode, cropname, '10avgreg')
 vol = s.vol
 
 # Load deformations (use backward mapping to deform texture 3D volume)
-s = loadvol(basedir, ptcode, ctcode, cropname, 'deforms')
+s = loadvol(basedir, ptcode, ctcode, cropname, '10deforms')
 phases = []
 for key in dir(s):
     if key.startswith('deform'):
