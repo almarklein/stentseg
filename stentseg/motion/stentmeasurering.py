@@ -578,7 +578,7 @@ if __name__ == '__main__':
     
     # Create deformable mesh
     dm = DeformableMesh(a, modelmesh)
-    dm.SetDeforms(*deforms)
+    dm.SetDeforms(*[list(reversed(deform)) for deform in deforms)
     dm.clim = 0, 5
     dm.colormap = vv.CM_JET
     vv.colorbar()

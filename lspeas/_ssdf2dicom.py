@@ -29,12 +29,11 @@ if __name__ == "__main__":
     # Select directory to load dicom
     # the stentseg datahandling module is agnostic about where the DICOM data is
     dicom_basedir = select_dir(r'G:\LSPEAS_data\ECGgatedCT',
-                            r'D:\LSPEAS\LSPEAS_data_BACKUP\ECGgatedCT',
-                            '/home/almar/data/dicom/stent_LPEAS',)    
+                            r'D:\LSPEAS\LSPEAS_data_BACKUP\ECGgatedCT')    
     # Select dataset
-    ptcode = 'FANTOOM_20151202'
-    ctcode = 'Prof0'
-    cropname = 'ring'
+    ptcode = 'LSPEAS_019'
+    ctcode = 'discharge'
+    cropname = 'stent'
     
     if 'FANTOOM' in ptcode:
         dirname = os.path.join(dicom_basedir.replace('ECGgatedCT', ''), ptcode)
