@@ -18,13 +18,14 @@ from stentseg.utils.datahandling import select_dir, loadvol, loadmodel
 basedir = select_dir(r'D:\LSPEAS\Nellix_chevas\CHEVAS_SSDF')
 
 # Select dataset to register
-cropname = 'prox'
+cropname = 'stent'
 ptcode = 'chevas_01'
 ctcode = '12months'
+what = '2phases'
 
 
 # Load volumes
-s = loadvol(basedir, ptcode, ctcode, cropname, 'phases')
+s = loadvol(basedir, ptcode, ctcode, cropname, what)
 vols = []
 phases = []
 for key in dir(s):
@@ -43,7 +44,7 @@ reg.params.speed_factor = 1.0
 reg.params.deform_wise = 'groupwise' # groupwise!
 reg.params.mapping = 'backward'
 reg.params.deform_limit = 1.0
-reg.params.final_scale = 1.0  # We might set this a wee bit lower (but slower!)
+reg.params.final_scale = 1.0  # We might set this a wee bit lower than 1 (but slower!)
 reg.params.scale_sampling = 16
 reg.params.final_grid_sampling = 20
 reg.params.grid_sampling_factor = 0.5 
