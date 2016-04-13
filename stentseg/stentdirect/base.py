@@ -89,6 +89,16 @@ class StentDirect:
             nodes.draw(**kwargs)            
             a.SetLimits()
     
+    def Step0(self, limit):
+        """ normalize volume-- from _soft_limit1()
+        """
+        if limit == 1:
+            data = 1.0 - np.exp(-self._vol)
+            self._vol = data 
+        else:
+            f = np.exp(-self._vol/limit)
+            data = -limit * (f-1) #todo: when self._vol[:] = .. ValueError: assignment destination is read-only
+            self._vol = data 
     
     def Step1(self):
         """ Step1()
