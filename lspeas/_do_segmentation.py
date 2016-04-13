@@ -231,7 +231,6 @@ def on_key(event):
         a3.SetView(view)
         print('----DO NOT FORGET TO SAVE THE MODEL TO DISK; EXECUTE NEXT CELL----')
     elif event.key == vv.KEY_CONTROL:
-        # coord1 = label2worldcoordinates(label) # x,y,z
         coord2 = get_picked_seed(vol, label)
         sd._nodes1.add_node(tuple(coord2))
         a = vv.gca()

@@ -32,9 +32,11 @@ vol = s.vol
 # vol = s.vol40
 # what = 'vol40'
 
-# f = vv.figure(2)
+# f = vv.figure(1)
 # vv.hist(vol, bins = 1000)
-
+t0 = vv.volshow(vol, clim=(0,4000))
+pick3d(vv.gca(), vol)
+vv.gca().daspect = 1,1,-1
 
 ## Initialize segmentation parameters
 stentType = 'nellix'  # 'anacondaRing' runs modified pruning algorithm in Step3
@@ -43,10 +45,10 @@ p = getDefaultParams(stentType)
 p.seed_threshold = [3000]        # step 1 [lower th] or [lower th, higher th]
 p.mcp_speedFactor = 100                 # step 2, costToCtValue; lower less cost for lower HU; higher more cost for lower HU
 p.mcp_maxCoverageFronts = 0.008         # step 2, base.py; replaces mcp_evolutionThreshold
-p.graph_weakThreshold = 3000             # step 3, stentgraph.prune_very_weak
+p.graph_weakThreshold = 50             # step 3, stentgraph.prune_very_weak
 p.graph_expectedNumberOfEdges = 2       # step 3, stentgraph.prune_weak
 p.graph_trimLength =  2                 # step 3, stentgraph.prune_tails
-p.graph_minimumClusterSize = 3         # step 3, stentgraph.prune_clusters
+p.graph_minimumClusterSize = 10         # step 3, stentgraph.prune_clusters
 p.graph_strongThreshold = 20000          # step 3, stentgraph.prune_weak and stentgraph.prune_redundant
 p.graph_angleVector = 5                 # step 3, corner detect
 p.graph_angleTh = 45                    # step 3, corner detect
@@ -54,7 +56,7 @@ p.graph_angleTh = 45                    # step 3, corner detect
 
 ## Perform segmentation
 cleanNodes = True  # True when NOT using GUI with restore option
-guiRemove = True # option to remove nodes/edges but takes longer
+guiRemove = False # option to remove nodes/edges but takes longer
 addSeeds = False # click to add seeds to sd._nodes1
 
 # Instantiate stentdirect segmenter object
@@ -70,7 +72,7 @@ else:
 
 # Perform the three steps of stentDirect
 sd.Step1()
-## Step 2 and 3 separate
+# Step 2 and 3 separate
 sd.Step2()
 try:
     sd.Step3(cleanNodes)
@@ -83,9 +85,9 @@ bm = create_mesh(sd._nodes3, 0.6) # new
 
 
 # Visualize
-fig = vv.figure(1); vv.clf()
+fig = vv.figure(2); vv.clf()
 fig.position = 0.00, 22.00,  1920.00, 1018.00
-clim = (0,2000)
+clim = (0,4000)
 viewringcrop = {'zoom': 0.02823941713096748,
  'roll': 0.0,
  'loc': (171.53854017863708, 156.2089239461612, 45.596671196972125),
@@ -96,6 +98,7 @@ viewringcrop = {'zoom': 0.02823941713096748,
 
 # Show volume and model as graph
 a1 = vv.subplot(131)
+a1.daspect = 1,1,-1
 t = vv.volshow(vol, clim=clim)
 label = pick3d(vv.gca(), vol)
 sd._nodes1.Draw(mc='b', mw = 6)       # draw seeded nodes
@@ -104,6 +107,7 @@ vv.xlabel('x (mm)');vv.ylabel('y (mm)');vv.zlabel('z (mm)')
 
 # Show volume and cleaned up graph
 a2 = vv.subplot(132)
+a2.daspect = 1,1,-1
 t = vv.volshow(vol, clim=clim)
 pick3d(vv.gca(), vol)
 sd._nodes2.Draw(mc='b', lc='g')
@@ -201,6 +205,7 @@ def on_key(event):
     if event.key == vv.KEY_ALT:
         # ALT will FINISH model
         stentgraph.prune_clusters(sd._nodes3, 3) #remove residual nodes/clusters
+        stentgraph.pop_nodes(sd._nodes3)
         stentgraph.add_corner_nodes(sd._nodes3, th=sd._params.graph_angleVector, angTh=sd._params.graph_angleTh)
         # Create mesh and visualize
         view = a3.GetView()
@@ -208,7 +213,7 @@ def on_key(event):
         a3.Clear()
         t = vv.volshow(vol, clim=clim)
         pick3d(vv.gca(), vol)
-        sd._nodes3.Draw(mc='b', mw = 8, lc = 'm', lw = 0.2)
+        sd._nodes3.Draw(mc='b', mw = 8, lc = 'g', lw = 0.2)
         vv.xlabel('x'), vv.ylabel('y'), vv.zlabel('z')
 #         m = vv.mesh(bm)
 #         m.faceColor = 'g'
@@ -216,12 +221,11 @@ def on_key(event):
         a3.SetView(view)
         print('----DO NOT FORGET TO SAVE THE MODEL TO DISK; EXECUTE NEXT CELL----')
     elif event.key == vv.KEY_CONTROL:
-        coord = label2worldcoordinates(label) # x,y,z
-#         sd._nodes1.add_node(tuple(coord))
-        get_picked_seed(vol, label)
+        coord2 = get_picked_seed(vol, label)
+        sd._nodes1.add_node(tuple(coord2))
         a = vv.gca()
         view = a.GetView()
-        point = vv.plot(coord[0], coord[1], coord[2], mc= 'g', ms= '.', mw= 10)
+        point = vv.plot(coord2[0], coord2[1], coord2[2], mc= 'g', ms= '.', mw= 10)
         a.SetView(view)
 
 def get_picked_seed(data, label):
@@ -232,7 +236,7 @@ def get_picked_seed(data, label):
         p *= PointSet( list(reversed(data.sampling)) ) 
     if hasattr(data, 'origin'):
         p += PointSet( list(reversed(data.origin)) )
-    sd._nodes1.add_node(tuple(p.flat))
+    return list(p.flat)
     
 
 selected_nodes = list()

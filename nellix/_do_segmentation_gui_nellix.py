@@ -5,52 +5,21 @@ Saves model at bottom of script.
 When run as script it will overwrite existing ssdf. [now a 1/0 break at line 273 to prevent this]
 """
 
-import os
-
-import numpy as np
-import visvis as vv
-from visvis import ssdf
-
-from stentseg.utils import PointSet, _utils_GUI
-from stentseg.utils.datahandling import select_dir, loadvol, loadmodel
-from stentseg.stentdirect.stentgraph import create_mesh
-from stentseg.stentdirect import StentDirect, getDefaultParams, AnacondaDirect,EndurantDirect
-from stentseg.utils.picker import pick3d
-from stentseg.apps.graph_manualprune import interactiveClusterRemovalGraph
-
-# Select the ssdf basedir
-basedir = select_dir(os.getenv('LSPEAS_BASEDIR', ''),
-                     r'D:\LSPEAS\LSPEAS_ssdf',
-                     r'F:\LSPEAS_ssdf_backup',r'G:\LSPEAS_ssdf_backup')
-
-# Select dataset to register
-ptcode = 'LSPEAS_023'
-ctcode = 'discharge'
-cropname = 'ring'
-what = 'avgreg'
-
-
-# Load volumes
-s = loadvol(basedir, ptcode, ctcode, cropname, what)
-vol = s.vol
-
 
 ## Initialize segmentation parameters
-stentType = 'endurant'  # 'anacondaRing' runs modified pruning algorithm in Step3
+stentType = 'nellix'  # 'anacondaRing' runs modified pruning algorithm in Step3
 
 p = getDefaultParams(stentType)
-p.seed_threshold = 1500                 # step 1
-p.mcp_speedFactor = 170                 # step 2, speed image (delta), costToCtValue
-p.mcp_maxCoverageFronts = 0.004         # step 2, base.py; replaces mcp_evolutionThreshold
-p.graph_weakThreshold = 700             # step 3, stentgraph.prune_very_weak
+p.seed_threshold = [3000]        # step 1 [lower th] or [lower th, higher th]
+p.mcp_speedFactor = 100                 # step 2, costToCtValue; lower less cost for lower HU; higher more cost for lower HU
+p.mcp_maxCoverageFronts = 0.008         # step 2, base.py; replaces mcp_evolutionThreshold
+p.graph_weakThreshold = 3000             # step 3, stentgraph.prune_very_weak
 p.graph_expectedNumberOfEdges = 2       # step 3, stentgraph.prune_weak
 p.graph_trimLength =  2                 # step 3, stentgraph.prune_tails
-p.graph_minimumClusterSize = 20         # step 3, stentgraph.prune_clusters
-p.graph_strongThreshold = 3500          # step 3, stentgraph.prune_weak and stentgraph.prune_redundant
-p.graph_min_strutlength = 6             # step 3, stent_anaconda prune_redundant
-p.graph_max_strutlength = 12            # step 3, stent_anaconda prune_redundant
-p.graph_angleVector = 3                 # step 3, corner detect
-p.graph_angleTh = 20                    # step 3, corner detect
+p.graph_minimumClusterSize = 3         # step 3, stentgraph.prune_clusters
+p.graph_strongThreshold = 20000          # step 3, stentgraph.prune_weak and stentgraph.prune_redundant
+p.graph_angleVector = 5                 # step 3, corner detect
+p.graph_angleTh = 45                    # step 3, corner detect
 
 
 ## Perform segmentation
