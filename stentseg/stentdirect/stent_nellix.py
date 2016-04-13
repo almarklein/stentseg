@@ -53,19 +53,6 @@ class NellixDirect(StentDirect):
             p_as_tuple = tuple(p.flat) # todo: perhaps seed detector should just yield list of tuples.
             nodes.add_node(p_as_tuple)
         
-#         seedlist = []
-#         for p in pp:
-#             p_as_tuple = tuple(p.flat) # todo: perhaps seed detector should just yield list of tuples.
-#             seedlist.append(p_as_tuple)
-        
-#         # todo: test sampling by order in z; and try cluster dectect scipy.cluster
-#         # Sample nodes
-#         s = sorted(seedlist, key=lambda x: x[2]) # order z
-#         ss = s[::self._params.seedSampleRate]
-#         nodes = stentgraph.StentGraph()
-#         for node in ss:
-#             nodes.add_node(node)
-        
         t1 = time.time()
         if self._verbose:
             print()

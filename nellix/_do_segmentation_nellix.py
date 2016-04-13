@@ -52,7 +52,6 @@ p.graph_minimumClusterSize = 10         # step 3, stentgraph.prune_clusters
 p.graph_strongThreshold = 20000          # step 3, stentgraph.prune_weak and stentgraph.prune_redundant
 p.graph_angleVector = 5                 # step 3, corner detect
 p.graph_angleTh = 45                    # step 3, corner detect
-# p.seedSampleRate = 7                  # step 1, nellix
 
 ## Perform segmentation
 cleanNodes = True  # True when NOT using GUI with restore option

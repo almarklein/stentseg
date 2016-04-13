@@ -106,7 +106,6 @@ def getDefaultParams(stentType=''):
         params.graph_expectedNumberOfEdges = 2
     elif stentType == 'nellix':
         params.graph_expectedNumberOfEdges = 2
-        params.seedSampleRate = 5
     elif stentType:
         raise ValueError('Unknown stent type %s' % stentType)
 
