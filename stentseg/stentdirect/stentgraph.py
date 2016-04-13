@@ -124,8 +124,8 @@ def check_path_integrity(graph):
         path = graph.edge[n1][n2]['path']
         if n1 > n2:
             n1, n2 = n2, n1
-        assert np.isclose(path[0], n1).all()
-        assert np.isclose(path[-1], n2).all()
+        assert np.isclose(path[0], n1, 0, 1).all()
+        assert np.isclose(path[-1], n2, 0, 1).all()
     
 
 def prune_very_weak(graph, ctvalue):
@@ -524,10 +524,10 @@ def _add_corner_to_edge(graph, n1, n2, **kwargs):
     I = _detect_corners(path, **kwargs)
     
     # Ensure n1 < n2
-    if not np.isclose(path[0], n1).all():
+    if not np.isclose(path[0], n1, 0, 0.5).all():
         n1, n2 = n2, n1
-    assert np.isclose(path[0], n1).all()
-    assert np.isclose(path[-1], n2).all()
+    assert np.isclose(path[0], n1, 0, 0.5).all()
+    assert np.isclose(path[-1], n2, 0, 0.5).all()
     
     
     if I:
