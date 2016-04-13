@@ -30,20 +30,12 @@ what = 'avgreg' # avgreg
 # Load volumes
 s = loadvol(basedir, ptcode, ctcode, cropname, what)
 vol = s.vol
-# vol = s.vol40
-# what = 'vol40'
 
-# f = vv.figure(2)
+# f = vv.figure(1)
 # vv.hist(vol, bins = 1000)
-
-# from sklearn import preprocessing
-# vol_normalized = vol.astype(np.float64).copy()
-# min_max_scaler = preprocessing.MinMaxScaler(feature_range=(0, 3000))
-# for slice in vol_normalized:
-#     slice = min_max_scaler.fit_transform(slice)
-# 
-# f2 = vv.figure(3)
-# vv.hist(vol_normalized, bins = 1000)
+t0 = vv.volshow(vol, clim=(0,2500))
+pick3d(vv.gca(), vol)
+vv.gca().daspect = 1,1,-1
 
 ## Initialize segmentation parameters
 stentType = 'anacondaRing'  # 'anacondaRing' runs modified pruning algorithm in Step3
@@ -79,20 +71,15 @@ elif stentType == 'nellix':
 else:
         sd = StentDirect(vol, p) 
 
-# Normalize vol to certain limit
-sd.Step0(3000)
-t0 = vv.volshow(sd._vol, clim=(0,1500))
-pick3d(vv.gca(), sd._vol)
-vv.gca().daspect = 1,1,-1
+# # Normalize vol to certain limit
+# sd.Step0(3000)
+# t0 = vv.volshow(sd._vol, clim=(0,1500))
+# pick3d(vv.gca(), sd._vol)
+# vv.gca().daspect = 1,1,-1
 
 # Perform the three steps of stentDirect
 sd.Step1()
-sd._nodes1.remove_node(sd._nodes1.nodes()[0])
-sd._nodes1.remove_node(sd._nodes1.nodes()[0])
-sd._nodes1.add_node((113.518, 98.326004, 67.0))
-sd._nodes1.add_node((113.518, 97.481995, 66.0))
 #todo: depending on the speedFactor fronts do not propagate from manually added seeds. how does mcp work exactly? can we prioritize manually added seeds?
-
 ## Step 2 and 3 separate
 sd.Step2()
 try:
@@ -108,7 +95,7 @@ bm = create_mesh(sd._nodes3, 0.6) # new
 
 
 # Visualize
-fig = vv.figure(1); vv.clf()
+fig = vv.figure(2); vv.clf()
 fig.position = 0.00, 22.00,  1920.00, 1018.00
 clim = (0,2000)
 viewringcrop = {'zoom': 0.02823941713096748,

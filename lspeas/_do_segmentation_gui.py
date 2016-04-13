@@ -1,7 +1,8 @@
 """ Script to do the segmentation and store the result.
 A Graphical User Interface allows to restore and remove edges
 
-Do not run file but execute cells (overwrites!)
+Saves model at bottom of script.
+When run as script it will overwrite existing ssdf. [now a 1/0 break at line 273 to prevent this]
 """
 
 import os
@@ -28,11 +29,13 @@ ctcode = 'discharge'
 cropname = 'ring'
 what = 'avgreg'
 
-
 # Load volumes
 s = loadvol(basedir, ptcode, ctcode, cropname, what)
 vol = s.vol
 
+t0 = vv.volshow(vol, clim=(0,2500))
+pick3d(vv.gca(), vol)
+vv.gca().daspect = 1,1,-1
 
 ## Initialize segmentation parameters
 stentType = 'endurant'  # 'anacondaRing' runs modified pruning algorithm in Step3
