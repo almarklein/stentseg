@@ -79,6 +79,12 @@ elif stentType == 'nellix':
 else:
         sd = StentDirect(vol, p) 
 
+# Normalize vol to certain limit
+sd.Step0(3000)
+t0 = vv.volshow(sd._vol, clim=(0,1500))
+pick3d(vv.gca(), sd._vol)
+vv.gca().daspect = 1,1,-1
+
 # Perform the three steps of stentDirect
 sd.Step1()
 sd._nodes1.remove_node(sd._nodes1.nodes()[0])
