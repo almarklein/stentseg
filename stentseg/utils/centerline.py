@@ -12,6 +12,15 @@ import visvis as vv
 from stentseg.utils import PointSet
 
 
+def points_from_nodes_in_graph(graph):
+    """
+    """
+    # Create set of tuples to remove duplicates
+    pp = set(tuple(p) for p in graph.nodes())
+    # Turn into a pointset
+    return PointSet(np.array(list(pp)))
+
+
 def points_from_mesh(mesh):
     """ Create a point cloud (represented as a PointSet) from a visvis mesh
     object, or from a filename pointing to a .stl or .obj file.
