@@ -72,7 +72,7 @@ s2.croprange = s.croprange
 # Obtain deform fields
 for i in range(N):
     fields = [field for field in reg.get_deform(i).as_backward()]
-    phase = phases[i][-2:]
+    phase = phases[i][3:]
     s2['deform%s'%phase] = fields
 s2.sampling = s2['deform%s'%phase][0].sampling  # Sampling of deform is different!
 # s2.origin = s2.deform0[0].origin  # But origin is zero
