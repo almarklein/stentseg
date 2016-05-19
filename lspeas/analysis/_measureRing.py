@@ -140,14 +140,12 @@ def _fit3D(model):
     from stentseg.utils.new_pointset import PointSet
     pp3 = PointSet(3)
     l, l2 = 0, 0
-    # todo: get edge point and nodes separate: endurant no edges when split
     for n in model.nodes():
         pp3.append(n)
     for n1, n2 in model.edges():
         path = model.edge[n1][n2]['path'][1:-1] # do not include nodes to prevent duplicates
         for p in path:
-            if p not in pp3: # redundant?
-                pp3.append(p)
+            pp3.append(p)
     plane = fitting.fit_plane(pp3) # todo: plane niet intuitief door saddle ring; maakt aantal punten uit?? toch loodrecht op centerline stent?
     pp3_2 = fitting.project_to_plane(pp3, plane)
 #     c3 = fitting.fit_circle(pp3_2)
@@ -255,7 +253,7 @@ def calculateAreaChange(model, mname):
     return areaMax, areaMin, areaChangemm, areaChangepr
 
 def getTopBottomNodesZring(model,nTop=5,nBot=5):
-    """Get top and bottom nodes in endurant proximal ring
+    """Get top and bottom nodes in endurant proximal ring, based on z
     return graphs
     """
     nSorted = np.asarray(sorted(model.nodes(), key=lambda x: x[2])) # sort by z ascending
