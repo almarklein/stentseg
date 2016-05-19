@@ -192,7 +192,6 @@ def on_key(event):
             selected_nodes.clear()
     if event.key == vv.KEY_CONTROL:
         # clean nodes
-        #todo: problem with pop for endurant: solved pop before corner detect and adapted cluster removal
         if stentType == 'anacondaRing':
             stentgraph.add_nodes_at_crossings(sd._nodes3)
 #             prune_redundant(sd._nodes3, sd._params.graph_strongThreshold,
