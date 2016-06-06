@@ -14,6 +14,7 @@ from stentseg.stentdirect.stentgraph import create_mesh
 from visvis.processing import lineToMesh, combineMeshes
 from visvis import ssdf
 from stentseg.utils.picker import pick3d, label2worldcoordinates
+from stentseg.stentdirect import stentpoints3d, StentDirect, getDefaultParams
 
 # Select the ssdf basedir
 basedir = select_dir(os.getenv('LSPEAS_BASEDIR', ''),
@@ -25,22 +26,27 @@ exceldir = select_dir(r'C:\Users\Maaike\Desktop',
             r'D:\Profiles\koenradesma\Desktop')
 
 # Select dataset to register
-ptcode = 'QRM_FANTOOM_20160121'
-ctcode = 'ZA3-75-1.2'
+ptcode = 'LSPEAS_002'
+ctcode = '1month'
 cropname = 'ring'
 what = 'avgreg'
+
 
 # Load static CT image to add as reference
 s = loadvol(basedir, ptcode, ctcode, cropname, what)
 vol = s.vol
 
+# params for ssdf saving
+stentType = 'manual'
+p = 'manualSeedsMip'
+what += '_manual'
 
 # Visualize and activate picker
 fig = vv.figure(1); vv.clf()
 fig.position = 8.00, 30.00,  944.00, 1002.00
 a = vv.gca()
 a.axis.axisColor = 1,1,1
-a.axis.visible = True
+a.axis.visible = False
 a.bgcolor = 0,0,0
 a.daspect = 1, 1, -1
 lim = 2000
@@ -49,21 +55,59 @@ label = pick3d(vv.gca(), vol)
 vv.xlabel('x (mm)');vv.ylabel('y (mm)');vv.zlabel('z (mm)')
 vv.title('CT Volume for LSPEAS %s  -  %s' % (ptcode[7:], ctcode))
 
-storeOutput = list()
+# pp2 = stentpoints3d.get_subpixel_positions(self._vol, np.array(pp1))
+# M = {}
+# for i in range(pp2.shape[0]):
+#     M[pp1[i]] = tuple(pp2[i].flat)
+
+# instantiate stentdirect segmenter object
+sd = StentDirect(vol, getDefaultParams() )
+# initialize
+sd._nodes1 = stentgraph.StentGraph()
+nr = 0
 def on_key(event): 
+    if event.key == vv.KEY_CONTROL:
+        global nr
+        coordinates = np.asarray(label2worldcoordinates(label), dtype=np.float32) # x,y,z
+        n2 = tuple(coordinates.flat)
+        sd._nodes1.add_node(n2, number=nr)
+        print(nr)
+        if nr > 0:
+            for n in list(sd._nodes1.nodes()):
+                if sd._nodes1.node[n]['number']== nr-1:
+                    path = [n2,n]
+                    # node2 = PointSet(np.column_stack(n2))
+                    # node = PointSet(np.column_stack(n))
+                    sd._nodes1.add_edge(n2, n, path = PointSet(np.row_stack(path)) )
+        sd._nodes1.Draw(mc='r', mw = 10, lc='y')
+        nr += 1
     if event.key == vv.KEY_ENTER:
-        coordinates = label2coordinates(label)
-        storeOutput.append(coordinates)
+        sd._graphrefined = sd._RefinePositions(sd._nodes1)
+        sd._graphrefined.Draw(mc='b', mw = 10, lc='g') 
+        # vv.plot(pp1[2,:], pp1[1,:], pp1[0,:], mc= 'g', ms= '.', mw= 10)
     if event.key == vv.KEY_ESCAPE:
         # Store to EXCEL
-        storeCoordinatesToExcel(storeOutput,exceldir)
-        print('stored to excel {}.'.format(exceldir) )
+        pp1 = []
+        try:
+            pp1 = sd._graphrefined.nodes()
+            pp1.sort(key=lambda x: sd._graphrefined.node[x]['number']) # sort nodes by click number
+            # pp1 = sd._graphrefined.nodes()
+            print('*** refined manual picked were stored ***')
+        except AttributeError:
+            pp1 = sd._nodes1.nodes()
+            pp1.sort(key=lambda x: sd._nodes1.node[x]['number']) # sort nodes by click number
+            print('*** manual picked were stored ***')
+        pp1 = np.asarray(pp1)
+        storeCoordinatesToExcel(pp1,exceldir)
+        print('---stored to excel {} ---'.format(exceldir) )
+        print('---model can be stored as ssdf in do_segmentation---')
 
 
 import xlsxwriter
-def storeCoordinatesToExcel(coordinates, exceldir):
+def storeCoordinatesToExcel(pp1, exceldir):
     """Create file and add a worksheet or overwrite existing
-    mind that floats can not be stored with write_row
+    mind that floats can not be stored with write_row.
+    Input = pp1, sorted array of picked points (coordinates)
     """
     # https://pypi.python.org/pypi/XlsxWriter
     workbook = xlsxwriter.Workbook(os.path.join(exceldir,'storeOutputTemplate.xlsx'))
@@ -76,18 +120,23 @@ def storeCoordinatesToExcel(coordinates, exceldir):
     worksheet.write('A1', 'Point coordinates', bold)
     analysisID = '%s_%s_%s' % (ptcode, ctcode, cropname)
     worksheet.write('B3', analysisID, bold)
-    # write 'storeOutput'
+    # write 'picked coordinates'
     rowoffset = 4
-    for i, Output in enumerate(storeOutput):
-        rowstart = rowoffset # startrow for this Output
+    try:
+        graph = sd._graphrefined
+    except AttributeError:
+        graph = sd._nodes1
+    for i, Output in enumerate(pp1):
         worksheet.write_row(rowoffset, 1, Output) # row, columnm, point
+        worksheet.write_number(rowoffset, 0, graph.node[tuple(Output)]['number'])
         rowoffset += 1
-        if (rowoffset % 2 == 0): # odd
-            rowoffset += 4 # add rowspace for next points
+        # if (rowoffset % 2 == 0): # odd
+        #     rowoffset += 4 # add rowspace for next points
 
-    # Store screenshot of stent
+    # Store screenshot
     #vv.screenshot(r'C:\Users\Maaike\Desktop\storeScreenshot.png', vv.gcf(), sf=2)
     workbook.close()
 
 # Bind event handlers
 fig.eventKeyDown.Bind(on_key)
+
