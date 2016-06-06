@@ -5,16 +5,13 @@ is returned
 
 import os
 import visvis as vv
-from stentseg.utils.datahandling import select_dir, loadvol, loadmodel
+from stentseg.utils.datahandling import select_dir, loadvol
 import numpy as np
 from stentseg.utils import PointSet
 from stentseg.stentdirect import stentgraph
-from visvis import Pointset # for meshes
-from stentseg.stentdirect.stentgraph import create_mesh
-from visvis.processing import lineToMesh, combineMeshes
 from visvis import ssdf
 from stentseg.utils.picker import pick3d, label2worldcoordinates
-from stentseg.stentdirect import stentpoints3d, StentDirect, getDefaultParams
+from stentseg.stentdirect import StentDirect, getDefaultParams
 
 # Select the ssdf basedir
 basedir = select_dir(os.getenv('LSPEAS_BASEDIR', ''),
@@ -55,10 +52,6 @@ label = pick3d(vv.gca(), vol)
 vv.xlabel('x (mm)');vv.ylabel('y (mm)');vv.zlabel('z (mm)')
 vv.title('CT Volume for LSPEAS %s  -  %s' % (ptcode[7:], ctcode))
 
-# pp2 = stentpoints3d.get_subpixel_positions(self._vol, np.array(pp1))
-# M = {}
-# for i in range(pp2.shape[0]):
-#     M[pp1[i]] = tuple(pp2[i].flat)
 
 # instantiate stentdirect segmenter object
 sd = StentDirect(vol, getDefaultParams() )
@@ -76,15 +69,12 @@ def on_key(event):
             for n in list(sd._nodes1.nodes()):
                 if sd._nodes1.node[n]['number']== nr-1:
                     path = [n2,n]
-                    # node2 = PointSet(np.column_stack(n2))
-                    # node = PointSet(np.column_stack(n))
                     sd._nodes1.add_edge(n2, n, path = PointSet(np.row_stack(path)) )
         sd._nodes1.Draw(mc='r', mw = 10, lc='y')
         nr += 1
     if event.key == vv.KEY_ENTER:
         sd._graphrefined = sd._RefinePositions(sd._nodes1)
         sd._graphrefined.Draw(mc='b', mw = 10, lc='g') 
-        # vv.plot(pp1[2,:], pp1[1,:], pp1[0,:], mc= 'g', ms= '.', mw= 10)
     if event.key == vv.KEY_ESCAPE:
         # Store to EXCEL
         pp1 = []
