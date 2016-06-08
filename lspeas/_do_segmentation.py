@@ -22,8 +22,8 @@ basedir = select_dir(os.getenv('LSPEAS_BASEDIR', ''),
                      r'F:\LSPEAS_ssdf_backup',r'G:\LSPEAS_ssdf_backup')
 
 # Select dataset to register
-ptcode = 'LSPEAS_001'
-ctcode = '12months'
+ptcode = 'LSPEAS_015'
+ctcode = 'discharge'
 cropname = 'ring'
 what = 'avgreg' # avgreg
 
@@ -33,6 +33,7 @@ vol = s.vol
 
 # f = vv.figure(1)
 # vv.hist(vol, bins = 1000)
+# vv.surf(vol[:,:,150])
 t0 = vv.volshow(vol, clim=(0,2500))
 pick3d(vv.gca(), vol)
 vv.gca().daspect = 1,1,-1
@@ -41,24 +42,24 @@ vv.gca().daspect = 1,1,-1
 stentType = 'anacondaRing'  # 'anacondaRing' runs modified pruning algorithm in Step3
 
 p = getDefaultParams(stentType)
-p.seed_threshold = [1000,6000]        # step 1 [lower th] or [lower th, higher th]
-p.mcp_speedFactor = 190                 # step 2, costToCtValue; lower-> longer paths -- higher-> short paths
-p.mcp_maxCoverageFronts = 0.004         # step 2, base.py; replaces mcp_evolutionThreshold
-p.graph_weakThreshold = 100             # step 3, stentgraph.prune_very_weak
+p.seed_threshold = [1000,3500]        # step 1 [lower th] or [lower th, higher th]
+p.mcp_speedFactor = 50                 # step 2, costToCtValue; lower-> longer paths -- higher-> short paths
+p.mcp_maxCoverageFronts = 0.03         # step 2, base.py; replaces mcp_evolutionThreshold
+p.graph_weakThreshold = 500             # step 3, stentgraph.prune_very_weak
 p.graph_expectedNumberOfEdges = 3       # step 3, stentgraph.prune_weak
 p.graph_trimLength =  0                 # step 3, stentgraph.prune_tails
-p.graph_minimumClusterSize = 10         # step 3, stentgraph.prune_clusters
-p.graph_strongThreshold = 3500          # step 3, stentgraph.prune_weak and stentgraph.prune_redundant
-p.graph_min_strutlength = 6             # step 3, stent_anaconda prune_redundant
-p.graph_max_strutlength = 12            # step 3, stent_anaconda prune_redundant
+p.graph_minimumClusterSize = 5         # step 3, stentgraph.prune_clusters
+p.graph_strongThreshold = 1000          # step 3, stentgraph.prune_weak and stentgraph.prune_redundant
+p.graph_min_strutlength = 5             # step 3, stent_anaconda prune_redundant
+p.graph_max_strutlength = 13            # step 3, stent_anaconda prune_redundant
 p.graph_angleVector = 5                 # step 3, corner detect
-p.graph_angleTh = 45                    # step 3, corner detect
-# p.seedSampleRate = 7                  # step 1, nellix
+p.graph_angleTh = 35                    # step 3, corner detect
 
 ## Perform segmentation
 cleanNodes = True  # True when NOT using GUI with restore option
-guiRemove = True # option to remove nodes/edges but takes longer
+guiRemove = False # option to remove nodes/edges but takes longer
 addSeeds = True # click to add seeds to sd._nodes1
+#todo: depending on the speedFactor fronts do not propagate from manually added seeds. how does mcp work exactly? can we prioritize manually added seeds?
 
 # Instantiate stentdirect segmenter object
 if stentType == 'anacondaRing':
@@ -71,6 +72,7 @@ elif stentType == 'nellix':
 else:
         sd = StentDirect(vol, p) 
 
+#todo: compare different datasets. can we apply one range of params when we normalize?
 # # Normalize vol to certain limit
 # sd.Step0(3000)
 # t0 = vv.volshow(sd._vol, clim=(0,1500))
@@ -79,8 +81,7 @@ else:
 
 # Perform the three steps of stentDirect
 sd.Step1()
-#todo: depending on the speedFactor fronts do not propagate from manually added seeds. how does mcp work exactly? can we prioritize manually added seeds?
-## Step 2 and 3 separate
+##
 sd.Step2()
 try:
     sd.Step3(cleanNodes)
@@ -94,7 +95,7 @@ except AssertionError:
 bm = create_mesh(sd._nodes3, 0.6) # new
 
 
-# Visualize
+## Visualize
 fig = vv.figure(2); vv.clf()
 fig.position = 0.00, 22.00,  1920.00, 1018.00
 clim = (0,2000)
@@ -111,7 +112,7 @@ a1 = vv.subplot(131)
 a1.daspect = 1,1,-1
 t = vv.volshow(vol, clim=clim)
 label = pick3d(vv.gca(), vol)
-sd._nodes1.Draw(mc='b', mw = 6)       # draw seeded nodes
+sd._nodes1.Draw(mc='b', mw = 7)       # draw seeded nodes
 # sd._nodes2.Draw(mc='b', lc = 'g')    # draw seeded and MCP connected nodes
 vv.xlabel('x (mm)');vv.ylabel('y (mm)');vv.zlabel('z (mm)')
 
@@ -165,7 +166,7 @@ t3.visible = False
 def on_key(event):
     """KEY commands for user interaction
     UP/DOWN = show/hide nodes
-    DELETE  = remove edge [select 2 nodes] or pop node [select 1 node]
+    DELETE  = remove edge [select 2 nodes] or pop node [select 1 node] or remove part of graph [pick a point]
     ALT     = SHOW RESULT: remove residual clusters, refine, smooth
     CTRL    = add selected point (SHIFT+Rclick) as seed in sd._nodes1')
     """
@@ -181,8 +182,13 @@ def on_key(event):
         for node_point in node_points:
             node_point.visible = True
     if event.key == vv.KEY_DELETE:
-        # remove edge
+        if len(selected_nodes) == 0:
+            # remove false seeds in spine using the point selected
+            _utils_GUI.remove_nodes_by_selected_point(sd._nodes3, vol, a3, 133, label, clim)
+            _utils_GUI.remove_nodes_by_selected_point(sd._nodes2, vol, a2, 132, label, clim)
+            _utils_GUI.remove_nodes_by_selected_point(sd._nodes1, vol, a1, 131, label, clim)
         if len(selected_nodes) == 2:
+            # remove edge
             select1 = selected_nodes[0].node
             select2 = selected_nodes[1].node
             c = sd._nodes3.edge[select1][select2]['cost']
@@ -233,10 +239,9 @@ def on_key(event):
     elif event.key == vv.KEY_CONTROL:
         coord2 = get_picked_seed(vol, label)
         sd._nodes1.add_node(tuple(coord2))
-        a = vv.gca()
-        view = a.GetView()
-        point = vv.plot(coord2[0], coord2[1], coord2[2], mc= 'g', ms= '.', mw= 10)
-        a.SetView(view)
+        view = a1.GetView()
+        point = vv.plot(coord2[0], coord2[1], coord2[2], mc= 'g', ms = 's', mw= 12)
+        a1.SetView(view)
 
 def get_picked_seed(data, label):
     coord = label2volindices(label) # [x,y,z]
@@ -269,16 +274,17 @@ if guiRemove==True:
             node_point.eventDoubleClick.Bind(select_node)
         print('')
         print('UP/DOWN = show/hide nodes')
-        print('DELETE  = remove edge [select 2 ndoes] or pop node [select 1 node]')
+        print('DELETE  = remove edge [select 2 ndoes] or pop node [select 1 node] or remove part of graph [pick a point]')
         print('ALT  = SHOW RESULT: remove residual clusters, mesh')
         print('CTRL = add selected point (SHIFT+Rclick) as seed')
         print('')
         
 elif addSeeds==True:
-    # Bind event handlers
+    # Bind event handlers but do not make node_points
     fig.eventKeyDown.Bind(on_key)
     print('')
     print('CTRL = add selected point (SHIFT+Rclick) as seed')
+    print('DELETE = remove part of graph in spine (separation by y of selected point)')
     print('')
     
 # a1.SetView(viewringcrop)

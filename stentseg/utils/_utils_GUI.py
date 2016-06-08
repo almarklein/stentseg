@@ -1,9 +1,31 @@
-""" Functionality for analysis GUI model
-
+""" Functionality for segmentation and graph modeling using GUI
 
 """
 
 import visvis as vv
+import numpy as np
+
+def remove_nodes_by_selected_point(graph, vol, a, pos, label, clim, dim=1):
+    """ removes nodes and edges in graph. Graph is separated by coord of selected point
+    use y (dim=1) to remove graph in spine
+    Input : graph, axis, label of selected point, position for subplot, 
+            dimension how to separate graph
+    Output: sd._nodes1,2,3  are modified and visualized in current view
+    """
+    from stentseg.utils.picker import pick3d, label2worldcoordinates
+    
+    coord1 = np.asarray(label2worldcoordinates(label), dtype=np.float32) # x,y,z
+    seeds = np.asarray(sorted(graph.nodes(), key=lambda x: x[dim])) # sort y
+    falseindices = np.where(seeds[:,1]>coord1[1]) # indices with values higher than coord y
+    falseseeds = seeds[min(falseindices[0]):]
+    graph.remove_nodes_from(tuple(map(tuple, falseseeds)) ) # use map to convert to tuples
+    view = a.GetView()
+    a.Clear()
+    a = vv.subplot(pos)
+    t = vv.volshow(vol, clim=clim)
+    pick3d(a, vol)
+    graph.Draw(mc='b', mw = 7, lc = 'g')
+    a.SetView(view)
 
 def get_edge_attributes(model, n1, n2):
     """
