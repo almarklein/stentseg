@@ -1,74 +1,12 @@
-""" Script to do the segmentation and store the result.
+""" Script to proceed segmentation with user interaction
 A Graphical User Interface allows to restore and remove edges
-
-Saves model at bottom of script.
-When run as script it will overwrite existing ssdf. [now a 1/0 break at line 273 to prevent this]
+Store graph in _save_segmentation
 """
 
-import os
 
-import numpy as np
-import visvis as vv
-from visvis import ssdf
-
-from stentseg.utils import PointSet, _utils_GUI
-from stentseg.utils.datahandling import select_dir, loadvol, loadmodel
-from stentseg.stentdirect.stentgraph import create_mesh
-from stentseg.stentdirect import StentDirect, getDefaultParams, AnacondaDirect,EndurantDirect
-from stentseg.utils.picker import pick3d
-from stentseg.apps.graph_manualprune import interactiveClusterRemovalGraph
-
-# Select the ssdf basedir
-basedir = select_dir(os.getenv('LSPEAS_BASEDIR', ''),
-                     r'D:\LSPEAS\LSPEAS_ssdf',
-                     r'F:\LSPEAS_ssdf_backup',r'G:\LSPEAS_ssdf_backup')
-
-# Select dataset to register
-ptcode = 'LSPEAS_023'
-ctcode = 'discharge'
-cropname = 'ring'
-what = 'avgreg'
-
-# Load volumes
-s = loadvol(basedir, ptcode, ctcode, cropname, what)
-vol = s.vol
-
-t0 = vv.volshow(vol, clim=(0,2500))
-pick3d(vv.gca(), vol)
-vv.gca().daspect = 1,1,-1
-
-## Initialize segmentation parameters
-stentType = 'endurant'  # 'anacondaRing' runs modified pruning algorithm in Step3
-
-p = getDefaultParams(stentType)
-p.seed_threshold = 1500                 # step 1
-p.mcp_speedFactor = 170                 # step 2, speed image (delta), costToCtValue
-p.mcp_maxCoverageFronts = 0.004         # step 2, base.py; replaces mcp_evolutionThreshold
-p.graph_weakThreshold = 700             # step 3, stentgraph.prune_very_weak
-p.graph_expectedNumberOfEdges = 2       # step 3, stentgraph.prune_weak
-p.graph_trimLength =  2                 # step 3, stentgraph.prune_tails
-p.graph_minimumClusterSize = 20         # step 3, stentgraph.prune_clusters
-p.graph_strongThreshold = 3500          # step 3, stentgraph.prune_weak and stentgraph.prune_redundant
-p.graph_min_strutlength = 6             # step 3, stent_anaconda prune_redundant
-p.graph_max_strutlength = 12            # step 3, stent_anaconda prune_redundant
-p.graph_angleVector = 3                 # step 3, corner detect
-p.graph_angleTh = 20                    # step 3, corner detect
-
-
-## Perform segmentation
+## Rerun step 3 without removing nodes
 cleanNodes = False  # False when using GUI with restore: clean nodes and smooth after correct/restore
 
-if stentType == 'anacondaRing':
-        sd = AnacondaDirect(vol, p) # inherit _Step3_iter from AnacondaDirect class
-        #runtime warning using anacondadirect due to mesh creation, ignore
-elif stentType == 'endurant':
-        sd = EndurantDirect(vol, p)
-else:
-        sd = StentDirect(vol, p)
-
-# Perform the three steps of stentDirect
-sd.Step1()
-sd.Step2()
 sd.Step3(cleanNodes)
 
 
@@ -94,7 +32,7 @@ vv.xlabel('x (mm)');vv.ylabel('y (mm)');vv.zlabel('z (mm)')
 a3 = vv.subplot(122)
 a3.daspect = 1,1,-1
 t = vv.volshow(vol, clim=clim)
-pick3d(vv.gca(), vol)
+label=pick3d(vv.gca(), vol)
 sd._nodes3.Draw(mc='b', lc = 'b')
 vv.xlabel('x (mm)');vv.ylabel('y (mm)');vv.zlabel('z (mm)')
 
@@ -273,61 +211,3 @@ a3.axis.visible = switch
 switch = False
 a2.axis.visible = switch
 a3.axis.visible = switch
-
-## Prevent save when 'run as script'
-print('Model not yet saved to disk, run next cells')
-1/0
-
-## Store segmentation to disk
-
-# Get graph model
-model = sd._nodes3
-
-# Build struct
-s2 = vv.ssdf.new()
-# We do not need croprange, but keep for reference
-s2.sampling = s.sampling
-s2.origin = s.origin
-s2.stenttype = s.stenttype
-s2.croprange = s.croprange
-for key in dir(s):
-        if key.startswith('meta'):
-            suffix = key[4:]
-            s2['meta'+suffix] = s['meta'+suffix]
-s2.what = what
-s2.params = p
-s2.stentType = stentType
-# Store model
-s2.model = model.pack()
-#s2.mesh = ssdf.new()
-
-# Save
-filename = '%s_%s_%s_%s.ssdf' % (ptcode, ctcode, cropname, 'model'+what)
-ssdf.save(os.path.join(basedir, ptcode, filename), s2)
-print('saved to disk as {}.'.format(filename) )
-
-## Make model dynamic (and store/overwrite to disk)
-
-import pirt
-from stentseg.motion.dynamic import incorporate_motion_nodes, incorporate_motion_edges  
-
-# Load deforms
-s = loadvol(basedir, ptcode, ctcode, cropname, 'deforms')
-deforms = [s['deform%i'%(i*10)] for i in range(10)]
-deforms = [pirt.DeformationFieldBackward(*fields) for fields in deforms]
-paramsreg = s.params
-
-# Load model
-s = loadmodel(basedir, ptcode, ctcode, cropname, 'model'+what)
-model = s.model
-
-# Combine ...
-incorporate_motion_nodes(model, deforms, s.origin)
-incorporate_motion_edges(model, deforms, s.origin)
-
-# Save back
-filename = '%s_%s_%s_%s.ssdf' % (ptcode, ctcode, cropname, 'model'+what)
-s.model = model.pack()
-s.paramsreg = paramsreg
-ssdf.save(os.path.join(basedir, ptcode, filename), s)
-print('saved to disk as {}.'.format(filename) )
