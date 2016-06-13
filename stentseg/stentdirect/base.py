@@ -231,7 +231,6 @@ class StentDirect:
             self._Step3_iter(nodes, cleanNodes)
         
         if cleanNodes == True:
-#             stentgraph.add_nodes_at_crossings(nodes) # only when needed? e.g. not with endurant, yes for anaconda
             stentgraph.pop_nodes(nodes) # pop before corner detect or angles can not be found
             stentgraph.add_corner_nodes(nodes, th=params.graph_angleVector, angTh=params.graph_angleTh)
             stentgraph.pop_nodes(nodes)  # because removing edges/add nodes can create degree 2 nodes
