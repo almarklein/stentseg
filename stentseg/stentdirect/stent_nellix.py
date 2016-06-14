@@ -1,4 +1,4 @@
-# 2014-2016 Maaike Koenrades
+# 2015-2016 Maaike Koenrades
 """
 Implementation of StentDirect algorithm for the Endurant stent graft
 

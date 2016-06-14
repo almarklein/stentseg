@@ -1,42 +1,12 @@
-""" Script to do the segmentation and store the result.
+""" Script to proceed segmentation with user interaction
 A Graphical User Interface allows to restore and remove edges
-
-Saves model at bottom of script.
-When run as script it will overwrite existing ssdf. [now a 1/0 break at line 273 to prevent this]
+Store graph in _save_segmentation
 """
 
 
-## Initialize segmentation parameters
-stentType = 'nellix'  # 'anacondaRing' runs modified pruning algorithm in Step3
+## Rerun step 3 without removing nodes
 
-p = getDefaultParams(stentType)
-p.seed_threshold = [3000]        # step 1 [lower th] or [lower th, higher th]
-p.mcp_speedFactor = 100                 # step 2, costToCtValue; lower less cost for lower HU; higher more cost for lower HU
-p.mcp_maxCoverageFronts = 0.008         # step 2, base.py; replaces mcp_evolutionThreshold
-p.graph_weakThreshold = 3000             # step 3, stentgraph.prune_very_weak
-p.graph_expectedNumberOfEdges = 2       # step 3, stentgraph.prune_weak
-p.graph_trimLength =  2                 # step 3, stentgraph.prune_tails
-p.graph_minimumClusterSize = 3         # step 3, stentgraph.prune_clusters
-p.graph_strongThreshold = 20000          # step 3, stentgraph.prune_weak and stentgraph.prune_redundant
-p.graph_angleVector = 5                 # step 3, corner detect
-p.graph_angleTh = 45                    # step 3, corner detect
-
-
-## Perform segmentation
-cleanNodes = False  # False when using GUI with restore: clean nodes and smooth after correct/restore
-
-if stentType == 'anacondaRing':
-        sd = AnacondaDirect(vol, p) # inherit _Step3_iter from AnacondaDirect class
-        #runtime warning using anacondadirect due to mesh creation, ignore
-elif stentType == 'endurant':
-        sd = EndurantDirect(vol, p)
-else:
-        sd = StentDirect(vol, p)
-
-# Perform the three steps of stentDirect
-sd.Step1()
-sd.Step2()
-sd.Step3(cleanNodes)
+sd.Step3(cleanNodes=False) # False when using GUI with restore: clean nodes and smooth after correct/restore
 
 
 ## Visualize with GUI
@@ -48,7 +18,7 @@ from stentseg.stentdirect.stent_anaconda import _edge_length, prune_redundant
 fig = vv.figure(4); vv.clf()
 fig.position = 8.00, 30.00,  1267.00, 1002.00
 clim = (0,2000)
-# viewringcrop = 
+viewsaggital = {'azimuth': 90}
 
 # Show volume and graph
 a2 = vv.subplot(121)
@@ -61,7 +31,7 @@ vv.xlabel('x (mm)');vv.ylabel('y (mm)');vv.zlabel('z (mm)')
 a3 = vv.subplot(122)
 a3.daspect = 1,1,-1
 t = vv.volshow(vol, clim=clim)
-pick3d(vv.gca(), vol)
+label=pick3d(vv.gca(), vol)
 sd._nodes3.Draw(mc='b', lc = 'b')
 vv.xlabel('x (mm)');vv.ylabel('y (mm)');vv.zlabel('z (mm)')
 
@@ -86,7 +56,7 @@ def on_key(event):
     """KEY commands for user interaction
     UP/DOWN = show/hide nodes
     ENTER   = restore edge [select 2 nodes]
-    DELETE  = remove edge [select 2 nodes] or pop node [select 1 node]
+    DELETE  = remove edge [select 2 nodes] or pop node [select 1 node] or remove part of graph [pick a point]
     CTRL    = clean nodes: pop, crossings, corner
     ESCAPE  = FINISH: refine, smooth
     """
@@ -127,8 +97,13 @@ def on_key(event):
         line.faceColor = 'g'
         a3.SetView(view)
     if event.key == vv.KEY_DELETE:
-        # remove edge
+        if len(selected_nodes) == 0:
+            # remove false seeds in spine using the point selected
+            _utils_GUI.remove_nodes_by_selected_point(sd._nodes3, vol, a3, 133, label, clim)
+            _utils_GUI.remove_nodes_by_selected_point(sd._nodes2, vol, a2, 132, label, clim)
+            _utils_GUI.remove_nodes_by_selected_point(sd._nodes1, vol, a1, 131, label, clim)
         if len(selected_nodes) == 2:
+            # remove edge
             select1 = selected_nodes[0].node
             select2 = selected_nodes[1].node
             c = sd._nodes3.edge[select1][select2]['cost']
@@ -159,7 +134,6 @@ def on_key(event):
             selected_nodes.clear()
     if event.key == vv.KEY_CONTROL:
         # clean nodes
-        #todo: problem with pop for endurant: solved pop before corner detect and adapted cluster removal
         if stentType == 'anacondaRing':
             stentgraph.add_nodes_at_crossings(sd._nodes3)
 #             prune_redundant(sd._nodes3, sd._params.graph_strongThreshold,
@@ -195,7 +169,7 @@ def on_key(event):
         m = vv.mesh(bm)
         m.faceColor = 'g'
         a3.SetView(view)
-        print('----DO NOT FORGET TO SAVE THE MODEL TO DISK; EXECUTE NEXT CELL----')
+        print('----DO NOT FORGET TO SAVE THE MODEL TO DISK; RUN _SAVE_SEGMENTATION----')
 
 selected_nodes = list()
 def select_node(event):
@@ -219,84 +193,15 @@ for node_point in node_points:
 print('')
 print('UP/DOWN = show/hide nodes')
 print('ENTER   = restore edge [select 2 nodes]')
-print('DELETE  = remove edge [select 2 ndoes] or pop node [select 1 node]')
-print('CTRL    = clean nodes: pop, crossings, corner')
+print('DELETE  = remove edge [select 2 ndoes] or pop node [select 1 node] or remove part of graph [pick a point]')
+print('CTRL    = clean nodes: crossings, pop, corner, tails, clusters<3')
 print('ESCAPE  = FINISH: refine, smooth')
 print('')
 
 # Use same camera
 a2.camera = a3.camera
 
-switch = False
-a2.axis.visible = switch
-a3.axis.visible = switch
-
-# a3.SetView(viewringcrop)
-
-switch = False
-a2.axis.visible = switch
-a3.axis.visible = switch
-
-## Prevent save when 'run as script'
-print('Model not yet saved to disk, run next cells')
-1/0
-
-## Store segmentation to disk
-
-# Get graph model
-model = sd._nodes3
-
-# Build struct
-s2 = vv.ssdf.new()
-# We do not need croprange, but keep for reference
-s2.sampling = s.sampling
-s2.origin = s.origin
-s2.stenttype = s.stenttype
-s2.croprange = s.croprange
-for key in dir(s):
-        if key.startswith('meta'):
-            suffix = key[4:]
-            s2['meta'+suffix] = s['meta'+suffix]
-s2.what = what
-s2.params = p
-s2.stentType = stentType
-# Store model
-s2.model = model.pack()
-#s2.mesh = ssdf.new()
-
-# Save
-filename = '%s_%s_%s_%s.ssdf' % (ptcode, ctcode, cropname, 'model'+what)
-ssdf.save(os.path.join(basedir, ptcode, filename), s2)
-print('saved to disk as {}.'.format(filename) )
-
-
-## Make model dynamic (and store/overwrite to disk)
-
-import pirt
-from stentseg.motion.dynamic import incorporate_motion_nodes, incorporate_motion_edges  
-
-# Load deforms
-s = loadvol(basedir, ptcode, ctcode, cropname, '2deforms')
-deformkeys = []
-for key in dir(s):
-    if key.startswith('deform'):
-        deformkeys.append(key)
-deforms = [s[key] for key in deformkeys]
-deforms = [pirt.DeformationFieldBackward(*fields) for fields in deforms]
-paramsreg = s.params
-
-# Load model
-s = loadmodel(basedir, ptcode, ctcode, cropname, 'model'+what)
-model = s.model
-
-# Combine ...
-incorporate_motion_nodes(model, deforms, s.origin)
-incorporate_motion_edges(model, deforms, s.origin)
-
-# Save back
-filename = '%s_%s_%s_%s.ssdf' % (ptcode, ctcode, cropname, 'model'+what)
-s.model = model.pack()
-s.paramsreg = paramsreg
-ssdf.save(os.path.join(basedir, ptcode, filename), s)
-print('saved to disk as {}.'.format(filename) )
+# switch = False
+# a2.axis.visible = switch
+# a3.axis.visible = switch
 

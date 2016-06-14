@@ -1,7 +1,6 @@
 """ Script to do the segmentation and store the result.
 
-Saves model at bottom of script.
-When run as script it will overwrite existing ssdf. [now a 1/0 break at line 273 to prevent this]
+Store graph in _save_segmentation_nellix
 """
 
 import os
@@ -34,6 +33,7 @@ vol = s.vol
 
 # f = vv.figure(1)
 # vv.hist(vol, bins = 1000)
+# vv.surf(vol[:,:,150])
 t0 = vv.volshow(vol, clim=(0,4000))
 pick3d(vv.gca(), vol)
 vv.gca().daspect = 1,1,-1
@@ -54,10 +54,6 @@ p.graph_angleVector = 5                 # step 3, corner detect
 p.graph_angleTh = 45                    # step 3, corner detect
 
 ## Perform segmentation
-cleanNodes = True  # True when NOT using GUI with restore option
-guiRemove = False # option to remove nodes/edges but takes longer
-addSeeds = False # click to add seeds to sd._nodes1
-
 # Instantiate stentdirect segmenter object
 if stentType == 'anacondaRing':
         sd = AnacondaDirect(vol, p) # inherit _Step3_iter from AnacondaDirect class
@@ -69,38 +65,45 @@ elif stentType == 'nellix':
 else:
         sd = StentDirect(vol, p) 
 
+#todo: compare different datasets. can we apply one range of params when we normalize?
+# # Normalize vol to certain limit
+# sd.Step0(5000)
+# t0 = vv.volshow(sd._vol, clim=(0,1500))
+# pick3d(vv.gca(), sd._vol)
+# vv.gca().daspect = 1,1,-1
+
 # Perform the three steps of stentDirect
 sd.Step1()
-# Step 2 and 3 separate
+##
 sd.Step2()
 try:
-    sd.Step3(cleanNodes)
+    sd.Step3(cleanNodes=True) # True when NOT using GUI with restore option
 except AssertionError:
+    print('--------------')
     print('Step3 failed: error with subpixel due to edges at borders?')
-    sd._nodes3 = stentgraph.StentGraph()
+    print('--------------')
 
 # Create a mesh object for visualization (argument is strut tickness)
 bm = create_mesh(sd._nodes3, 0.6) # new
 
 
-# Visualize
+## Visualize
+
+guiRemove = False # option to remove nodes/edges but takes longer
+addSeeds = True # click to add seeds to sd._nodes1
+#todo: depending on the speedFactor fronts do not propagate from manually added seeds. how does mcp work exactly? can we prioritize manually added seeds?
+
 fig = vv.figure(2); vv.clf()
 fig.position = 0.00, 22.00,  1920.00, 1018.00
-clim = (0,4000)
-viewringcrop = {'zoom': 0.02823941713096748,
- 'roll': 0.0,
- 'loc': (171.53854017863708, 156.2089239461612, 45.596671196972125),
- 'fov': 0.0,
- 'elevation': 22.24448897795591,
- 'azimuth': 80.14516129032259,
- 'daspect': (1.0, 1.0, -1.0)}
+clim = (0,2000)
+viewsaggital = {'azimuth': 90}
 
 # Show volume and model as graph
 a1 = vv.subplot(131)
 a1.daspect = 1,1,-1
 t = vv.volshow(vol, clim=clim)
 label = pick3d(vv.gca(), vol)
-sd._nodes1.Draw(mc='b', mw = 6)       # draw seeded nodes
+sd._nodes1.Draw(mc='b', mw = 7)       # draw seeded nodes
 # sd._nodes2.Draw(mc='b', lc = 'g')    # draw seeded and MCP connected nodes
 vv.xlabel('x (mm)');vv.ylabel('y (mm)');vv.zlabel('z (mm)')
 
@@ -109,8 +112,9 @@ a2 = vv.subplot(132)
 a2.daspect = 1,1,-1
 t = vv.volshow(vol, clim=clim)
 pick3d(vv.gca(), vol)
-sd._nodes2.Draw(mc='b', lc='g')
-# sd._nodes3.Draw(mc='b', lc='g')
+if not sd._nodes2 is None:
+    sd._nodes2.Draw(mc='b', lc='g')
+    # sd._nodes3.Draw(mc='b', lc='g')
 vv.xlabel('x (mm)');vv.ylabel('y (mm)');vv.zlabel('z (mm)')
 
 # Show the mesh
@@ -118,21 +122,23 @@ a3 = vv.subplot(133)
 a3.daspect = 1,1,-1
 t = vv.volshow(vol, clim=clim)
 pick3d(vv.gca(), vol)
-sd._nodes3.Draw(mc='b', lc='g')
-# m = vv.mesh(bm)
-# m.faceColor = 'g'
-_utils_GUI.vis_spared_edges(sd._nodes3)
+if not sd._nodes3 is None:
+    sd._nodes3.Draw(mc='b', lc='g')
+    # m = vv.mesh(bm)
+    # m.faceColor = 'g'
+    _utils_GUI.vis_spared_edges(sd._nodes3)
 vv.xlabel('x (mm)');vv.ylabel('y (mm)');vv.zlabel('z (mm)')
 
 # Use same camera
 a1.camera = a2.camera = a3.camera
+a1.SetView(viewsaggital)
 
 switch = True
 a1.axis.visible = switch
 a2.axis.visible = switch
 a3.axis.visible = switch
 
-## GUI to remove and/or to add seeds
+# GUI to remove and/or to add seeds
 from visvis import Pointset
 from stentseg.stentdirect import stentgraph
 from stentseg.stentdirect.stent_anaconda import _edge_length
@@ -154,8 +160,8 @@ t3.visible = False
 def on_key(event):
     """KEY commands for user interaction
     UP/DOWN = show/hide nodes
-    DELETE  = remove edge [select 2 nodes] or pop node [select 1 node]
-    ALT     = SHOW RESULT: remove residual clusters, refine, smooth
+    DELETE  = remove edge [select 2 nodes] or pop node [select 1 node] or remove part of graph [pick a point]
+    ALT     = SHOW RESULT after remove residual clusters, pop, corner
     CTRL    = add selected point (SHIFT+Rclick) as seed in sd._nodes1')
     """
     if event.key == vv.KEY_DOWN:
@@ -170,8 +176,13 @@ def on_key(event):
         for node_point in node_points:
             node_point.visible = True
     if event.key == vv.KEY_DELETE:
-        # remove edge
+        if len(selected_nodes) == 0:
+            # remove false seeds in spine using the point selected
+            _utils_GUI.remove_nodes_by_selected_point(sd._nodes3, vol, a3, 133, label, clim)
+            _utils_GUI.remove_nodes_by_selected_point(sd._nodes2, vol, a2, 132, label, clim)
+            _utils_GUI.remove_nodes_by_selected_point(sd._nodes1, vol, a1, 131, label, clim)
         if len(selected_nodes) == 2:
+            # remove edge
             select1 = selected_nodes[0].node
             select2 = selected_nodes[1].node
             c = sd._nodes3.edge[select1][select2]['cost']
@@ -218,14 +229,13 @@ def on_key(event):
 #         m.faceColor = 'g'
         _utils_GUI.vis_spared_edges(sd._nodes3)
         a3.SetView(view)
-        print('----DO NOT FORGET TO SAVE THE MODEL TO DISK; EXECUTE NEXT CELL----')
+        print('----DO NOT FORGET TO SAVE THE MODEL TO DISK; RUN _SAVE_SEGMENTATION----')
     elif event.key == vv.KEY_CONTROL:
         coord2 = get_picked_seed(vol, label)
         sd._nodes1.add_node(tuple(coord2))
-        a = vv.gca()
-        view = a.GetView()
-        point = vv.plot(coord2[0], coord2[1], coord2[2], mc= 'g', ms= '.', mw= 10)
-        a.SetView(view)
+        view = a1.GetView()
+        point = vv.plot(coord2[0], coord2[1], coord2[2], mc= 'g', ms = 's', mw= 12)
+        a1.SetView(view)
 
 def get_picked_seed(data, label):
     coord = label2volindices(label) # [x,y,z]
@@ -258,79 +268,16 @@ if guiRemove==True:
             node_point.eventDoubleClick.Bind(select_node)
         print('')
         print('UP/DOWN = show/hide nodes')
-        print('DELETE  = remove edge [select 2 ndoes] or pop node [select 1 node]')
-        print('ALT  = SHOW RESULT: remove residual clusters, mesh')
+        print('DELETE  = remove edge [select 2 ndoes] or pop node [select 1 node] or remove part of graph [pick a point]')
+        print('ALT  = SHOW RESULT after remove residual clusters, pop, corner')
         print('CTRL = add selected point (SHIFT+Rclick) as seed')
         print('')
         
 elif addSeeds==True:
-    # Bind event handlers
+    # Bind event handlers but do not make node_points
     fig.eventKeyDown.Bind(on_key)
     print('')
     print('CTRL = add selected point (SHIFT+Rclick) as seed')
+    print('DELETE = remove part of graph in spine (separation by y of selected point)')
     print('')
-    
-# a1.SetView(viewringcrop)
 
-## Prevent save when 'run as script'
-print('Model not yet saved to disk, run next cells')
-1/0
-
-## Store segmentation to disk
-
-# Get graph model
-model = sd._nodes3
-
-# Build struct
-s2 = vv.ssdf.new()
-# We do not need croprange, but keep for reference
-s2.sampling = s.sampling
-s2.origin = s.origin
-s2.stenttype = s.stenttype
-s2.croprange = s.croprange
-for key in dir(s):
-        if key.startswith('meta'):
-            suffix = key[4:]
-            s2['meta'+suffix] = s['meta'+suffix]
-s2.what = what
-s2.params = p
-s2.stentType = stentType
-# Store model
-s2.model = model.pack()
-#s2.mesh = ssdf.new()
-
-# Save
-filename = '%s_%s_%s_%s.ssdf' % (ptcode, ctcode, cropname, 'model'+what)
-ssdf.save(os.path.join(basedir, ptcode, filename), s2)
-print('saved to disk as {}.'.format(filename) )
-
-
-## Make model dynamic (and store/overwrite to disk)
-
-import pirt
-from stentseg.motion.dynamic import incorporate_motion_nodes, incorporate_motion_edges  
-
-# Load deforms
-s = loadvol(basedir, ptcode, ctcode, cropname, '2deforms')
-deformkeys = []
-for key in dir(s):
-    if key.startswith('deform'):
-        deformkeys.append(key)
-deforms = [s[key] for key in deformkeys]
-deforms = [pirt.DeformationFieldBackward(*fields) for fields in deforms]
-paramsreg = s.params
-
-# Load model
-s = loadmodel(basedir, ptcode, ctcode, cropname, 'model'+what)
-model = s.model
-
-# Combine ...
-incorporate_motion_nodes(model, deforms, s.origin)
-incorporate_motion_edges(model, deforms, s.origin)
-
-# Save back
-filename = '%s_%s_%s_%s.ssdf' % (ptcode, ctcode, cropname, 'model'+what)
-s.model = model.pack()
-s.paramsreg = paramsreg
-ssdf.save(os.path.join(basedir, ptcode, filename), s)
-print('saved to disk as {}.'.format(filename) )
