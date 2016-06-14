@@ -5,9 +5,8 @@ Store graph in _save_segmentation
 
 
 ## Rerun step 3 without removing nodes
-cleanNodes = False  # False when using GUI with restore: clean nodes and smooth after correct/restore
 
-sd.Step3(cleanNodes)
+sd.Step3(cleanNodes=False) # False when using GUI with restore: clean nodes and smooth after correct/restore
 
 
 ## Visualize with GUI
@@ -19,7 +18,7 @@ from stentseg.stentdirect.stent_anaconda import _edge_length, prune_redundant
 fig = vv.figure(4); vv.clf()
 fig.position = 8.00, 30.00,  1267.00, 1002.00
 clim = (0,2000)
-# viewringcrop = 
+viewsaggital = {'azimuth': 90}
 
 # Show volume and graph
 a2 = vv.subplot(121)
@@ -170,7 +169,7 @@ def on_key(event):
         m = vv.mesh(bm)
         m.faceColor = 'g'
         a3.SetView(view)
-        print('----DO NOT FORGET TO SAVE THE MODEL TO DISK; EXECUTE NEXT CELL----')
+        print('----DO NOT FORGET TO SAVE THE MODEL TO DISK; RUN _SAVE_SEGMENTATION----')
 
 selected_nodes = list()
 def select_node(event):
@@ -195,19 +194,14 @@ print('')
 print('UP/DOWN = show/hide nodes')
 print('ENTER   = restore edge [select 2 nodes]')
 print('DELETE  = remove edge [select 2 ndoes] or pop node [select 1 node] or remove part of graph [pick a point]')
-print('CTRL    = clean nodes: pop, crossings, corner')
+print('CTRL    = clean nodes: crossings, pop, corner, tails, clusters<3')
 print('ESCAPE  = FINISH: refine, smooth')
 print('')
 
 # Use same camera
 a2.camera = a3.camera
 
-switch = False
-a2.axis.visible = switch
-a3.axis.visible = switch
+# switch = False
+# a2.axis.visible = switch
+# a3.axis.visible = switch
 
-# a3.SetView(viewringcrop)
-
-switch = False
-a2.axis.visible = switch
-a3.axis.visible = switch

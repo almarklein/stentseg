@@ -22,8 +22,8 @@ basedir = select_dir(os.getenv('LSPEAS_BASEDIR', ''),
                      r'F:\LSPEAS_ssdf_backup',r'G:\LSPEAS_ssdf_backup')
 
 # Select dataset to register
-ptcode = 'LSPEAS_015'
-ctcode = '12months'
+ptcode = 'LSPEAS_018'
+ctcode = 'discharge'
 cropname = 'ring'
 what = 'avgreg' # avgreg
 
@@ -42,24 +42,20 @@ vv.gca().daspect = 1,1,-1
 stentType = 'anacondaRing'  # 'anacondaRing' runs modified pruning algorithm in Step3
 
 p = getDefaultParams(stentType)
-p.seed_threshold = [1400,4000]        # step 1 [lower th] or [lower th, higher th]
-p.mcp_speedFactor = 190                 # step 2, costToCtValue; lower-> longer paths -- higher-> short paths
+p.seed_threshold = [1200]        # step 1 [lower th] or [lower th, higher th]
+p.mcp_speedFactor = 170                 # step 2, costToCtValue; lower-> longer paths -- higher-> short paths
 p.mcp_maxCoverageFronts = 0.003         # step 2, base.py; replaces mcp_evolutionThreshold
-p.graph_weakThreshold = 750             # step 3, stentgraph.prune_very_weak
+p.graph_weakThreshold = 1000             # step 3, stentgraph.prune_very_weak
 p.graph_expectedNumberOfEdges = 3       # step 3, stentgraph.prune_weak
 p.graph_trimLength =  0                 # step 3, stentgraph.prune_tails
 p.graph_minimumClusterSize = 10         # step 3, stentgraph.prune_clusters
 p.graph_strongThreshold = 3500          # step 3, stentgraph.prune_weak and stentgraph.prune_redundant
 p.graph_min_strutlength = 5             # step 3, stent_anaconda prune_redundant
 p.graph_max_strutlength = 13            # step 3, stent_anaconda prune_redundant
-p.graph_angleVector = 3                 # step 3, corner detect
-p.graph_angleTh = 35                    # step 3, corner detect
+p.graph_angleVector = 5                 # step 3, corner detect
+p.graph_angleTh = 45                    # step 3, corner detect
 
 ## Perform segmentation
-cleanNodes = True  # True when NOT using GUI with restore option
-guiRemove = False # option to remove nodes/edges but takes longer
-addSeeds = True # click to add seeds to sd._nodes1
-#todo: depending on the speedFactor fronts do not propagate from manually added seeds. how does mcp work exactly? can we prioritize manually added seeds?
 
 # Instantiate stentdirect segmenter object
 if stentType == 'anacondaRing':
@@ -84,7 +80,7 @@ sd.Step1()
 ##
 sd.Step2()
 try:
-    sd.Step3(cleanNodes)
+    sd.Step3(cleanNodes=True) # True when NOT using GUI with restore option
 except AssertionError:
     print('--------------')
     print('Step3 failed: error with subpixel due to edges at borders?')
@@ -94,7 +90,12 @@ except AssertionError:
 bm = create_mesh(sd._nodes3, 0.6) # new
 
 
-## Visualize
+# Visualize
+
+guiRemove = False # option to remove nodes/edges but takes longer
+addSeeds = True # click to add seeds to sd._nodes1
+#todo: depending on the speedFactor fronts do not propagate from manually added seeds. how does mcp work exactly? can we prioritize manually added seeds?
+
 fig = vv.figure(2); vv.clf()
 fig.position = 0.00, 22.00,  1920.00, 1018.00
 clim = (0,2000)
@@ -231,7 +232,7 @@ def on_key(event):
 #         m.faceColor = 'g'
         _utils_GUI.vis_spared_edges(sd._nodes3)
         a3.SetView(view)
-        print('----DO NOT FORGET TO SAVE THE MODEL TO DISK; EXECUTE NEXT CELL----')
+        print('----DO NOT FORGET TO SAVE THE MODEL TO DISK; RUN _SAVE_SEGMENTATION----')
     elif event.key == vv.KEY_CONTROL:
         coord2 = get_picked_seed(vol, label)
         sd._nodes1.add_node(tuple(coord2))
