@@ -23,7 +23,7 @@ basedir = select_dir(os.getenv('LSPEAS_BASEDIR', ''),
 
 # Select dataset to register
 ptcode = 'LSPEAS_022'
-ctcode = '1month'
+ctcode = '12months'
 cropname = 'ring'
 what = 'avgreg' # avgreg
 
@@ -43,8 +43,8 @@ stentType = 'anacondaRing'  # 'anacondaRing' runs modified pruning algorithm in 
 
 p = getDefaultParams(stentType)
 p.seed_threshold = [1300,4000]        # step 1 [lower th] or [lower th, higher th]
-p.mcp_speedFactor = 5                 # step 2, costToCtValue; lower-> longer paths -- higher-> short paths
-p.mcp_maxCoverageFronts = 0.005         # step 2, base.py; replaces mcp_evolutionThreshold
+p.mcp_speedFactor = 10                 # step 2, costToCtValue; lower-> longer paths -- higher-> short paths
+p.mcp_maxCoverageFronts = 0.009         # step 2, base.py; replaces mcp_evolutionThreshold
 p.graph_weakThreshold = 900             # step 3, stentgraph.prune_very_weak
 p.graph_expectedNumberOfEdges = 3       # step 3, stentgraph.prune_weak
 p.graph_trimLength =  0                 # step 3, stentgraph.prune_tails
@@ -78,7 +78,7 @@ else:
 
 # Perform the three steps of stentDirect
 sd.Step1()
-#
+##
 sd.Step2()
 try:
     sd.Step3(cleanNodes=True) # True when NOT using GUI with restore option
@@ -164,7 +164,8 @@ t3.visible = False
 def on_key(event):
     """KEY commands for user interaction
     UP/DOWN = show/hide nodes
-    DELETE  = remove edge [select 2 nodes] or pop node [select 1 node] or remove part of graph [pick a point]
+    DELETE  = remove edge [select 2 nodes] or pop node [select 1 node] or remove seed sd._nodes1 closest to [picked point]
+    PageDown= remove graph posterior (y-axis) to [picked point] (use for spine seeds)'
     ALT     = SHOW RESULT after remove residual clusters, pop, corner
     CTRL    = add selected point (SHIFT+Rclick) as seed in sd._nodes1')
     """
@@ -182,14 +183,15 @@ def on_key(event):
             node_point.visible = True
     if event.key == vv.KEY_DELETE:
         if len(selected_nodes) == 0:
-            # remove false seeds posterior to picked point, e.g. for spine
-            try:
-                _utils_GUI.remove_nodes_by_selected_point(sd._nodes3, vol, a3, 133, label, clim)
-            except ValueError: # false nodes already cleaned in Step3
-                pass
-            _utils_GUI.remove_nodes_by_selected_point(sd._nodes2, vol, a2, 132, label, clim)
-            _utils_GUI.remove_nodes_by_selected_point(sd._nodes1, vol, a1, 131, label, clim)
-            label=pick3d(vv.gca(), vol)
+            # remove node closest to picked point
+            node = _utils_GUI.snap_picked_point_to_graph(sd._nodes1, vol, label)
+            sd._nodes1.remove_node(tuple(node))
+            view = a1.GetView()
+            a1.Clear()
+            t = vv.volshow(vol, clim=clim, axes=a1)
+            label=pick3d(a1, vol)
+            sd._nodes1.Draw(mc='b', mw = 7)
+            a1.SetView(view)    
         if len(selected_nodes) == 2:
             # remove edge
             select1 = selected_nodes[0].node
@@ -230,8 +232,8 @@ def on_key(event):
         view = a3.GetView()
         bm = create_mesh(sd._nodes3, 0.6)
         a3.Clear()
-        t = vv.volshow(vol, clim=clim)
-        pick3d(vv.gca(), vol)
+        t = vv.volshow(vol, clim=clim, axes=a3)
+        pick3d(a3, vol)
         sd._nodes3.Draw(mc='b', mw = 8, lc = 'g', lw = 0.2)
         vv.xlabel('x'), vv.ylabel('y'), vv.zlabel('z')
 #         m = vv.mesh(bm)
@@ -247,15 +249,14 @@ def on_key(event):
         point = vv.plot(coord2[0], coord2[1], coord2[2], mc= 'g', ms = 'o', mw= 8, alpha=0.5)
         a1.SetView(view)
     elif event.key == vv.KEY_PAGEDOWN:
-        # remove node closest to picked point
-        node = _utils_GUI.snap_picked_point_to_graph(sd._nodes1, vol, label) #todo: error references before assignment on label
-        sd._nodes1.remove_node(tuple(node))
-        view = a1.GetView()
-        a1.Clear()
-        t = vv.volshow(vol, clim=clim)
+        # remove false seeds posterior to picked point, e.g. for spine
+        try:
+            _utils_GUI.remove_nodes_by_selected_point(sd._nodes3, vol, a3, 133, label, clim)
+        except ValueError: # false nodes already cleaned in Step3
+            pass
+        _utils_GUI.remove_nodes_by_selected_point(sd._nodes2, vol, a2, 132, label, clim)
+        _utils_GUI.remove_nodes_by_selected_point(sd._nodes1, vol, a1, 131, label, clim)
         label=pick3d(vv.gca(), vol)
-        sd._nodes1.Draw(mc='b', mw = 7)
-        a1.SetView(view)
     
 
 selected_nodes = list()
@@ -278,7 +279,9 @@ if guiRemove==True:
             node_point.eventDoubleClick.Bind(select_node)
         print('')
         print('UP/DOWN = show/hide nodes')
-        print('DELETE  = remove edge [select 2 ndoes] or pop node [select 1 node] or remove graph posterior to picked point')
+        print('DELETE  = remove edge [select 2 ndoes] or pop node [select 1 node] '
+               'or remove seed in nodes1 closest to [picked point]')
+        print('PageDown = remove graph posterior (y-axis) to [picked point] (use for spine seeds)')
         print('ALT  = SHOW RESULT after remove residual clusters, pop, corner')
         print('CTRL = add selected point (SHIFT+Rclick) as seed')
         print('')
@@ -288,7 +291,7 @@ elif addSeeds==True:
     fig.eventKeyDown.Bind(on_key)
     print('')
     print('CTRL = add selected point (SHIFT+Rclick) as seed')
-    print('DELETE = remove graph posterior (y-axis) to picked point (use for spine seeds)')
-    print('PageDown = remove seed Step1 closest to picked point')
+    print('DELETE = remove seed in nodes1 closest to [picked point]')
+    print('PageDown = remove graph posterior (y-axis) to [picked point] (use for spine seeds)')
     print('')
 
