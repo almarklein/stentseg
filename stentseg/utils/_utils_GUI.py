@@ -14,6 +14,9 @@ def remove_nodes_by_selected_point(graph, vol, a, pos, label, clim, dim=1):
     """
     from stentseg.utils.picker import pick3d, label2worldcoordinates
     
+    if graph is None:
+        print('No nodes removed, graph is NoneType')
+        return
     coord1 = np.asarray(label2worldcoordinates(label), dtype=np.float32) # x,y,z
     seeds = np.asarray(sorted(graph.nodes(), key=lambda x: x[dim])) # sort y
     falseindices = np.where(seeds[:,1]>coord1[1]) # indices with values higher than coord y
@@ -99,4 +102,28 @@ def vis_spared_edges(graph, radius = 0.6):
             line = vv.solidLine(pp, radius = radius)
             line.faceColor = 'y'
 
+def snap_picked_point_to_graph(graph, vol, label):
+    """ Snap picked point to graph and return point on graph
+    """
+    from stentseg.utils.picker import get_picked_seed
+    
+    coord = get_picked_seed(vol, label)
+    dist = 10000.0
+    for n1, n2 in sorted(graph.edges()):
+        path = graph.edge[n1][n2]['path']
+        vectors = path - coord
+        dists = (vectors[:,0]**2 + vectors[:,1]**2 + vectors[:,2]**2)**0.5
+        dist = min(dist, min(dists))
+        if dist == min(dists):
+            i = np.where(dists==dist)
+            point = path[i]
+    if graph.number_of_edges() == 0: # no edges, get node closest to picked point
+        for n in sorted(graph.nodes()):
+            vec = np.asarray(n) - coord
+            d = (vec[0]**2 + vec[1]**2 + vec[2]**2)**0.5
+            dist = min(dist, d)
+            if dist == d:
+                point = np.asarray(n)
+            
+    return np.array(point.flat)
 

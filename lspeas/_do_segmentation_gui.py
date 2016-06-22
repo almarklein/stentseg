@@ -56,10 +56,11 @@ def on_key(event):
     """KEY commands for user interaction
     UP/DOWN = show/hide nodes
     ENTER   = restore edge [select 2 nodes]
-    DELETE  = remove edge [select 2 nodes] or pop node [select 1 node] or remove part of graph [pick a point]
+    DELETE  = remove edge [select 2 ndoes] or pop node [select 1 node] or remove graph posterior to picked point'
     CTRL    = clean nodes: pop, crossings, corner
     ESCAPE  = FINISH: refine, smooth
     """
+    global label
     if event.key == vv.KEY_DOWN:
         # hide nodes
         t1.visible = False
@@ -98,8 +99,11 @@ def on_key(event):
         a3.SetView(view)
     if event.key == vv.KEY_DELETE:
         if len(selected_nodes) == 0:
-            # remove false seeds in spine using the point selected
-            _utils_GUI.remove_nodes_by_selected_point(sd._nodes3, vol, a3, 133, label, clim)
+            # remove false seeds posterior to picked point, e.g. for spine
+            try:
+                _utils_GUI.remove_nodes_by_selected_point(sd._nodes3, vol, a3, 133, label, clim)
+            except ValueError: # false nodes already cleaned in Step3
+                pass
             _utils_GUI.remove_nodes_by_selected_point(sd._nodes2, vol, a2, 132, label, clim)
             _utils_GUI.remove_nodes_by_selected_point(sd._nodes1, vol, a1, 131, label, clim)
         if len(selected_nodes) == 2:
@@ -148,7 +152,7 @@ def on_key(event):
         view = a3.GetView()
         a3.Clear()
         t = vv.volshow(vol, clim=clim)
-        pick3d(vv.gca(), vol)
+        label=pick3d(vv.gca(), vol)
         sd._nodes3.Draw(mc='b', mw = 8, lc = 'g', lw = 0.2)
         vv.xlabel('x'), vv.ylabel('y'), vv.zlabel('z')
         a3.SetView(view)
@@ -170,6 +174,7 @@ def on_key(event):
         m.faceColor = 'g'
         a3.SetView(view)
         print('----DO NOT FORGET TO SAVE THE MODEL TO DISK; RUN _SAVE_SEGMENTATION----')
+
 
 selected_nodes = list()
 def select_node(event):
@@ -193,7 +198,7 @@ for node_point in node_points:
 print('')
 print('UP/DOWN = show/hide nodes')
 print('ENTER   = restore edge [select 2 nodes]')
-print('DELETE  = remove edge [select 2 ndoes] or pop node [select 1 node] or remove part of graph [pick a point]')
+print('DELETE  = remove edge [select 2 ndoes] or pop node [select 1 node] or remove graph posterior to picked point')
 print('CTRL    = clean nodes: crossings, pop, corner, tails, clusters<3')
 print('ESCAPE  = FINISH: refine, smooth')
 print('')

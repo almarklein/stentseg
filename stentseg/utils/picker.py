@@ -207,6 +207,22 @@ def label2volindices(label):
     return [x,y,z]
 
 
+def get_picked_seed(data, label):
+    """ Picked point (SHIFT+r-click) is converted to world coordinates as in Step1
+    Input: volume data, label
+    """ 
+    from stentseg.utils import PointSet
+    
+    coord = label2volindices(label) # [x,y,z]
+    p = PointSet(coord, dtype=np.float32)
+    # Correct for anisotropy and offset
+    if hasattr(data, 'sampling'):
+        p *= PointSet( list(reversed(data.sampling)) ) 
+    if hasattr(data, 'origin'):
+        p += PointSet( list(reversed(data.origin)) )
+    return list(p.flat)
+
+
 if __name__ == '__main__':
     vol = vv.Aarray(vv.volread('stent'), (0.5, 0.5, 0.5), (100, 40, 10))
     a = vv.gca()

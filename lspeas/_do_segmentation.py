@@ -13,7 +13,7 @@ from stentseg.utils import PointSet, _utils_GUI
 from stentseg.utils.datahandling import select_dir, loadvol, loadmodel
 from stentseg.stentdirect.stentgraph import create_mesh
 from stentseg.stentdirect import stentgraph, StentDirect, getDefaultParams, AnacondaDirect, EndurantDirect, NellixDirect
-from stentseg.utils.picker import pick3d, label2worldcoordinates, label2volindices
+from stentseg.utils.picker import pick3d, label2worldcoordinates, label2volindices, get_picked_seed
 from stentseg.apps.graph_manualprune import interactiveClusterRemovalGraph
 
 # Select the ssdf basedir
@@ -22,8 +22,8 @@ basedir = select_dir(os.getenv('LSPEAS_BASEDIR', ''),
                      r'F:\LSPEAS_ssdf_backup',r'G:\LSPEAS_ssdf_backup')
 
 # Select dataset to register
-ptcode = 'LSPEAS_018'
-ctcode = 'discharge'
+ptcode = 'LSPEAS_022'
+ctcode = '1month'
 cropname = 'ring'
 what = 'avgreg' # avgreg
 
@@ -31,29 +31,29 @@ what = 'avgreg' # avgreg
 s = loadvol(basedir, ptcode, ctcode, cropname, what)
 vol = s.vol
 
-# f = vv.figure(1)
 # vv.hist(vol, bins = 1000)
 # vv.surf(vol[:,:,150])
-t0 = vv.volshow(vol, clim=(0,2500))
-pick3d(vv.gca(), vol)
-vv.gca().daspect = 1,1,-1
+# f = vv.figure()
+# t0 = vv.volshow(vol, clim=(0,2500))
+# pick3d(vv.gca(), vol)
+# vv.gca().daspect = 1,1,-1
 
 ## Initialize segmentation parameters
 stentType = 'anacondaRing'  # 'anacondaRing' runs modified pruning algorithm in Step3
 
 p = getDefaultParams(stentType)
-p.seed_threshold = [1200]        # step 1 [lower th] or [lower th, higher th]
-p.mcp_speedFactor = 170                 # step 2, costToCtValue; lower-> longer paths -- higher-> short paths
-p.mcp_maxCoverageFronts = 0.003         # step 2, base.py; replaces mcp_evolutionThreshold
-p.graph_weakThreshold = 1000             # step 3, stentgraph.prune_very_weak
+p.seed_threshold = [1300,4000]        # step 1 [lower th] or [lower th, higher th]
+p.mcp_speedFactor = 5                 # step 2, costToCtValue; lower-> longer paths -- higher-> short paths
+p.mcp_maxCoverageFronts = 0.005         # step 2, base.py; replaces mcp_evolutionThreshold
+p.graph_weakThreshold = 900             # step 3, stentgraph.prune_very_weak
 p.graph_expectedNumberOfEdges = 3       # step 3, stentgraph.prune_weak
 p.graph_trimLength =  0                 # step 3, stentgraph.prune_tails
-p.graph_minimumClusterSize = 10         # step 3, stentgraph.prune_clusters
-p.graph_strongThreshold = 3500          # step 3, stentgraph.prune_weak and stentgraph.prune_redundant
+p.graph_minimumClusterSize = 7         # step 3, stentgraph.prune_clusters
+p.graph_strongThreshold = 5000          # step 3, stentgraph.prune_weak and stentgraph.prune_redundant
 p.graph_min_strutlength = 5             # step 3, stent_anaconda prune_redundant
 p.graph_max_strutlength = 13            # step 3, stent_anaconda prune_redundant
 p.graph_angleVector = 5                 # step 3, corner detect
-p.graph_angleTh = 45                    # step 3, corner detect
+p.graph_angleTh = 180                    # step 3, corner detect
 
 ## Perform segmentation
 
@@ -71,13 +71,14 @@ else:
 #todo: compare different datasets. can we apply one range of params when we normalize?
 # # Normalize vol to certain limit
 # sd.Step0(3000)
-# t0 = vv.volshow(sd._vol, clim=(0,1500))
-# pick3d(vv.gca(), sd._vol)
-# vv.gca().daspect = 1,1,-1
+# # t0 = vv.volshow(sd._vol, clim=(0,1500))
+# # pick3d(vv.gca(), sd._vol)
+# # vv.gca().daspect = 1,1,-1
+# vol = sd._vol
 
 # Perform the three steps of stentDirect
 sd.Step1()
-##
+#
 sd.Step2()
 try:
     sd.Step3(cleanNodes=True) # True when NOT using GUI with restore option
@@ -167,6 +168,7 @@ def on_key(event):
     ALT     = SHOW RESULT after remove residual clusters, pop, corner
     CTRL    = add selected point (SHIFT+Rclick) as seed in sd._nodes1')
     """
+    global label
     if event.key == vv.KEY_DOWN:
         # hide nodes
         t1.visible = False
@@ -180,10 +182,14 @@ def on_key(event):
             node_point.visible = True
     if event.key == vv.KEY_DELETE:
         if len(selected_nodes) == 0:
-            # remove false seeds in spine using the point selected
-            _utils_GUI.remove_nodes_by_selected_point(sd._nodes3, vol, a3, 133, label, clim)
+            # remove false seeds posterior to picked point, e.g. for spine
+            try:
+                _utils_GUI.remove_nodes_by_selected_point(sd._nodes3, vol, a3, 133, label, clim)
+            except ValueError: # false nodes already cleaned in Step3
+                pass
             _utils_GUI.remove_nodes_by_selected_point(sd._nodes2, vol, a2, 132, label, clim)
             _utils_GUI.remove_nodes_by_selected_point(sd._nodes1, vol, a1, 131, label, clim)
+            label=pick3d(vv.gca(), vol)
         if len(selected_nodes) == 2:
             # remove edge
             select1 = selected_nodes[0].node
@@ -234,21 +240,22 @@ def on_key(event):
         a3.SetView(view)
         print('----DO NOT FORGET TO SAVE THE MODEL TO DISK; RUN _SAVE_SEGMENTATION----')
     elif event.key == vv.KEY_CONTROL:
+        # add picked seed to nodes_1
         coord2 = get_picked_seed(vol, label)
         sd._nodes1.add_node(tuple(coord2))
         view = a1.GetView()
-        point = vv.plot(coord2[0], coord2[1], coord2[2], mc= 'g', ms = 's', mw= 12)
+        point = vv.plot(coord2[0], coord2[1], coord2[2], mc= 'g', ms = 'o', mw= 8, alpha=0.5)
         a1.SetView(view)
-
-def get_picked_seed(data, label):
-    coord = label2volindices(label) # [x,y,z]
-    p = PointSet(coord, dtype=np.float32)
-    # Correct for anisotropy and offset
-    if hasattr(data, 'sampling'):
-        p *= PointSet( list(reversed(data.sampling)) ) 
-    if hasattr(data, 'origin'):
-        p += PointSet( list(reversed(data.origin)) )
-    return list(p.flat)
+    elif event.key == vv.KEY_PAGEDOWN:
+        # remove node closest to picked point
+        node = _utils_GUI.snap_picked_point_to_graph(sd._nodes1, vol, label) #todo: error references before assignment on label
+        sd._nodes1.remove_node(tuple(node))
+        view = a1.GetView()
+        a1.Clear()
+        t = vv.volshow(vol, clim=clim)
+        label=pick3d(vv.gca(), vol)
+        sd._nodes1.Draw(mc='b', mw = 7)
+        a1.SetView(view)
     
 
 selected_nodes = list()
@@ -271,7 +278,7 @@ if guiRemove==True:
             node_point.eventDoubleClick.Bind(select_node)
         print('')
         print('UP/DOWN = show/hide nodes')
-        print('DELETE  = remove edge [select 2 ndoes] or pop node [select 1 node] or remove part of graph [pick a point]')
+        print('DELETE  = remove edge [select 2 ndoes] or pop node [select 1 node] or remove graph posterior to picked point')
         print('ALT  = SHOW RESULT after remove residual clusters, pop, corner')
         print('CTRL = add selected point (SHIFT+Rclick) as seed')
         print('')
@@ -281,6 +288,7 @@ elif addSeeds==True:
     fig.eventKeyDown.Bind(on_key)
     print('')
     print('CTRL = add selected point (SHIFT+Rclick) as seed')
-    print('DELETE = remove part of graph in spine (separation by y of selected point)')
+    print('DELETE = remove graph posterior (y-axis) to picked point (use for spine seeds)')
+    print('PageDown = remove seed Step1 closest to picked point')
     print('')
 
