@@ -114,7 +114,7 @@ a3.SetLimits(rangeX=(-1.2,1.2), rangeY=(-0.1,1.3))
 # correctoffset(aa0)
 
 #profile1
-tt1,aa1 = get_motion_pattern(A=0.7, T=0.8, N=20, top=0.35)
+tt1,aa1 = get_motion_pattern(A=0.6, T=0.8, N=20, top=0.35)
 correctoffset(aa1)
 
 #profile2
@@ -187,15 +187,39 @@ a6.SetLimits(rangeX=(-1.2,1.2), rangeY=(-0.1,2))
 # a7.axis.showGrid = True
 # a7.SetLimits(rangeX=(-1.2,1.2), rangeY=(-0.1,2))
 
-
-
-
-##
-1/0
-
 ## Store to excel
 
+# patternToExcel(tt1, aa1, profile='profile1')
 
-patternToExcel(tt1, aa1, profile='profile1')
+
+
+## Plot for paper, example
+import os
+from stentseg.utils.datahandling import select_dir
+import matplotlib.pyplot as plt
+import matplotlib as mpl
+import prettyplotlib as ppl
+
+f = vv.figure()
+f.position = 0, 22, 1077, 273 
+# B1  (A=0.6, T=0.8, N=20, top=0.35)
+ax1 = vv.subplot(121)#; vv.title('profile1')
+plot_pattern(*(tt1,aa1))
+ax1.axis.showGrid = True
+ax1.SetLimits(rangeX=(-1,1), rangeY=(-0.1,2.5))
+vv.xlabel('time (s)')
+vv.ylabel('position (mm)')
+vv.legend('B1 (A=0.6, T=0.8)')
+# B5  (A=2.0, T=0.8, N=20, top=0.35, extra=(0.7, 0.8, 0.05))
+ax5 = vv.subplot(122)#; vv.title('profile5')
+plot_pattern(*(tt5,aa5))
+ax5.axis.showGrid = True
+ax5.SetLimits(rangeX=(-1,1), rangeY=(-0.1,2.5))
+vv.xlabel('time (s)')
+vv.ylabel('position (mm)')
+vv.legend('B5 (A=2.0, T=0.8, extra=0.7, 0.8, 0.05)')
+
+exceldir = select_dir(r'C:\Users\Maaike\Desktop',r'D:\Profiles\koenradesma\Desktop')
+vv.screenshot(os.path.join(exceldir, 'screenshot.png'), f, sf=3, bg=(1,1,1))
 
 
