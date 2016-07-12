@@ -19,6 +19,8 @@ import string
 
 
 def readCameraExcel(exceldir, workbookCam, sheetProfile, colSt, bpm):
+    """ read camera patterns. Start at colSt column and get one period
+    """
     wb = openpyxl.load_workbook(os.path.join(exceldir, workbookCam))
     sheet = wb.get_sheet_by_name(sheetProfile)
     # r1 = tuple(sheet[colSt+'1':colEnd+'1']) #todo: get period automatically
@@ -29,14 +31,17 @@ def readCameraExcel(exceldir, workbookCam, sheetProfile, colSt, bpm):
     time = [obj.value for obj in r1] 
     t0 = time[0]
     tend = t0 + 60/bpm
-    tdif = [abs(t-tend) for t in time]
-    end = tdif.index(min(tdif)) # first index of time closest to tend
-    time = time[:end]
+    # tdif_abs = [abs(t-tend) for t in time]
+    tdif = [t-tend for t in time if t-tend<0]
+    # tdiff = [t-tend for t in time]
+    # end = tdif.index(min(tdif)) # first index of time closest to tend
+    end = len(tdif)+1
+    tt = time[:end]
     # time = [obj.value for obj in r1[0]]   
     positions = [obj.value for obj in r2][:end]
     positions = np.asarray(positions)-min(positions) # so that positions have value 0
     
-    return time, positions
+    return tt, positions
 
 def readAnalysisExcel(exceldir, workbookAlg, sheetProfile, cols=['G','H','I'], startRows=[18,31,55,68,92,105,129,142]):
     
@@ -82,7 +87,7 @@ def resample(x,y, num=50, Tnew=None):
     f = interpolate.interp1d(x, y) # default kind=‘linear’
     xx = np.linspace(x[0], x[-1], num) # sampled equidistant
     if Tnew:
-        xx = np.linspace(x[0], Tnew, num) # sampled equidistant & to new T
+        xx = np.linspace(x[0], x[0]+Tnew, num) # sampled equidistant & to new T
     yy = f(xx)
     
     return xx, yy
@@ -112,96 +117,62 @@ if __name__ == '__main__':
     workbookAlg = '20160624 DATA Toshiba.xlsx'
     sheetProfile = 'ZA0'
     # colSt, colEnd = 'CF', 'DK' # 'AP', 'CU' #  'BI', 'CH'
-    colSt = 'J' # 2nd first zero/min position
+    colSt = 'I' # 2nd first zero/min position
     bpm = 70
     
+    # read camera data
     time_cam, posCam = readCameraExcel(exceldir, workbookCam, sheetProfile, colSt, bpm)
+    time_cam = np.array(time_cam)-time_cam[0] # start at To=0, equal to time_pp
+    # read algorithm data
     pp = readAnalysisExcel(exceldir, workbookAlg, sheetProfile)
     pz = pp[0][:,2]
     pz = np.append(pz, pz[0]) # now point 1, z-axis
     time_pp = np.linspace(0,60/bpm,11) # scale phases to time domain
-    time_cam = np.array(time_cam)-time_cam[0] # start at To=0
-    # upsample posCam
-    time_cam_s, posCam_s = resample(time_cam,posCam, num=len(time_cam)*4) #todo: is factor 4 reasonable?
     
     # downsample camera to 10 positions
     time_cam_s, posCam_s = resample(time_cam,posCam, num=11)
-    # %down sample y2 to be same length as y1
+    # down sample camera to be same length as algorithm period
     time_cam_sT, posCam_sT = resample(time_cam,posCam, num=11, Tnew=60/bpm)
-    # y3 = interp1(x2,y2,x1);%y3 length is 32
-    
-    # #Test easy 1
-    # time_cam_s, posCam_s = time_pp+0.9, pz 
-    # Test easy 2
-    # time_cam_s, posCam_s = resample((time_pp+0.4),pz, num=len(time_pp)*2)
-    
-    
-    # normalize input arrays to balance amplitudes in array
-    pz2 = pz / np.linalg.norm(pz)
-    posCam_s2 = posCam_s / np.linalg.norm(posCam_s)
-    #todo: subtract mean, divide by std?
     
     # calculcate cross correlation and lag
-    cor_seq = np.correlate(pz,posCam_s, mode='full') # second array is shifted; first is the largest array(?)
-    #todo: right array order?
+    cor_seq = np.correlate(pz,posCam_sT, mode='full') # second array is shifted; first is the largest array(?)
     #todo: full or valid or same mode best?
     maxseqI = np.argmax(cor_seq)
-    lagdistances, lags = cor_timeshift(cor_seq, posCam_s, time_cam_s)
+    lagdistances, lags = cor_timeshift(cor_seq, posCam_sT, time_cam_sT)
     shift = lags[maxseqI] # nr of points lag between signals
-    print('shift (lag number)=', shift, 'of', lagdistances[maxseqI], 'mm lag')
-    #todo: get optimal shift and vertically align data
-    # time_cam_shift = time_cam - lagdistances[maxseqI]
-    # time_pp_shift = time_pp - (time_pp[-1]-time_cam[0]) # shift Alg to most left
-    # time_pp_shift = time_pp - lagdistances[maxseqI]
-    # time_pp_shift = time_pp - maxseqI*0.0080128205128204809 #distanceperlag
-    distancePerLag = (time_cam_s[-1] - time_cam_s[0])/float(time_cam_s.size-1)  # timestep in data
-    time_pp_shift = time_pp + shift*distancePerLag + (time_cam_s[0]-time_pp[0])
+    print('shift (lag number)=', shift, 'of', lagdistances[maxseqI], 'mm lag and correlation measure of', max(cor_seq) )
     
-    
-    colormap = brewer2mpl.get_map('YlGnBu', 'sequential', 5).mpl_colormap
-    
-    f = plt.figure()
-    ax1 = f.add_subplot(311)
-    ax1.plot(time_cam,posCam, 'ro-', label='camera')
-    ax1.plot(time_pp,pz, 'bo-', label='algorithm')
-    ax1.plot(time_cam_s, posCam_s, 'ks-', label='camera sampled')
-    # ax1.plot(time_pp,pz2, 'bo--', label='algorithm normalized')
-    # ax1.plot(time_cam_s, posCam_s2, 'r.--', label='camera sampled normalized')
-    plt.legend()
-    plt.xlabel('time (s)')
-    plt.ylabel('position (mm)')
-    ax2 = f.add_subplot(312)
-    ax2.plot(lags,cor_seq, 'go-', label='cross corr sequence')
-    plt.xlabel('lag position')
-    plt.ylabel('correlation measure')
-    plt.legend()
-    ax3 = f.add_subplot(313, sharex=ax1, sharey=ax1)
-    ax3.plot(time_pp_shift,pz, 'yo--', label='algorithm shifted')
-    ax3.plot(time_cam_s,posCam_s, 'ks-', label='camera sampled')
-    plt.legend()
-    plt.xlabel('time (s)')
-    plt.ylabel('position (mm)')
+    time_pp_shift = time_pp + lagdistances[maxseqI] + (time_cam_sT[0]-time_pp[0]) # shift algorithm
     
     #todo: subtract camera displacement from algortithm displacement/ root mean square error?
     # http://dsp.stackexchange.com/questions/14306/percentage-difference-between-two-signals
     # http://stackoverflow.com/questions/17197492/root-mean-square-error-in-python
     
-    rmse_val = rmse(posCam_s, pz)
+    rmse_val = rmse(posCam_sT, pz)
     print("rms error is: " + str(rmse_val))
     
-    for pos in pz:
-        v = posCam-pos
-        d = [np.linalg.norm(p) for p in v]
-
+    errors_abs = []
+    if shift > 0:
+        for i in range(len(pz)-shift):
+            errors_abs.append(pz[i+shift] - posCam_sT[i])
+        time_error = time_pp_shift[shift:] 
+    elif shift == 0:
+        time_error = []
+        print('no lag')
+    else:
+        for i in range(len(pz)-shift):
+            errors_abs.append(posCam_sT[i+shift] - pz[i])
+        time_error = posCam_sT[shift:]
+            
     # # subtract area, get overlap?
     # from scipy import integrate
-    # posCam_int = integrate.cumtrapz(posCam, time_cam, initial=0)
-    # pz_int = integrate.cumtrapz(pz, time_pp, initial=0)
-    # Id = posCam_int - pz_int #todo: must be same length
+    # posCam_int = integrate.cumtrapz(posCam_sT, time_cam_sT, initial=0)
+    # pz_int = integrate.cumtrapz(pz, time_pp_shift, initial=0)
+    # Id = posCam_int - pz_int
     # 
     # f2 = plt.figure()
-    # a1 = f2.add_axes()
-    # a1.plot(time_cam,Id)
+    # a1 = f2.add_subplot(1,1,1)
+    # a1.plot(time_cam_sT,Id)
     
     # calc mean, min, max, std
     pz_mean = np.mean(pz)
@@ -210,33 +181,44 @@ if __name__ == '__main__':
     posCam_std = np.std(posCam)
     posCam_s_mean = np.mean(posCam_s)
     posCam_s_std = np.std(posCam_s)
+    posCam_sT_mean = np.mean(posCam_sT)
+    posCam_sT_std = np.std(posCam_sT)
     
     # t-test to compare arrays
     from scipy import stats
-    tt, pval = stats.ttest_ind(pz, posCam_s) # ind = unpaired t-test; tt=t-statistic for mean
+    tt, pval = stats.ttest_rel(pz, posCam_sT) # ind = unpaired t-test; tt=t-statistic for mean
     #todo: _ind? for paired = _rel sample size needs the be equal
     print('t-statistic =', tt)
     print('pvalue =     ', pval)
-
     
+    ## visualize
+    colormap = brewer2mpl.get_map('YlGnBu', 'sequential', 5).mpl_colormap
     
+    f = plt.figure()
+    ax1 = f.add_subplot(411)
+    ax1.plot(time_cam,posCam, 'ro-', label='camera')
+    ax1.plot(time_pp,pz, 'bo-', label='algorithm')
+    ax1.plot(time_cam_s, posCam_s, 'ks-', label='camera sampled')
+    ax1.plot(time_cam_sT, posCam_sT, 'cs-', label='camera sampled scaled')
+    plt.legend()
+    plt.xlabel('time (s)')
+    plt.ylabel('position (mm)')
+    ax2 = f.add_subplot(412)
+    ax2.plot(lags,cor_seq, 'go-', label='cross corr sequence')
+    plt.xlabel('lag position')
+    plt.ylabel('correlation measure')
+    plt.legend()
+    ax3 = f.add_subplot(413, sharex=ax1, sharey=ax1)
+    ax3.plot(time_pp_shift,pz, 'yo--', label='algorithm shifted')
+    ax3.plot(time_cam_sT,posCam_sT, 'ks-', label='camera sampled')
+    plt.legend()
+    plt.xlabel('time (s)')
+    plt.ylabel('position (mm)')
+    ax4 = f.add_subplot(414, sharex=ax1)
+    ax4.plot(time_error,errors_abs, 'go--', label='error (mm)')
+    plt.legend()
+    plt.xlabel('time (s)')
+    plt.ylabel('error (mm)')
+    ax4.axhline(y=0, color='k')
     
-    
-    
-    # http://matplotlib.org/examples/pylab_examples/xcorr_demo.html
-    # cor = plt.xcorr(posCam, pz, mode='full')
-    # 
-    # 
-    # fig = plt.figure()
-    # ax1 = fig.add_subplot(211)
-    # ax1.xcorr(posCam, pz, usevlines=True, maxlags=50, normed=True, lw=2)
-    # ax1.grid(True)
-    # ax1.axhline(0, color='black', lw=2)
-    # 
-    # ax2 = fig.add_subplot(212, sharex=ax1)
-    # ax2.acorr(posCam, usevlines=True, normed=True, maxlags=50, lw=2)
-    # ax2.grid(True)
-    # ax2.axhline(0, color='black', lw=2)
-    # 
-    # plt.show()
-    #     
+        
