@@ -28,13 +28,6 @@ def readCameraExcel(exceldir, workbookCam, sheetProfile, colSt='B'):
     
     return time, positions
 
-def getLocalMin(time, positions):
-    """
-    """
-    from peakdetection import peakdet
-    
-    peakmax, peakmin = peakdet(positions, 0.05, time)
-
 def getCameraPeriod(time, positions, T):
     """ get one period of camera signal from time[0] based on T of period
     """
@@ -198,29 +191,6 @@ if __name__ == '__main__':
             pos_offset = min(pos_cam_sT) # not always zero as min value
             pos_cam_sT = np.asarray(pos_cam_sT)- pos_offset # so that positions cam have value 0
             
-            # # calculcate cross correlation and lag
-            # cor_seq = np.correlate(pz,pos_cam_sT, mode='full') # second array is shifted; first is the largest array(?)
-            # #todo: full or valid or same mode best?
-            # maxseqI = np.argmax(cor_seq)
-            # lagdistances, lags = cor_timeshift(cor_seq, pos_cam_sT, time_cam_sT)
-            # shift = lags[maxseqI] # nr of points lag between signals
-            # print('shift (lag number)=', shift, 'of', lagdistances[maxseqI], 'mm lag and correlation measure of', max(cor_seq) )
-            # 
-            # time_pp_shift = time_pp + lagdistances[maxseqI] + (time_cam_sT[0]-time_pp[0]) # shift algorithm
-            
-            # errors = []
-            # if shift > 0:
-            #     for i in range(len(pz)-shift):
-            #         errors.append(pz[i+shift] - pos_cam_sT[i])
-            #     time_error = time_pp_shift[shift:] 
-            # elif shift == 0:
-            #     time_error = []
-            #     print('no lag')
-            # else:
-            #     for i in range(len(pz)-shift):
-            #         errors.append(pos_cam_sT[i+shift] - pz[i])
-            #     time_error = pos_cam_sT[shift:]
-            
             # error by subtracting camera from found locations by algorithm
             errors = pz - pos_cam_sT
             
@@ -240,13 +210,6 @@ if __name__ == '__main__':
             ax2.plot(time_pp,errors, 'o--', label='error (alg-cam) (mm)')
         print('period was read from index: ', best_i)
         print('--------------')
-        
-        # # t-test to compare arrays
-        # from scipy import stats
-        # tt, pval = stats.ttest_rel(pz, pos_cam_period) # ind = unpaired t-test; tt=t-statistic for mean
-        # #todo: _ind? for paired = _rel sample size needs the be equal
-        # print('t-statistic =', tt)
-        # print('pvalue =     ', pval)
         
         # store signal with smallest rmse for each peak/period
         pos_cam_periods.append(pos_cam_period)
@@ -291,36 +254,7 @@ if __name__ == '__main__':
     ax3.set_ylabel('position (mm)')
     ax3.legend()
     
-    # # vis signals, cross cor, shift, error
-    # f4 = plt.figure(figsize=(17,11))
-    # ax4 = f4.add_subplot(411)
-    # ax4.plot(time_cam,pos_cam, 'o-', label='camera')
-    # ax4.plot(time_pp,pz, 'o-', label='algorithm')
-    # ax4.plot(time_cam_s, pos_cam_s, 'ks-', label='camera sampled')
-    # ax4.plot(time_cam_sT, pos_cam_sT, 's-', label='camera sampled scaled')
-    # plt.legend()
-    # plt.xlabel('time (s)')
-    # plt.ylabel('position (mm)')
-    # ax5 = f4.add_subplot(412)
-    # # ax5.plot(lags,cor_seq, 'go-', label='cross corr sequence')
-    # # plt.xlabel('lag position')
-    # # plt.ylabel('correlation measure')
-    # # plt.legend()
-    # ax6 = f4.add_subplot(413, sharex=ax4, sharey=ax4)
-    # # ax6.plot(time_pp_shift,pz, 'yo--', label='algorithm shifted')
-    # # ax6.plot(time_cam_sT,pos_cam_sT, 'ks-', label='camera sampled')
-    # # plt.legend()
-    # # plt.xlabel('time (s)')
-    # # plt.ylabel('position (mm)')
-    # ax7 = f4.add_subplot(414)
-    # ax7.plot(time_pp,errors, 'o--', label='error (alg-cam) (mm)')
-    # plt.legend()
-    # plt.xlabel('time (s)')
-    # plt.ylabel('error (mm)')
-    # ax7.axhline(y=0, color='k')
-        
-    
-    ## Write excel
+    ## write excel
     if True:
         dir =  select_dir(r'C:\Users\Maaike\Desktop')
         write_errors_excel(dir, errors_periods, rmse_val_periods)
