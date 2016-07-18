@@ -57,7 +57,9 @@ def getFreqCamera(t, signal):
     return freqs, 20*scipy.log10(FFT)
 
 def readAnalysisExcel(exceldir, workbookAlg, sheetProfile, cols=['G','H','I'], startRows=[18,31,55,68,92,105,129,142]):
-    
+    """ To read 'Data Toshiba/Siemens' with algorithm analysis. 
+    Return nx10x3 for n points starting at every startRow
+    """
     import numpy as np
     
     wb = openpyxl.load_workbook(os.path.join(exceldir, workbookAlg), data_only=True)
@@ -122,19 +124,22 @@ def rmse(predictions, targets):
     """
     return np.sqrt(((predictions - targets) ** 2).mean())
 
-def write_errors_excel(dir, errors_periods, rmse_val_periods):
-    wb = openpyxl.Workbook()
+def write_errors_excel(dir, errors_periods, rmse_val_periods, col=0):
+    """ write errors column wise
+    """
+    # wb = openpyxl.Workbook()
     dest_filename = 'motion_pattern_error_out.xlsx'
+    wb = openpyxl.load_workbook(os.path.join(dir, dest_filename))
     ws = wb.active
     errors_profile = np.mean(np.vstack(errors_periods), axis=0) # mean of periods in cam signal
     mean_abs_error_profile = np.mean(abs(errors_profile))
     rmse_profile = np.mean(rmse_val_periods)
     ws.cell(row=1, column=1).value = 'rmse_profile'
     ws.cell(row=2, column=1).value = 'mean_abs_error_profile'
-    ws.cell(row=1, column=2).value = rmse_profile
-    ws.cell(row=2, column=2).value = mean_abs_error_profile
+    ws.cell(row=1, column=2+col).value = rmse_profile
+    ws.cell(row=2, column=2+col).value = mean_abs_error_profile
     for i, error in enumerate(errors_profile):
-        ws.cell(row=i+5, column=2).value = abs(error) # store abs value of error    
+        ws.cell(row=i+5, column=2+col).value = abs(error) # store abs value of error    
     # save excel
     wb.save(os.path.join(dir, dest_filename))
 
@@ -148,113 +153,121 @@ if __name__ == '__main__':
                   r'D:\Profiles\koenradesma\Dropbox\UTdrive\LSPEAS\Analysis\Validation robot')
     workbookCam = '20160215 GRAFIEKEN van camera systeem uit matlab in excel.xlsx'
     workbookAlg = '20160624 DATA Toshiba.xlsx'
-    sheetProfile = 'ZA0'
-    # colSt, colEnd = 'CF', 'DK' # 'AP', 'CU' #  'BI', 'CH'
-    colSt = 'C' # I = 2nd first zero/min position
+    sheetProfile = 'ZB6'
+    colSt = 'Y'
     n_samplepoints = 11
+    visf2 = False
+    
     # read camera data
     time_cam_all, pos_cam_all = readCameraExcel(exceldir, workbookCam, sheetProfile, colSt)
-    # time_cam = np.array(time_cam)-time_cam[0] # start at To=0, equal to time_pp
     
     # get local minima as starting points for camera periods
     peakmax, peakmin = peakdet(pos_cam_all, 0.05)
+    # peakmin = peakmin[::2]# only for B5 and B6 with extra gauss peak
     tt = [time_cam_all[int(peak)] for peak in peakmin[:,0]] # get time in s
     T = (tt[-1]-tt[0])/(len(peakmin)-1) # period of signal
     
     # read algorithm data
-    pp = readAnalysisExcel(exceldir, workbookAlg, sheetProfile)
-    pz = pp[0][:,2]
-    pz = np.append(pz, pz[0]) # now point 1, z-axis
-    time_pp = np.linspace(0,T,11) # scale phases to time domain
-    time_pp, pz = resample(time_pp,pz, num=n_samplepoints)
+    pp = readAnalysisExcel(exceldir, workbookAlg, sheetProfile) # reads 8x10x3
     
-    f1 = plt.figure(figsize=(18,11))
-    ax0 = f1.add_subplot(111)
-    ax0.plot(time_cam_all, pos_cam_all, 'r.-', alpha=0.5)
-    
-    errors_periods = []
-    rmse_val_periods = []
-    time_cam_periods = []
-    pos_cam_periods = []
-    for peak in peakmin[:-1,0]: # we do not include last peak
-        f2, (ax1, ax2) = plt.subplots(2, 1, sharex=False, figsize=(17,11))
-        rmse_val = 10000
-        for i in range(-3,3): # analyse for 6 cam start points
-            istart = int(peak)+i
-            tc, pc = time_cam_all[istart:], pos_cam_all[istart:]
-            time_cam, pos_cam = getCameraPeriod(tc, pc, T)
+    for i_point in range(len(pp)):
+        pz = pp[i_point][:,2] # for a point, z-axis
+        pz = np.append(pz, pz[0]) 
+        time_pp = np.linspace(0,T,11) # scale phases to time domain
+        time_pp, pz = resample(time_pp,pz, num=n_samplepoints)
+        
+        f1 = plt.figure(figsize=(18,11))
+        ax0 = f1.add_subplot(111)
+        ax0.plot(time_cam_all, pos_cam_all, 'r.-', alpha=0.5)
+        
+        # get errors after resampling signals
+        errors_periods = []
+        rmse_val_periods = []
+        time_cam_periods = []
+        pos_cam_periods = []
+        for peak in peakmin[:-1,0]: # we do not include last peak
+            if visf2:
+                f2, (ax1, ax2) = plt.subplots(2, 1, sharex=False, figsize=(17,11))
+            rmse_val = 10000
+            for i in range(-3,3): # analyse for 6 cam start points
+                istart = int(peak)+i
+                tc, pc = time_cam_all[istart:], pos_cam_all[istart:]
+                time_cam, pos_cam = getCameraPeriod(tc, pc, T)
+                
+                # downsample camera to 10 positions
+                time_cam_s, pos_cam_s = resample(time_cam,pos_cam, num=11)
+                # down sample camera to be same length as algorithm period
+                time_cam_sT, pos_cam_sT = resample(time_cam,pos_cam, num=n_samplepoints,Tnew=T)
+                pos_offset = min(pos_cam_sT) # not always zero as min value
+                pos_cam_sT = np.asarray(pos_cam_sT)- pos_offset # so that positions cam have value 0
+                
+                # error by subtracting camera from found locations by algorithm
+                errors = pz - pos_cam_sT
+                
+                # root mean squared error
+                rmse_val_new = rmse(pos_cam_sT, pz)
+                # print('rms error for lag', i, 'is:', str(rmse_val_new))
+                rmse_val = min(rmse_val, rmse_val_new) # keep smallest, better overlay with algorithm
+                if rmse_val == rmse_val_new:
+                    pos_cam_period = pos_cam_sT + pos_offset
+                    time_cam_period = time_cam_sT
+                    errors_period = errors
+                    best_i = i
+                
+                # vis
+                if visf2:
+                    time_cam_sT = np.array(time_cam_sT)-time_cam_sT[0] # start at To=0, equal to time_pp
+                    ax1.plot(time_cam_sT, pos_cam_sT, 's-', label='camera sampled scaled')
+                    ax2.plot(time_pp,errors, 'o--', label='error (alg-cam) (mm)')
+            print('period was read from index: ', best_i)
+            print('--------------')
             
-            # downsample camera to 10 positions
-            time_cam_s, pos_cam_s = resample(time_cam,pos_cam, num=11)
-            # down sample camera to be same length as algorithm period
-            time_cam_sT, pos_cam_sT = resample(time_cam,pos_cam, num=n_samplepoints,Tnew=T)
-            pos_offset = min(pos_cam_sT) # not always zero as min value
-            pos_cam_sT = np.asarray(pos_cam_sT)- pos_offset # so that positions cam have value 0
-            
-            # error by subtracting camera from found locations by algorithm
-            errors = pz - pos_cam_sT
-            
-            # root mean squared error
-            rmse_val_new = rmse(pos_cam_sT, pz)
-            print('rms error for lag', i, 'is:', str(rmse_val_new))
-            rmse_val = min(rmse_val, rmse_val_new) # keep smallest, better overlay with algorithm
-            if rmse_val == rmse_val_new:
-                pos_cam_period = pos_cam_sT + pos_offset
-                time_cam_period = time_cam_sT
-                errors_period = errors
-                best_i = i
+            # store signal with smallest rmse for each peak/period
+            pos_cam_periods.append(pos_cam_period)
+            time_cam_periods.append(time_cam_period)
+            rmse_val_periods.append(rmse_val)
+            errors_periods.append(errors_period)
             
             # vis
-            time_cam_sT = np.array(time_cam_sT)-time_cam_sT[0] # start at To=0, equal to time_pp
-            ax1.plot(time_cam_sT, pos_cam_sT, 's-', label='camera sampled scaled')
-            ax2.plot(time_pp,errors, 'o--', label='error (alg-cam) (mm)')
-        print('period was read from index: ', best_i)
-        print('--------------')
+            ax0.plot(time_cam_period, pos_cam_period, linewidth=3, alpha=0.5)
+            ax0.plot(time_pp+time_cam_period[0], pz+min(pos_cam_period),'o:',
+                    color='k',linewidth=3,alpha=0.5,label='algorithm')
+            if visf2:
+                ax1.plot(time_pp,pz, 'o:', label='algorithm') # plot algorithm
+                ax1.legend()
+                ax1.set_xlabel('time (s)')
+                ax1.set_ylabel('position (mm)')
+                ax2.legend()
+                ax2.set_xlabel('time (s)')
+                ax2.set_ylabel('error (mm)')
+                ax2.axhline(y=0, color='k')
+            
+        ax0.legend()
         
-        # store signal with smallest rmse for each peak/period
-        pos_cam_periods.append(pos_cam_period)
-        time_cam_periods.append(time_cam_period)
-        rmse_val_periods.append(rmse_val)
-        errors_periods.append(errors_period)
+        # calc errors
+        rmse_profile = np.mean(rmse_val_periods)
+        mean_abs_error_periods = [np.mean(abs(e)) for e in errors_periods]
+        mean_abs_error_profile = np.mean(mean_abs_error_periods)
+        print('rmse of profile=', rmse_profile)
+        print('mean abs error of profile=', mean_abs_error_profile)
         
-        # vis
-        ax0.plot(time_cam_period, pos_cam_period, linewidth=3, alpha=0.5)
-        ax0.plot(time_pp+time_cam_period[0], pz+min(pos_cam_period),'o:',
-                 color='k',linewidth=3,alpha=0.5,label='algorithm')
-        ax1.plot(time_pp,pz, 'o:', label='algorithm') # plot algorithm
-        ax1.legend()
-        ax1.set_xlabel('time (s)')
-        ax1.set_ylabel('position (mm)')
-        ax2.legend()
-        ax2.set_xlabel('time (s)')
-        ax2.set_ylabel('error (mm)')
-        ax2.axhline(y=0, color='k')
-    
-    ax0.legend()
-    
-    # calc errors
-    rmse_profile = np.mean(rmse_val_periods)
-    mean_abs_error_periods = [np.mean(abs(e)) for e in errors_periods]
-    mean_abs_error_profile = np.mean(mean_abs_error_periods)
-    print('rmse of profile=', rmse_profile)
-    print('mean abs error of profile=', mean_abs_error_profile)
-    
-    ## visualize
-    # https://github.com/olgabot/prettyplotlib/wiki/Examples-with-code#fill_between-area-between-two-lines%22
-    # colormap = brewer2mpl.get_map('YlGnBu', 'sequential', 5).mpl_colormap
-    
-    # vis signal camera with peaks
-    f3 = plt.figure()  
-    ax3 = f3.add_subplot(111)
-    ax3.plot(time_cam_all, pos_cam_all, 'r.-', alpha=0.5, label='camera')
-    t = [time_cam_all[int(peak)] for peak in peakmin[:,0]] # get time in s
-    ax3.scatter(t, np.array(peakmin)[:,1], color='green')
-    ax3.plot(time_pp,pz, 'o:', label='algorithm')
-    ax3.set_xlabel('time (s)')
-    ax3.set_ylabel('position (mm)')
-    ax3.legend()
-    
-    ## write excel
-    if True:
-        dir =  select_dir(r'C:\Users\Maaike\Desktop')
-        write_errors_excel(dir, errors_periods, rmse_val_periods)
+        ## visualize
+        # https://github.com/olgabot/prettyplotlib/wiki/Examples-with-code#fill_between-area-between-two-lines%22
+        # colormap = brewer2mpl.get_map('YlGnBu', 'sequential', 5).mpl_colormap
+        
+        # vis signal camera with peaks
+        f3 = plt.figure()  
+        ax3 = f3.add_subplot(111)
+        ax3.plot(time_cam_all, pos_cam_all, 'r.-', alpha=0.5, label='camera')
+        t = [time_cam_all[int(peak)] for peak in peakmin[:,0]] # get time in s
+        ax3.scatter(t, np.array(peakmin)[:,1], color='green')
+        ax3.plot(time_pp,pz, 'o:', label='algorithm')
+        ax3.set_xlabel('time (s)')
+        ax3.set_ylabel('position (mm)')
+        ax3.legend()
+        
+        ## write excel
+        if True:
+            dir =  select_dir(r'C:\Users\Maaike\Desktop','D:\Profiles\koenradesma\Desktop')
+            write_errors_excel(dir, errors_periods, rmse_val_periods, col=i_point)
+            print('******************************')
