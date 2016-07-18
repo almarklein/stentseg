@@ -12,36 +12,56 @@ from prettyplotlib import brewer2mpl # colormaps
 import numpy as np
 import scipy
 import string
-
-# https://automatetheboringstuff.com/chapter12/
-# https://github.com/olgabot/prettyplotlib/wiki/Examples-with-code#fill_between-area-between-two-lines%22
-# http://stackoverflow.com/questions/24396589/python-interpretation-on-xcorr
+from peakdetection import peakdet
 
 
-def readCameraExcel(exceldir, workbookCam, sheetProfile, colSt, bpm):
-    """ read camera patterns. Start at colSt column and get one period
+def readCameraExcel(exceldir, workbookCam, sheetProfile, colSt='B'):
+    """ Read camera patterns. Start at colSt column.
     """
     wb = openpyxl.load_workbook(os.path.join(exceldir, workbookCam))
     sheet = wb.get_sheet_by_name(sheetProfile)
-    # r1 = tuple(sheet[colSt+'1':colEnd+'1']) #todo: get period automatically
-    # r2 = tuple(sheet[colSt+'2':colEnd+'2'])
     start = col2num(colSt)-1
     r1 = sheet.rows[0][start:]
     r2 = sheet.rows[1][start:]
     time = [obj.value for obj in r1] 
-    t0 = time[0]
-    tend = t0 + 60/bpm
-    # tdif_abs = [abs(t-tend) for t in time]
-    tdif = [t-tend for t in time if t-tend<0]
-    # tdiff = [t-tend for t in time]
-    # end = tdif.index(min(tdif)) # first index of time closest to tend
-    end = len(tdif)+1
-    tt = time[:end]
-    # time = [obj.value for obj in r1[0]]   
-    positions = [obj.value for obj in r2][:end]
-    positions = np.asarray(positions)-min(positions) # so that positions have value 0
+    positions = [obj.value for obj in r2]
     
-    return tt, positions
+    return time, positions
+
+def getLocalMin(time, positions):
+    """
+    """
+    from peakdetection import peakdet
+    
+    peakmax, peakmin = peakdet(positions, 0.05, time)
+
+def getCameraPeriod(time, positions, T):
+    """ get one period of camera signal from time[0] based on T of period
+    """
+    t0 = time[0]
+    tend = t0 + T
+    tdif = [t-tend for t in time if t-tend<0]
+    end = len(tdif)+1 # get 1 timepoint up to
+    time = time[:end]
+    positions = positions[:end]
+    # positions = np.asarray(positions)-min(positions) # so that positions have value 0
+    
+    return time, positions
+
+def getFreqCamera(t, signal):
+    import scipy
+    import scipy.fftpack
+    import pylab
+    from scipy import pi
+    FFT = abs(scipy.fft(signal))
+    freqs = scipy.fftpack.fftfreq(len(signal), t[1]-t[0])
+    
+    pylab.subplot(211)
+    pylab.plot(t, signal)
+    pylab.subplot(212)
+    pylab.plot(freqs,20*scipy.log10(FFT),'x') # 20log10 provides conversion for a magnitude spectrum
+    pylab.show()
+    return freqs, 20*scipy.log10(FFT)
 
 def readAnalysisExcel(exceldir, workbookAlg, sheetProfile, cols=['G','H','I'], startRows=[18,31,55,68,92,105,129,142]):
     
@@ -103,7 +123,27 @@ def col2num(col):
     return num
 
 def rmse(predictions, targets):
+    """ root mean squared error
+    returns a single number that represents, on average, the distance between 
+    every value of list1 to it's corresponding element value of list2
+    """
     return np.sqrt(((predictions - targets) ** 2).mean())
+
+def write_errors_excel(dir, errors_periods, rmse_val_periods):
+    wb = openpyxl.Workbook()
+    dest_filename = 'motion_pattern_error_out.xlsx'
+    ws = wb.active
+    errors_profile = np.mean(np.vstack(errors_periods), axis=0) # mean of periods in cam signal
+    mean_abs_error_profile = np.mean(abs(errors_profile))
+    rmse_profile = np.mean(rmse_val_periods)
+    ws.cell(row=1, column=1).value = 'rmse_profile'
+    ws.cell(row=2, column=1).value = 'mean_abs_error_profile'
+    ws.cell(row=1, column=2).value = rmse_profile
+    ws.cell(row=2, column=2).value = mean_abs_error_profile
+    for i, error in enumerate(errors_profile):
+        ws.cell(row=i+5, column=2).value = abs(error) # store abs value of error    
+    # save excel
+    wb.save(os.path.join(dir, dest_filename))
 
 
 if __name__ == '__main__':
@@ -117,108 +157,170 @@ if __name__ == '__main__':
     workbookAlg = '20160624 DATA Toshiba.xlsx'
     sheetProfile = 'ZA0'
     # colSt, colEnd = 'CF', 'DK' # 'AP', 'CU' #  'BI', 'CH'
-    colSt = 'I' # 2nd first zero/min position
-    bpm = 70
-    
+    colSt = 'C' # I = 2nd first zero/min position
+    n_samplepoints = 11
     # read camera data
-    time_cam, posCam = readCameraExcel(exceldir, workbookCam, sheetProfile, colSt, bpm)
-    time_cam = np.array(time_cam)-time_cam[0] # start at To=0, equal to time_pp
+    time_cam_all, pos_cam_all = readCameraExcel(exceldir, workbookCam, sheetProfile, colSt)
+    # time_cam = np.array(time_cam)-time_cam[0] # start at To=0, equal to time_pp
+    
+    # get local minima as starting points for camera periods
+    peakmax, peakmin = peakdet(pos_cam_all, 0.05)
+    tt = [time_cam_all[int(peak)] for peak in peakmin[:,0]] # get time in s
+    T = (tt[-1]-tt[0])/(len(peakmin)-1) # period of signal
+    
     # read algorithm data
     pp = readAnalysisExcel(exceldir, workbookAlg, sheetProfile)
     pz = pp[0][:,2]
     pz = np.append(pz, pz[0]) # now point 1, z-axis
-    time_pp = np.linspace(0,60/bpm,11) # scale phases to time domain
+    time_pp = np.linspace(0,T,11) # scale phases to time domain
+    time_pp, pz = resample(time_pp,pz, num=n_samplepoints)
     
-    # downsample camera to 10 positions
-    time_cam_s, posCam_s = resample(time_cam,posCam, num=11)
-    # down sample camera to be same length as algorithm period
-    time_cam_sT, posCam_sT = resample(time_cam,posCam, num=11, Tnew=60/bpm)
+    f1 = plt.figure(figsize=(18,11))
+    ax0 = f1.add_subplot(111)
+    ax0.plot(time_cam_all, pos_cam_all, 'r.-', alpha=0.5)
     
-    # calculcate cross correlation and lag
-    cor_seq = np.correlate(pz,posCam_sT, mode='full') # second array is shifted; first is the largest array(?)
-    #todo: full or valid or same mode best?
-    maxseqI = np.argmax(cor_seq)
-    lagdistances, lags = cor_timeshift(cor_seq, posCam_sT, time_cam_sT)
-    shift = lags[maxseqI] # nr of points lag between signals
-    print('shift (lag number)=', shift, 'of', lagdistances[maxseqI], 'mm lag and correlation measure of', max(cor_seq) )
-    
-    time_pp_shift = time_pp + lagdistances[maxseqI] + (time_cam_sT[0]-time_pp[0]) # shift algorithm
-    
-    #todo: subtract camera displacement from algortithm displacement/ root mean square error?
-    # http://dsp.stackexchange.com/questions/14306/percentage-difference-between-two-signals
-    # http://stackoverflow.com/questions/17197492/root-mean-square-error-in-python
-    
-    rmse_val = rmse(posCam_sT, pz)
-    print("rms error is: " + str(rmse_val))
-    
-    errors_abs = []
-    if shift > 0:
-        for i in range(len(pz)-shift):
-            errors_abs.append(pz[i+shift] - posCam_sT[i])
-        time_error = time_pp_shift[shift:] 
-    elif shift == 0:
-        time_error = []
-        print('no lag')
-    else:
-        for i in range(len(pz)-shift):
-            errors_abs.append(posCam_sT[i+shift] - pz[i])
-        time_error = posCam_sT[shift:]
+    errors_periods = []
+    rmse_val_periods = []
+    time_cam_periods = []
+    pos_cam_periods = []
+    for peak in peakmin[:-1,0]: # we do not include last peak
+        f2, (ax1, ax2) = plt.subplots(2, 1, sharex=False, figsize=(17,11))
+        rmse_val = 10000
+        for i in range(-3,3): # analyse for 6 cam start points
+            istart = int(peak)+i
+            tc, pc = time_cam_all[istart:], pos_cam_all[istart:]
+            time_cam, pos_cam = getCameraPeriod(tc, pc, T)
             
-    # # subtract area, get overlap?
-    # from scipy import integrate
-    # posCam_int = integrate.cumtrapz(posCam_sT, time_cam_sT, initial=0)
-    # pz_int = integrate.cumtrapz(pz, time_pp_shift, initial=0)
-    # Id = posCam_int - pz_int
-    # 
-    # f2 = plt.figure()
-    # a1 = f2.add_subplot(1,1,1)
-    # a1.plot(time_cam_sT,Id)
+            # downsample camera to 10 positions
+            time_cam_s, pos_cam_s = resample(time_cam,pos_cam, num=11)
+            # down sample camera to be same length as algorithm period
+            time_cam_sT, pos_cam_sT = resample(time_cam,pos_cam, num=n_samplepoints,Tnew=T)
+            pos_offset = min(pos_cam_sT) # not always zero as min value
+            pos_cam_sT = np.asarray(pos_cam_sT)- pos_offset # so that positions cam have value 0
+            
+            # # calculcate cross correlation and lag
+            # cor_seq = np.correlate(pz,pos_cam_sT, mode='full') # second array is shifted; first is the largest array(?)
+            # #todo: full or valid or same mode best?
+            # maxseqI = np.argmax(cor_seq)
+            # lagdistances, lags = cor_timeshift(cor_seq, pos_cam_sT, time_cam_sT)
+            # shift = lags[maxseqI] # nr of points lag between signals
+            # print('shift (lag number)=', shift, 'of', lagdistances[maxseqI], 'mm lag and correlation measure of', max(cor_seq) )
+            # 
+            # time_pp_shift = time_pp + lagdistances[maxseqI] + (time_cam_sT[0]-time_pp[0]) # shift algorithm
+            
+            # errors = []
+            # if shift > 0:
+            #     for i in range(len(pz)-shift):
+            #         errors.append(pz[i+shift] - pos_cam_sT[i])
+            #     time_error = time_pp_shift[shift:] 
+            # elif shift == 0:
+            #     time_error = []
+            #     print('no lag')
+            # else:
+            #     for i in range(len(pz)-shift):
+            #         errors.append(pos_cam_sT[i+shift] - pz[i])
+            #     time_error = pos_cam_sT[shift:]
+            
+            # error by subtracting camera from found locations by algorithm
+            errors = pz - pos_cam_sT
+            
+            # root mean squared error
+            rmse_val_new = rmse(pos_cam_sT, pz)
+            print('rms error for lag', i, 'is:', str(rmse_val_new))
+            rmse_val = min(rmse_val, rmse_val_new) # keep smallest, better overlay with algorithm
+            if rmse_val == rmse_val_new:
+                pos_cam_period = pos_cam_sT + pos_offset
+                time_cam_period = time_cam_sT
+                errors_period = errors
+                best_i = i
+            
+            # vis
+            time_cam_sT = np.array(time_cam_sT)-time_cam_sT[0] # start at To=0, equal to time_pp
+            ax1.plot(time_cam_sT, pos_cam_sT, 's-', label='camera sampled scaled')
+            ax2.plot(time_pp,errors, 'o--', label='error (alg-cam) (mm)')
+        print('period was read from index: ', best_i)
+        print('--------------')
+        
+        # # t-test to compare arrays
+        # from scipy import stats
+        # tt, pval = stats.ttest_rel(pz, pos_cam_period) # ind = unpaired t-test; tt=t-statistic for mean
+        # #todo: _ind? for paired = _rel sample size needs the be equal
+        # print('t-statistic =', tt)
+        # print('pvalue =     ', pval)
+        
+        # store signal with smallest rmse for each peak/period
+        pos_cam_periods.append(pos_cam_period)
+        time_cam_periods.append(time_cam_period)
+        rmse_val_periods.append(rmse_val)
+        errors_periods.append(errors_period)
+        
+        # vis
+        ax0.plot(time_cam_period, pos_cam_period, linewidth=3, alpha=0.5)
+        ax0.plot(time_pp+time_cam_period[0], pz+min(pos_cam_period),'o:',
+                 color='k',linewidth=3,alpha=0.5,label='algorithm')
+        ax1.plot(time_pp,pz, 'o:', label='algorithm') # plot algorithm
+        ax1.legend()
+        ax1.set_xlabel('time (s)')
+        ax1.set_ylabel('position (mm)')
+        ax2.legend()
+        ax2.set_xlabel('time (s)')
+        ax2.set_ylabel('error (mm)')
+        ax2.axhline(y=0, color='k')
     
-    # calc mean, min, max, std
-    pz_mean = np.mean(pz)
-    pz_std = np.std(pz)
-    posCam_mean = np.mean(posCam)
-    posCam_std = np.std(posCam)
-    posCam_s_mean = np.mean(posCam_s)
-    posCam_s_std = np.std(posCam_s)
-    posCam_sT_mean = np.mean(posCam_sT)
-    posCam_sT_std = np.std(posCam_sT)
+    ax0.legend()
     
-    # t-test to compare arrays
-    from scipy import stats
-    tt, pval = stats.ttest_rel(pz, posCam_sT) # ind = unpaired t-test; tt=t-statistic for mean
-    #todo: _ind? for paired = _rel sample size needs the be equal
-    print('t-statistic =', tt)
-    print('pvalue =     ', pval)
+    # calc errors
+    rmse_profile = np.mean(rmse_val_periods)
+    mean_abs_error_periods = [np.mean(abs(e)) for e in errors_periods]
+    mean_abs_error_profile = np.mean(mean_abs_error_periods)
+    print('rmse of profile=', rmse_profile)
+    print('mean abs error of profile=', mean_abs_error_profile)
     
     ## visualize
-    colormap = brewer2mpl.get_map('YlGnBu', 'sequential', 5).mpl_colormap
+    # https://github.com/olgabot/prettyplotlib/wiki/Examples-with-code#fill_between-area-between-two-lines%22
+    # colormap = brewer2mpl.get_map('YlGnBu', 'sequential', 5).mpl_colormap
     
-    f = plt.figure()
-    ax1 = f.add_subplot(411)
-    ax1.plot(time_cam,posCam, 'ro-', label='camera')
-    ax1.plot(time_pp,pz, 'bo-', label='algorithm')
-    ax1.plot(time_cam_s, posCam_s, 'ks-', label='camera sampled')
-    ax1.plot(time_cam_sT, posCam_sT, 'cs-', label='camera sampled scaled')
-    plt.legend()
-    plt.xlabel('time (s)')
-    plt.ylabel('position (mm)')
-    ax2 = f.add_subplot(412)
-    ax2.plot(lags,cor_seq, 'go-', label='cross corr sequence')
-    plt.xlabel('lag position')
-    plt.ylabel('correlation measure')
-    plt.legend()
-    ax3 = f.add_subplot(413, sharex=ax1, sharey=ax1)
-    ax3.plot(time_pp_shift,pz, 'yo--', label='algorithm shifted')
-    ax3.plot(time_cam_sT,posCam_sT, 'ks-', label='camera sampled')
-    plt.legend()
-    plt.xlabel('time (s)')
-    plt.ylabel('position (mm)')
-    ax4 = f.add_subplot(414, sharex=ax1)
-    ax4.plot(time_error,errors_abs, 'go--', label='error (mm)')
-    plt.legend()
-    plt.xlabel('time (s)')
-    plt.ylabel('error (mm)')
-    ax4.axhline(y=0, color='k')
+    # vis signal camera with peaks
+    f3 = plt.figure()  
+    ax3 = f3.add_subplot(111)
+    ax3.plot(time_cam_all, pos_cam_all, 'r.-', alpha=0.5, label='camera')
+    t = [time_cam_all[int(peak)] for peak in peakmin[:,0]] # get time in s
+    ax3.scatter(t, np.array(peakmin)[:,1], color='green')
+    ax3.plot(time_pp,pz, 'o:', label='algorithm')
+    ax3.set_xlabel('time (s)')
+    ax3.set_ylabel('position (mm)')
+    ax3.legend()
     
+    # # vis signals, cross cor, shift, error
+    # f4 = plt.figure(figsize=(17,11))
+    # ax4 = f4.add_subplot(411)
+    # ax4.plot(time_cam,pos_cam, 'o-', label='camera')
+    # ax4.plot(time_pp,pz, 'o-', label='algorithm')
+    # ax4.plot(time_cam_s, pos_cam_s, 'ks-', label='camera sampled')
+    # ax4.plot(time_cam_sT, pos_cam_sT, 's-', label='camera sampled scaled')
+    # plt.legend()
+    # plt.xlabel('time (s)')
+    # plt.ylabel('position (mm)')
+    # ax5 = f4.add_subplot(412)
+    # # ax5.plot(lags,cor_seq, 'go-', label='cross corr sequence')
+    # # plt.xlabel('lag position')
+    # # plt.ylabel('correlation measure')
+    # # plt.legend()
+    # ax6 = f4.add_subplot(413, sharex=ax4, sharey=ax4)
+    # # ax6.plot(time_pp_shift,pz, 'yo--', label='algorithm shifted')
+    # # ax6.plot(time_cam_sT,pos_cam_sT, 'ks-', label='camera sampled')
+    # # plt.legend()
+    # # plt.xlabel('time (s)')
+    # # plt.ylabel('position (mm)')
+    # ax7 = f4.add_subplot(414)
+    # ax7.plot(time_pp,errors, 'o--', label='error (alg-cam) (mm)')
+    # plt.legend()
+    # plt.xlabel('time (s)')
+    # plt.ylabel('error (mm)')
+    # ax7.axhline(y=0, color='k')
         
+    
+    ## Write excel
+    if True:
+        dir =  select_dir(r'C:\Users\Maaike\Desktop')
+        write_errors_excel(dir, errors_periods, rmse_val_periods)
