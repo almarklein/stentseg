@@ -148,13 +148,14 @@ if __name__ == '__main__':
     
     from stentseg.utils.datahandling import select_dir
     
-    # load excels camera and algorithm motion pattern
+    # preset dirs
+    dirsave =  select_dir(r'C:\Users\Maaike\Desktop','D:\Profiles\koenradesma\Desktop')
     exceldir = select_dir(r'C:\Users\Maaike\Dropbox\UTdrive\LSPEAS\Analysis\Validation robot', 
                   r'D:\Profiles\koenradesma\Dropbox\UTdrive\LSPEAS\Analysis\Validation robot')
     workbookCam = '20160215 GRAFIEKEN van camera systeem uit matlab in excel.xlsx'
     workbookAlg = '20160624 DATA Toshiba.xlsx'
-    sheetProfile = 'ZB6'
-    colSt = 'Y'
+    sheetProfile = 'ZB3'
+    colSt = 'K'
     n_samplepoints = 11
     visf2 = False
     
@@ -176,9 +177,9 @@ if __name__ == '__main__':
         time_pp = np.linspace(0,T,11) # scale phases to time domain
         time_pp, pz = resample(time_pp,pz, num=n_samplepoints)
         
-        f1 = plt.figure(figsize=(18,11))
+        f1 = plt.figure(figsize=(18,5.25))
         ax0 = f1.add_subplot(111)
-        ax0.plot(time_cam_all, pos_cam_all, 'r.-', alpha=0.5)
+        ax0.plot(time_cam_all, pos_cam_all, 'r.-', alpha=0.5, label='ground truth camera')
         
         # get errors after resampling signals
         errors_periods = []
@@ -229,9 +230,14 @@ if __name__ == '__main__':
             errors_periods.append(errors_period)
             
             # vis
-            ax0.plot(time_cam_period, pos_cam_period, linewidth=3, alpha=0.5)
-            ax0.plot(time_pp+time_cam_period[0], pz+min(pos_cam_period),'o:',
+            # ax0.plot(time_cam_period, pos_cam_period, linewidth=3, alpha=0.5)
+            ax0.plot(time_cam_period, pos_cam_period, 'rs', alpha=0.5)
+            if peak == peakmin[-2,0]: # plot legend ones, not looped 
+                ax0.plot(time_pp+time_cam_period[0], pz+min(pos_cam_period),'o:',
                     color='k',linewidth=3,alpha=0.5,label='algorithm')
+            else:
+                ax0.plot(time_pp+time_cam_period[0], pz+min(pos_cam_period),'o:',
+                    color='k',linewidth=3,alpha=0.5)
             if visf2:
                 ax1.plot(time_pp,pz, 'o:', label='algorithm') # plot algorithm
                 ax1.legend()
@@ -242,7 +248,17 @@ if __name__ == '__main__':
                 ax2.set_ylabel('error (mm)')
                 ax2.axhline(y=0, color='k')
             
-        ax0.legend()
+        ax0.legend(loc='best')
+        ax0.spines["top"].set_visible(False)  
+        ax0.spines["right"].set_visible(False)
+        ax0.get_xaxis().tick_bottom()  
+        ax0.get_yaxis().tick_left()
+        ax0.set_xlabel('time (s)',fontsize=16)
+        ax0.set_ylabel('position (mm)',fontsize=16)
+        for label in (ax0.get_xticklabels() + ax0.get_yticklabels()):
+            label.set_fontsize(15)
+        plt.xlim(0.2,3.5)
+        plt.ylim(0,0.85)
         
         # calc errors
         rmse_profile = np.mean(rmse_val_periods)
@@ -271,3 +287,6 @@ if __name__ == '__main__':
             dir =  select_dir(r'C:\Users\Maaike\Desktop','D:\Profiles\koenradesma\Desktop')
             write_errors_excel(dir, errors_periods, rmse_val_periods, col=i_point)
             print('******************************')
+    
+    # save f1
+    f1.savefig(os.path.join(dirsave, 'patterncamalg.pdf'), papertype='a0', dpi=300)
