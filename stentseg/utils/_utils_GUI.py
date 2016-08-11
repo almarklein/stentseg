@@ -5,6 +5,24 @@
 import visvis as vv
 import numpy as np
 
+def select_node(event, selected_nodes):
+    """ select and deselect nodes by Double Click
+    """
+    if event.owner not in selected_nodes:
+        event.owner.faceColor = 'r'
+        selected_nodes.append(event.owner)
+    elif event.owner in selected_nodes:
+        event.owner.faceColor = 'b'
+        selected_nodes.remove(event.owner)
+
+def pick_node(event, t0):
+    nodenr = event.owner.nr
+    node = event.owner.node
+    t0.text = '\b{Node nr|location}: %i | x=%1.3f y=%1.3f z=%1.3f' % (nodenr,node[0],node[1],node[2])
+
+def unpick_node(event, t0):
+    t0.text = '\b{Node nr|location}: '
+
 def remove_nodes_by_selected_point(graph, vol, a, pos, label, clim, dim=1):
     """ removes nodes and edges in graph. Graph is separated by coord of selected point
     use y (dim=1) to remove graph in spine

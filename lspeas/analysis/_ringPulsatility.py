@@ -11,7 +11,7 @@ import os
 import visvis as vv
 from stentseg.utils.datahandling import select_dir, loadvol, loadmodel
 import numpy as np
-from stentseg.utils import PointSet
+from stentseg.utils import PointSet, _utils_GUI
 from stentseg.stentdirect import stentgraph
 from visvis import Pointset # for meshes
 from stentseg.stentdirect.stentgraph import create_mesh
@@ -29,8 +29,8 @@ exceldir = select_dir(r'C:\Users\Maaike\Desktop',
             r'D:\Profiles\koenradesma\Desktop')
 
 # Select dataset to register
-ptcode = 'QRM_FANTOOM_20160121'
-ctcode = 'ZA2-100-1.35'
+ptcode = 'LSPEAS_015'
+ctcode = 'discharge'
 cropname = 'ring'
 modelname = 'modelavgreg'
 
@@ -185,7 +185,7 @@ def on_key(event):
             # visualize midpoint
             view = a.GetView()
             point = vv.plot(midpoint1[0], midpoint1[1], midpoint1[2], 
-                            mc = 'm', ms = '.', mw = 8)
+                            mc = 'm', ms = 'o', mw = 8, alpha=0.5)
             a.SetView(view)
             # update labels
             t1.text = '\b{Node pairs}: (%i %i) - (%i)' % (nodepair1[0],nodepair1[1],n3.nr)
@@ -199,7 +199,7 @@ def on_key(event):
             # Store output including index nodes
             output2.insert(0, nodepair1) # at the start
             output2.insert(1, [n3.nr])
-            output2[8].insert(0, [midpoint1IndexPath])
+            output2[8].insert(0, midpoint1IndexPath)
             output2[9].insert(0, [n3.nr])
             if output2 not in storeOutput:
                 storeOutput.append(output2)
@@ -220,7 +220,7 @@ def on_key(event):
                 # visualize midpoint
                 view = a.GetView()
                 point = vv.plot(midpoint[0], midpoint[1], midpoint[2], 
-                                mc = 'm', ms = '.', mw = 8)
+                                mc = 'm', ms = 'o', mw = 8, alpha=0.5)
                 a.SetView(view)
             assert len(outputs) == 2 # two midpoints should be found
             # get midpoints and deforms
@@ -250,8 +250,8 @@ def on_key(event):
             # Store output including nodepairs of the midpoints
             output2.insert(0, nodepair1) # indices at the start
             output2.insert(1, nodepair2)
-            output2[8].insert(0, [midpoint1IndexPath])
-            output2[9].insert(0, [midpoint2IndexPath])
+            output2[8].insert(0, midpoint1IndexPath)
+            output2[9].insert(0, midpoint2IndexPath)
             if output2 not in storeOutput:
                 storeOutput.append(output2)
         # Visualize analyzed nodes and deselect
@@ -322,25 +322,6 @@ def on_key(event):
             node_point.visible = False # show that store is ready
 
 
-selected_nodes = list()
-def select_node(event):
-    """ select and deselect nodes by Double Click
-    """
-    if event.owner not in selected_nodes:
-        event.owner.faceColor = 'r'
-        selected_nodes.append(event.owner)
-    elif event.owner in selected_nodes:
-        event.owner.faceColor = 'b'
-        selected_nodes.remove(event.owner)
-
-def pick_node(event):
-    nodenr = event.owner.nr
-    node = event.owner.node
-    t0.text = '\b{Node nr|location}: %i | x=%1.3f y=%1.3f z=%1.3f' % (nodenr,node[0],node[1],node[2])
-
-def unpick_node(event):
-    t0.text = '\b{Node nr|location}: '
-
 def get_midpoint_deforms_edge(model, n1, n2):
     """ Get midpoint of a given edge
     Returns output array with index of nodes, index of midpoint on path and 
@@ -363,20 +344,20 @@ def get_midpoint_deforms_edge(model, n1, n2):
     midpoint = path[midpointIndex]
     # get deforms of midpoint
     midpointDeforms = model.edge[n1][n2]['pathdeforms'][midpointIndex]
-#     if (len(path) % 2 == 0): #even; middle of 2 closest pathpoints to get actual mid
-#         dist_to_mid[midpointIndex] = dist_to_mid.max()+100 # replace for distance > max
-#         midpointIndex2 =  list(dist_to_mid).index(dist_to_mid.min() ) # index on path
-#         midpoint2 = path[midpointIndex2]
-#         # if neighbors on this path, find mid point and deforms
-#         if abs(midpointIndex - midpointIndex2) == 1:
-#             midpoint = (midpoint + midpoint2) / 2
-#             midpointDeforms2 = model.edge[n1][n2]['pathdeforms'][midpointIndex2]
-#             midpointDeforms = (midpointDeforms + midpointDeforms2) / 2
-#             midpointIndex = [midpointIndex,midpointIndex2]
-#         else: # take only closest as midpoint
-#             midpointIndex = [midpointIndex] # return as array, similar to when even pathlength
-#     else: # odd, expected one pathpoint closest to mid of line
-#         midpointIndex = [midpointIndex] # return as array, similar to when even pathlength
+    if (len(path) % 2 == 0): #even; middle of 2 closest pathpoints to get actual mid
+        dist_to_mid[midpointIndex] = dist_to_mid.max()+100 # replace for distance > max
+        midpointIndex2 =  list(dist_to_mid).index(dist_to_mid.min() ) # index on path
+        midpoint2 = path[midpointIndex2]
+        # if neighbors on this path, find mid point and deforms
+        if abs(midpointIndex - midpointIndex2) == 1:
+            midpoint = (midpoint + midpoint2) / 2
+            midpointDeforms2 = model.edge[n1][n2]['pathdeforms'][midpointIndex2]
+            midpointDeforms = (midpointDeforms + midpointDeforms2) / 2
+            midpointIndex = [midpointIndex,midpointIndex2]
+        else: # take only closest as midpoint
+            midpointIndex = [midpointIndex] # return as array, similar to when even pathlength
+    else: # odd, expected one pathpoint closest to mid of line
+        midpointIndex = [midpointIndex] # return as array, similar to when even pathlength
     
     return [nindex, midpointIndex, midpoint, midpointDeforms]
 
@@ -501,13 +482,13 @@ def storeOutputToExcel(storeOutput, exceldir):
     #vv.screenshot(r'C:\Users\Maaike\Desktop\storeScreenshot.png', vv.gcf(), sf=2)
     workbook.close()
 
-
+selected_nodes = list()
 # Bind event handlers
 fig.eventKeyDown.Bind(on_key)
 for node_point in node_points:
-    node_point.eventDoubleClick.Bind(select_node)
-    node_point.eventEnter.Bind(pick_node)
-    node_point.eventLeave.Bind(unpick_node)
+    node_point.eventDoubleClick.Bind(lambda event: _utils_GUI.select_node(event, selected_nodes) )
+    node_point.eventEnter.Bind(lambda event: _utils_GUI.pick_node(event, t0) )
+    node_point.eventLeave.Bind(lambda event: _utils_GUI.unpick_node(event, t0) )
 
 # Set view
 # a.SetView(viewringcrop)

@@ -260,15 +260,6 @@ def on_key(event):
     
 
 selected_nodes = list()
-def select_node(event):
-    """ select and deselect nodes by Double Click
-    """
-    if event.owner not in selected_nodes:
-        event.owner.faceColor = 'r'
-        selected_nodes.append(event.owner)
-    elif event.owner in selected_nodes:
-        event.owner.faceColor = 'b'
-        selected_nodes.remove(event.owner)
 
 #Add clickable nodes
 if guiRemove==True:
@@ -276,7 +267,7 @@ if guiRemove==True:
         # Bind event handlers
         fig.eventKeyDown.Bind(on_key)
         for node_point in node_points:
-            node_point.eventDoubleClick.Bind(select_node)
+            node_point.eventDoubleClick.Bind(lambda event: _utils_GUI.select_node(event, selected_nodes) )
         print('')
         print('UP/DOWN = show/hide nodes')
         print('DELETE  = remove edge [select 2 ndoes] or pop node [select 1 node] '

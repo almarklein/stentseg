@@ -84,18 +84,6 @@ def on_key(event):
         #todo: does this make sense? add strut should be before get ringparts?
 
 
-selected_nodes = list()
-def select_node(event):
-    """ select and deselect nodes by Double Click
-    """
-    if event.owner not in selected_nodes:
-        event.owner.faceColor = 'r'
-        selected_nodes.append(event.owner)
-    elif event.owner in selected_nodes:
-        event.owner.faceColor = 'b'
-        selected_nodes.remove(event.owner)
-
-
 models, modelsR1R2 = [None], [None] #init to modify variable in on_key
 def ringparts(ringpart = True):
     if ringpart:
@@ -156,17 +144,18 @@ def _fit3D(model):
     return pp3, plane, pp3_2, e3
 
 
-def vis3Dfit(fitted):
-    """Visualize ellipse fit in 3D with CT volume
-    input variable from _fit3D
+def vis3Dfit(fitted, vol, model, ptcode, ctcode, showAxis, **kwargs):
+    """Visualize ellipse fit in 3D with CT volume in current axis
+    input: _fit3D output
     """
     from stentseg.utils import fitting
     import numpy as np
     pp3,plane,pp3_2,e3 = fitted[0],fitted[1],fitted[2],fitted[3]
     a = vv.gca()
-    show_ctvolume(vol, model, showVol=showVol, clim=clim0, isoTh=isoTh, clim3=clim3)
+    # show_ctvolume(vol, model, showVol=showVol, clim=clim0, isoTh=isoTh, clim3=clim3)
+    show_ctvolume(vol, model, **kwargs)
     vv.xlabel('x (mm)');vv.ylabel('y (mm)');vv.zlabel('z (mm)')
-    vv.title('Analysis for model LSPEAS %s  -  %s' % (ptcode[7:], ctcode))
+    vv.title('Ellipse fit for model %s  -  %s' % (ptcode[7:], ctcode))
     a.axis.axisColor= 1,1,1
     a.bgcolor= 0,0,0
     a.daspect= 1, 1, -1  # z-axis flipped
@@ -179,17 +168,17 @@ def vis3Dfit(fitted):
     p3 = x2, y2, -(x2*plane[0] + y2*plane[1] + plane[3]) / plane[2]
     p4 = x1, y2, -(x1*plane[0] + y2*plane[1] + plane[3]) / plane[2]
     
-    vv.plot(pp3, ls='', ms='.', mc='y')
-    vv.plot(fitting.project_from_plane(pp3_2, plane), lc='r', ls='', ms='.', mc='r', mw=4)
+    vv.plot(pp3, ls='', ms='.', mc='y', mw = 10)
+    vv.plot(fitting.project_from_plane(pp3_2, plane), lc='r', ls='', ms='.', mc='r', mw=9)
     #     vv.plot(fitting.project_from_plane(fitting.sample_circle(c3), plane), lc='r', lw=2)
     vv.plot(fitting.project_from_plane(fitting.sample_ellipse(e3), plane), lc='b', lw=2)
     vv.plot(np.array([p1, p2, p3, p4, p1]), lc='g', lw=2)
     #     vv.legend('3D points', 'Projected points', 'Circle fit', 'Ellipse fit', 'Plane fit')
     vv.legend('3D points', 'Projected points', 'Ellipse fit', 'Plane fit')
 
-def vis2Dfit(fitted):
-    """Visualize ellipse fit in 2D
-    input variable from _fit3D
+def vis2Dfit(fitted, ptcode,ctcode,showAxis):
+    """Visualize ellipse fit in 2D in current axis
+    input: _fit3D output
     """
     from stentseg.utils import fitting
     import numpy as np
@@ -205,19 +194,83 @@ def vis2Dfit(fitted):
       
     a = vv.gca()
     vv.xlabel('x (mm)');vv.ylabel('y (mm)')
-    vv.title('Analysis for model LSPEAS %s  -  %s' % (ptcode[7:], ctcode))
+    vv.title('Ellipse fit for model %s  -  %s' % (ptcode[7:], ctcode))
     a.axis.axisColor= 0,0,0
     a.bgcolor= 0,0,0
     a.axis.visible = showAxis
     a.daspectAuto = False
     a.axis.showGrid = True
-    vv.plot(pp3_2, ls='', ms='.', mc='r', mw=4)
+    vv.plot(pp3_2, ls='', ms='.', mc='r', mw=9)
     vv.plot(fitting.sample_ellipse(e3), lc='b', lw=2)
-    vv.plot(np.array([p1ax1, p2ax1]), lc='g', lw=2) # major axis
-    vv.plot(np.array([p1ax2, p2ax2]), lc='g', lw=2) # minor axis
+    vv.plot(np.array([p1ax1, p2ax1]), lc='w', lw=2) # major axis
+    vv.plot(np.array([p1ax2, p2ax2]), lc='w', lw=2) # minor axis
     vv.legend('3D points projected to plane', 'Ellipse fit on projected points')
 
+def ellipse2excel(exceldir, analysisID, e3top=None, e3bot=None):
+    """ Create/overwrite excel and store ellipse output
+    Input:  exceldir string file location
+            analysisID string for in excel
+            e3top tuple with 5 elements x0, y0, res1, res2, phi (optional)
+            e3bot tuple with 5 elements x0, y0, res1, res2, phi (optional)
+    """
+    from stentseg.utils import fitting
+    import xlsxwriter
+    
+    workbook = xlsxwriter.Workbook(os.path.join(exceldir,'storeOutputTemplate.xlsx'))
+    worksheet = workbook.add_worksheet()
+    # set column width
+    worksheet.set_column('A:L', 15)
+    # add a bold format to highlight cells
+    bold = workbook.add_format({'bold': True})
+    worksheet.write('B4', analysisID, bold)
+    
+    if e3top:
+        res1 = e3top[2] # radius
+        res2 = e3top[3]
+        phi = e3top[4]*180.0/np.pi # direction vector in degrees
+        area = fitting.area(e3top)
+        # write titles
+        worksheet.write('B6', 'minor axis (mm)', bold)
+        worksheet.write('C6', 'major axis (mm)', bold)
+        worksheet.write('D6', 'axis mean (mm)', bold)
+        worksheet.write('E6', 'axis angle (degrees)', bold)
+        worksheet.write('F6', 'area (mm2)', bold)
+        # store
+        rowstart = 6
+        columnstart = 1
+        worksheet.write_row(rowstart, columnstart, [res1*2]) # row, columnm, variable
+        worksheet.write_row(rowstart, columnstart+1, [res2*2])
+        worksheet.write_row(rowstart, columnstart+2, [(res2*2+res1*2)/2])
+        worksheet.write_row(rowstart, columnstart+3, [phi])
+        worksheet.write_row(rowstart, columnstart+4, [area])
+    
+    if e3bot:
+        res1 = e3bot[2] # radius
+        res2 = e3bot[3]
+        phi = e3bot[4]*180.0/np.pi # direction vector in degrees
+        area = fitting.area(e3bot)
+        # write titles
+        worksheet.write('G6', 'minor axis (mm)', bold)
+        worksheet.write('H6', 'major axis (mm)', bold)
+        worksheet.write('I6', 'axis mean (mm)', bold)
+        worksheet.write('J6', 'axis angle (degrees)', bold)
+        worksheet.write('K6', 'area (mm2)', bold)
+        # store
+        columnstart += 5
+        worksheet.write_row(rowstart, columnstart, [res1*2]) # row, columnm, variable
+        worksheet.write_row(rowstart, columnstart+1, [res2*2])
+        worksheet.write_row(rowstart, columnstart+2, [(res2*2+res1*2)/2])
+        worksheet.write_row(rowstart, columnstart+3, [phi])
+        worksheet.write_row(rowstart, columnstart+4, [area])
+        
+    workbook.close()
+    print('--- stored to excel: {}-- {}'.format(exceldir, analysisID) )
+    return
+    
+    
 def calculateAreaChange(model, mname):
+    """
+    """
     import numpy as np
     areas, res1s, res2s, phis = [], [], [], []
     #todo: change axis change definition 
@@ -339,9 +392,11 @@ if __name__ == '__main__':
     #Add clickable nodes
     node_points = _utils_GUI.create_node_points(model)
     
+    selected_nodes = list()
+    # Bind event handlers
     f.eventKeyDown.Bind(on_key)
     for node_point in node_points:
-        node_point.eventDoubleClick.Bind(select_node)
+        node_point.eventDoubleClick.Bind(lambda event: _utils_GUI.select_node(event, selected_nodes) )
     print('')
     print('UP/DOWN = show/hide nodes')
     print('ENTER   = show edge and attribute values [select 2 nodes]')
@@ -366,11 +421,11 @@ if __name__ == '__main__':
         f = vv.figure(); vv.clf()
         f.position = 258.00, 30.00,  1654.00, 1002.00
         a1 = vv.subplot(231)
-        vis3Dfit(fittedR1)
+        vis3Dfit(fittedR1,vol,model,ptcode,ctcode,showAxis,showVol=showVol, clim=clim0, isoTh=isoTh, clim3=clim3)
         a2 = vv.subplot(232)
-        vis3Dfit(fittedR2)
+        vis3Dfit(fittedR2,vol,model,ptcode,ctcode,showAxis,showVol=showVol, clim=clim0, isoTh=isoTh, clim3=clim3)
         a3 = vv.subplot(233)
-        vis3Dfit(fittedR1R2)
+        vis3Dfit(fittedR1R2,vol,model,ptcode,ctcode,showAxis,showVol=showVol, clim=clim0, isoTh=isoTh, clim3=clim3)
         a1.camera = a2.camera = a3.camera
         a1b = vv.subplot(2,3,4)
         vis2Dfit(fittedR1)
@@ -382,27 +437,7 @@ if __name__ == '__main__':
         A_R1 = calculateAreaChange(R1, 'R1')
         A_R2 = calculateAreaChange(R2, 'R2')
         A_noHooks = calculateAreaChange(models[0][4],'R1R2struts')
-    else:
-        m_nTop, m_nBot = getTopBottomNodesZring(model,nTop=5,nBot=5)
-        fittednTop = _fit3D(m_nTop)
-        fittednBot = _fit3D(m_nBot)
-        print("------------")
-        f = vv.figure(); vv.clf()
-        f.position = 258.00, 30.00,  1654.00, 1002.00
-        a1 = vv.subplot(221)
-        vis3Dfit(fittednTop)
-        a1b = vv.subplot(222)
-        vis2Dfit(fittednTop)
-        a2 = vv.subplot(223)
-        vis3Dfit(fittednBot)
-        a2b = vv.subplot(224)
-        vis2Dfit(fittednBot)
-        # todo: area and axis ellipse
-        # cyclic change
-#         A_nTop = calculateAreaChange(m_nTop, 'top')
-#         A_nBot = calculateAreaChange(m_nBot, 'bottom')
-        print('here')
-        
+    
 #         f = vv.figure(); vv.clf()
 #         f.position = 968.00, 30.00,  944.00, 1002.00
 #         a = vv.gca()
