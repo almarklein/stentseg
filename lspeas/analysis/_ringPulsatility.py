@@ -30,7 +30,7 @@ exceldir = select_dir(r'C:\Users\Maaike\Desktop',
 
 # Select dataset to register
 ptcode = 'LSPEAS_015'
-ctcode = 'discharge'
+ctcode = '1month'
 cropname = 'ring'
 modelname = 'modelavgreg'
 
@@ -41,7 +41,6 @@ vol = s.vol
 # Load the stent model and mesh
 s2 = loadmodel(basedir, ptcode, ctcode, cropname, modelname)
 model = s2.model
-modelmesh = create_mesh(model, 0.4)  # Param is thickness
 
 
 ## Start visualization and GUI
@@ -235,8 +234,8 @@ def on_key(event):
             # get pulsatility midp to midp
             output2 = point_to_point_pulsatility(midpoint1, 
                                 midpoint1Deforms, midpoint2, midpoint2Deforms)
-            # get max pulsatility between points on the paths
-            outputmaxP.append(edge_to_edge_max_pulsatility(model, nodepair1, nodepair2))
+            # # get max pulsatility between points on the paths
+            # outputmaxP.append(edge_to_edge_max_pulsatility(model, nodepair1, nodepair2))
             # update labels
             t1.text = '\b{Node pairs}: (%i %i) - (%i %i)' % (nodepair1[0], nodepair1[1],
                                                             nodepair2[0], nodepair2[1])
@@ -259,62 +258,14 @@ def on_key(event):
             node.faceColor = 'g'  # make green when analyzed
         selected_nodes.clear()
     if event.key == vv.KEY_ESCAPE:
-        # FINISH MODEL, GET MAX PULSATILITY OVERALL, STORE TO EXCEL
-        # get max pulsatility for model
-        pulsatility = list()
-        for outcome in outputmaxP:
-            pulsatility.append(outcome[7][0]) # [7][0] point_to_pointP
-        maxpulsatilityedge_to_edge = max(pulsatility)
-        maxPIndexedge_to_edge = pulsatility.index(maxpulsatilityedge_to_edge)
-        # max pulsatility from node and midpoint analysis
-        pulsatility2 = list()
-        for outcome in storeOutput:
-            pulsatility2.append(outcome[7][0])
-        maxpulsatilitypoint_to_point = max(pulsatility2)
-        maxPIndexpoint_to_point = pulsatility2.index(maxpulsatilitypoint_to_point)
-        # get max pulsatility overall
-        if maxpulsatilityedge_to_edge > maxpulsatilitypoint_to_point:
-            pathpoint1 = outputmaxP[maxPIndexedge_to_edge][8][1] # coordinates of point1
-            pathpoint2 = outputmaxP[maxPIndexedge_to_edge][9][1] # coordinates of point2
-            storeOutput.append(outputmaxP[maxPIndexedge_to_edge])
-        else:
-            pathpoint1 = storeOutput[maxPIndexpoint_to_point][8][1] # coordinates of point1
-            pathpoint2 = storeOutput[maxPIndexpoint_to_point][9][1] # coordinates of point2
-            storeOutput[maxPIndexpoint_to_point].append('max pulsatility (predefined direction)')
-            storeOutput.append(storeOutput[maxPIndexpoint_to_point])
-        # update labels for max pulsatility
-        t1.text = '\b{Node pair(s)}: (%s) - (%s)' % (str(storeOutput[-1][0]),str(storeOutput[-1][1]))
-        t2.text = '[Max Pulsatility] Min: %1.2f mm' % storeOutput[-1][2][0]
-        t3.text = '[Max Pulsatility] Max: %1.2f mm' % storeOutput[-1][6][0]
-        t4.text = '[Max Pulsatility] Median: %1.2f mm' % storeOutput[-1][4]
-        t5.text = '[Max Pulsatility] Q1 and Q3: %1.2f | %1.2f mm' % (storeOutput[-1][3], storeOutput[-1][5])
-        t6.text = '\b{[Max Pulsatility] Pulsatility: %1.2f mm}' % (storeOutput[-1][7][0])
-        t1.visible, t2.visible, t3.visible = True, True, True
-        t4.visible, t5.visible, t6.visible = True, True, True
+        # FINISH, STORE TO EXCEL
         # visualize
         view = a.GetView()
         t = vv.volshow(vol, clim=(0, lim), renderStyle='mip')
-        # show mesh of model without deforms
+        # show mesh of model without deform coloring
+        modelmesh = create_mesh(model, 0.4)  # Param is thickness
         m = vv.mesh(modelmesh)
         m.faceColor = 'g'
-#         # show mesh of line max pulsatility without values
-#         pp = Pointset(np.asarray([pathpoint1, pathpoint2]))  # visvis meshes do not work with PointSet
-#         lineP = vv.solidLine(pp, radius = 0.3) # for mesh without values
-#         lineP.faceColor = 'm'
-#         # show mesh of model with deforms
-#         dm = vv.mesh(modelmesh)
-#         dm.clim = 0, 5
-#         dm.colormap = vv.CM_JET
-#         vv.colorbar()
-        # show line of max pulsatility as mesh with values
-        pp = Pointset(np.asarray([storeOutput[-1][8][1], storeOutput[-1][9][1]])) # pathpoint1 and 2
-        maxpulsatility = [storeOutput[-1][7][0]]
-#         values = np.asarray([maxpulsatility,maxpulsatility]) # Nx1 ndarray 
-#         meshline = lineToMesh(pp, 0.3, 8, values)
-#         mline = vv.mesh(meshline)
-#         mline.clim = 0, 1 # (mm)
-#         mline.colormap = vv.CM_COOL
-#         vv.colorbar()
         a.SetView(view)
         # Store to EXCEL
         storeOutputToExcel(storeOutput,exceldir)
@@ -358,6 +309,7 @@ def get_midpoint_deforms_edge(model, n1, n2):
             midpointIndex = [midpointIndex] # return as array, similar to when even pathlength
     else: # odd, expected one pathpoint closest to mid of line
         midpointIndex = [midpointIndex] # return as array, similar to when even pathlength
+    midpoint = np.asarray(tuple(midpoint.flat)) if isinstance(midpoint, PointSet) else midpoint # if PointSet make array    
     
     return [nindex, midpointIndex, midpoint, midpointDeforms]
 
@@ -469,8 +421,9 @@ def storeOutputToExcel(storeOutput, exceldir):
                 rowoffset += 1
                 worksheet.write_row(rowoffset, 1, variable[1])
                 rowoffset += 1
-                for pointdeforms in variable[2]:
-                    worksheet.write_row(rowoffset, 1, pointdeforms)
+                for pointdeform in variable[2]: # deforms
+                    pointdeform = tuple(pointdeform.flat) if isinstance(pointdeform, PointSet) else pointdeform
+                    worksheet.write_row(rowoffset, 1, pointdeform)
                     rowoffset += 1
             elif j == 10: # write 1D array distances
                 worksheet.write_column(rowstart, 3, variable)

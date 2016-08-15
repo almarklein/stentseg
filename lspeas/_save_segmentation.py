@@ -1,4 +1,4 @@
-""" Store result of segmentation to ssdf
+""" Store segmentation result to ssdf
 
 """
 
@@ -35,7 +35,8 @@ print('saved to disk as {}.'.format(filename) )
 ## Make model dynamic (and store/overwrite to disk)
 
 import pirt
-from stentseg.motion.dynamic import incorporate_motion_nodes, incorporate_motion_edges  
+from stentseg.motion.dynamic import incorporate_motion_nodes, incorporate_motion_edges 
+from visvis import ssdf 
 
 # Load deforms
 s = loadvol(basedir, ptcode, ctcode, cropname, 'deforms')
