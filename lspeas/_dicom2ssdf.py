@@ -24,8 +24,8 @@ basedir = select_dir(os.getenv('LSPEAS_BASEDIR', ''),
 
 # Params Step A, B, C
 ctcode = '12months'  # 'pre', 'discharge', '1month', '6months', '12months', x_Profx_Water_
-ptcode = 'LSPEAS_023'  # LSPEAS_00x or FANTOOM_xxx
-stenttype = 'endurant'         # 'anaconda 'or 'endurant' or 'excluder'
+ptcode = 'LSPEAS_025'  # LSPEAS_00x or FANTOOM_xxx
+stenttype = 'anaconda'         # 'anaconda 'or 'endurant' or 'excluder'
 dicomStructure = 'imaFolder' # 'dcmFolders' or 'imaFolder' or 'imaFolders' - different output data structure
 
 # Params Step B, C (to save)
@@ -97,15 +97,22 @@ if dicomStructure == 'imaFolder': #siemens from workstation
 if dicomStructure == 'imaFolders': #toshiba from synapse
     if 'FANTOOM' in ptcode:
         dicom_basedir = os.path.join(dicom_basedir.replace('ECGgatedCT', ''), ptcode)
+        subfolders = os.listdir(os.path.join(dicom_basedir,ctcode))
     else:
-        dicom_basedir = os.path.join(dicom_basedir,ptcode,ptcode+'_'+ctcode)    
-    vols = []
-    subfolders = os.listdir(os.path.join(dicom_basedir,ctcode))
-    for i, subfolder in enumerate(subfolders): # read per folder to avoid PermissionError: [Errno 13] Permission denied with imageio.get_reader
-        vol = imageio.volread(os.path.join(dicom_basedir,ctcode,subfolder), 'dicom') # error on memory>1GB of data with mvolread
-        vols.append(vol)
+        dicom_basedir = os.path.join(dicom_basedir,ptcode,ptcode+'_'+ctcode)  
+        subfolders = os.listdir(dicom_basedir)  
+    vols = [None]*10
+    for i, subfolder in enumerate(subfolders): 
+    # read per folder to avoid PermissionError: [Errno 13] Permission denied with imageio.get_reader and
+    # error on memory>1GB of data with mvolread
+        vol = imageio.volread(os.path.join(dicom_basedir,subfolder), 'dicom') 
+        index = vol.meta.SeriesDescription.index('%')
+        phase = int(vol.meta.SeriesDescription[index-2:index])/10
+        vols[int(phase)] = vol
+    for j, vol in enumerate(vols):
         assert vol.shape == vols[0].shape
-        assert str(i*10) in vol.meta.SeriesDescription # 0% , 10% etc.
+        print(vol.meta.SeriesDescription)
+        assert str(j*10) in vol.meta.SeriesDescription # 0% , 10% etc.
 
 # Step B: Crop and Save SSDF
 for cropname in cropnames:
