@@ -61,6 +61,16 @@ def renamedcm(dicom_basedir, ptcode, ctcode):
                 i +=1
 
 
+def loadmesh(basedirMesh,ptcode,ctcode,meshname, invertZ=True):
+    """ Load Mesh object, flip z and return Mesh
+    """
+    mesh = vv.meshRead(os.path.join(basedirMesh, ptcode, ctcode, meshname)) 
+    if invertZ == True:
+        # z is negative, must be flipped to match dicom orientation CT data
+        for vertice in mesh._vertices:
+            vertice[-1] = vertice[-1]*-1 # assumes mesh in x,y,z
+    return mesh
+
 def loadvol(basedir, ptcode, ctcode, cropname, what='phases'):
     """ Load volume data. An ssdf struct is returned. The volumes
     are made into Aarray's with their sampling and origin set.
