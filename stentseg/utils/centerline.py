@@ -1,5 +1,7 @@
+# Copyright 2015-2016 A. Klein, M.Koenrades
+
 """
-Functionality to extract centerlines based on a point cloud that
+Functionality to extract centerlines based on a point cloud that for example
 represents the vessel wall. Works in 2D and 3D.
 
 The public API consists of points_from_mesh() and find_centerline() and 
@@ -21,12 +23,15 @@ def points_from_nodes_in_graph(graph):
     return PointSet(np.array(list(pp)))
 
 
-def points_from_mesh(mesh):
+def points_from_mesh(mesh, invertZ = True):
     """ Create a point cloud (represented as a PointSet) from a visvis mesh
     object, or from a filename pointing to a .stl or .obj file.
     """
     if isinstance(mesh, str):
         mesh = vv.meshRead(mesh)
+    if invertZ == True:
+        for vertice in mesh._vertices:
+            vertice[-1] = vertice[-1]*-1
     # Create set of tuples to remove duplicates
     pp = set(tuple(p) for p in mesh._vertices)
     # Turn into a pointset
@@ -44,6 +49,17 @@ def smooth_centerline(pp, n=2):
         pp = pp2
     return pp
 
+def pp_to_graph(pp):
+    """ PointSet to graph with points connected with edges.
+    Returns graph. Can be used for centerline output.
+    """
+    from stentseg.stentdirect import stentgraph
+    graph = stentgraph.StentGraph()
+    for i, p in enumerate(pp[:-1]):
+        n1 = tuple(p.flat)
+        n2 = tuple(pp[i+1].flat)
+        graph.add_edge(n1,n2, path=[np.asarray(p), np.asarray(pp[i+1])])
+    return graph
 
 def find_centerline(pp, start, ends, step, *,
                 substep=None, ndist=20, regfactor=0.2, regsteps=10,
