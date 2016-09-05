@@ -44,10 +44,11 @@ def smooth_centerline(pp, n=2):
     """
     for iter in range(n):
         pp2 = pp.copy()
-        for i in range(1, pp.shape[1]-1):
+        for i in range(1, pp.shape[0]-1):
             pp2[i] = (pp[i-1] + pp[i] + pp[i+1]) / 3
         pp = pp2
     return pp
+
 
 def pp_to_graph(pp):
     """ PointSet to graph with points connected with edges.
@@ -60,6 +61,7 @@ def pp_to_graph(pp):
         n2 = tuple(pp[i+1].flat)
         graph.add_edge(n1,n2, path=[np.asarray(p), np.asarray(pp[i+1])])
     return graph
+
 
 def find_centerline(pp, start, ends, step, *,
                 substep=None, ndist=20, regfactor=0.2, regsteps=10,
