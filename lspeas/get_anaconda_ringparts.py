@@ -1,8 +1,17 @@
-""" Module to obtain the different parts of the Anaconda dual ring
+""" Module to obtain the different parts and locations of the Anaconda dual ring
 
 Hooks, struts, 2nd ring, top ring
 """ 
 
+from stentseg.stentdirect import stentgraph
+from sklearn.cluster import KMeans
+import numpy as np
+from stentseg.utils import PointSet
+import visvis as vv
+from stentseg.motion.vis import show_ctvolume
+from stentseg.utils.picker import pick3d
+from utils_analysis import point_in_pointcloud_closest_to_p
+ 
 
 def add_nodes_edge_to_newmodel(modelnew, model,n,neighbour):
     """ Get edge and nodes with attributes from model and add to newmodel
@@ -44,7 +53,7 @@ def get_model_struts(model, nstruts=8):
     Detects them based on z-orientation and length
     Runs _get_model_hooks 
     """
-    from stentseg.stentdirect.stent_anaconda import _edge_length
+    from stentseg.stentdirect.stentgraph import _edge_length
     from stentseg.stentdirect import stentgraph
     import numpy as np
     
@@ -101,3 +110,84 @@ def get_model_rings(model_R1R2):
         model_R1.remove_nodes_from(clusters[0])
         
     return model_R1, model_R2    
+
+
+def get_midpoints_peaksvalleys(model):
+    """ Get midpoints near the peaks and valleys
+    """
+    # remove hooks, pop nodes
+    model_hooks1, model_noHooks1 = _get_model_hooks(model)
+    stentgraph.pop_nodes(model_noHooks1)
+    midpoints_peaks_valleys = PointSet(3)
+    for n1, n2 in sorted(model_noHooks1.edges()):
+        if stentgraph._edge_length(model_noHooks1, n1, n2) < 10: # in mm
+            # get midpoint for edges near struts
+            mid = (n1[0]+n2[0])/2, (n1[1]+n2[1])/2, (n1[2]+n2[2])/2
+            path = model_noHooks1.edge[n1][n2]['path']
+            mid_and_pathpoint = point_in_pointcloud_closest_to_p(path, mid)
+            midpoints_peaks_valleys.append(mid_and_pathpoint[0]) # append pp_point
+    return midpoints_peaks_valleys
+
+
+def identify_peaks_valleys(midpoints_peaks_valleys, model, vol, vis=True):
+    """ Given a cloud of points containing 2 peak and 2 valley points for R1
+    and R2, identify and return these locations. Uses clustering and x,y,z
+    """
+    # detect clusters to further label locations
+    kmeans = KMeans(n_clusters=4)
+    kmeans.fit(midpoints_peaks_valleys)
+    centroids = kmeans.cluster_centers_ # x,y,z
+    labels = kmeans.labels_
+    
+    # identify left, right, ant, post centroid (assumes origin is prox right anterior)
+    left = list(centroids[:,0]).index(max(centroids[:,0])) # max x value
+    right = list(centroids[:,0]).index(min(centroids[:,0])) 
+    anterior = list(centroids[:,1]).index(min(centroids[:,1])) # min y value
+    posterior = list(centroids[:,1]).index(max(centroids[:,1]))
+    # get points into grouped arrays
+    cLeft, cRight, cAnterior , cPosterior = [], [], [], []
+    for i, p in enumerate(midpoints_peaks_valleys):
+        if labels[i] == left:
+            cLeft.append(tuple(p.flat))
+        elif labels[i] == right:
+            cRight.append(tuple(p.flat))
+        elif labels[i] == anterior:
+            cAnterior.append(tuple(p.flat))
+        elif labels[i] == posterior:
+            cPosterior.append(tuple(p.flat))
+    
+    cLeft = np.asarray(cLeft)
+    cRight = np.asarray(cRight)
+    cAnterior = np.asarray(cAnterior)
+    cPosterior = np.asarray(cPosterior)
+    # divide into R1 R2
+    R1_left = cLeft[list(cLeft[:,2]).index(min(cLeft[:,2]))] # min z for R1; valley
+    R2_left = cLeft[list(cLeft[:,2]).index(max(cLeft[:,2]))] # valley
+    R1_right = cRight[list(cRight[:,2]).index(min(cRight[:,2]))] # min z for R1; valley
+    R2_right = cRight[list(cRight[:,2]).index(max(cRight[:,2]))] # valley
+    R1_ant = cAnterior[list(cAnterior[:,2]).index(min(cAnterior[:,2]))] # min z for R1; peak
+    R2_ant = cAnterior[list(cAnterior[:,2]).index(max(cAnterior[:,2]))] # peak
+    R1_post = cPosterior[list(cPosterior[:,2]).index(min(cPosterior[:,2]))] # min z for R1; peak
+    R2_post = cPosterior[list(cPosterior[:,2]).index(max(cPosterior[:,2]))] # peak
+    
+    if vis==True:
+        # visualize identified locations
+        f = vv.figure(1); vv.clf()
+        f.position = 968.00, 30.00,  944.00, 1002.00
+        a = vv.gca()
+        colors = ['r', 'g', 'b', 'm', 'c', 'y', 'w', 'k']
+        for i, p in enumerate([R1_left,R2_left,R1_right,R2_right,R1_ant,R2_ant,R1_post,R2_post]):
+            vv.plot(p[0], p[1], p[2], ms='.', ls='', mc=colors[i], mw=14 )
+        vv.legend('R1 left','R2 left','R1 right','R2 right','R1 ant','R2 ant','R1 post','R2 post')
+        show_ctvolume(vol, model, showVol='MIP', clim=(0,2500))
+        pick3d(vv.gca(), vol)
+        model.Draw(mc='b', mw = 10, lc='g')
+        for i in range(len(midpoints_peaks_valleys)):
+            vv.plot(midpoints_peaks_valleys[i], ms='.', ls='', mc=colors[labels[i]], mw=6)
+        a.axis.axisColor= 1,1,1
+        a.bgcolor= 0,0,0
+        a.daspect= 1, 1, -1  # z-axis flipped
+        a.axis.visible = showAxis
+    
+    return R1_left,R2_left,R1_right,R2_right,R1_ant,R2_ant,R1_post,R2_post
+
