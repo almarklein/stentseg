@@ -52,7 +52,7 @@ def get_edge_attributes(model, n1, n2):
     """
     returns cost, ctvalue, path, edge length (mm)
     """ 
-    from stentseg.stentdirect.stent_anaconda import _edge_length
+    from stentseg.stentdirect.stentgraph import _edge_length
     c = model.edge[n1][n2]['cost']
     ct = model.edge[n1][n2]['ctvalue']
     p = model.edge[n1][n2]['path']

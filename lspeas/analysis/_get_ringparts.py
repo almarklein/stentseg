@@ -98,14 +98,13 @@ model_hooks.Draw(mc='r', mw = 10, lc='r')
 
 
 ## Get Struts using direction
-from stentseg.stentdirect.stent_anaconda import _edge_length
 
 # initialize
 model_struts = stentgraph.StentGraph()
 nstruts = 8
 directions = []
 for n1, n2 in model.edges():
-    e_length = _edge_length(model, n1, n2)
+    e_length = stentgraph._edge_length(model, n1, n2)
     if (5 < e_length < 12):
         vector = np.subtract(n1,n2) # nodes, paths in x,y,z
         vlength = np.sqrt(vector[0]**2+vector[1]**2+vector[2]**2)
@@ -128,7 +127,6 @@ model.remove_edges_from(model_struts.edges())
 model_struts.Draw(mc='m', mw = 10, lc='m')
 
 ## Get struts between top and 2nd ring
-# from stentseg.stentdirect.stent_anaconda import _edge_length
 # 
 # model_struts = stentgraph.StentGraph()
 # 
@@ -159,7 +157,7 @@ model_struts.Draw(mc='m', mw = 10, lc='m')
 # lengths = list()
 # for (n1, n2) in edges:
 #     # get edgelength
-#     lengths.append(_edge_length(model, n1, n2))
+#     lengths.append(stentgraph._edge_length(model, n1, n2))
 # lengths.sort(reverse = True) # longest first
 # shortestringedge = lengths[7] # anacondaring contains 8 long ring edges
 # for (n1, n2) in edges:
@@ -176,10 +174,10 @@ model_struts.Draw(mc='m', mw = 10, lc='m')
 #                 # assume nodes in top ring (or 2nd) are closer than strut nodes between rings
 #                 hookedges = [(n1,n2), (n1, node1), (n2, node2), (node1, node2)]
 #                 e_length = list()
-#                 e_length.append(_edge_length(model, n1, n2))
-#                 e_length.append(_edge_length(model, n1, node1))
-#                 e_length.append(_edge_length(model, n2, node2))   
-#                 e_length.append(_edge_length(model, node1, node2))
+#                 e_length.append(stentgraph._edge_length(model, n1, n2))
+#                 e_length.append(stentgraph._edge_length(model, n1, node1))
+#                 e_length.append(stentgraph._edge_length(model, n2, node2))   
+#                 e_length.append(stentgraph._edge_length(model, node1, node2))
 #                 e_lengthMinindex = e_length.index(min(e_length))
 #                 ringnodes = hookedges[e_lengthMinindex] # hooknodes with edge at ring
 #                 hookedges.remove((ringnodes)) # from array
@@ -187,7 +185,7 @@ model_struts.Draw(mc='m', mw = 10, lc='m')
 #                     for nodepair in hookedges:
 #                         if node in nodepair:
 #                             # add nodes and edges if they indeed belong to struts
-#                             if _edge_length(model, nodepair[0], nodepair[1]) < shortestringedge:
+#                             if stentgraph._edge_length(model, nodepair[0], nodepair[1]) < shortestringedge:
 #                                 model_struts.add_node(nodepair[0],deforms = model.node[nodepair[0]]['deforms'])
 #                                 model_struts.add_node(nodepair[1],deforms = model.node[nodepair[1]]['deforms'])
 #                                 c = model.edge[nodepair[0]][nodepair[1]]['cost']

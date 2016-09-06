@@ -19,7 +19,7 @@ from ..utils.new_pointset import PointSet
 from ..utils import gaussfun
 
 from . import stentgraph
-from .stentgraph import _sorted_neighbours
+from .stentgraph import _sorted_neighbours, _edge_length
 from .base import StentDirect
 
 
@@ -277,21 +277,6 @@ def prune_weak(graph, enc, ctvalue, min_strutlength, max_strutlength):
     print('This iteration %i eligable edges for removal were part of *strong* quadrangle'
           'so NOT removed and %i were part of *weak* quadrangle so removed' % (cnt1,cnt2))
     print()
-
-
-def _edge_length(graph, n1, n2):
-    """ 
-    Get path length for this edge in mm
-    
-    """
-    path = np.asarray(graph.edge[n1][n2]['path'])  # [x,y,z]
-    v = []
-    for point in range(len(path)-1):
-        v.append(path[point]-path[point+1])
-    v = np.vstack(v)
-    d = (v[:,0]**2 + v[:,1]**2 + v[:,2]**2)**0.5  # vector length in mm
-    path_l = d.sum() 
-    return path_l
 
 
 def prune_redundant(graph, ctvalue, min_strutlength, max_strutlength):

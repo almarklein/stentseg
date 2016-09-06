@@ -145,7 +145,6 @@ a3.axis.visible = switch
 # GUI to remove and/or to add seeds
 from visvis import Pointset
 from stentseg.stentdirect import stentgraph
-from stentseg.stentdirect.stent_anaconda import _edge_length
 
 # initialize labels
 t1 = vv.Label(a3, 'Edge ctvalue: ', fontSize=11, color='c')
@@ -199,7 +198,7 @@ def on_key(event):
             c = sd._nodes3.edge[select1][select2]['cost']
             ct = sd._nodes3.edge[select1][select2]['ctvalue']
             p = sd._nodes3.edge[select1][select2]['path']
-            l = _edge_length(sd._nodes3, select1, select2)
+            l = stentgraph._edge_length(sd._nodes3, select1, select2)
             sd._nodes3.remove_edge(select1, select2)
             stentgraph.pop_nodes(sd._nodes3) # pop residual nodes
             # Visualize removed edge, show keys and deselect nodes

@@ -13,7 +13,7 @@ sd.Step3(cleanNodes=False) # False when using GUI with restore: clean nodes and 
 
 from visvis import Pointset
 from stentseg.stentdirect import stentgraph
-from stentseg.stentdirect.stent_anaconda import _edge_length, prune_redundant
+from stentseg.stentdirect.stent_anaconda import prune_redundant
 
 fig = vv.figure(4); vv.clf()
 fig.position = 8.00, 30.00,  1267.00, 1002.00
@@ -81,7 +81,7 @@ def on_key(event):
         ct = sd._nodes2.edge[select1][select2]['ctvalue']
         p = sd._nodes2.edge[select1][select2]['path']
         sd._nodes3.add_edge(select1,select2, cost = c, ctvalue = ct, path = p)
-        l = _edge_length(sd._nodes3, select1, select2)
+        l = stentgraph._edge_length(sd._nodes3, select1, select2)
         # Visualize restored edge and deselect nodes
         selected_nodes[1].faceColor = 'b'
         selected_nodes[0].faceColor = 'b'
@@ -105,7 +105,7 @@ def on_key(event):
             c = sd._nodes3.edge[select1][select2]['cost']
             ct = sd._nodes3.edge[select1][select2]['ctvalue']
             p = sd._nodes3.edge[select1][select2]['path']
-            l = _edge_length(sd._nodes3, select1, select2)
+            l = stentgraph._edge_length(sd._nodes3, select1, select2)
             sd._nodes3.remove_edge(select1, select2)
             # Visualize removed edge, show keys and deselect nodes
             selected_nodes[1].faceColor = 'b'

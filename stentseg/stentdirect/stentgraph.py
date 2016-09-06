@@ -706,3 +706,18 @@ def smooth_paths(graph, ntimes=2):
         for iter in range(ntimes):
             tmp = path[1:-1] + path[0:-2] + path[2:]
             path[1:-1] = tmp / 3.0
+
+
+def _edge_length(graph, n1, n2):
+    """ 
+    Get path length for this edge in mm
+    
+    """
+    path = np.asarray(graph.edge[n1][n2]['path'])  # [x,y,z]
+    v = []
+    for point in range(len(path)-1):
+        v.append(path[point]-path[point+1])
+    v = np.vstack(v)
+    d = (v[:,0]**2 + v[:,1]**2 + v[:,2]**2)**0.5  # vector length in mm
+    path_length = d.sum() 
+    return path_length
