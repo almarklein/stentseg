@@ -14,6 +14,27 @@ import visvis as vv
 from stentseg.utils import PointSet
 
 
+def dist_over_centerline(cl, cl_point1, cl_point2, type='euclidian'):
+    """ Calculate distance over centerline from centerline p1 to centerline p2
+    Euclidian distance or Z-distance.
+    """
+    import numpy as np
+    
+    if isinstance(cl, PointSet):
+        cl = np.asarray(cl)
+    indpoint1 = np.where( np.all(cl == cl_point1, axis=-1) )[0] # -1 counts from last to the first axis
+    indpoint2 = np.where( np.all(cl == cl_point2, axis=-1) )[0]
+    clpart = cl[ min(indpoint1, indpoint2):max(indpoint1, indpoint2)+1]
+    vectors = np.vstack([clpart[i+1]-clpart[i] for i in range(len(clpart)-1)])
+    if type == 'euclidian':
+        d = (vectors[:,0]**2 + vectors[:,1]**2 + vectors[:,2]**2)**0.5  # 3Dvector length in mm
+    elif type == 'z':
+        d = abs(vectors[:,2])  # x,y,z ; 1Dvector length in mm
+    dist = d.sum()
+    
+    return dist
+
+
 def points_from_nodes_in_graph(graph):
     """
     """
