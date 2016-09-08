@@ -146,9 +146,12 @@ def find_centerline(pp, start, ends, step, *,
     i = 0
     while pos.distance(end) > step:
         i += 1
-        if i > n_estimate * 4:
+        measure = _distance_measure(pp, pos, ndist)
+        
+        if i > n_estimate * 2 or measure > 250 # * 4:
+            print('We seem to be lost. Centerline is returned')
             return centerline
-            raise RuntimeError('We seem to be lost')
+            # raise RuntimeError('We seem to be lost')
         
         if verbose:
             print('iter %i, distance %1.1f of %1.1f' % (i, pos.distance(end), start.distance(end)))
