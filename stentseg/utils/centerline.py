@@ -23,7 +23,11 @@ def dist_over_centerline(cl, cl_point1, cl_point2, type='euclidian'):
     if isinstance(cl, PointSet):
         cl = np.asarray(cl)
     indpoint1 = np.where( np.all(cl == cl_point1, axis=-1) )[0] # -1 counts from last to the first axis
-    indpoint2 = np.where( np.all(cl == cl_point2, axis=-1) )[0]
+    indpoint2 = np.where( np.all(cl == cl_point2, axis=-1) )[0] # renal point
+    if indpoint1 == indpoint2:
+        print('Points on centerline are at same level, distance is zero')
+        dist = 0
+        return dist
     clpart = cl[ min(indpoint1, indpoint2):max(indpoint1, indpoint2)+1]
     vectors = np.vstack([clpart[i+1]-clpart[i] for i in range(len(clpart)-1)])
     if type == 'euclidian':
@@ -31,6 +35,8 @@ def dist_over_centerline(cl, cl_point1, cl_point2, type='euclidian'):
     elif type == 'z':
         d = abs(vectors[:,2])  # x,y,z ; 1Dvector length in mm
     dist = d.sum()
+    if indpoint1 > indpoint2: # stent point proximal to renal on centerline: negative
+        dist*=-1
     
     return dist
 
@@ -148,7 +154,7 @@ def find_centerline(pp, start, ends, step, *,
         i += 1
         measure = _distance_measure(pp, pos, ndist)
         
-        if i > n_estimate * 2 or measure > 250 # * 4:
+        if i > n_estimate * 2 or measure > 250: # * 4:
             print('We seem to be lost. Centerline is returned')
             return centerline
             # raise RuntimeError('We seem to be lost')
