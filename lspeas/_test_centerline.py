@@ -7,7 +7,7 @@ from stentseg.utils.datahandling import select_dir, loadvol, loadmodel
 from stentseg.motion.vis import show_ctvolume
 from stentseg.stentdirect import stentgraph
 
-TEST = 11
+TEST = 14
 
 if TEST == 1:
     import imageio
@@ -34,8 +34,8 @@ elif TEST > 10:
     # Select the ssdf basedir
     basedir = select_dir(r'D:\LSPEAS\LSPEAS_ssdf',
                         r'F:\LSPEAS_ssdf_backup', r'G:\LSPEAS_ssdf_backup')
-    ptcode = 'LSPEAS_002'
-    ctcode = '12months'
+    ptcode = 'LSPEAS_003'
+    ctcode = 'discharge'
     cropname = 'stent'
     showAxis = False  # True or False
     showVol  = 'MIP'  # MIP or ISO or 2D or None
@@ -58,14 +58,20 @@ elif TEST > 10:
         fname = r'D:\Profiles\koenradesma\Dropbox\UTdrive\MedDataMimics\LSPEAS_Mimics\LSPEAS_004\LSPEAS_004_D_stent-l-th500.stl'
         start1 = (146.1, 105.3, 69.3) # x,y,z
         ends = [(112.98, 100.08, 62.03)]
+    elif TEST == 14:
+        from stentseg.apps._3DPointSelector import select3dpoints
+        points = select3dpoints(s.vol,nr_of_stents = 1)
+        start1 = points[0][0]
+        ends = points[1]
+        print('Get Endpoints: done')
     else:
         raise RuntimeError('Invalid test')
     
-    # Get pointset from STL, remove duplicates
-    pp = points_from_mesh(fname, invertZ = True)
-    # pp = points_from_nodes_in_graph(graph)
-    
-    #centerline1 = centerline2 = PointSet(3)
+    if TEST == 14:
+        pp = points_from_nodes_in_graph(sd._nodes1)
+    else:
+        # Get pointset from STL, remove duplicates
+        pp = points_from_mesh(fname, invertZ = True)
     
     # Find main centerline
     #regsteps = distance of centerline points from where the start/end point have no affect on centerline finding
