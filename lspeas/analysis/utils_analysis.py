@@ -193,6 +193,8 @@ class ExcelAnalysis():
         import matplotlib as mpl
         import prettyplotlib as ppl
         from prettyplotlib import brewer2mpl # colormaps, http://colorbrewer2.org/#type=sequential&scheme=YlGnBu&n=5
+        from scipy.interpolate import interp1d #, spline, splrep, splev, UnivariateSpline
+        import numpy as np 
         
         colormap = brewer2mpl.get_map('YlGnBu', 'sequential', 5).mpl_colormap # ppl...(fig,ax,...,cmap = )
         exceldir = self.exceldir
@@ -232,23 +234,18 @@ class ExcelAnalysis():
         xlabels = sheet.rows[rowstartleft-1][col:col+4] # VR PA VL PP
         xlabels = [obj.value for obj in xlabels]
         legend = ['discharge', '1month', '6months', '12months']#, '24months'] first adjust excel
+        xrange = range(1,1+len(xlabels)) # not start from x=0 to play with margin xlim
         for i, zDistances in enumerate(zDistances_ctcodes):
-            ax1.plot(range(len(xlabels)), zDistances, linestyle='--', marker='o', label=legend[i]) 
-        plt.xticks(range(len(xlabels)), xlabels, fontsize = 14)
+            ax1.plot(xrange, zDistances, linestyle='--', marker='o', label=legend[i])
+            # # plot smooth with spline interpolation
+            # xnew = np.linspace(1,4,25)
+            # f2 = interp1d(xrange, zDistances, kind='quadratic')
+            # plt.plot(xnew,f2(xnew))
+        plt.xticks(xrange, xlabels, fontsize = 14)
+        plt.xlim(0.8,len(xlabels)+0.2) # xlim margins 0.2
         ax1.legend(loc='best')
         for label in (ax1.get_xticklabels() + ax1.get_yticklabels()):
             label.set_fontsize(14)
-                    
-        # from scipy.interpolate import spline
-        # 
-        # xnew = np.linspace(T.min(),T.max(),300)
-        # 
-        # power_smooth = spline(T,power,xnew)
-        # 
-        # plt.plot(xnew,power_smooth)
-        
-        
-        
-    
+
     
     
