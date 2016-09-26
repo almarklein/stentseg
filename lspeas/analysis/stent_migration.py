@@ -45,7 +45,7 @@ meshradius = 0.7
 
 # create class object for excel analysis
 foo = ExcelAnalysis() # excel locations initialized in class
-1/0
+
 ## Renal origin coordinates: input by user/read excel
 # coordinates, left and right most caudal renal
 # ctcode1
@@ -135,11 +135,11 @@ def get_stent_orientation(R1, R2):
 ## Calculate distance ring peaks and valleys to renal
 
 # ===== in Z =====
-# proximal to renal is negative; origin is proximal
-z_dist_R1_ant = R1_ant[2]-list(renal1.flat)[2]
-z_dist_R1_post = R1_post[2]-list(renal1.flat)[2]
-z_dist_R1_left = R1_left[2]-list(renal1.flat)[2]
-z_dist_R1_right = R1_right[2]-list(renal1.flat)[2]
+# proximal to renal is positive; origin is proximal
+z_dist_R1_ant = list(renal1.flat)[2]-R1_ant[2]
+z_dist_R1_post = list(renal1.flat)[2]-R1_post[2]
+z_dist_R1_left = list(renal1.flat)[2]-R1_left[2]
+z_dist_R1_right = list(renal1.flat)[2]-R1_right[2]
 
 # ===== along centerline =====
 # point of centerline closest to renal

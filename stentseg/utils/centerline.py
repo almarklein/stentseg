@@ -35,7 +35,7 @@ def dist_over_centerline(cl, cl_point1, cl_point2, type='euclidian'):
     elif type == 'z':
         d = abs(vectors[:,2])  # x,y,z ; 1Dvector length in mm
     dist = d.sum()
-    if indpoint1 > indpoint2: # stent point proximal to renal on centerline: negative
+    if indpoint2 > indpoint1: # stent point proximal to renal on centerline: positive
         dist*=-1
     
     return dist
