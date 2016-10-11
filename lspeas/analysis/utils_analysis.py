@@ -29,7 +29,7 @@ class ExcelAnalysis():
     
     def __init__(self):
         self.exceldir =  ExcelAnalysis.exceldir
-        self.workbook_stent = 'LSPEAS_pulsatility_expansion_avgreg_subp_v15.xlsx'
+        self.workbook_stent = 'LSPEAS_pulsatility_expansion_avgreg_subp_v15.1.xlsx'
         self.workbook_renal = 'postop_measures_renal_aortic.xlsx'
         self.sheet_peak_valley = 'peak valley locations'
         self.patients =['LSPEAS_001', 'LSPEAS_002',	'LSPEAS_003', 'LSPEAS_005',	
@@ -224,10 +224,7 @@ class ExcelAnalysis():
         # plot
         f1 = plt.figure(num=1, figsize=(7.6, 5))
         ax1 = f1.add_subplot(111)
-        ax1.spines["top"].set_visible(False)  
-        ax1.spines["right"].set_visible(False)
-        ax1.get_xaxis().tick_bottom()  
-        ax1.get_yaxis().tick_left()
+        _initaxis(ax1)
         ax1.set_xlabel('location on ring-stent', fontsize=14)
         ax1.set_ylabel('distance to left renal (mm)', fontsize=14)
         plt.ylim(-10,12)
@@ -247,5 +244,129 @@ class ExcelAnalysis():
         for label in (ax1.get_xticklabels() + ax1.get_yticklabels()):
             label.set_fontsize(14)
 
+    def plot_pp_vv_deployment(self):
+        """ Plot pp and vv deployment residu
+        show asymmetry
+        """
+        import matplotlib.pyplot as plt
+        import matplotlib as mpl
+        import numpy as np 
+        
+        exceldir = self.exceldir
+        workbook_stent = self.workbook_stent
+        
+        wb = openpyxl.load_workbook(os.path.join(exceldir, workbook_stent), data_only=True)
+        
+        # init figure
+        f1 = plt.figure(num=2, figsize=(7.6, 5))
+        # plt.xlim(18,34)
+        # ax1.plot([0,30],[0,30], ls='--', color='dimgrey')
+        xlabels = ['D', '1M', '6M', '12M']
+        xrange = range(1,1+len(xlabels)) # not start from x=0 to play with margin xlim
+        
+        # read data
+        colStart = [1, 6] # B, G
+        rowStart = 83 # pp
+        patients = self.patients
+        
+        for i, patient in enumerate(patients):
+            if patient == 'LSPEAS_025':
+                break
+            # init axis
+            ax1 = f1.add_subplot(4,4,i)
+            _initaxis(ax1)
+            # ax1.set_xlabel('PP distance (mm)', fontsize=14)
+            ax1.set_ylabel('Residual RDC (%)', fontsize=14) # ring deployment capacity
+            plt.ylim(-10,45)
+            
+            sheet = wb.get_sheet_by_name(patient)
+            # read R1
+            ppR1 = sheet.rows[rowStart][colStart[0]:colStart[0]+4] # +4 is read until 12M
+            ppR1 = [obj.value for obj in ppR1]
+            vvR1 = sheet.rows[rowStart+1][colStart[0]:colStart[0]+4]
+            vvR1 = [obj.value for obj in vvR1]
+            # read R2
+            ppR2 = sheet.rows[rowStart][colStart[1]:colStart[1]+4]
+            ppR2 = [obj.value for obj in ppR2]
+            vvR2 = sheet.rows[rowStart+1][colStart[1]:colStart[1]+4]
+            vvR2 = [obj.value for obj in vvR2]
+            
+            # plot R1
+            ax1.plot(xrange, ppR1, linestyle='-', marker='o', label='PP - R1')
+            ax1.plot(xrange, vvR1, linestyle='-', marker='o', label='VV - R1')
+            
+            plt.xticks(xrange, xlabels, fontsize = 14)
+            plt.xlim(0.8,len(xlabels)+0.2) # xlim margins 0.2
+            ax1.legend(loc='best')
     
+        
+    def plot_pp_vv_distance_ratio(self):
+        """ Plot pp and vv distance ratio
+        show asymmetry
+        """
+        import matplotlib.pyplot as plt
+        import matplotlib as mpl
+        import numpy as np
+        import prettyplotlib as ppl
+        
+        exceldir = self.exceldir
+        workbook_stent = self.workbook_stent
+        
+        wb = openpyxl.load_workbook(os.path.join(exceldir, workbook_stent), data_only=True)
+        
+        # init figure
+        f1 = plt.figure(num=2, figsize=(7.6, 5))
+        ax1 = f1.add_subplot(111)
+        _initaxis(ax1)
+        ax1.set_xlabel('Patient ID', fontsize=14)
+        ax1.set_ylabel('Ratio PP/VV dimension', fontsize=14)
+        plt.ylim(0.6,1.5)
+        ax1.plot([0,15],[1,1], ls='--', color='dimgrey')
+        fillstyles = ('full', 'left', 'bottom', 'none')
+        colors = ('#ffffcc', '#a1dab4', '#41b6c4', '#2c7fb8', '#253494') 
+        # html hex codes from http://colorbrewer2.org/#type=sequential&scheme=YlGnBu&n=5
+        legend = ['discharge', '1month', '6months', '12months']#, '24months'] first adjust excel
+        
+        # read data
+        colStart = [1, 6] # B, G
+        rowStart = 85 # pp/vv ratio
+        patients = self.patients
+        xrange = range(1,1+len(patients[:15])) # first 14 patients
+        
+        for i, patient in enumerate(patients):
+            if patient == 'LSPEAS_025':
+                break
+            sheet = wb.get_sheet_by_name(patient)
+            # read R1
+            R1ratio = sheet.rows[rowStart][colStart[0]:colStart[0]+4] # +4 is read until 12M
+            R1ratio = [obj.value for obj in R1ratio]
+            # read R2
+            R2ratio = sheet.rows[rowStart][colStart[1]:colStart[1]+4] # +4 is read until 12M
+            R2ratio = [obj.value for obj in R2ratio]
+            
+            # plot R1
+            for j in range(len(R1ratio)):
+                if i == 0: # legend only once
+                    plt.plot(xrange[i], R1ratio[j], marker='D', fillstyle=fillstyles[0], 
+                         color=colors[j], ls='None', mec='k', mew=1, label=legend[j]) # each timepoint a specific fill
+                else:
+                    plt.plot(xrange[i], R1ratio[j], marker='D', fillstyle=fillstyles[0], 
+                         color=colors[j], ls='None', mec='k', mew=1) # each timepoint a specific fill
+        
+            plt.xticks(xrange)
+            ax1.legend(loc='upper right', numpoints=1, fontsize=12)
+            
     
+def _initaxis(ax):
+    ax.spines["top"].set_visible(False)  
+    ax.spines["right"].set_visible(False)
+    ax.get_xaxis().tick_bottom()  
+    ax.get_yaxis().tick_left()
+    
+
+if __name__ == '__main__':
+    
+    # create class object for excel analysis
+    foo = ExcelAnalysis() # excel locations initialized in class
+    # foo.plot_pp_vv_distance_ratio()
+    foo.plot_pp_vv_deployment()
