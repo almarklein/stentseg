@@ -29,8 +29,8 @@ exceldir = select_dir(r'C:\Users\Maaike\Desktop',
             r'D:\Profiles\koenradesma\Desktop')
 
 # Select dataset to register
-ptcode = 'LSPEAS_015'
-ctcode = '1month'
+ptcode = 'LSPEAS_017'
+ctcode = '12months'
 cropname = 'ring'
 modelname = 'modelavgreg'
 
@@ -45,7 +45,7 @@ model = s2.model
 
 ## Start visualization and GUI
 
-fig = vv.figure(1); vv.clf()
+fig = vv.figure(); vv.clf()
 fig.position = 968.00, 30.00,  944.00, 1002.00
 a = vv.gca()
 a.axis.axisColor = 1,1,1
@@ -173,14 +173,20 @@ def on_key(event):
             midpoint1 = output[2]
             midpoint1Deforms = output[3]
             # get node
-            for node in selected_nodes:
+            for i, node in enumerate(selected_nodes):
                 if node.nr not in nodepair1:
                     n3 = node
+                    break
             # get deforms for node
             n3Deforms = model.node[n3.node]['deforms']
             # get pulsatility
-            output2 = point_to_point_pulsatility(midpoint1, 
-                                midpoint1Deforms, n3.node, n3Deforms)
+            # first selected first in output
+            if i > 0: # single node was not selected first
+                output2 = point_to_point_pulsatility(midpoint1, 
+                            midpoint1Deforms, n3.node, n3Deforms)
+            else:
+                output2 = point_to_point_pulsatility(n3.node, n3Deforms,
+                            midpoint1, midpoint1Deforms)
             # visualize midpoint
             view = a.GetView()
             point = vv.plot(midpoint1[0], midpoint1[1], midpoint1[2], 
@@ -196,10 +202,16 @@ def on_key(event):
             t1.visible, t2.visible, t3.visible = True, True, True
             t4.visible, t5.visible, t6.visible = True, True, True
             # Store output including index nodes
-            output2.insert(0, nodepair1) # at the start
-            output2.insert(1, [n3.nr])
-            output2[8].insert(0, midpoint1IndexPath)
-            output2[9].insert(0, [n3.nr])
+            if i > 0: #todo: fix excel output nodepair met single node
+                output2.insert(0, nodepair1) # at the start
+                output2.insert(1, [n3.nr])
+                output2[8].insert(0, midpoint1IndexPath)
+                output2[9].insert(0, [n3.nr])
+            else:
+                output2.insert(0, [n3.nr]) # at the start
+                output2.insert(1, nodepair1)
+                output2[8].insert(0, [n3.nr])
+                output2[9].insert(0, midpoint1IndexPath)
             if output2 not in storeOutput:
                 storeOutput.append(output2)
         # Midpoint_to_midpoint analysis
