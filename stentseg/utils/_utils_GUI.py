@@ -67,7 +67,7 @@ def set_edge_labels(t1,t2,t3,ct,c,l):
     t2.visible = True
     t3.visible = True
 
-def create_node_points(graph, scale=0.4):
+def interactive_node_points(graph, scale=0.4):
     """ create node objects for gui
     """
     node_points = []

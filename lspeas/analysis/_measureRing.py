@@ -176,7 +176,7 @@ def vis3Dfit(fitted, vol, model, ptcode, ctcode, showAxis, **kwargs):
     #     vv.legend('3D points', 'Projected points', 'Circle fit', 'Ellipse fit', 'Plane fit')
     vv.legend('3D points', 'Projected points', 'Ellipse fit', 'Plane fit')
 
-def vis2Dfit(fitted, ptcode,ctcode,showAxis):
+def vis2Dfit(fitted):
     """Visualize ellipse fit in 2D in current axis
     input: _fit3D output
     """
@@ -334,7 +334,7 @@ if __name__ == '__main__':
                         r'F:\LSPEAS_ssdf_backup', r'G:\LSPEAS_ssdf_backup')
     
     # Select dataset to register
-    ptcode = 'LSPEAS_023'
+    ptcode = 'LSPEAS_021'
     ctcode = 'discharge'
     cropname = 'ring'
     modelname = 'modelavgreg'
@@ -350,7 +350,7 @@ if __name__ == '__main__':
     
     showAxis = True  # True or False
     showVol  = 'MIP'  # MIP or ISO or 2D or None
-    ringpart = False # True; False
+    ringpart = True # True; False
     nstruts = 8
     clim0  = (0,3000)
     clim2 = (0,4)
@@ -390,7 +390,7 @@ if __name__ == '__main__':
     t3.visible = False
     
     #Add clickable nodes
-    node_points = _utils_GUI.create_node_points(model)
+    node_points = _utils_GUI.interactive_node_points(model)
     
     selected_nodes = list()
     # Bind event handlers

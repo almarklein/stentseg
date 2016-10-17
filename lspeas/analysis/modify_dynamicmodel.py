@@ -51,8 +51,9 @@ def on_key(event):
         lim = (0,2500)
         t = vv.volshow(vol, clim=lim, renderStyle='mip')
         pick3d(vv.gca(), vol)
-        model.Draw(mc='b', mw = 10, lc='g')
+        model.Draw(mc='g', mw = 10, lc='g')
         a.SetView(view)
+        print('Done, model dynamic')
 
 
 def make_model_dynamic(model, deforms,  modelOrigin):
@@ -93,7 +94,7 @@ def nodeInteraction(model, vol, selected_nodes):
     vv.title('User interaction to modify model %s  -  %s' % (ptcode[-3:], ctcode))
     
     # create clickable nodes
-    node_points = _utils_GUI.create_node_points(model, scale=0.6)
+    node_points = _utils_GUI.interactive_node_points(model, scale=0.6)
     
     # bind event handlers
     f.eventKeyDown.Bind(on_key)
