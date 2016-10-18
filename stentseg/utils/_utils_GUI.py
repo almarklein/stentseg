@@ -5,14 +5,16 @@
 import visvis as vv
 import numpy as np
 
+alpha = 0.8
+
 def select_node(event, selected_nodes):
     """ select and deselect nodes by Double Click
     """
     if event.owner not in selected_nodes:
-        event.owner.faceColor = 'r'
+        event.owner.faceColor = (1,0,0,alpha) # 'r' but with alpha 
         selected_nodes.append(event.owner)
     elif event.owner in selected_nodes:
-        event.owner.faceColor = 'b'
+        event.owner.faceColor = (0,0,1,alpha) # 'b' but with alpha
         selected_nodes.remove(event.owner)
 
 def pick_node(event, t0):
@@ -73,7 +75,7 @@ def interactive_node_points(graph, scale=0.4):
     node_points = []
     for i, node in enumerate(sorted(graph.nodes())):
         node_point = vv.solidSphere(translation = (node), scaling = (scale,scale,scale))
-        node_point.faceColor = 'b'
+        node_point.faceColor = (0,0,1,alpha) # 'b' but with alpha
         node_point.visible = False
         node_point.node = node
         node_point.nr = i
@@ -88,7 +90,7 @@ def create_node_points_with_amplitude(graph, scale =0.4):
     node_points = []
     for i, node in enumerate(sorted(graph.nodes())):
         node_point = vv.solidSphere(translation = (node), scaling = (scale,scale,scale))
-        node_point.faceColor = 'b'
+        node_point.faceColor = (0,0,1,alpha) # 'b' but with alpha
         node_point.visible = False
         node_point.node = node
         node_point.nr = i
@@ -121,12 +123,22 @@ def vis_spared_edges(graph, radius = 0.6):
             line.faceColor = 'y'
 
 def snap_picked_point_to_graph(graph, vol, label):
-    """ Snap picked point to graph and return point on graph
+    """ Snap picked point to graph and return point on graph as tuple
+    Also return edge of point and its index on this edge
     """
     from stentseg.utils.picker import get_picked_seed
     
     coord = get_picked_seed(vol, label)
     dist = 10000.0
+    if graph.number_of_edges() == 0: # no edges, get node closest to picked point
+        for n in sorted(graph.nodes()):
+            vec = np.asarray(n) - coord
+            d = (vec[0]**2 + vec[1]**2 + vec[2]**2)**0.5
+            dist = min(dist, d)
+            if dist == d:
+                point = n
+        return point
+        
     for n1, n2 in sorted(graph.edges()):
         path = graph.edge[n1][n2]['path']
         vectors = path - coord
@@ -135,13 +147,7 @@ def snap_picked_point_to_graph(graph, vol, label):
         if dist == min(dists):
             i = np.where(dists==dist)
             point = path[i]
-    if graph.number_of_edges() == 0: # no edges, get node closest to picked point
-        for n in sorted(graph.nodes()):
-            vec = np.asarray(n) - coord
-            d = (vec[0]**2 + vec[1]**2 + vec[2]**2)**0.5
-            dist = min(dist, d)
-            if dist == d:
-                point = np.asarray(n)
-            
-    return np.array(point.flat)
+            edge = n1, n2
+    return tuple(point.flat), edge, np.asarray(i)
+    
 

@@ -184,7 +184,7 @@ def on_key(event):
         if len(selected_nodes) == 0:
             # remove node closest to picked point
             node = _utils_GUI.snap_picked_point_to_graph(sd._nodes1, vol, label)
-            sd._nodes1.remove_node(tuple(node))
+            sd._nodes1.remove_node(node)
             view = a1.GetView()
             a1.Clear()
             t = vv.volshow(vol, clim=clim, axes=a1)

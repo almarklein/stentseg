@@ -29,7 +29,7 @@ exceldir = select_dir(r'C:\Users\Maaike\Desktop',
             r'D:\Profiles\koenradesma\Desktop')
 
 # Select dataset to register
-ptcode = 'LSPEAS_017'
+ptcode = 'LSPEAS_018'
 ctcode = '12months'
 cropname = 'ring'
 modelname = 'modelavgreg'
@@ -54,7 +54,7 @@ a.bgcolor = 0,0,0
 a.daspect = 1, 1, -1
 lim = 2500
 t = vv.volshow(vol, clim=(0, lim), renderStyle='mip')
-pick3d(vv.gca(), vol)
+label = pick3d(vv.gca(), vol)
 model.Draw(mc='b', mw = 10, lc='g')
 vv.xlabel('x (mm)');vv.ylabel('y (mm)');vv.zlabel('z (mm)')
 vv.title('Model for LSPEAS %s  -  %s' % (ptcode[7:], ctcode))
@@ -65,16 +65,6 @@ viewringcrop = {'zoom': 0.012834824098558318,
  'elevation': 11.471611096074625,
  'azimuth': 25.71485900482051,
  'roll': 0.0}
-
-# Add clickable nodes
-node_points = []
-for i, node in enumerate(sorted(model.nodes())):
-    node_point = vv.solidSphere(translation = (node), scaling = (0.6,0.6,0.6))
-    node_point.faceColor = 'b'
-    node_point.visible = False
-    node_point.node = node
-    node_point.nr = i
-    node_points.append(node_point)
 
 # Initialize labels
 t0 = vv.Label(a, '\b{Node nr|location}: ', fontSize=11, color='w')
@@ -108,9 +98,22 @@ t6.visible = False
 
 # Initialize output variable to store pulsatility analysis
 storeOutput = list()
-outputmaxP = list()
+# outputmaxP = list()
+selected_nodes = list()
 
-def on_key(event): 
+# Add clickable nodes
+scale = 0.7
+node_points = _utils_GUI.interactive_node_points(model, scale=0.7)
+
+def node_points_callbacks(node_points):
+    for node_point in node_points:
+        node_point.eventDoubleClick.Bind(lambda event: _utils_GUI.select_node(event, selected_nodes) )
+        node_point.eventEnter.Bind(lambda event: _utils_GUI.pick_node(event, t0) )
+        node_point.eventLeave.Bind(lambda event: _utils_GUI.unpick_node(event, t0) )
+
+
+def on_key(event):
+    global node_points 
     if event.key == vv.KEY_DOWN:
         # hide nodes and labels
         t1.visible, t2.visible, t3.visible = False, False, False
@@ -123,6 +126,24 @@ def on_key(event):
         t4.visible, t5.visible, t6.visible = True, True, True
         for node_point in node_points:
             node_point.visible = True
+    if event.key == vv.KEY_CONTROL:
+        # add clickable point of point on graph closest to picked point (SHIFT+R-click )
+        view = a.GetView()
+        for node_point in node_points:
+            node_point.visible = False
+        snapOut = _utils_GUI.snap_picked_point_to_graph(model, vol, label) # x,y,z
+        pickedOnGraph = snapOut[0]
+        n1, n2 = snapOut[1]
+        pickedOnGraphIndex = snapOut[2]
+        pickedOnGraphDeforms = model.edge[n1][n2]['pathdeforms'][pickedOnGraphIndex]
+        model.add_node(pickedOnGraph, deforms=pickedOnGraphDeforms)
+        node_points = _utils_GUI.interactive_node_points(model, scale=0.7)
+        node_points_callbacks(node_points)
+        # visualize
+        # pickedOnGraph_sphere = vv.solidSphere(translation = (pickedOnGraph), scaling = (scale,scale,scale))
+        point = vv.plot(pickedOnGraph[0], pickedOnGraph[1], pickedOnGraph[2], 
+                        mc = 'y', ms = 'o', mw = 9, alpha=0.5)
+        a.SetView(view)
     if event.key == vv.KEY_ENTER:
         assert len(selected_nodes) == 2 or 3 or 4
         # Node_to_node analysis
@@ -138,8 +159,7 @@ def on_key(event):
             n1Deforms = model.node[selectn1]['deforms']
             n2Deforms = model.node[selectn2]['deforms']
             # get pulsatility
-            output = point_to_point_pulsatility(selectn1, 
-                                n1Deforms, selectn2, n2Deforms)
+            output = point_to_point_pulsatility(selectn1, n1Deforms, selectn2, n2Deforms)
             # update labels
             t1.text = '\b{Node pair}: %i - %i' % (nindex[0], nindex[1])
             t2.text = 'Node-to-node Min: %1.2f mm' % output[0][0]
@@ -202,7 +222,7 @@ def on_key(event):
             t1.visible, t2.visible, t3.visible = True, True, True
             t4.visible, t5.visible, t6.visible = True, True, True
             # Store output including index nodes
-            if i > 0: #todo: fix excel output nodepair met single node
+            if i > 0:
                 output2.insert(0, nodepair1) # at the start
                 output2.insert(1, [n3.nr])
                 output2[8].insert(0, midpoint1IndexPath)
@@ -267,7 +287,7 @@ def on_key(event):
                 storeOutput.append(output2)
         # Visualize analyzed nodes and deselect
         for node in selected_nodes:
-            node.faceColor = 'g'  # make green when analyzed
+            node.faceColor = (0,1,0,0.8) #  # make green when analyzed
         selected_nodes.clear()
     if event.key == vv.KEY_ESCAPE:
         # FINISH, STORE TO EXCEL
@@ -277,7 +297,7 @@ def on_key(event):
         # show mesh of model without deform coloring
         modelmesh = create_mesh(model, 0.4)  # Param is thickness
         m = vv.mesh(modelmesh)
-        m.faceColor = 'g'
+        m.faceColor = (0,1,0,1) # green
         a.SetView(view)
         # Store to EXCEL
         storeOutputToExcel(storeOutput,exceldir)
@@ -325,6 +345,7 @@ def get_midpoint_deforms_edge(model, n1, n2):
     
     return [nindex, midpointIndex, midpoint, midpointDeforms]
 
+
 def point_to_point_pulsatility(point1, point1Deforms, 
                                      point2, point2Deforms):
     """ Analyze pulsatility peak_to_peak or valley_to_valley between
@@ -356,6 +377,7 @@ def point_to_point_pulsatility(point1, point1Deforms,
     return [point_to_pointMin, point_to_pointQ1, point_to_pointMedian,
            point_to_pointQ3, point_to_pointMax, point_to_pointP, [point1,
            point1Deforms], [point2, point2Deforms], distances]
+
 
 def edge_to_edge_max_pulsatility(model, nodepair1, nodepair2):
     """ Find the max pulsatility between all points on paths of two selected edges
@@ -398,6 +420,7 @@ def edge_to_edge_max_pulsatility(model, nodepair1, nodepair2):
             maxpulsatility_out[9].insert(0, [pathpoint2Index])
     maxpulsatility_out.append('max pulsatility (edge_to_edge)')
     return maxpulsatility_out
+
 
 import xlsxwriter
 def storeOutputToExcel(storeOutput, exceldir):
@@ -447,13 +470,10 @@ def storeOutputToExcel(storeOutput, exceldir):
     #vv.screenshot(r'C:\Users\Maaike\Desktop\storeScreenshot.png', vv.gcf(), sf=2)
     workbook.close()
 
-selected_nodes = list()
 # Bind event handlers
 fig.eventKeyDown.Bind(on_key)
-for node_point in node_points:
-    node_point.eventDoubleClick.Bind(lambda event: _utils_GUI.select_node(event, selected_nodes) )
-    node_point.eventEnter.Bind(lambda event: _utils_GUI.pick_node(event, t0) )
-    node_point.eventLeave.Bind(lambda event: _utils_GUI.unpick_node(event, t0) )
+node_points_callbacks(node_points) # bind callback functions to node points
+
 
 # Set view
 # a.SetView(viewringcrop)
