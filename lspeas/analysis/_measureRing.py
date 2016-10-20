@@ -8,8 +8,9 @@ import os
 import visvis as vv
 from stentseg.utils import _utils_GUI
 from stentseg.utils.datahandling import select_dir, loadvol, loadmodel
+from stentseg.utils.visualization import show_ctvolume
 from stentseg.stentdirect.stentgraph import create_mesh
-from stentseg.motion.vis import show_ctvolume, get_graph_in_phase
+from stentseg.motion.vis import get_graph_in_phase
 from stentseg.apps.graph_manualprune import interactiveClusterRemovalGraph
 from stentseg.stentdirect import stentgraph
 import numpy as np
@@ -98,7 +99,7 @@ def figparts():
     fig.position = 8.00, 30.00,  944.00, 1002.00
     vv.clf()
     a0 = vv.subplot(121)
-    show_ctvolume(vol, model, showVol=showVol, clim=clim0, isoTh=isoTh, clim3=clim3)
+    show_ctvolume(vol, model, showVol=showVol, clim=clim0, isoTh=isoTh)
     modelR1, modelR2 = modelsR1R2[0][0], modelsR1R2[0][1]
     modelR1.Draw(mc='g', mw = 10, lc='g') # R1 = green
     modelR2.Draw(mc='c', mw = 10, lc='c') # R2 = cyan
@@ -110,7 +111,7 @@ def figparts():
     a0.axis.visible = showAxis
     
     a1 = vv.subplot(122)
-    show_ctvolume(vol, model, showVol=showVol, clim=clim0, isoTh=isoTh, clim3=clim3)
+    show_ctvolume(vol, model, showVol=showVol, clim=clim0, isoTh=isoTh)
     models[0][0].Draw(mc='y', mw = 10, lc='y') # struts = yellow
     models[0][1].Draw(mc='r', mw = 10, lc='r') # hooks = red
     vv.xlabel('x (mm)');vv.ylabel('y (mm)');vv.zlabel('z (mm)')
@@ -152,7 +153,7 @@ def vis3Dfit(fitted, vol, model, ptcode, ctcode, showAxis, **kwargs):
     import numpy as np
     pp3,plane,pp3_2,e3 = fitted[0],fitted[1],fitted[2],fitted[3]
     a = vv.gca()
-    # show_ctvolume(vol, model, showVol=showVol, clim=clim0, isoTh=isoTh, clim3=clim3)
+    # show_ctvolume(vol, model, showVol=showVol, clim=clim0, isoTh=isoTh)
     show_ctvolume(vol, model, **kwargs)
     vv.xlabel('x (mm)');vv.ylabel('y (mm)');vv.zlabel('z (mm)')
     vv.title('Ellipse fit for model %s  -  %s' % (ptcode[7:], ctcode))
@@ -353,8 +354,8 @@ if __name__ == '__main__':
     ringpart = True # True; False
     nstruts = 8
     clim0  = (0,3000)
+    # clim0 = -550,500
     clim2 = (0,4)
-    clim3 = -550,500
     radius = 0.07
     dimensions = 'xyz'
     isoTh = 250
@@ -363,7 +364,7 @@ if __name__ == '__main__':
     f = vv.figure(3); vv.clf()
     f.position = 968.00, 30.00,  944.00, 1002.00
     a = vv.gca()
-    show_ctvolume(vol, model, showVol=showVol, clim=clim0, isoTh=isoTh, clim3=clim3)
+    show_ctvolume(vol, model, showVol=showVol, clim=clim0, isoTh=isoTh)
     model.Draw(mc='b', mw = 10, lc='g')
     vv.xlabel('x (mm)');vv.ylabel('y (mm)');vv.zlabel('z (mm)')
     vv.title('Analysis for model LSPEAS %s  -  %s' % (ptcode[7:], ctcode))
@@ -421,11 +422,11 @@ if __name__ == '__main__':
         f = vv.figure(); vv.clf()
         f.position = 258.00, 30.00,  1654.00, 1002.00
         a1 = vv.subplot(231)
-        vis3Dfit(fittedR1,vol,model,ptcode,ctcode,showAxis,showVol=showVol, clim=clim0, isoTh=isoTh, clim3=clim3)
+        vis3Dfit(fittedR1,vol,model,ptcode,ctcode,showAxis,showVol=showVol, clim=clim0, isoTh=isoTh)
         a2 = vv.subplot(232)
-        vis3Dfit(fittedR2,vol,model,ptcode,ctcode,showAxis,showVol=showVol, clim=clim0, isoTh=isoTh, clim3=clim3)
+        vis3Dfit(fittedR2,vol,model,ptcode,ctcode,showAxis,showVol=showVol, clim=clim0, isoTh=isoTh)
         a3 = vv.subplot(233)
-        vis3Dfit(fittedR1R2,vol,model,ptcode,ctcode,showAxis,showVol=showVol, clim=clim0, isoTh=isoTh, clim3=clim3)
+        vis3Dfit(fittedR1R2,vol,model,ptcode,ctcode,showAxis,showVol=showVol, clim=clim0, isoTh=isoTh)
         a1.camera = a2.camera = a3.camera
         a1b = vv.subplot(2,3,4)
         vis2Dfit(fittedR1)
@@ -441,7 +442,7 @@ if __name__ == '__main__':
 #         f = vv.figure(); vv.clf()
 #         f.position = 968.00, 30.00,  944.00, 1002.00
 #         a = vv.gca()
-#         show_ctvolume(vol[:,vol.shape[1]*0.65:,:], model, showVol=showVol, clim=clim0, isoTh=isoTh, clim3=clim3)
+#         show_ctvolume(vol[:,vol.shape[1]*0.65:,:], model, showVol=showVol, clim=clim0, isoTh=isoTh)
 #         color = 'rgbmcrywgb'
 #         for phasenr in range(10):
 #             model_phase = get_graph_in_phase(R1, phasenr = phasenr)

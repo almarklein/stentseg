@@ -8,7 +8,7 @@ from sklearn.cluster import KMeans
 import numpy as np
 from stentseg.utils import PointSet
 import visvis as vv
-from stentseg.motion.vis import show_ctvolume
+from stentseg.utils.visualization import show_ctvolume
 from stentseg.utils.picker import pick3d
 from utils_analysis import point_in_pointcloud_closest_to_p
  
@@ -187,7 +187,7 @@ def identify_peaks_valleys(midpoints_peaks_valleys, model, vol, vis=True):
         a.axis.axisColor= 1,1,1
         a.bgcolor= 0,0,0
         a.daspect= 1, 1, -1  # z-axis flipped
-        a.axis.visible = showAxis
+        a.axis.visible = True
     
     return R1_left,R2_left,R1_right,R2_right,R1_ant,R2_ant,R1_post,R2_post
 

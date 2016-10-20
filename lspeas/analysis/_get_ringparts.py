@@ -10,7 +10,7 @@ import numpy as np
 from stentseg.utils import PointSet
 from stentseg.stentdirect import stentgraph
 from stentseg.stentdirect.stentgraph import create_mesh
-from stentseg.motion.vis import show_ctvolume
+from stentseg.utils.visualization import show_ctvolume
 
 
 # Select the ssdf basedir

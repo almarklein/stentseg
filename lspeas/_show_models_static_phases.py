@@ -8,10 +8,11 @@ import os
 import visvis as vv
 from stentseg.utils.datahandling import select_dir, loadvol, loadmodel
 from pirt.utils.deformvis import DeformableTexture3D, DeformableMesh
+from stentseg.utils.visualization import show_ctvolume
 from stentseg.stentdirect.stentgraph import create_mesh
 from stentseg.motion.vis import create_mesh_with_abs_displacement
 from get_anaconda_ringparts import get_model_struts, get_model_rings
-from stentseg.motion.vis import remove_stent_from_volume, show_ctvolume, get_graph_in_phase
+from stentseg.motion.vis import get_graph_in_phase
 import pirt
 
 # Select the ssdf basedir
@@ -85,8 +86,8 @@ f = vv.figure(1); vv.clf()
 f.position = 0.00, 22.00,  1920.00, 1018.00
 color = 'rgbmcrywgb'
 clim0  = (0,3500)
+# clim0 = -550,500
 clim2 = (0,1.5)
-clim3 = -550,500
 radius = 0.07
 dimensions = 'z'
 isoTh = 250
@@ -94,7 +95,7 @@ isoTh = 250
 # 1 model
 if codes==ctcode1:
     a = vv.gca()
-    show_ctvolume(vol1, model1, showVol=showVol, clim=clim0, isoTh=isoTh, clim3=clim3)
+    show_ctvolume(vol1, model1, showVol=showVol, clim=clim0, isoTh=isoTh)
     for phasenr in range(10):
         model_phase = get_graph_in_phase(model1, phasenr = phasenr)
 #         model_phase.Draw(mc=color[phasenr], mw = 10, lc=color[phasenr])
@@ -114,7 +115,7 @@ if codes==ctcode1:
 # 2 models
 if len(codes) == 2:
     a1 = vv.subplot(121)
-    show_ctvolume(vol1, model1, showVol=showVol, clim=clim0, isoTh=isoTh, clim3=clim3)
+    show_ctvolume(vol1, model1, showVol=showVol, clim=clim0, isoTh=isoTh)
     for phasenr in range(10):
         model_phase = get_graph_in_phase(model1, phasenr = phasenr)
 #         model_phase.Draw(mc='', lw = 6, lc=color[phasenr])
@@ -124,7 +125,7 @@ if len(codes) == 2:
     vv.xlabel('x (mm)');vv.ylabel('y (mm)');vv.zlabel('z (mm)')
     vv.title('Model for LSPEAS %s  -  %s' % (ptcode[7:], ctcode1))
     a2 = vv.subplot(122)
-    show_ctvolume(vol2, model2, showVol=showVol, clim=clim0, isoTh=isoTh, clim3=clim3)
+    show_ctvolume(vol2, model2, showVol=showVol, clim=clim0, isoTh=isoTh)
     for phasenr in range(10):
         model_phase = get_graph_in_phase(model2, phasenr = phasenr)
 #         model_phase.Draw(mc='', lw = 6, lc=color[phasenr])
@@ -141,7 +142,7 @@ if len(codes) == 2:
 # 3 models
 if len(codes) == 3:
     a1 = vv.subplot(131)
-    show_ctvolume(vol1, model1, showVol=showVol, clim=clim0, isoTh=isoTh, clim3=clim3)
+    show_ctvolume(vol1, model1, showVol=showVol, clim=clim0, isoTh=isoTh)
     for phasenr in range(10):
         model_phase = get_graph_in_phase(model1, phasenr = phasenr)
 #         model_phase.Draw(mc='', lw = 6, lc=color[phasenr])
@@ -151,7 +152,7 @@ if len(codes) == 3:
     vv.xlabel('x (mm)');vv.ylabel('y (mm)');vv.zlabel('z (mm)')
     vv.title('Model for LSPEAS %s  -  %s' % (ptcode[7:], ctcode1))
     a2 = vv.subplot(132)
-    show_ctvolume(vol2, model2, showVol=showVol, clim=clim0, isoTh=isoTh, clim3=clim3)
+    show_ctvolume(vol2, model2, showVol=showVol, clim=clim0, isoTh=isoTh)
     for phasenr in range(10):
         model_phase = get_graph_in_phase(model2, phasenr = phasenr)
 #         model_phase.Draw(mc='', lw = 6, lc=color[phasenr])
@@ -161,7 +162,7 @@ if len(codes) == 3:
     vv.xlabel('x (mm)');vv.ylabel('y (mm)');vv.zlabel('z (mm)')
     vv.title('Model for LSPEAS %s  -  %s' % (ptcode[7:], ctcode2))
     a3 = vv.subplot(133)
-    show_ctvolume(vol3, model3, showVol=showVol, clim=clim0, isoTh=isoTh, clim3=clim3)
+    show_ctvolume(vol3, model3, showVol=showVol, clim=clim0, isoTh=isoTh)
     for phasenr in range(10):
         model_phase = get_graph_in_phase(model3, phasenr = phasenr)
 #         model_phase.Draw(mc='', lw = 6, lc=color[phasenr])
@@ -178,7 +179,7 @@ if len(codes) == 3:
 # 4 models
 if len(codes) == 4:
     a1 = vv.subplot(221)
-    show_ctvolume(vol1, model1, showVol=showVol, clim=clim0, isoTh=isoTh, clim3=clim3)
+    show_ctvolume(vol1, model1, showVol=showVol, clim=clim0, isoTh=isoTh)
     for phasenr in range(10):
         model_phase = get_graph_in_phase(model1, phasenr = phasenr)
 #         model_phase.Draw(mc='', lw = 3, lc=color[phasenr])
@@ -188,7 +189,7 @@ if len(codes) == 4:
     vv.xlabel('x (mm)');vv.ylabel('y (mm)');vv.zlabel('z (mm)')
     vv.title('Model for LSPEAS %s  -  %s' % (ptcode[7:], ctcode1))
     a2 = vv.subplot(222)
-    show_ctvolume(vol2, model2, showVol=showVol, clim=clim0, isoTh=isoTh, clim3=clim3)
+    show_ctvolume(vol2, model2, showVol=showVol, clim=clim0, isoTh=isoTh)
     for phasenr in range(10):
         model_phase = get_graph_in_phase(model2, phasenr = phasenr)
 #         model_phase.Draw(mc='', lw = 6, lc=color[phasenr])
@@ -198,7 +199,7 @@ if len(codes) == 4:
     vv.xlabel('x (mm)');vv.ylabel('y (mm)');vv.zlabel('z (mm)')
     vv.title('Model for LSPEAS %s  -  %s' % (ptcode[7:], ctcode2))
     a3 = vv.subplot(223)
-    show_ctvolume(vol3, model3, showVol=showVol, clim=clim0, isoTh=isoTh, clim3=clim3)
+    show_ctvolume(vol3, model3, showVol=showVol, clim=clim0, isoTh=isoTh)
     for phasenr in range(10):
         model_phase = get_graph_in_phase(model3, phasenr = phasenr)
 #         model_phase.Draw(mc='', lw = 6, lc=color[phasenr])
@@ -208,7 +209,7 @@ if len(codes) == 4:
     vv.xlabel('x (mm)');vv.ylabel('y (mm)');vv.zlabel('z (mm)')
     vv.title('Model for LSPEAS %s  -  %s' % (ptcode[7:], ctcode3))
     a4 = vv.subplot(224)
-    show_ctvolume(vol4, model4, showVol=showVol, clim=clim0, isoTh=isoTh, clim3=clim3)
+    show_ctvolume(vol4, model4, showVol=showVol, clim=clim0, isoTh=isoTh)
     for phasenr in range(10):
         model_phase = get_graph_in_phase(model4, phasenr = phasenr)
 #         model_phase.Draw(mc='', lw = 6, lc=color[phasenr])

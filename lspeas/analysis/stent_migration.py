@@ -5,7 +5,7 @@ import sys, os
 import visvis as vv
 from stentseg.utils.datahandling import select_dir, loadvol, loadmodel, loadmesh
 from stentseg.stentdirect.stentgraph import create_mesh
-from stentseg.motion.vis import show_ctvolume
+from stentseg.utils.visualization import show_ctvolume
 from stentseg.utils import _utils_GUI, PointSet
 from stentseg.utils.picker import pick3d
 from stentseg.utils.centerline import find_centerline, points_from_mesh, smooth_centerline, dist_over_centerline
@@ -39,7 +39,7 @@ showAxis = True  # True or False
 showVol  = 'ISO'  # MIP or ISO or 2D or None
 ringpart = True # True; False
 clim0  = (0,2500)
-clim3 = -550,500
+# clim0 = -550,500
 isoTh = 250
 meshradius = 0.7
 
@@ -56,8 +56,8 @@ if ctcode2:
     xrenal2, yrenal2, zrenal2 = 171, 165.1, 39.5
     renal2 = PointSet(list((xrenal2, yrenal2, zrenal2)))
 
-renal_left, renal_right = foo.readRenalsExcel(sheet_renals_obs, ptcode, ctcode1)
-renal1 = renal_left
+# renal_left, renal_right = foo.readRenalsExcel(sheet_renals_obs, ptcode, ctcode1)
+# renal1 = renal_left
 
 ## Load (dynamic) stent models, vessel, ct
 # Load static CT image to add as reference
@@ -168,7 +168,7 @@ if ctcode2:
     a1 = vv.subplot(121)
 else:
     a1 = vv.gca()
-show_ctvolume(vol1, model1, showVol=showVol, clim=clim0, isoTh=isoTh, clim3=clim3)
+show_ctvolume(vol1, model1, showVol=showVol, clim=clim0, isoTh=isoTh)
 pick3d(vv.gca(), vol1)
 model1.Draw(mc='b', mw = 10, lc='g')
 vm = vv.mesh(modelmesh1)
@@ -183,10 +183,10 @@ vv.plot([e[0] for e in c1_ends], [e[1] for e in c1_ends],  [e[2] for e in c1_end
 vv.plot(centerline1, ms='.', ls='', mw=8, mc='y', axes = a1)
 vv.plot(renal1, ms='.', ls='', mc='m', mw=18, axes = a1)
 vv.plot(renal1_and_cl_point, ms='.', ls='-', mc='m', mw=18, axes = a1)
-vv.plot(R1_left_and_cl_point, ms='.', ls='-', mc='c', mw=18, axes = a1)
-vv.plot(R1_right_and_cl_point, ms='.', ls='-', mc='c', mw=18, axes = a1)
-vv.plot(R1_ant_and_cl_point, ms='.', ls='-', mc='c', mw=18, axes = a1)
-vv.plot(R1_post_and_cl_point, ms='.', ls='-', mc='c', mw=18, axes = a1)
+# vv.plot(R1_left_and_cl_point, ms='.', ls='-', mc='c', mw=18, axes = a1)
+# vv.plot(R1_right_and_cl_point, ms='.', ls='-', mc='c', mw=18, axes = a1)
+# vv.plot(R1_ant_and_cl_point, ms='.', ls='-', mc='c', mw=18, axes = a1)
+# vv.plot(R1_post_and_cl_point, ms='.', ls='-', mc='c', mw=18, axes = a1)
 
 vv.xlabel('x (mm)');vv.ylabel('y (mm)');vv.zlabel('z (mm)')
 vv.title('Analysis for model LSPEAS %s  -  %s' % (ptcode[7:], ctcode1))
@@ -197,7 +197,7 @@ a1.axis.visible = showAxis
 
 if ctcode2:
     a2 = vv.subplot(122)
-    show_ctvolume(vol2, model2, showVol=showVol, clim=clim0, isoTh=isoTh, clim3=clim3)
+    show_ctvolume(vol2, model2, showVol=showVol, clim=clim0, isoTh=isoTh)
     pick3d(vv.gca(), vol2)
     model2.Draw(mc='b', mw = 10, lc='g')
     vm = vv.mesh(modelmesh2)

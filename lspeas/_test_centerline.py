@@ -4,7 +4,7 @@ import visvis as vv
 from stentseg.utils import PointSet
 from stentseg.utils.centerline import find_centerline, points_from_mesh, smooth_centerline, pp_to_graph
 from stentseg.utils.datahandling import select_dir, loadvol, loadmodel
-from stentseg.motion.vis import show_ctvolume
+from stentseg.utils.visualization import show_ctvolume
 from stentseg.stentdirect import stentgraph
 
 TEST = 14
@@ -40,7 +40,7 @@ elif TEST > 10:
     showAxis = False  # True or False
     showVol  = 'MIP'  # MIP or ISO or 2D or None
     clim0  = (0,2500)
-    clim3 = -550,500
+    # clim0 = -550,500
     isoTh = 250
     s = loadvol(basedir, ptcode, ctcode, cropname, 'avgreg') 
     
@@ -97,7 +97,7 @@ elif TEST > 10:
     a1.daspect = 1,1,-1
     
     a2 = vv.subplot(122)
-    show_ctvolume(s.vol, None, showVol=showVol, clim=clim0, isoTh=isoTh, clim3=clim3, removeStent=False)
+    show_ctvolume(s.vol, None, showVol=showVol, clim=clim0, isoTh=isoTh, removeStent=False)
     centerline_nodes.Draw(mc='y', mw=8, lc='g', lw=2)
     a2.axis.visible = showAxis
     a2.daspect = 1,1,-1

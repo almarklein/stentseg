@@ -7,8 +7,8 @@ import os
 import visvis as vv
 from stentseg.utils.datahandling import select_dir, loadvol, loadmodel
 from pirt.utils.deformvis import DeformableTexture3D, DeformableMesh
+from stentseg.utils.visualization import show_ctvolume
 from stentseg.stentdirect.stentgraph import create_mesh
-from stentseg.motion.vis import remove_stent_from_volume, show_ctvolume
 from stentseg.motion.vis import create_mesh_with_abs_displacement
 import pirt
 import numpy as np
@@ -21,18 +21,17 @@ basedir = select_dir(os.getenv('LSPEAS_BASEDIR', ''),
                      r'F:\LSPEAS_ssdf_BACKUP',r'G:\LSPEAS_ssdf_BACKUP')
 
 # Select dataset to register
-ptcode = 'LSPEAS_005'
+ptcode = 'LSPEAS_008'
+ctcode, nr = '6months', 1
 # ptcode = 'QRM_FANTOOM_20160121'
-# ctcode, nr = 'ZA0-70-1.2', 1
-ctcode, nr = '1month', 1
+# ctcode, nr = 'ZB3-75-1.2', 1
 cropname = 'ring'
 modelname = 'modelavgreg'
-motion = 'amplitude'  # amplitude or sum
+motion = 'sum'  # amplitude or sum
 dimension = 'xyz'
-showVol  = 'MIP'  # MIP or ISO or 2D or None
+showVol  = 'ISO'  # MIP or ISO or 2D or None
 clim0  = (0,3000)
-clim2 = (0,1.5)
-clim3 = -550,500
+clim2 = (0,4)
 isoTh = 250
 motionPlay = 5, 0.9  # each x ms, a step of x %
 staticref =  'avg7020'# 'avg7020'
@@ -74,15 +73,15 @@ vol = s2.vol
 ## Start vis
 f = vv.figure(nr); vv.clf()
 if nr == 1:
-    f.position = 8.00, 30.00,  944.00, 1002.00
+    f.position = 8.00, 30.00,  944.00, 1008.00
 else:
-    f.position = 968.00, 30.00,  944.00, 1002.00
+    f.position = 968.00, 30.00,  944.00, 1008.00
 a = vv.gca()
 a.axis.axisColor = 1,1,1
 a.axis.visible = False
 a.bgcolor = 0,0,0
 a.daspect = 1, 1, -1
-show_ctvolume(vol, model, showVol=showVol, clim=clim0, isoTh=isoTh, clim3=clim3)
+show_ctvolume(vol, model, showVol=showVol, clim=clim0, isoTh=isoTh)
 vv.xlabel('x (mm)');vv.ylabel('y (mm)');vv.zlabel('z (mm)')
 vv.title('Model for LSPEAS %s  -  %s  (colorbar \b{%s} of motion in mm in %s)' % (ptcode[7:], ctcode, motion, dimension))
 # viewringcrop = {'azimuth': -166.8860353130016,
