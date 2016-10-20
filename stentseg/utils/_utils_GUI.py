@@ -7,6 +7,26 @@ import numpy as np
 
 alpha = 0.8
 
+#todo: maak ButtonSegmentation class
+# open vv.wibjects.buttons
+# open vv.wibjects.ColormapEditor
+# button = vv.buttons.PushButton(vv.gca())
+from visvis.wibjects.buttons import PushButton
+class ButtonSegmentation(PushButton):
+
+    def __init__(self, parent, *args):
+        
+        # init size
+        self.position.w = 300
+        self.position.h = 50
+        
+        # create buttons
+        self._Text1 = text
+        self._But1 = PushButton(self, parent, text)
+        self._But1.position =  5,35, 12,14
+
+
+
 def select_node(event, selected_nodes):
     """ select and deselect nodes by Double Click
     """
@@ -107,13 +127,19 @@ def create_node_points_with_amplitude(graph, scale =0.4):
         node_points.append(node_point)
     return node_points, pointsDeforms
 
-def vis_spared_edges(graph, radius = 0.6):
+def vis_spared_edges(graph, radius = 0.6, axes=None):
     """ in step 3 with anacondaRing, prune_redundant spares strong triangle edges.
         visualize with a model
     """ 
     from visvis import Pointset
     
-    a = vv.gca()
+    if graph is None:
+        return
+    if axes is None:
+        a = vv.gca()
+    else:
+        axes.MakeCurrent()
+        a = vv.gca()
     for (n1, n2) in graph.edges():
         if graph.node[n1].get('spared', False) and \
         graph.node[n2].get('spared', False):
