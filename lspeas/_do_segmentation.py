@@ -9,12 +9,13 @@ import numpy as np
 import visvis as vv
 from visvis import ssdf
 
-from stentseg.utils import PointSet, _utils_GUI
+from stentseg.utils import PointSet, _utils_GUI, visualization
 from stentseg.utils.datahandling import select_dir, loadvol, loadmodel
-from stentseg.stentdirect.stentgraph import create_mesh
+# from stentseg.stentdirect.stentgraph import create_mesh
 from stentseg.stentdirect import stentgraph, StentDirect, getDefaultParams, AnacondaDirect, EndurantDirect, NellixDirect
-from stentseg.utils.picker import pick3d, label2worldcoordinates, label2volindices, get_picked_seed
+from stentseg.utils.picker import pick3d, get_picked_seed
 from stentseg.apps.graph_manualprune import interactiveClusterRemovalGraph
+from stentseg.utils.visualization import DrawModelAxes
 
 # Select the ssdf basedir
 basedir = select_dir(os.getenv('LSPEAS_BASEDIR', ''),
@@ -22,8 +23,8 @@ basedir = select_dir(os.getenv('LSPEAS_BASEDIR', ''),
                      r'F:\LSPEAS_ssdf_backup',r'G:\LSPEAS_ssdf_backup')
 
 # Select dataset to register
-ptcode = 'LSPEAS_022'
-ctcode = '12months'
+ptcode = 'LSPEAS_025'
+ctcode = 'discharge'
 cropname = 'ring'
 what = 'avgreg' # avgreg
 
@@ -31,7 +32,8 @@ what = 'avgreg' # avgreg
 s = loadvol(basedir, ptcode, ctcode, cropname, what)
 vol = s.vol
 
-# vv.hist(vol, bins = 1000)
+# h = vv.hist(vol, bins = 1000)
+# h.color = 'b'
 # vv.surf(vol[:,:,150])
 # f = vv.figure()
 # t0 = vv.volshow(vol, clim=(0,2500))
@@ -42,14 +44,14 @@ vol = s.vol
 stentType = 'anacondaRing'  # 'anacondaRing' runs modified pruning algorithm in Step3
 
 p = getDefaultParams(stentType)
-p.seed_threshold = [1300,4000]        # step 1 [lower th] or [lower th, higher th]
-p.mcp_speedFactor = 10                 # step 2, costToCtValue; lower-> longer paths -- higher-> short paths
-p.mcp_maxCoverageFronts = 0.009         # step 2, base.py; replaces mcp_evolutionThreshold
-p.graph_weakThreshold = 900             # step 3, stentgraph.prune_very_weak
+p.seed_threshold = [1000,3000]        # step 1 [lower th] or [lower th, higher th]
+p.mcp_speedFactor = 150                 # step 2, costToCtValue; lower-> longer paths -- higher-> short paths
+p.mcp_maxCoverageFronts = 0.003         # step 2, base.py; replaces mcp_evolutionThreshold
+p.graph_weakThreshold = 500             # step 3, stentgraph.prune_very_weak
 p.graph_expectedNumberOfEdges = 3       # step 3, stentgraph.prune_weak
 p.graph_trimLength =  0                 # step 3, stentgraph.prune_tails
-p.graph_minimumClusterSize = 7         # step 3, stentgraph.prune_clusters
-p.graph_strongThreshold = 5000          # step 3, stentgraph.prune_weak and stentgraph.prune_redundant
+p.graph_minimumClusterSize = 10         # step 3, stentgraph.prune_clusters
+p.graph_strongThreshold = 3000          # step 3, stentgraph.prune_weak and stentgraph.prune_redundant
 p.graph_min_strutlength = 5             # step 3, stent_anaconda prune_redundant
 p.graph_max_strutlength = 13            # step 3, stent_anaconda prune_redundant
 p.graph_angleVector = 5                 # step 3, corner detect
@@ -60,7 +62,6 @@ p.graph_angleTh = 180                    # step 3, corner detect
 # Instantiate stentdirect segmenter object
 if stentType == 'anacondaRing':
         sd = AnacondaDirect(vol, p) # inherit _Step3_iter from AnacondaDirect class
-        #runtime warning using anacondadirect due to mesh creation, ignore
 elif stentType == 'endurant':
         sd = EndurantDirect(vol, p)
 elif stentType == 'nellix':
@@ -69,12 +70,9 @@ else:
         sd = StentDirect(vol, p) 
 
 #todo: compare different datasets. can we apply one range of params when we normalize?
-# # Normalize vol to certain limit
-# sd.Step0(3000)
-# # t0 = vv.volshow(sd._vol, clim=(0,1500))
-# # pick3d(vv.gca(), sd._vol)
-# # vv.gca().daspect = 1,1,-1
-# vol = sd._vol
+# Normalize vol to certain limit
+sd.Step0(3071)
+vol = sd._vol
 
 # Perform the three steps of stentDirect
 sd.Step1()
@@ -87,11 +85,8 @@ except AssertionError:
     print('Step3 failed: error with subpixel due to edges at borders?')
     print('--------------')
 
-# Create a mesh object for visualization (argument is strut tickness)
-bm = create_mesh(sd._nodes3, 0.6) # new
 
-
-# Visualize
+## Visualize
 
 guiRemove = False # option to remove nodes/edges but takes longer
 addSeeds = True # click to add seeds to sd._nodes1
@@ -99,43 +94,28 @@ addSeeds = True # click to add seeds to sd._nodes1
 
 fig = vv.figure(2); vv.clf()
 fig.position = 0.00, 22.00,  1920.00, 1018.00
-clim = (0,2000)
+clim = (-1000,3000)
+showVol = 'MIP'
 viewsaggital = {'azimuth': 90}
 
-# Show volume and model as graph
+# Show model Step 1
 a1 = vv.subplot(131)
-a1.daspect = 1,1,-1
-t = vv.volshow(vol, clim=clim)
-label = pick3d(vv.gca(), vol)
-sd._nodes1.Draw(mc='b', mw = 7)       # draw seeded nodes
-# sd._nodes2.Draw(mc='b', lc = 'g')    # draw seeded and MCP connected nodes
-vv.xlabel('x (mm)');vv.ylabel('y (mm)');vv.zlabel('z (mm)')
+label = DrawModelAxes(sd._nodes1, vol, a1, clim=clim, showVol=showVol) # lc, mc
 
-# Show volume and cleaned up graph
+# Show model Step 2
 a2 = vv.subplot(132)
-a2.daspect = 1,1,-1
-t = vv.volshow(vol, clim=clim)
-pick3d(vv.gca(), vol)
-if not sd._nodes2 is None:
-    sd._nodes2.Draw(mc='b', lc='g')
-    # sd._nodes3.Draw(mc='b', lc='g')
-vv.xlabel('x (mm)');vv.ylabel('y (mm)');vv.zlabel('z (mm)')
+DrawModelAxes(sd._nodes2, vol, a2, clim=clim, showVol=showVol)
 
-# Show the mesh
+# Show model Step 3
 a3 = vv.subplot(133)
-a3.daspect = 1,1,-1
-t = vv.volshow(vol, clim=clim)
-pick3d(vv.gca(), vol)
-if not sd._nodes3 is None:
-    sd._nodes3.Draw(mc='b', lc='g')
-    # m = vv.mesh(bm)
-    # m.faceColor = 'g'
-    _utils_GUI.vis_spared_edges(sd._nodes3)
-vv.xlabel('x (mm)');vv.ylabel('y (mm)');vv.zlabel('z (mm)')
+DrawModelAxes(sd._nodes3, vol, a3, meshVis=True, clim=clim, showVol=showVol)
+_utils_GUI.vis_spared_edges(sd._nodes3)
 
 # Use same camera
 a1.camera = a2.camera = a3.camera
 a1.SetView(viewsaggital)
+# c = vv.ClimEditor(fig)
+# c.position = (10, 30)
 
 switch = True
 a1.axis.visible = switch
@@ -256,13 +236,19 @@ def on_key(event):
         _utils_GUI.remove_nodes_by_selected_point(sd._nodes2, vol, a2, 132, label, clim)
         _utils_GUI.remove_nodes_by_selected_point(sd._nodes1, vol, a1, 131, label, clim)
         label=pick3d(vv.gca(), vol)
+    if event.text == '1':
+        # redo step1
+        sd.Step1()
+        a1.GetView()
+        
+        a1.SetView()
     
 
 selected_nodes = list()
 
 #Add clickable nodes
 if guiRemove==True:
-        node_points = _utils_GUI.create_node_points(sd._nodes3, scale=0.6)
+        node_points = _utils_GUI.interactive_node_points(sd._nodes3, scale=0.6)
         # Bind event handlers
         fig.eventKeyDown.Bind(on_key)
         for node_point in node_points:

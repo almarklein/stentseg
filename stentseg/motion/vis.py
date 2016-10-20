@@ -41,6 +41,44 @@ def create_mesh_with_values(g, radius=1.0, simplified=True):
         return None
 
 
+def make_mesh_dynamic_with_abs_displacement(mesh,deforms_f,origin,dim ='z',motion='amplitude',radius=1.0,**kwargs):
+    """ Create dynamic Mesh object from mesh
+    Input:  origin from volume
+            deforms forward
+            invertZ, True of False. Inverts vertices value for z
+    Output: 
+    """
+    import numpy as np
+    from stentseg.motion.displacement import _calculateAmplitude, _calculateSumMotion
+    from stentseg.motion.dynamic import get_mesh_deforms
+    from visvis.processing import lineToMesh
+    from visvis import Pointset  # lineToMesh does not like the new PointSet class
+    
+    #todo: mesh deforms_f use correct this way?
+    pp, pp_mesh_deforms = get_mesh_deforms(mesh, deforms_f, origin, **kwargs) # removes vertice duplicates
+    pp_mesh_displacements = []
+    for n_point in range(len(pp_mesh_deforms[0])): # n vertices
+            pointDeforms = [] # vertice deforms
+            for i in range(len(pp_mesh_deforms)): # n (10) phases
+                pointDeform = pp_mesh_deforms[i][n_point]
+                pointDeforms.append(np.asarray(pointDeform)[0])
+            if motion == 'amplitude': # max distance between two pointpositions
+                dmax = _calculateAmplitude(pointDeforms, dim=dim)[0]
+                pp_mesh_displacements.append(dmax)
+            elif motion == 'sum':
+                dsum = _calculateSumMotion(pointDeforms, dim=dim)
+                pp_mesh_displacements.append(dsum)
+
+    # create mesh
+    # mesh._values
+    mesh = []
+    values = np.vstack(pp_mesh_displacements)
+    points, values = Pointset(pp), np.asarray(values)   
+    mesh.append( lineToMesh(points, radius, 8, values) )
+    
+    return mesh
+    
+    
 def create_mesh_with_abs_displacement(graph, radius = 1.0, dim = 'z', motion = 'amplitude'):
     """ Create a Mesh object from the graph. The values of the mesh
     encode the *absolute displacement* at the points on the *paths* in the graph.
@@ -175,45 +213,6 @@ def convert_mesh_values_to_angle_change(m, g, i=None):
     return F1 * angleChanges[I1] + F2 * angleChanges[I2]
 
 
-def remove_stent_from_volume(vol, graph, stripSize=5):
-    """ Give the high intensity voxels that belong to the stent a
-    lower value, so that the stent appears to be "removed". This is for
-    visualization purposes only. Makes use of known paths in graph model.
-    """
-    from visvis import Pointset
-
-    vol2 = vol.copy()
-    for n1,n2 in graph.edges():
-        path = graph.edge[n1][n2]['path']
-        path = Pointset(path)  # Make a visvis pointset
-        stripSize2 = 0.5 * stripSize
-        for point in path:
-            z,y,x = vol2.point_to_index(point)
-            vol2[z-stripSize:z+stripSize2+1, y-stripSize:y+stripSize+1, x-stripSize:x+stripSize+1] = 0
-            # remove less in distal direction -> stripSize2
-    return vol2
-    
-
-def show_ctvolume(vol, model, showVol = 'MIP', clim = (0,2500), isoTh=250, clim3 =(-550,500),removeStent=True):
-    """ Different ways to visualize the CT volume as reference
-    """
-    import visvis as vv
-    
-    colormap = {'r': [(0.0, 0.0), (0.17727272, 1.0)],
-                'g': [(0.0, 0.0), (0.27272728, 1.0)],
-                'b': [(0.0, 0.0), (0.34545454, 1.0)],
-                'a': [(0.0, 1.0), (1.0, 1.0)]}
-    if showVol == 'MIP':
-        t = vv.volshow(vol, clim=clim, renderStyle='mip')
-    elif showVol == 'ISO':
-        if removeStent == True:
-            vol = remove_stent_from_volume(vol, model, stripSize=7) # rings are removed for vis.
-        t = vv.volshow(vol,clim=clim, renderStyle='iso')
-        t.isoThreshold = isoTh; t.colormap = colormap
-    elif showVol == '2D':
-        t = vv.volshow2(vol); t.clim = clim3
-
-        
 def get_graph_in_phase(graph, phasenr):
     """ Get position of model in a certain phase
     """
