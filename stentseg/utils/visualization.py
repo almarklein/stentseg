@@ -46,37 +46,53 @@ def show_ctvolume(vol, graph, showVol = 'MIP', clim = (0,2500), isoTh=250, remov
     elif showVol == '2D':
         t = vv.volshow2(vol); t.clim
     # bind ClimEditor to figure
-    c = vv.ClimEditor(vv.gcf())
-    c.position = (10, 30)
+    if not showVol is None:
+        c = vv.ClimEditor(vv.gcf())
+        c.position = (10, 30)
 
 
-def DrawModelAxes(graph, vol, ax=None, axVis=True, meshVis=False, mc='b', lc='g', **kwargs):
+def DrawModelAxes(graph, vol, ax=None, axVis=False, meshColor=None, getLabel=False, 
+                  mc='b', lc='g', mw=7, lw=0.6, **kwargs):
     """ Draw model with volume with axes set
     ax = axes to draw (a1 or a2 or a3); graph = sd._nodes1 or 2 or 3
+    meshColor = None or faceColor e.g. 'g'
     """
+    #todo: prevent TypeError: draw() got an unexpected keyword argument mc/lc when not given as required variable
     if ax is None:
         ax = vv.gca()
+    ax.MakeCurrent()
     ax.daspect = 1,1,-1
     ax.axis.axisColor = 1,1,1
     ax.bgcolor = 0,0,0
     ax.axis.visible = axVis
-    # t = vv.volshow(vol, clim=clim)
-    show_ctvolume(vol, graph, **kwargs) 
-    #todo: prevent TypeError: draw() got an unexpected keyword argument 'showVol' when not given as required variable
     vv.xlabel('x (mm)');vv.ylabel('y (mm)');vv.zlabel('z (mm)')
     if graph.number_of_edges() == 0: # get label from picked seeds sd._nodes1 
+        show_ctvolume(vol, graph, **kwargs) 
         label = pick3d(vv.gca(), vol)
         if not graph is None:
             graph.Draw(mc=mc, lc=lc)
         return label
     else:
-        pick3d(vv.gca(), vol)
+        if not meshColor is None:
+            bm = create_mesh(graph, 0.6) # (argument is strut tickness)
+            m = vv.mesh(bm)
+            m.faceColor = meshColor # 'g'
+        show_ctvolume(vol, graph, **kwargs)
         if not graph is None:
             graph.Draw(mc=mc, lc=lc)
-            if meshVis == True:
-                bm = create_mesh(graph, 0.6) # (argument is strut tickness)
-                m = vv.mesh(bm)
-                m.faceColor = 'g'
-        return
+        if getLabel == True:
+            label = pick3d(vv.gca(), vol)
+            return label
+        else:
+            pick3d(vv.gca(), vol)
+            return
+
+
+def AxesVis(axis, axVis=False):
+    """ Axis input list with axes
+    axVis is True or False
+    """
+    for ax in axis:
+        ax.axis.visible = axVis
 
 
