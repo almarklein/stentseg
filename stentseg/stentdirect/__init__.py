@@ -112,3 +112,17 @@ def getDefaultParams(stentType=''):
     # Done
     return params
 
+
+def initStentDirect(stentType, vol, p):
+    """ Instantiate stentdirect segmenter object
+    Added M.A. Koenrades
+    """
+    if stentType == 'anacondaRing':
+            sd = AnacondaDirect(vol, p) # inherit _Step3_iter from AnacondaDirect class
+    elif stentType == 'endurant':
+            sd = EndurantDirect(vol, p)
+    elif stentType == 'nellix':
+            sd = NellixDirect(vol, p)
+    else:
+            sd = StentDirect(vol, p)
+    return sd
