@@ -26,9 +26,11 @@ class ExcelAnalysis():
     
     exceldir = select_dir(r'C:\Users\Maaike\Dropbox\UTdrive\LSPEAS\Analysis', 
                     r'D:\Profiles\koenradesma\Dropbox\UTdrive\LSPEAS\Analysis')
+    dirsaveIm =  select_dir(r'C:\Users\Maaike\Desktop','D:\Profiles\koenradesma\Desktop')
     
     def __init__(self):
         self.exceldir =  ExcelAnalysis.exceldir
+        self.dirsaveIm = ExcelAnalysis.dirsaveIm
         self.workbook_stent = 'LSPEAS_pulsatility_expansion_avgreg_subp_v15.1.xlsx'
         self.workbook_renal = 'postop_measures_renal_aortic.xlsx'
         self.sheet_peak_valley = 'peak valley locations'
@@ -244,6 +246,7 @@ class ExcelAnalysis():
         for label in (ax1.get_xticklabels() + ax1.get_yticklabels()):
             label.set_fontsize(14)
 
+
     def plot_pp_vv_deployment(self):
         """ Plot pp and vv deployment residu
         show asymmetry
@@ -258,7 +261,7 @@ class ExcelAnalysis():
         wb = openpyxl.load_workbook(os.path.join(exceldir, workbook_stent), data_only=True)
         
         # init figure
-        f1 = plt.figure(num=2, figsize=(7.6, 5))
+        f1 = plt.figure(num=2, figsize=(17, 12))
         # plt.xlim(18,34)
         # ax1.plot([0,30],[0,30], ls='--', color='dimgrey')
         xlabels = ['D', '1M', '6M', '12M']
@@ -273,7 +276,7 @@ class ExcelAnalysis():
             if patient == 'LSPEAS_025':
                 break
             # init axis
-            ax1 = f1.add_subplot(4,4,i)
+            ax1 = f1.add_subplot(5,3,i+1)
             _initaxis(ax1)
             # ax1.set_xlabel('PP distance (mm)', fontsize=14)
             ax1.set_ylabel('Residual RDC (%)', fontsize=14) # ring deployment capacity
@@ -297,7 +300,9 @@ class ExcelAnalysis():
             
             plt.xticks(xrange, xlabels, fontsize = 14)
             plt.xlim(0.8,len(xlabels)+0.2) # xlim margins 0.2
-            ax1.legend(loc='best')
+            ax1.legend(loc='upper right', fontsize=10, title=('%i: ID %s' % (i+1, patient[-3:]) )  )
+        
+        plt.savefig(os.path.join(self.dirsaveIm, 'plot_pp_vv_deployment.png'), papertype='a0', dpi=300)
     
         
     def plot_pp_vv_distance_ratio(self):
@@ -315,11 +320,11 @@ class ExcelAnalysis():
         wb = openpyxl.load_workbook(os.path.join(exceldir, workbook_stent), data_only=True)
         
         # init figure
-        f1 = plt.figure(num=2, figsize=(7.6, 5))
+        f1 = plt.figure(num=3, figsize=(7.6, 5))
         ax1 = f1.add_subplot(111)
         _initaxis(ax1)
-        ax1.set_xlabel('Patient ID', fontsize=14)
-        ax1.set_ylabel('Ratio PP/VV dimension', fontsize=14)
+        ax1.set_xlabel('Patient number', fontsize=14)
+        ax1.set_ylabel('Asymmetry ratio PP/VV distance', fontsize=14)
         plt.ylim(0.6,1.5)
         ax1.plot([0,15],[1,1], ls='--', color='dimgrey')
         fillstyles = ('full', 'left', 'bottom', 'none')
@@ -355,7 +360,53 @@ class ExcelAnalysis():
         
             plt.xticks(xrange)
             ax1.legend(loc='upper right', numpoints=1, fontsize=12)
-            
+        
+        plt.savefig(os.path.join(self.dirsaveIm, 'plot_pp_vv_distance_ratio.png'), papertype='a0', dpi=300)
+        
+        
+    def plot_ellipse_pp_vv():
+        """
+        """
+        from stentseg.utils.fitting import sample_ellipse
+        import numpy as np
+        
+        x0, y0 = 0, 0
+        r1 = 20 # pp; x
+        r2 = 18 # vv; y
+        phi = 0
+        e = [x0, y0, r1, r2, phi]
+        # define line over axis
+        dxax1 = np.cos(phi)*r1 
+        dyax1 = np.sin(phi)*r1
+        dxax2 = np.cos(phi+0.5*np.pi)*r2 
+        dyax2 = np.sin(phi+0.5*np.pi)*r2
+        # p1ax1, p2ax1 
+        r1ax = np.array((x0+dxax1, y0+dyax1), (x0-dxax1, y0-dyax1)) # r1
+        # p1ax2, p2ax2 
+        r2ax = np.array((x0+dxax2, y0+dyax2), (x0-dxax2, y0-dyax2)) # r2
+        
+        
+        ppax = [[x0-r1*np.cos(phi), x0+r1*np.cos(phi) ], [y0-r1*np.sin(phi), y0+r1*np.sin(phi)]  ] # [x1, x2]  [y1, y2]
+        # vvax =  
+        
+        pp = sample_ellipse(e, N=32) # sample ellipse to get a PointSet r1,r2
+        
+        f1 = plt.figure(num=4, figsize=(7.6, 5))
+        plt.cla()
+        ax1 = f1.add_subplot(111)
+        _initaxis(ax1)
+        ax1.set_xlabel('PP', fontsize=14)
+        ax1.set_ylabel('VV', fontsize=14)
+        
+        ax1.plot(pp[:,0], pp[:,1])
+        ax1.axis('equal')
+        ax1.plot(r1ax)
+        # vv.plot(np.array([p1ax1, p2ax1]), lc='w', lw=2) # major axis
+        # vv.plot(np.array([p1ax2, p2ax2]), lc='w', lw=2) # minor axis
+        
+        ax1.plot(ppax)
+        ax1.plot([0, 4], [0, 4], linestyle='-', color='g')
+        
     
 def _initaxis(ax):
     ax.spines["top"].set_visible(False)  
@@ -368,5 +419,5 @@ if __name__ == '__main__':
     
     # create class object for excel analysis
     foo = ExcelAnalysis() # excel locations initialized in class
-    # foo.plot_pp_vv_distance_ratio()
+    foo.plot_pp_vv_distance_ratio()
     foo.plot_pp_vv_deployment()
