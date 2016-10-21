@@ -8,14 +8,13 @@ import os
 import numpy as np
 import visvis as vv
 from visvis import ssdf
+from visvis import Pointset
 
 from stentseg.utils import PointSet, _utils_GUI, visualization
 from stentseg.utils.datahandling import select_dir, loadvol, loadmodel
-# from stentseg.stentdirect.stentgraph import create_mesh
-from stentseg.stentdirect import stentgraph, StentDirect, getDefaultParams, AnacondaDirect, EndurantDirect, NellixDirect
+from stentseg.stentdirect import stentgraph, getDefaultParams, initStentDirect
 from stentseg.utils.picker import pick3d, get_picked_seed
-from stentseg.apps.graph_manualprune import interactiveClusterRemovalGraph
-from stentseg.utils.visualization import DrawModelAxes
+from stentseg.utils.visualization import DrawModelAxes, AxesVis
 
 # Select the ssdf basedir
 basedir = select_dir(os.getenv('LSPEAS_BASEDIR', ''),
@@ -24,7 +23,7 @@ basedir = select_dir(os.getenv('LSPEAS_BASEDIR', ''),
 
 # Select dataset to register
 ptcode = 'LSPEAS_025'
-ctcode = 'discharge'
+ctcode = '12months'
 cropname = 'ring'
 what = 'avgreg' # avgreg
 
@@ -33,7 +32,7 @@ s = loadvol(basedir, ptcode, ctcode, cropname, what)
 vol = s.vol
 
 # h = vv.hist(vol, bins = 1000)
-# h.color = 'b'
+# h.color = 'y'
 # vv.surf(vol[:,:,150])
 # f = vv.figure()
 # t0 = vv.volshow(vol, clim=(0,2500))
@@ -47,7 +46,7 @@ p = getDefaultParams(stentType)
 p.seed_threshold = [1000,3000]        # step 1 [lower th] or [lower th, higher th]
 p.mcp_speedFactor = 150                 # step 2, costToCtValue; lower-> longer paths -- higher-> short paths
 p.mcp_maxCoverageFronts = 0.003         # step 2, base.py; replaces mcp_evolutionThreshold
-p.graph_weakThreshold = 500             # step 3, stentgraph.prune_very_weak
+p.graph_weakThreshold = 650             # step 3, stentgraph.prune_very_weak
 p.graph_expectedNumberOfEdges = 3       # step 3, stentgraph.prune_weak
 p.graph_trimLength =  0                 # step 3, stentgraph.prune_tails
 p.graph_minimumClusterSize = 10         # step 3, stentgraph.prune_clusters
@@ -60,14 +59,8 @@ p.graph_angleTh = 180                    # step 3, corner detect
 ## Perform segmentation
 
 # Instantiate stentdirect segmenter object
-if stentType == 'anacondaRing':
-        sd = AnacondaDirect(vol, p) # inherit _Step3_iter from AnacondaDirect class
-elif stentType == 'endurant':
-        sd = EndurantDirect(vol, p)
-elif stentType == 'nellix':
-        sd = NellixDirect(vol, p)
-else:
-        sd = StentDirect(vol, p) 
+sd = initStentDirect(stentType, vol, p)
+cleanNodes = True
 
 #todo: compare different datasets. can we apply one range of params when we normalize?
 # Normalize vol to certain limit
@@ -76,27 +69,25 @@ vol = sd._vol
 
 # Perform the three steps of stentDirect
 sd.Step1()
-##
 sd.Step2()
 try:
-    sd.Step3(cleanNodes=True) # True when NOT using GUI with restore option
+    sd.Step3(cleanNodes=cleanNodes) # True when NOT using GUI with restore option
 except AssertionError:
     print('--------------')
-    print('Step3 failed: error with subpixel due to edges at borders?')
+    print('Step3 failed: error with subpixel due to edges at borders? Change params')
     print('--------------')
 
-
 ## Visualize
+#todo: depending on the speedFactor fronts do not propagate from manually added seeds. how does mcp work exactly? can we prioritize manually added seeds?
 
 guiRemove = False # option to remove nodes/edges but takes longer
-addSeeds = True # click to add seeds to sd._nodes1
-#todo: depending on the speedFactor fronts do not propagate from manually added seeds. how does mcp work exactly? can we prioritize manually added seeds?
+clim = (0,2500)
+showVol = 'MIP'
+meshColor = None # or give FaceColor
+viewLR = {'azimuth': 90, 'roll': 0}
 
 fig = vv.figure(2); vv.clf()
 fig.position = 0.00, 22.00,  1920.00, 1018.00
-clim = (-1000,3000)
-showVol = 'MIP'
-viewsaggital = {'azimuth': 90}
 
 # Show model Step 1
 a1 = vv.subplot(131)
@@ -108,23 +99,14 @@ DrawModelAxes(sd._nodes2, vol, a2, clim=clim, showVol=showVol)
 
 # Show model Step 3
 a3 = vv.subplot(133)
-DrawModelAxes(sd._nodes3, vol, a3, meshVis=True, clim=clim, showVol=showVol)
+DrawModelAxes(sd._nodes3, vol, a3, meshColor=meshColor, clim=clim, showVol=showVol)
 _utils_GUI.vis_spared_edges(sd._nodes3)
 
 # Use same camera
 a1.camera = a2.camera = a3.camera
-a1.SetView(viewsaggital)
-# c = vv.ClimEditor(fig)
-# c.position = (10, 30)
-
-switch = True
-a1.axis.visible = switch
-a2.axis.visible = switch
-a3.axis.visible = switch
+a1.SetView(viewLR)
 
 # GUI to remove and/or to add seeds
-from visvis import Pointset
-from stentseg.stentdirect import stentgraph
 
 # initialize labels
 t1 = vv.Label(a3, 'Edge ctvalue: ', fontSize=11, color='c')
@@ -142,13 +124,16 @@ t3.visible = False
 
 def on_key(event):
     """KEY commands for user interaction
-    UP/DOWN = show/hide nodes
-    DELETE  = remove edge [select 2 nodes] or pop node [select 1 node] or remove seed sd._nodes1 closest to [picked point]
-    PageDown= remove graph posterior (y-axis) to [picked point] (use for spine seeds)'
-    ALT     = SHOW RESULT after remove residual clusters, pop, corner
-    CTRL    = add selected point (SHIFT+Rclick) as seed in sd._nodes1')
+        'UP/DOWN  = show/hide nodes'
+        'DELETE   = remove edge [select 2 nodes] or pop node [select 1 node] '
+                   'or remove seed in nodes1 closest to [picked point]'
+        'PageDown = remove graph posterior (y-axis) to [picked point] (use for spine seeds)'
+        'ALT      = clean graph: remove residual clusters, pop, corner'
+        'CTRL+SHIFT = add [picked point] (SHIFT+R-click) as seed'
     """
     global label
+    global node_points
+    global sd
     if event.key == vv.KEY_DOWN:
         # hide nodes
         t1.visible = False
@@ -167,9 +152,7 @@ def on_key(event):
             sd._nodes1.remove_node(node)
             view = a1.GetView()
             a1.Clear()
-            t = vv.volshow(vol, clim=clim, axes=a1)
-            label=pick3d(a1, vol)
-            sd._nodes1.Draw(mc='b', mw = 7)
+            label = DrawModelAxes(sd._nodes1, vol, a1, clim=clim, showVol=showVol)
             a1.SetView(view)    
         if len(selected_nodes) == 2:
             # remove edge
@@ -177,7 +160,7 @@ def on_key(event):
             select2 = selected_nodes[1].node
             c = sd._nodes3.edge[select1][select2]['cost']
             ct = sd._nodes3.edge[select1][select2]['ctvalue']
-            p = sd._nodes3.edge[select1][select2]['path']
+            path = sd._nodes3.edge[select1][select2]['path']
             l = stentgraph._edge_length(sd._nodes3, select1, select2)
             sd._nodes3.remove_edge(select1, select2)
             stentgraph.pop_nodes(sd._nodes3) # pop residual nodes
@@ -192,7 +175,7 @@ def on_key(event):
             t2.visible = True
             t3.visible = True
             view = a3.GetView()
-            pp = Pointset(p)
+            pp = Pointset(path)
             line = vv.solidLine(pp, radius = 0.2)
             line.faceColor = 'r'
             a3.SetView(view)
@@ -209,65 +192,83 @@ def on_key(event):
         stentgraph.add_corner_nodes(sd._nodes3, th=sd._params.graph_angleVector, angTh=sd._params.graph_angleTh)
         # Create mesh and visualize
         view = a3.GetView()
-        bm = create_mesh(sd._nodes3, 0.6)
         a3.Clear()
-        t = vv.volshow(vol, clim=clim, axes=a3)
-        pick3d(a3, vol)
-        sd._nodes3.Draw(mc='b', mw = 8, lc = 'g', lw = 0.2)
-        vv.xlabel('x'), vv.ylabel('y'), vv.zlabel('z')
-#         m = vv.mesh(bm)
-#         m.faceColor = 'g'
+        DrawModelAxes(sd._nodes3, vol, a3, meshColor=meshColor, clim=clim, showVol=showVol, lc='b', mw=8, lw=0.2)
         _utils_GUI.vis_spared_edges(sd._nodes3)
         a3.SetView(view)
         print('----DO NOT FORGET TO SAVE THE MODEL TO DISK; RUN _SAVE_SEGMENTATION----')
-    elif event.key == vv.KEY_CONTROL:
+    if event.key == vv.KEY_CONTROL and vv.KEY_SHIFT:
         # add picked seed to nodes_1
         coord2 = get_picked_seed(vol, label)
         sd._nodes1.add_node(tuple(coord2))
         view = a1.GetView()
-        point = vv.plot(coord2[0], coord2[1], coord2[2], mc= 'g', ms = 'o', mw= 8, alpha=0.5)
+        point = vv.plot(coord2[0], coord2[1], coord2[2], mc= 'b', ms = 'o', mw= 8, alpha=0.5)
         a1.SetView(view)
-    elif event.key == vv.KEY_PAGEDOWN:
+    if event.key == vv.KEY_PAGEDOWN:
         # remove false seeds posterior to picked point, e.g. for spine
         try:
-            _utils_GUI.remove_nodes_by_selected_point(sd._nodes3, vol, a3, 133, label, clim)
-        except ValueError: # false nodes already cleaned in Step3
+            _utils_GUI.remove_nodes_by_selected_point(sd._nodes3, vol, a3, label, clim, showVol=showVol)
+        except ValueError: # false nodes already cleaned by Step3
             pass
-        _utils_GUI.remove_nodes_by_selected_point(sd._nodes2, vol, a2, 132, label, clim)
-        _utils_GUI.remove_nodes_by_selected_point(sd._nodes1, vol, a1, 131, label, clim)
-        label=pick3d(vv.gca(), vol)
+        _utils_GUI.remove_nodes_by_selected_point(sd._nodes2, vol, a2, label, clim, showVol=showVol)
+        label = _utils_GUI.remove_nodes_by_selected_point(sd._nodes1, vol, a1, label, clim, showVol=showVol)
     if event.text == '1':
         # redo step1
+        view = a1.GetView()
+        a1.Clear(); a2.Clear(); a3.Clear()
+        sd._params = p
         sd.Step1()
-        a1.GetView()
-        
-        a1.SetView()
-    
-
-selected_nodes = list()
-
-#Add clickable nodes
-if guiRemove==True:
+        label = DrawModelAxes(sd._nodes1, vol, a1, clim=clim, showVol=showVol) # lc, mc
+        a1.SetView(view)
+    if event.text == '2':
+        # redo step2
+        view = a2.GetView()
+        a2.Clear(); a3.Clear()
+        sd._params = p
+        sd.Step2()
+        sd.Step3(cleanNodes=cleanNodes)
+        DrawModelAxes(sd._nodes2, vol, a2, clim=clim, showVol=showVol)
+        DrawModelAxes(sd._nodes3, vol, a3, meshColor=meshColor, clim=clim, showVol=showVol)
+        a2.SetView(view)
+    if event.text == '3':
+        view = a3.GetView()
+        a3.Clear()
+        sd._params = p
+        sd.Step3(cleanNodes=cleanNodes)
+        DrawModelAxes(sd._nodes3, vol, a3, meshColor=meshColor, clim=clim, showVol=showVol)
         node_points = _utils_GUI.interactive_node_points(sd._nodes3, scale=0.6)
-        # Bind event handlers
-        fig.eventKeyDown.Bind(on_key)
-        for node_point in node_points:
-            node_point.eventDoubleClick.Bind(lambda event: _utils_GUI.select_node(event, selected_nodes) )
-        print('')
+        _utils_GUI.node_points_callbacks(node_points, selected_nodes, pick=False)
+        a3.SetView(view)
+    if event.text == 'z':
+        # axes not visible
+        AxesVis((a1,a2,a3))
+    if event.text == 'x':
+        # exes visible
+        AxesVis((a1,a2,a3), axVis=True)
+
+# Init list for nodes
+selected_nodes = list()
+# Bind event handlers
+fig.eventKeyDown.Bind(on_key)
+
+# Print user instructions
+print('')
+print('CTRL+SHIFT = add [picked point] (SHIFT+R-click) as seed')
+print('PageDown = remove graph posterior (y-axis) to [picked point] (spine seeds)')
+print('1 = redo step 1; 2 = redo step 2; 3 = redo step 3')
+print('z/x = axis invisible/visible')
+
+if guiRemove==True:
+        # Add clickable nodes to remove edges
+        node_points = _utils_GUI.interactive_node_points(sd._nodes3, scale=0.6)
+        _utils_GUI.node_points_callbacks(node_points, selected_nodes, pick=False)
         print('UP/DOWN = show/hide nodes')
-        print('DELETE  = remove edge [select 2 ndoes] or pop node [select 1 node] '
+        print('DELETE  = remove edge [select 2 nodes] or pop node [select 1 node] '
                'or remove seed in nodes1 closest to [picked point]')
-        print('PageDown = remove graph posterior (y-axis) to [picked point] (use for spine seeds)')
-        print('ALT  = SHOW RESULT after remove residual clusters, pop, corner')
-        print('CTRL = add selected point (SHIFT+Rclick) as seed')
+        print('ALT  = SHOW RESULT after remove clusters, pop, corner')
         print('')
-        
-elif addSeeds==True:
+else:
     # Bind event handlers but do not make node_points
-    fig.eventKeyDown.Bind(on_key)
-    print('')
-    print('CTRL = add selected point (SHIFT+Rclick) as seed')
     print('DELETE = remove seed in nodes1 closest to [picked point]')
-    print('PageDown = remove graph posterior (y-axis) to [picked point] (use for spine seeds)')
     print('')
 
