@@ -26,6 +26,15 @@ class ButtonSegmentation(PushButton):
         self._But1.position =  5,35, 12,14
 
 
+def node_points_callbacks(node_points, selected_nodes, pick=True, t0=None):
+    """ Bind callback functions to node points
+    t0 = Label t0
+    """ 
+    for node_point in node_points:
+        node_point.eventDoubleClick.Bind(lambda event: select_node(event, selected_nodes) )
+        if pick == True:
+            node_point.eventEnter.Bind(lambda event: pick_node(event, t0) )
+            node_point.eventLeave.Bind(lambda event: unpick_node(event, t0) )
 
 def select_node(event, selected_nodes):
     """ select and deselect nodes by Double Click
@@ -45,14 +54,15 @@ def pick_node(event, t0):
 def unpick_node(event, t0):
     t0.text = '\b{Node nr|location}: '
 
-def remove_nodes_by_selected_point(graph, vol, a, pos, label, clim, dim=1):
+def remove_nodes_by_selected_point(graph, vol, axes, label, clim, dim=1, **kwargs):
     """ removes nodes and edges in graph. Graph is separated by coord of selected point
     use y (dim=1) to remove graph in spine
-    Input : graph, axis, label of selected point, position for subplot, 
+    Input : graph, axes, label of selected point, 
             dimension how to separate graph
     Output: sd._nodes1,2,3  are modified and visualized in current view
     """
     from stentseg.utils.picker import pick3d, label2worldcoordinates
+    from stentseg.utils.visualization import DrawModelAxes
     
     if graph is None:
         print('No nodes removed, graph is NoneType')
@@ -62,13 +72,13 @@ def remove_nodes_by_selected_point(graph, vol, a, pos, label, clim, dim=1):
     falseindices = np.where(seeds[:,1]>coord1[1]) # indices with values higher than coord y
     falseseeds = seeds[min(falseindices[0]):]
     graph.remove_nodes_from(tuple(map(tuple, falseseeds)) ) # use map to convert to tuples
-    view = a.GetView()
-    a.Clear()
-    a = vv.subplot(pos)
-    t = vv.volshow(vol, clim=clim)
-    pick3d(a, vol)
-    graph.Draw(mc='b', mw = 7, lc = 'g')
-    a.SetView(view)
+    view = axes.GetView()
+    axes.Clear()
+    DrawModelAxes(graph, vol, axes, clim=clim, **kwargs)
+    axes.SetView(view)
+    if graph.number_of_edges() == 0: # get label from picked seeds sd._nodes1 
+        label = pick3d(vv.gca(), vol)
+        return label
 
 def get_edge_attributes(model, n1, n2):
     """
@@ -175,5 +185,76 @@ def snap_picked_point_to_graph(graph, vol, label):
             point = path[i]
             edge = n1, n2
     return tuple(point.flat), edge, np.asarray(i)
+
+
+def interactiveClusterRemoval(graph, radius=0.7, axVis=False, 
+        faceColor=(0.5,1.0,0.3), selectColor=(1.0,0.3, 0.3) ):
+    """ showGraphAsMesh(graph, radius=0.7, 
+                faceColor=(0.5,1.0,0.3), selectColor=(1.0,0.3, 0.3) )
     
+    Manual delete clusters in the graph. Show the given graph as a mesh, or to 
+    be more precize as a set of meshes representing the clusters of the graph. 
+    By holding the mouse over a mesh, it can be selected, after which it can be 
+    deleted by pressing delete. Use sd._nodes3 for graph when in segmentation.
+    
+    Returns the axes in which the meshes are drawn.
+    
+    """
+    import visvis as vv
+    import networkx as nx
+    from stentseg.stentdirect import stentgraph
+    from stentseg.stentdirect.stentgraph import create_mesh
+    
+    # Get clusters of nodes
+    clusters = list(nx.connected_components(graph))
+    
+    # Build meshes 
+    meshes = []
+    for cluster in clusters:
+        g = graph.copy()
+        for c in clusters:
+            if not c == cluster: 
+                g.remove_nodes_from(c)
+        
+        # Convert to mesh (this takes a while)
+        bm = create_mesh(g, radius = radius)
+        
+        # Store
+        meshes.append(bm)
+    
+    # Define callback functions
+    def meshEnterEvent(event):
+        event.owner.faceColor = selectColor
+    def meshLeaveEvent(event):
+        event.owner.faceColor = faceColor
+    def figureKeyEvent(event):
+        if event.key == vv.KEY_DELETE:
+            m = event.owner.underMouse
+            if hasattr(m, 'faceColor'):
+                m.Destroy()
+                graph.remove_nodes_from(clusters[m.index])
+     
+    # Visualize
+    a = vv.gca()
+    fig = a.GetFigure()
+    for i, bm in enumerate(meshes):
+        m = vv.mesh(bm)
+        m.faceColor = faceColor
+        m.eventEnter.Bind(meshEnterEvent)
+        m.eventLeave.Bind(meshLeaveEvent)
+        m.hitTest = True
+        m.index = i
+    # Bind event handlers to figure
+    fig.eventKeyDown.Bind(figureKeyEvent)
+    a.SetLimits()
+    a.bgcolor = 'k'
+    a.axis.axisColor = 'w'
+    a.axis.visible = axVis
+    a.daspect = 1, 1, -1
+    
+    # Prevent the callback functions from going out of scope
+    a._callbacks = meshEnterEvent, meshLeaveEvent, figureKeyEvent
+    
+    # Done return axes
+    return a
 

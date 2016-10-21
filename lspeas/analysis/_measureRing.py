@@ -11,7 +11,6 @@ from stentseg.utils.datahandling import select_dir, loadvol, loadmodel
 from stentseg.utils.visualization import show_ctvolume
 from stentseg.stentdirect.stentgraph import create_mesh
 from stentseg.motion.vis import get_graph_in_phase
-from stentseg.apps.graph_manualprune import interactiveClusterRemovalGraph
 from stentseg.stentdirect import stentgraph
 import numpy as np
 

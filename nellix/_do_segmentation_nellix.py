@@ -14,7 +14,6 @@ from stentseg.utils.datahandling import select_dir, loadvol, loadmodel
 from stentseg.stentdirect.stentgraph import create_mesh
 from stentseg.stentdirect import stentgraph, StentDirect, getDefaultParams, AnacondaDirect, EndurantDirect, NellixDirect
 from stentseg.utils.picker import pick3d, label2worldcoordinates, label2volindices
-from stentseg.apps.graph_manualprune import interactiveClusterRemovalGraph
 
 # Select the ssdf basedir
 basedir = select_dir(r'F:\Nellix_chevas\CHEVAS_SSDF', r'D:\LSPEAS\Nellix_chevas\CHEVAS_SSDF')

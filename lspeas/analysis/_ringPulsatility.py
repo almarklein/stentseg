@@ -18,6 +18,7 @@ from stentseg.stentdirect.stentgraph import create_mesh
 from visvis.processing import lineToMesh, combineMeshes
 from visvis import ssdf
 from stentseg.utils.picker import pick3d
+from stentseg.utils.visualization import DrawModelAxes, AxesVis
 
 # Select the ssdf basedir
 basedir = select_dir(os.getenv('LSPEAS_BASEDIR', ''),
@@ -29,8 +30,8 @@ exceldir = select_dir(r'C:\Users\Maaike\Desktop',
             r'D:\Profiles\koenradesma\Desktop')
 
 # Select dataset to register
-ptcode = 'LSPEAS_018'
-ctcode = '12months'
+ptcode = 'LSPEAS_025'
+ctcode = 'discharge'
 cropname = 'ring'
 modelname = 'modelavgreg'
 
@@ -45,26 +46,30 @@ model = s2.model
 
 ## Start visualization and GUI
 
+clim = (0,2500)
+showVol = 'MIP'
+
 fig = vv.figure(); vv.clf()
 fig.position = 968.00, 30.00,  944.00, 1002.00
 a = vv.gca()
-a.axis.axisColor = 1,1,1
-a.axis.visible = True
-a.bgcolor = 0,0,0
-a.daspect = 1, 1, -1
-lim = 2500
-t = vv.volshow(vol, clim=(0, lim), renderStyle='mip')
-label = pick3d(vv.gca(), vol)
-model.Draw(mc='b', mw = 10, lc='g')
-vv.xlabel('x (mm)');vv.ylabel('y (mm)');vv.zlabel('z (mm)')
+label = DrawModelAxes(model, vol, a, getLabel=True, clim=clim, showVol=showVol, mw=10)
+# a.axis.axisColor = 1,1,1
+# a.axis.visible = True
+# a.bgcolor = 0,0,0
+# a.daspect = 1, 1, -1
+# lim = 2500
+# t = vv.volshow(vol, clim=(0, lim), renderStyle='mip')
+# label = pick3d(vv.gca(), vol)
+# model.Draw(mc='b', mw = 10, lc='g')
+# vv.xlabel('x (mm)');vv.ylabel('y (mm)');vv.zlabel('z (mm)')
 vv.title('Model for LSPEAS %s  -  %s' % (ptcode[7:], ctcode))
-viewringcrop = {'zoom': 0.012834824098558318,
- 'fov': 0.0,
+viewAP = {'zoom': 0.006,'fov': 0.0,
  'daspect': (1.0, 1.0, -1.0),
- 'loc': (139.818258268377, 170.0738625060885, 80.55734045456558),
- 'elevation': 11.471611096074625,
- 'azimuth': 25.71485900482051,
+ 'azimuth': 0.0,
  'roll': 0.0}
+
+# Set view
+a.SetView(viewAP)
 
 # Initialize labels
 t0 = vv.Label(a, '\b{Node nr|location}: ', fontSize=11, color='w')
@@ -105,13 +110,6 @@ selected_nodes = list()
 scale = 0.7
 node_points = _utils_GUI.interactive_node_points(model, scale=0.7)
 
-def node_points_callbacks(node_points):
-    for node_point in node_points:
-        node_point.eventDoubleClick.Bind(lambda event: _utils_GUI.select_node(event, selected_nodes) )
-        node_point.eventEnter.Bind(lambda event: _utils_GUI.pick_node(event, t0) )
-        node_point.eventLeave.Bind(lambda event: _utils_GUI.unpick_node(event, t0) )
-
-
 def on_key(event):
     global node_points 
     if event.key == vv.KEY_DOWN:
@@ -126,8 +124,8 @@ def on_key(event):
         t4.visible, t5.visible, t6.visible = True, True, True
         for node_point in node_points:
             node_point.visible = True
-    if event.key == vv.KEY_CONTROL:
-        # add clickable point of point on graph closest to picked point (SHIFT+R-click )
+    if event.key == vv.KEY_CONTROL and vv.KEY_SHIFT:
+        # add clickable point: point on graph closest to picked point (SHIFT+R-click )
         view = a.GetView()
         for node_point in node_points:
             node_point.visible = False
@@ -138,7 +136,7 @@ def on_key(event):
         pickedOnGraphDeforms = model.edge[n1][n2]['pathdeforms'][pickedOnGraphIndex]
         model.add_node(pickedOnGraph, deforms=pickedOnGraphDeforms)
         node_points = _utils_GUI.interactive_node_points(model, scale=0.7)
-        node_points_callbacks(node_points)
+        _utils_GUI.node_points_callbacks(node_points, selected_nodes, t0=t0)
         # visualize
         # pickedOnGraph_sphere = vv.solidSphere(translation = (pickedOnGraph), scaling = (scale,scale,scale))
         point = vv.plot(pickedOnGraph[0], pickedOnGraph[1], pickedOnGraph[2], 
@@ -303,6 +301,12 @@ def on_key(event):
         storeOutputToExcel(storeOutput,exceldir)
         for node_point in node_points:
             node_point.visible = False # show that store is ready
+    if event.text == 'z':
+        # axes not visible
+        AxesVis([a])
+    if event.text == 'x':
+        # exes visible
+        AxesVis([a], axVis=True)
 
 
 def get_midpoint_deforms_edge(model, n1, n2):
@@ -472,10 +476,5 @@ def storeOutputToExcel(storeOutput, exceldir):
 
 # Bind event handlers
 fig.eventKeyDown.Bind(on_key)
-node_points_callbacks(node_points) # bind callback functions to node points
-
-
-# Set view
-# a.SetView(viewringcrop)
-
+_utils_GUI.node_points_callbacks(node_points, selected_nodes, t0=t0) # bind callback functions to node points
 
