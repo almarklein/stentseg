@@ -2,7 +2,7 @@
 A Graphical User Interface allows to restore and remove edges
 Store graph in _save_segmentation
 """
-
+from stentseg.stentdirect.stentgraph import create_mesh
 
 ## Rerun step 3 without removing nodes
 
@@ -17,50 +17,28 @@ from stentseg.stentdirect.stent_anaconda import prune_redundant
 
 fig = vv.figure(4); vv.clf()
 fig.position = 8.00, 30.00,  1267.00, 1002.00
-clim = (0,2000)
-viewsaggital = {'azimuth': 90}
 
 # Show volume and graph
 a2 = vv.subplot(121)
-t = vv.volshow(vol, clim=clim)
-pick3d(vv.gca(), vol)
-sd._nodes2.Draw(mc='b', lc='g') # draw seeded and MCP connected nodes
-vv.xlabel('x (mm)');vv.ylabel('y (mm)');vv.zlabel('z (mm)')
+DrawModelAxes(sd._nodes2, vol, a2, clim=clim, showVol=showVol)
 
 # Show cleaned up graph
 a3 = vv.subplot(122)
-a3.daspect = 1,1,-1
-t = vv.volshow(vol, clim=clim)
-label=pick3d(vv.gca(), vol)
-sd._nodes3.Draw(mc='b', lc = 'b')
-vv.xlabel('x (mm)');vv.ylabel('y (mm)');vv.zlabel('z (mm)')
+DrawModelAxes(sd._nodes3, vol, a3, meshColor=meshColor, clim=clim, showVol=showVol, mc='b')
 
+# Use same camera
+a2.camera = a3.camera
 
 # Start GUI
-# initialize labels
-t1 = vv.Label(a3, 'Edge ctvalue: ', fontSize=11, color='c')
-t1.position = 0.1, 5, 0.5, 20  # x (frac w), y, w (frac), h
-t1.bgcolor = None
-t1.visible = False
-t2 = vv.Label(a3, 'Edge cost: ', fontSize=11, color='c')
-t2.position = 0.1, 25, 0.5, 20
-t2.bgcolor = None
-t2.visible = False
-t3 = vv.Label(a3, 'Edge length: ', fontSize=11, color='c')
-t3.position = 0.1, 45, 0.5, 20
-t3.bgcolor = None
-t3.visible = False
-
-
 def on_key(event):
     """KEY commands for user interaction
     UP/DOWN = show/hide nodes
     ENTER   = restore edge [select 2 nodes]
     DELETE  = remove edge [select 2 ndoes] or pop node [select 1 node]'
-    CTRL    = clean nodes: pop, crossings, corner
+    ALT     = clean graph: pop, crossings, corner
     ESCAPE  = FINISH: refine, smooth
     """
-    global label
+    global node_points
     if event.key == vv.KEY_DOWN:
         # hide nodes
         t1.visible = False
@@ -107,7 +85,7 @@ def on_key(event):
             p = sd._nodes3.edge[select1][select2]['path']
             l = stentgraph._edge_length(sd._nodes3, select1, select2)
             sd._nodes3.remove_edge(select1, select2)
-            # Visualize removed edge, show keys and deselect nodes
+            # visualize removed edge, show keys and deselect nodes
             selected_nodes[1].faceColor = 'b'
             selected_nodes[0].faceColor = 'b'
             selected_nodes.clear()
@@ -128,7 +106,7 @@ def on_key(event):
             stentgraph._pop_node(sd._nodes3, select1) # asserts degree == 2
             selected_nodes[0].faceColor = 'w'
             selected_nodes.clear()
-    if event.key == vv.KEY_CONTROL:
+    if event.key == vv.KEY_ALT:
         # clean nodes
         if stentType == 'anacondaRing':
             stentgraph.add_nodes_at_crossings(sd._nodes3)
@@ -143,50 +121,45 @@ def on_key(event):
         # visualize result
         view = a3.GetView()
         a3.Clear()
-        t = vv.volshow(vol, clim=clim)
-        label=pick3d(vv.gca(), vol)
-        sd._nodes3.Draw(mc='b', mw = 8, lc = 'g', lw = 0.2)
-        vv.xlabel('x'), vv.ylabel('y'), vv.zlabel('z')
+        DrawModelAxes(sd._nodes3, vol, a3, clim=clim, showVol=showVol, mw=8, lw=0.2)
+        node_points = _utils_GUI.interactive_node_points(sd._nodes3, scale=0.6)
+        _utils_GUI.node_points_callbacks(node_points, selected_nodes, pick=False)
         a3.SetView(view)
         print('----Press ESCAPE to FINISH model----')
-        print('----Close FIG and EXECUTE CELL again to REMOVE more edges/nodes----')
-    elif event.key == vv.KEY_ESCAPE:
+    if event.key == vv.KEY_ESCAPE:
         # ESCAPE will FINISH model
+        stentgraph.pop_nodes(sd._nodes3)
         sd._nodes3 = sd._RefinePositions(sd._nodes3) # subpixel locations 
-        stentgraph.smooth_paths(sd._nodes3, 2)
+        stentgraph.smooth_paths(sd._nodes3, 3)
         # Create mesh and visualize
         view = a3.GetView()
-        bm = create_mesh(sd._nodes3, 0.6)
         a3.Clear()
-        t = vv.volshow(vol, clim=clim)
-        pick3d(vv.gca(), vol)
-        sd._nodes3.Draw(mc='b', mw = 8, lc = 'w', lw = 0.2)
-        vv.xlabel('x'), vv.ylabel('y'), vv.zlabel('z')
-        m = vv.mesh(bm)
-        m.faceColor = 'g'
+        DrawModelAxes(sd._nodes3, vol, a3, meshColor='g', clim=clim, showVol=showVol, lc='w', mw=8, lw=0.2)
         a3.SetView(view)
         print('----DO NOT FORGET TO SAVE THE MODEL TO DISK; RUN _SAVE_SEGMENTATION----')
+    if event.text == 'q':
+        view = a3.GetView()
+        _utils_GUI.interactiveClusterRemoval(sd._nodes3)
+        a3.SetView(view)
+    if event.text == 'z':
+        # axes not visible
+        AxesVis((a1,a2,a3))
+    if event.text == 'x':
+        # exes visible
+        AxesVis((a1,a2,a3), axVis=True)
 
 #Add clickable nodes
-node_points = _utils_GUI.create_node_points(sd._nodes3)
+node_points = _utils_GUI.interactive_node_points(sd._nodes3, scale=0.6)
     
 selected_nodes = list()
 # Bind event handlers
 fig.eventKeyDown.Bind(on_key)
-for node_point in node_points:
-    node_point.eventDoubleClick.Bind(lambda event: _utils_GUI.select_node(event, selected_nodes) )
+_utils_GUI.node_points_callbacks(node_points, selected_nodes, pick=False)
 print('')
 print('UP/DOWN = show/hide nodes')
 print('ENTER   = restore edge [select 2 nodes]')
 print('DELETE  = remove edge [select 2 ndoes] or pop node [select 1 node]')
-print('CTRL    = clean nodes: crossings, pop, corner, tails, clusters<3')
+print('ALT     = clean nodes: crossings, pop, corner, tails, clusters<3')
 print('ESCAPE  = FINISH: refine, smooth')
 print('')
-
-# Use same camera
-a2.camera = a3.camera
-
-# switch = False
-# a2.axis.visible = switch
-# a3.axis.visible = switch
 
