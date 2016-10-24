@@ -13,18 +13,20 @@ from stentseg.stentdirect.stentgraph import create_mesh
 from stentseg.motion.vis import create_mesh_with_abs_displacement
 import pirt
 import numpy as np
+from stentseg.utils import _utils_GUI
 
 # Select the ssdf basedir
 basedir = select_dir(os.getenv('LSPEAS_BASEDIR', ''),
                      r'D:\LSPEAS\LSPEAS_ssdf', r'G:\LSPEAS_ssdf_backup')
 
 # Select dataset to register
-ptcode = 'LSPEAS_021'
-# codes = ctcode1, ctcode2, ctcode3 = 'discharge', '1month', '12months'
-codes = ctcode1, ctcode2 = '6months', '12months'
+ptcode = 'LSPEAS_025'
+codes = ctcode1, ctcode2, ctcode3 = 'discharge', '1month', '12months'
+# codes = ctcode1, ctcode2 = '6months', '12months'
 # codes = ctcode1 = 'discharge'
 cropname = 'ring'
 modelname = 'modelavgreg'
+cropvol = 'stent'
 
 drawModelLines = True  # True or False
 drawMesh = False
@@ -43,21 +45,21 @@ showVol  = 'MIP'  # MIP or ISO or 2D or None
 s1 = loadmodel(basedir, ptcode, ctcode1, cropname, modelname)
 # modelmesh1 = create_mesh(s1.model, 1.0)  # Param is thickness
 modelmesh1 = create_mesh_with_abs_displacement(s1.model, radius = 0.7, dim=dimensions)
-vol1 = loadvol(basedir, ptcode, ctcode1, cropname, 'avgreg').vol
+vol1 = loadvol(basedir, ptcode, ctcode1, cropvol, 'avgreg').vol
 
 # 2 models
 if len(codes) == 2 or len(codes) == 3:
     s2 = loadmodel(basedir, ptcode, ctcode2, cropname, modelname)
 #     modelmesh2 = create_mesh(s2.model, 1.0)  # Param is thickness
     modelmesh2 = create_mesh_with_abs_displacement(s2.model, radius = 0.7, dim=dimensions)
-    vol2 = loadvol(basedir, ptcode, ctcode2, cropname, 'avgreg').vol
+    vol2 = loadvol(basedir, ptcode, ctcode2, cropvol, 'avgreg').vol
 
 # 3 models
 if len(codes) == 3:
     s3 = loadmodel(basedir, ptcode, ctcode3, cropname, modelname)
 #     modelmesh3 = create_mesh(s3.model, 1.0)  # Param is thickness   
     modelmesh3 = create_mesh_with_abs_displacement(s3.model, radius = 0.7, dim=dimensions)
-    vol3 = loadvol(basedir, ptcode, ctcode3, cropname, 'avgreg').vol
+    vol3 = loadvol(basedir, ptcode, ctcode3, cropvol, 'avgreg').vol
 
 
 ## Visualize
@@ -173,15 +175,22 @@ if len(codes) == 3:
     a1.daspect= a2.daspect= a3.daspect = 1, 1, -1  # z-axis flipped
     a1.axis.visible= a2.axis.visible= a3.axis.visible = showAxis
 
+
 ## Axis on or off
 
 # showAxis = False
 if len(codes) == 1:
     a.axis.visible = showAxis
+    # bind rotate view
+    f.eventKeyDown.Bind(lambda event: _utils_GUI.RotateView(event, [a]) )
 if len(codes) == 2:
     a1.axis.visible= a2.axis.visible = showAxis
+    # bind rotate view
+    f.eventKeyDown.Bind(lambda event: _utils_GUI.RotateView(event, [a1, a2]) )
 if len(codes) == 3:
     a1.axis.visible= a2.axis.visible= a3.axis.visible = showAxis
+    # bind rotate view
+    f.eventKeyDown.Bind(lambda event: _utils_GUI.RotateView(event, [a1, a2, a3]) )
 
 ## Set view
 # a1.SetView(view1)

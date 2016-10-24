@@ -11,20 +11,79 @@ alpha = 0.8
 # open vv.wibjects.buttons
 # open vv.wibjects.ColormapEditor
 # button = vv.buttons.PushButton(vv.gca())
-from visvis.wibjects.buttons import PushButton
-class ButtonSegmentation(PushButton):
+# from visvis.wibjects.buttons import PushButton
+# def buttonFoo(*args, **kwargs):
+#     print("Pressed button, arguments: {}, {}".format(args, kwargs))
+# button.eventPress.Bind(buttonFoo)
 
-    def __init__(self, parent, *args):
-        
-        # init size
-        self.position.w = 300
-        self.position.h = 50
-        
-        # create buttons
-        self._Text1 = text
-        self._But1 = PushButton(self, parent, text)
-        self._But1.position =  5,35, 12,14
+# class ButtonSegmentation:
+#     """ 
+#     """
+#     def __init__(self, parent=None, sd=None, params=None, step=1, *args):
+#         
+#         # init size
+#         # self.position.w = 300
+#         # self.position.h = 50
+#         
+#         # params and segmenter object
+#         self._params = params
+#         self._sd = sd
+#         self._parent = parent
+#         
+#         # create buttons
+#         self._text = {0:None, 1:'STEP 1', 2:'STEP 2', 3:'STEP 3'}[step]
+#         self._But1 = vv.PushButton(parent, self._text)
+#         self._But1.position =  5,15, 12,14
+#         
+#         # bind
+#         self._step = step
+#         self._But1.eventPress.Bind(buttonFoo)
+#     
+#     def buttonFoo(*args, **kwargs):
+#         from stentseg.utils.visualization import DrawModelAxes
+#         # print("Pressed button, arguments: {}, {}".format(args, kwargs))
+#         if self._step == 1:
+#             a1 = parent
+#             view = a1.GetView()
+#             vv.clf()
+#             # a1.Clear(); a2.Clear(); a3.Clear()
+#             sd._params = self._params
+#             sd.Step1()
+#             label = DrawModelAxes(sd._nodes1, vol, a1, clim=clim, showVol=showVol) # lc, mc
+#             a1.SetView(view)
 
+def AxesVis(axis, axVis=False):
+    """ Axis input list with axes
+    axVis is True or False
+    """
+    for ax in axis:
+        ax.axis.visible = axVis
+
+def RotateView(event, axis=None):
+    """ Rotate view in axes given in list axis. Use a and d keys 
+    If axis is not given, current axes is used
+    Also controls visibility of axis with z and x keys
+    Can be used with f.eventKeyDown.Bind(lambda event: _utils_GUI.RotateView(event, [a1, a2]) )
+    """
+    if axis is None:
+        ax = vv.gca()
+        axis = [ax]
+    for ax in axis:
+        view = ax.GetView()
+        if event.text == 'a':
+            plus90 = view['azimuth'] + 90
+            view['azimuth'] = plus90
+            ax.SetView(view)
+        if event.text == 'd':
+            min90 = view['azimuth'] - 90
+            view['azimuth'] = min90
+            ax.SetView(view)
+    if event.text == 'z':
+        # axes not visible
+        AxesVis(axis)
+    if event.text == 'x':
+        # axes visible
+        AxesVis(axis, axVis=True)
 
 def node_points_callbacks(node_points, selected_nodes, pick=True, t0=None):
     """ Bind callback functions to node points
@@ -99,7 +158,7 @@ def set_edge_labels(t1,t2,t3,ct,c,l):
     t2.visible = True
     t3.visible = True
 
-def interactive_node_points(graph, scale=0.4):
+def interactive_node_points(graph, scale=0.4, **kwargs):
     """ create node objects for gui
     """
     node_points = []
@@ -112,7 +171,7 @@ def interactive_node_points(graph, scale=0.4):
         node_points.append(node_point)
     return node_points
 
-def create_node_points_with_amplitude(graph, scale =0.4):
+def create_node_points_with_amplitude(graph, scale =0.4, **kwargs):
     """ create node objects for gui and calculate motion amplitude for each node
     """
     from stentseg.motion.displacement import _calculateAmplitude

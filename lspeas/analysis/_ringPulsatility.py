@@ -18,7 +18,7 @@ from stentseg.stentdirect.stentgraph import create_mesh
 from visvis.processing import lineToMesh, combineMeshes
 from visvis import ssdf
 from stentseg.utils.picker import pick3d
-from stentseg.utils.visualization import DrawModelAxes, AxesVis
+from stentseg.utils.visualization import DrawModelAxes
 
 # Select the ssdf basedir
 basedir = select_dir(os.getenv('LSPEAS_BASEDIR', ''),
@@ -31,7 +31,7 @@ exceldir = select_dir(r'C:\Users\Maaike\Desktop',
 
 # Select dataset to register
 ptcode = 'LSPEAS_025'
-ctcode = 'discharge'
+ctcode = '6months'
 cropname = 'ring'
 modelname = 'modelavgreg'
 
@@ -53,15 +53,6 @@ fig = vv.figure(); vv.clf()
 fig.position = 968.00, 30.00,  944.00, 1002.00
 a = vv.gca()
 label = DrawModelAxes(model, vol, a, getLabel=True, clim=clim, showVol=showVol, mw=10)
-# a.axis.axisColor = 1,1,1
-# a.axis.visible = True
-# a.bgcolor = 0,0,0
-# a.daspect = 1, 1, -1
-# lim = 2500
-# t = vv.volshow(vol, clim=(0, lim), renderStyle='mip')
-# label = pick3d(vv.gca(), vol)
-# model.Draw(mc='b', mw = 10, lc='g')
-# vv.xlabel('x (mm)');vv.ylabel('y (mm)');vv.zlabel('z (mm)')
 vv.title('Model for LSPEAS %s  -  %s' % (ptcode[7:], ctcode))
 viewAP = {'zoom': 0.006,'fov': 0.0,
  'daspect': (1.0, 1.0, -1.0),
@@ -124,7 +115,7 @@ def on_key(event):
         t4.visible, t5.visible, t6.visible = True, True, True
         for node_point in node_points:
             node_point.visible = True
-    if event.key == vv.KEY_CONTROL and vv.KEY_SHIFT:
+    if event.key == vv.KEY_CONTROL and event.key == vv.KEY_SHIFT:
         # add clickable point: point on graph closest to picked point (SHIFT+R-click )
         view = a.GetView()
         for node_point in node_points:
@@ -291,7 +282,7 @@ def on_key(event):
         # FINISH, STORE TO EXCEL
         # visualize
         view = a.GetView()
-        t = vv.volshow(vol, clim=(0, lim), renderStyle='mip')
+        t = vv.volshow(vol, clim=clim, renderStyle='mip')
         # show mesh of model without deform coloring
         modelmesh = create_mesh(model, 0.4)  # Param is thickness
         m = vv.mesh(modelmesh)
@@ -303,10 +294,10 @@ def on_key(event):
             node_point.visible = False # show that store is ready
     if event.text == 'z':
         # axes not visible
-        AxesVis([a])
+        _utils_GUI.AxesVis([a])
     if event.text == 'x':
         # exes visible
-        AxesVis([a], axVis=True)
+        _utils_GUI.AxesVis([a], axVis=True)
 
 
 def get_midpoint_deforms_edge(model, n1, n2):

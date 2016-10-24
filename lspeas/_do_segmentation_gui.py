@@ -143,10 +143,10 @@ def on_key(event):
         a3.SetView(view)
     if event.text == 'z':
         # axes not visible
-        AxesVis((a1,a2,a3))
+        _utils_GUI.AxesVis((a1,a2,a3))
     if event.text == 'x':
         # exes visible
-        AxesVis((a1,a2,a3), axVis=True)
+        _utils_GUI.AxesVis((a1,a2,a3), axVis=True)
 
 #Add clickable nodes
 node_points = _utils_GUI.interactive_node_points(sd._nodes3, scale=0.6)

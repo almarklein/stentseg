@@ -14,7 +14,7 @@ from stentseg.utils import PointSet, _utils_GUI, visualization
 from stentseg.utils.datahandling import select_dir, loadvol, loadmodel
 from stentseg.stentdirect import stentgraph, getDefaultParams, initStentDirect
 from stentseg.utils.picker import pick3d, get_picked_seed
-from stentseg.utils.visualization import DrawModelAxes, AxesVis
+from stentseg.utils.visualization import DrawModelAxes
 
 # Select the ssdf basedir
 basedir = select_dir(os.getenv('LSPEAS_BASEDIR', ''),
@@ -197,7 +197,7 @@ def on_key(event):
         _utils_GUI.vis_spared_edges(sd._nodes3)
         a3.SetView(view)
         print('----DO NOT FORGET TO SAVE THE MODEL TO DISK; RUN _SAVE_SEGMENTATION----')
-    if event.key == vv.KEY_CONTROL and vv.KEY_SHIFT:
+    if event.key == vv.KEY_CONTROL and event.key == vv.KEY_SHIFT:
         # add picked seed to nodes_1
         coord2 = get_picked_seed(vol, label)
         sd._nodes1.add_node(tuple(coord2))
@@ -241,10 +241,10 @@ def on_key(event):
         a3.SetView(view)
     if event.text == 'z':
         # axes not visible
-        AxesVis((a1,a2,a3))
+        _utils_GUI.AxesVis((a1,a2,a3))
     if event.text == 'x':
-        # exes visible
-        AxesVis((a1,a2,a3), axVis=True)
+        # axes visible
+        _utils_GUI.AxesVis((a1,a2,a3), axVis=True)
 
 # Init list for nodes
 selected_nodes = list()

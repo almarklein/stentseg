@@ -88,11 +88,3 @@ def DrawModelAxes(graph, vol, ax=None, axVis=False, meshColor=None, getLabel=Fal
             return
 
 
-def AxesVis(axis, axVis=False):
-    """ Axis input list with axes
-    axVis is True or False
-    """
-    for ax in axis:
-        ax.axis.visible = axVis
-
-
