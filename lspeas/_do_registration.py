@@ -22,9 +22,9 @@ basedir = select_dir(os.getenv('LSPEAS_BASEDIR', ''),
 # Select dataset to register
 # ptcode = 'QRM_FANTOOM_20160121'
 # ctcode = '12months'
-cropnames = ['ring', 'stent']
-ptcodes = ['LSPEAS_023']
-ctcodes = ['12months']  
+cropnames = ['stent','ring']
+ptcodes = ['LSPEAS_025']
+ctcodes = ['1month', '6months', '12months']  
 
 for ptcode in ptcodes:
     for ctcode in ctcodes:
@@ -37,16 +37,17 @@ for ptcode in ptcodes:
             
             # Initialize registration object
             reg = pirt.reg.GravityRegistration(*vols)
-            #
+            # Set params
             reg.params.mass_transforms = 2  # 2nd order (Laplacian) triggers more at lines
-            reg.params.speed_factor = 1.0
             reg.params.deform_wise = 'groupwise' # groupwise!
             reg.params.mapping = 'backward'
             reg.params.deform_limit = 1.0
             reg.params.final_scale = 1.0  # We might set this a wee bit lower (but slower!)
+            reg.params.grid_sampling_factor = 0.5 # !! important especially for Laplace !!
+            # most important params
+            reg.params.speed_factor = 1.0
             reg.params.scale_sampling = 16
             reg.params.final_grid_sampling = 20
-            reg.params.grid_sampling_factor = 0.5 
             
             # Go!
             reg.register(verbose=1)
