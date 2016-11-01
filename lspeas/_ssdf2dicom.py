@@ -10,7 +10,7 @@ import os.path
 import dicom
 from dicom.dataset import Dataset, FileDataset
 import dicom.UID
-from stentseg.utils.datahandling import select_dir, loadvol
+from stentseg.utils.datahandling import select_dir,loadvol,normalize_soft_limit
 
 if __name__ == "__main__":
     print("---------------------------- ")
@@ -24,16 +24,18 @@ if __name__ == "__main__":
     
     # Select directory to save dicom
     basedir_save = select_dir(r'D:\LSPEAS\DICOMavgreg',
-                            r'G:\DICOMavgreg_toPC')
+                            r'F:\DICOMavgreg_toPC')
     
     # Select directory to load dicom
     # the stentseg datahandling module is agnostic about where the DICOM data is
-    dicom_basedir = select_dir(r'G:\LSPEAS_data\ECGgatedCT',
+    dicom_basedir = select_dir(r'F:\LSPEAS_data\ECGgatedCT',
                             r'D:\LSPEAS\LSPEAS_data_BACKUP\ECGgatedCT')    
     # Select dataset
-    ptcode = 'LSPEAS_019'
+    ptcode = 'LSPEAS_023'
     ctcode = 'discharge'
     cropname = 'stent'
+    what = 'avgreg' # what volume to save to dicom
+    normalizeLim = 3071 # HU
     
     if 'FANTOOM' in ptcode:
         dirname = os.path.join(dicom_basedir.replace('ECGgatedCT', ''), ptcode)
@@ -45,45 +47,46 @@ if __name__ == "__main__":
     # Select basedirectory to load ssdf
     basedir_load = select_dir(os.getenv('LSPEAS_BASEDIR', ''),
                         r'D:\LSPEAS\LSPEAS_ssdf',
-                        r'G:\LSPEAS_ssdf_backup')
+                        r'F:\LSPEAS_ssdf_backup')
     
     # Load ssdf
-    s = loadvol(basedir_load, ptcode, ctcode, cropname, 'avgreg')
-    vol = s.vol
-    
+    s = loadvol(basedir_load, ptcode, ctcode, cropname, what)
+    if s.vol.max() < 3100:
+        vol = s.vol # no normalization
+    else:
+        vol = normalize_soft_limit(s.vol,normalizeLim) # normalize
     # Read dicom file to rewrite slices from s
     if not os.path.isdir(dirname):
-        raise RuntimeError('Could not find data for given input %s' % ptcode, ctcode)
+        raise RuntimeError('Could not find directory for given input %s' % ptcode, ctcode, cropname, what)
     
     while True:
         subfolder = os.listdir(dirname)
         if len(subfolder) == 1:  # data should only contain one main uid folder
             dirname = os.path.join(dirname, subfolder[0])
-        else:
+            mainuid = subfolder.copy()[0]
+        else: # we are in the folder with folders for each phase
             break
     
-    if not subfolder:
-        raise RuntimeError('Could not find any files for given input %s' % ptcode, ctcode)
     # get dir of first subfolder (phase 0%)
     dirsubfolder = os.path.join(dirname,subfolder[0])
     # get first .dcm file
     for filename in os.listdir(dirsubfolder):
         if 'dcm' in filename:
             base_filename = os.path.join(dirsubfolder,filename)
-            break # for loop
+            break # leave for loop, we have the first dicom file
     
     ds = dicom.read_file(base_filename) # read original dicom file to get ds
 #     assert ds.InstanceNumber == 1 # first slice
     initialUID = ds.SOPInstanceUID
     UIDtoReplace = ds.SOPInstanceUID.split('.')[-1]
     instance = 0
-
+    
     # Rewrite slices to ds
-    for slice in s.vol:
+    for slice in vol:
         ds.PixelData = slice.astype('int16').tostring() # must be int, not float
         ds.Rows = s.vol.shape[1]
         ds.Cols = ds.Columns = s.vol.shape[2]
-        ds.SeriesDescription = cropname+' avgreg'
+        ds.SeriesDescription = cropname+' '+what
         # adjust slice z-position
         # note: in world coordinates the z-position is decreasing to match the "patient orientation"
         ds.ImagePositionPatient[2] =  -(s.vol.origin[0] + (instance * s.vol.sampling[0])) # z-flipped
@@ -95,17 +98,20 @@ if __name__ == "__main__":
         instance += 1
         
         # save ds
-        filename = '%s_%s_%s_%s%i.dcm' % (ptcode, ctcode, cropname, 'avgreg', instance)
+        filename = '%s_%s_%s_%s%i.dcm' % (ptcode, ctcode, cropname, what, instance)
         print("Writing slice", filename)
         if 'FANTOOM' in ptcode:
-            ds.save_as(os.path.join(basedir_save, cropname, ptcode, ctcode, filename))
+            targetdir = os.path.join(basedir_save, cropname, ptcode, ctcode, mainuid)
         else:
-            ds.save_as(os.path.join(basedir_save, cropname, ptcode, ptcode+'_'+ctcode, filename))
+            targetdir = os.path.join(basedir_save, cropname, ptcode, ptcode+'_'+ctcode, mainuid)
+        try:
+            ds.save_as(os.path.join(targetdir, filename))
+        except FileNotFoundError: # if targetdir does not exist, create
+            os.makedirs(targetdir)
+            ds.save_as(os.path.join(targetdir, filename))
     
-    print("Check: shape of avgreg vol=", vol.shape)
+    print("Check: shape of {} vol=".format(what), vol.shape)
+    print("Max HU s.vol= {}; max HU of stored dicom volume= {}".format(s.vol.max(),vol.max()))
     print("Files saved to:")
-    if 'FANTOOM' in ptcode:
-            print(os.path.join(basedir_save, cropname, ptcode, ctcode))
-    else:
-        print(os.path.join(basedir_save, cropname, ptcode, ptcode+'_'+ctcode))
-        
+    print(targetdir)
+    
