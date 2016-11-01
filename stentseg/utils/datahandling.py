@@ -14,6 +14,18 @@ import sys
 import numpy as np
 
 
+def normalize_soft_limit(vol, limit):
+    """ from pirt _soft_limit1()
+    return normalized vol
+    """
+    if limit == 1:
+        data = 1.0 - np.exp(-vol)
+    else:
+        f = np.exp(-vol/limit)
+        data = -limit * (f-1) #todo: when vol[:] = .. ValueError: assignment destination is read-only
+    return data 
+    
+    
 def select_dir(*dirs):
     """ Given a series of directories, select the first one that exists.
     This helps to write code that works for multiple users.
@@ -23,6 +35,7 @@ def select_dir(*dirs):
             return dir
     else:
         raise RuntimeError('None of the given dirs exists.')
+
 
 def renamedcm(dicom_basedir, ptcode, ctcode):
     """ Renames 4D dcm data to shorter name using ptcode, ctcode and phase
@@ -70,6 +83,7 @@ def loadmesh(basedirMesh,ptcode,ctcode,meshname, invertZ=True):
         for vertice in mesh._vertices:
             vertice[-1] = vertice[-1]*-1 # assumes mesh in x,y,z
     return mesh
+
 
 def loadvol(basedir, ptcode, ctcode, cropname, what='phases'):
     """ Load volume data. An ssdf struct is returned. The volumes
