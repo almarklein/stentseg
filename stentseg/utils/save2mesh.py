@@ -11,8 +11,8 @@ def model2mesh(basedir,savedir,ptcode,ctcode,cropname,modelname='modelavgreg'):
     s = loadmodel(basedir, ptcode, ctcode, cropname, modelname)
     model = s.model
     mesh = create_mesh(model, 0.4)  # Param is thickness (with 0.4 -> ~0.75mm diam)
-    mesh._vertices[:,-1] = mesh._vertices[:,-1]*-1 # flip z, negative in original dicom
-    # mind that front face and back face is also flipped
+    mesh._vertices[:,-1] *= -1 # flip z, negative in original dicom
+    mesh._normals[:,-1] *= -1  # flip also normals to change front face and back face along
     vv.meshWrite(os.path.join(savedir, filename),mesh)
     
 
