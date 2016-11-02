@@ -10,11 +10,11 @@ def model2mesh(basedir,savedir,ptcode,ctcode,cropname,modelname='modelavgreg'):
     # Load the stent model and mesh
     s = loadmodel(basedir, ptcode, ctcode, cropname, modelname)
     model = s.model
-    mesh = create_mesh(model, 0.4)  # Param is thickness (~0.75mm diam)
+    mesh = create_mesh(model, 0.4)  # Param is thickness (with 0.4 -> ~0.75mm diam)
     mesh._vertices[:,-1] = mesh._vertices[:,-1]*-1 # flip z, negative in original dicom
+    # mind that front face and back face is also flipped
     vv.meshWrite(os.path.join(savedir, filename),mesh)
-
-
+    
 
 if __name__ == '__main__':
     import os
@@ -26,18 +26,21 @@ if __name__ == '__main__':
                         r'F:\LSPEAS_ssdf_backup',r'G:\LSPEAS_ssdf_backup')
     
     # Dir to save mesh
-    savedir = select_dir(r'D:\LSPEAS\LSPEAS_mesh')
+    savedir = select_dir(r'D:\LSPEAS\LSPEAS_mesh', r'C:\Users\Maaike\Desktop\LSPEAS_ring_mesh [copy]')
     
     # Select dataset to register
-    ptcode = 'LSPEAS_009'
+    # ptcodes = ['LSPEAS_001','LSPEAS_002','LSPEAS_003','LSPEAS_005','LSPEAS_008',
+    #             'LSPEAS_009','LSPEAS_011','LSPEAS_015','LSPEAS_017','LSPEAS_018',
+    #             'LSPEAS_019','LSPEAS_020','LSPEAS_021','LSPEAS_022','LSPEAS_025']
+    ptcodes = ['LSPEAS_001']
     ctcode = 'discharge'
     cropname = 'ring'
     modelname = 'modelavgreg'
     
-    # Save mesh
-    savedir = os.path.join(savedir, ptcode)
-    model2mesh(basedir,savedir,ptcode,ctcode,cropname,modelname=modelname)
-    print('mesh saved to %s' % savedir )
+    for ptcode in ptcodes:
+        # Save mesh
+        model2mesh(basedir,savedir,ptcode,ctcode,cropname,modelname=modelname)
+        print('mesh saved to %s' % savedir )
     
     
     
