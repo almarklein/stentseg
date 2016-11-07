@@ -6,6 +6,10 @@ from stentseg.utils import PointSet
 import openpyxl
 from stentseg.utils.datahandling import select_dir
 import sys, os
+import matplotlib.pyplot as plt
+import matplotlib as mpl
+import numpy as np 
+import itertools
 
 
 def point_in_pointcloud_closest_to_p(pp, point):
@@ -191,12 +195,9 @@ class ExcelAnalysis():
         """ Plot distance renal from peak valleys for 1 patient
         e.g. sheet = 'distances to renal obs1'
         """
-        import matplotlib.pyplot as plt
-        import matplotlib as mpl
         import prettyplotlib as ppl
         from prettyplotlib import brewer2mpl # colormaps, http://colorbrewer2.org/#type=sequential&scheme=YlGnBu&n=5
         from scipy.interpolate import interp1d #, spline, splrep, splev, UnivariateSpline
-        import numpy as np 
         
         colormap = brewer2mpl.get_map('YlGnBu', 'sequential', 5).mpl_colormap # ppl...(fig,ax,...,cmap = )
         exceldir = self.exceldir
@@ -226,7 +227,7 @@ class ExcelAnalysis():
         # plot
         f1 = plt.figure(num=1, figsize=(7.6, 5))
         ax1 = f1.add_subplot(111)
-        _initaxis(ax1)
+        _initaxis([ax1])
         ax1.set_xlabel('location on ring-stent', fontsize=14)
         ax1.set_ylabel('distance to left renal (mm)', fontsize=14)
         plt.ylim(-10,12)
@@ -247,13 +248,10 @@ class ExcelAnalysis():
             label.set_fontsize(14)
 
 
-    def plot_pp_vv_deployment(self):
-        """ Plot pp and vv deployment residu
-        show asymmetry
+    def plot_pp_vv_deployment(self, ring=1):
+        """ Plot multipanel pp and vv deployment residu; show (a)symmetry
+        ring=1 or 2 for R1 or R2
         """
-        import matplotlib.pyplot as plt
-        import matplotlib as mpl
-        import numpy as np 
         
         exceldir = self.exceldir
         workbook_stent = self.workbook_stent
@@ -273,46 +271,55 @@ class ExcelAnalysis():
         patients = self.patients
         
         for i, patient in enumerate(patients):
-            if patient == 'LSPEAS_025':
+            if patient == 'LSPEAS_023':
                 break
             # init axis
             ax1 = f1.add_subplot(5,3,i+1)
-            _initaxis(ax1)
+            _initaxis([ax1])
             # ax1.set_xlabel('PP distance (mm)', fontsize=14)
-            ax1.set_ylabel('Residual RDC (%)', fontsize=14) # ring deployment capacity
-            plt.ylim(-10,45)
+            ax1.set_ylabel('RDC ring (%)', fontsize=14) # ring deployment capacity
+            plt.ylim(-10,47)
             
             sheet = wb.get_sheet_by_name(patient)
-            # read R1
-            ppR1 = sheet.rows[rowStart][colStart[0]:colStart[0]+4] # +4 is read until 12M
-            ppR1 = [obj.value for obj in ppR1]
-            vvR1 = sheet.rows[rowStart+1][colStart[0]:colStart[0]+4]
-            vvR1 = [obj.value for obj in vvR1]
-            # read R2
-            ppR2 = sheet.rows[rowStart][colStart[1]:colStart[1]+4]
-            ppR2 = [obj.value for obj in ppR2]
-            vvR2 = sheet.rows[rowStart+1][colStart[1]:colStart[1]+4]
-            vvR2 = [obj.value for obj in vvR2]
+            if ring == 1 or ring == 12:
+                # read R1
+                ppR1 = sheet.rows[rowStart][colStart[0]:colStart[0]+4] # +4 is read until 12M
+                ppR1 = [obj.value for obj in ppR1]
+                vvR1 = sheet.rows[rowStart+1][colStart[0]:colStart[0]+4]
+                vvR1 = [obj.value for obj in vvR1]
+                # read R2
+            if ring == 2 or ring == 12:
+                ppR2 = sheet.rows[rowStart][colStart[1]:colStart[1]+4]
+                ppR2 = [obj.value for obj in ppR2]
+                vvR2 = sheet.rows[rowStart+1][colStart[1]:colStart[1]+4]
+                vvR2 = [obj.value for obj in vvR2]
             
             # plot R1
-            ax1.plot(xrange, ppR1, linestyle='-', marker='o', label='PP - R1')
-            ax1.plot(xrange, vvR1, linestyle='-', marker='o', label='VV - R1')
+            if ring == 1:
+                ax1.plot(xrange, ppR1, ls='-', marker='o', color='#ef8a62', label='PP - R1')
+                ax1.plot(xrange, vvR1, ls='-', marker='o', color='#67a9cf', label='VV - R1')
+            if ring == 2:
+                ax1.plot(xrange, ppR2, ls='-', marker='o', color='#ef8a62', label='PP - R2')
+                ax1.plot(xrange, vvR2, ls='-', marker='o', color='#67a9cf', label='VV - R2')
+            if ring == 12:
+                ax1.plot(xrange, ppR1, ls='-', marker='o', color='#ef8a62', label='PP - R1')
+                ax1.plot(xrange, vvR1, ls='-', marker='o', color='#67a9cf', label='VV - R1')
+                ax1.plot(xrange, ppR2, ls='--', marker='^', color='#ef8a62', label='PP - R2')
+                ax1.plot(xrange, vvR2, ls='--', marker='^', color='#67a9cf', label='VV - R2')
+                
             
             plt.xticks(xrange, xlabels, fontsize = 14)
             plt.xlim(0.8,len(xlabels)+0.2) # xlim margins 0.2
-            ax1.legend(loc='upper right', fontsize=10, title=('%i: ID %s' % (i+1, patient[-3:]) )  )
+            ax1.legend(loc='upper right', fontsize=8, title=('%i: ID %s' % (i+1, patient[-3:]) )  )
         
-        plt.savefig(os.path.join(self.dirsaveIm, 'plot_pp_vv_deployment.png'), papertype='a0', dpi=300)
+        plt.savefig(os.path.join(self.dirsaveIm, 
+            'plot_pp_vv_deployment_R{}.png'.format(ring)), papertype='a0', dpi=300)
     
         
     def plot_pp_vv_distance_ratio(self):
         """ Plot pp and vv distance ratio
         show asymmetry
         """
-        import matplotlib.pyplot as plt
-        import matplotlib as mpl
-        import numpy as np
-        import prettyplotlib as ppl
         
         exceldir = self.exceldir
         workbook_stent = self.workbook_stent
@@ -322,7 +329,7 @@ class ExcelAnalysis():
         # init figure
         f1 = plt.figure(num=3, figsize=(7.6, 5))
         ax1 = f1.add_subplot(111)
-        _initaxis(ax1)
+        _initaxis([ax1])
         ax1.set_xlabel('Patient number', fontsize=14)
         ax1.set_ylabel('Asymmetry ratio PP/VV distance', fontsize=14)
         plt.ylim(0.6,1.5)
@@ -336,10 +343,10 @@ class ExcelAnalysis():
         colStart = [1, 6] # B, G
         rowStart = 85 # pp/vv ratio
         patients = self.patients
-        xrange = range(1,1+len(patients[:15])) # first 14 patients
+        xrange = range(1,1+len(patients[:16])) # first 15 patients
         
         for i, patient in enumerate(patients):
-            if patient == 'LSPEAS_025':
+            if patient == 'LSPEAS_023':
                 break
             sheet = wb.get_sheet_by_name(patient)
             # read R1
@@ -362,6 +369,141 @@ class ExcelAnalysis():
             ax1.legend(loc='upper right', numpoints=1, fontsize=12)
         
         plt.savefig(os.path.join(self.dirsaveIm, 'plot_pp_vv_distance_ratio.png'), papertype='a0', dpi=300)
+    
+    def plot_ring_deployment(self, patients=None):
+        """ Plot residual deployment capacity ring, mean peak and valley diameters
+        """
+        
+        exceldir = self.exceldir
+        workbook_stent = self.workbook_stent
+        
+        wb = openpyxl.load_workbook(os.path.join(exceldir, workbook_stent), data_only=True)
+        
+        # init figure
+        f1 = plt.figure(num=3, figsize=(11.6, 6.3))
+        xlabels = ['D', '1M', '6M', '12M']
+        xrange = range(1,1+len(xlabels)) # not start from x=0 to play with margin xlim
+        
+        # init axis
+        ax1 = f1.add_subplot(1,2,1)
+        plt.xticks(xrange, xlabels, fontsize = 14)
+        ax2 = f1.add_subplot(1,2,2)
+        plt.xticks(xrange, xlabels, fontsize = 14)
+        _initaxis([ax1, ax2])
+        ax1.set_ylabel('Residual deployment capacity R1 (%)', fontsize=15) # ring deployment capacity
+        ax2.set_ylabel('Residual deployment capacity R2 (%)', fontsize=15) # ring deployment capacity
+        ax1.set_ylim([0, 29])
+        ax2.set_ylim([0, 29])
+        ax1.set_xlim([0.8, len(xlabels)+0.2]) # xlim margins 0.2
+        ax2.set_xlim([0.8, len(xlabels)+0.2])
+        
+        # lines and colors; 12-class Paired
+        colors = itertools.cycle(['#a6cee3','#1f78b4','#b2df8a','#33a02c',
+        '#fb9a99','#e31a1c','#fdbf6f','#ff7f00','#cab2d6','#6a3d9a','#ffff99','#b15928'])
+        # lStyles = ['-', '--']
+        mStyles = itertools.cycle(['^', '^'])#'D', 's', '+'])
+        marker = 'o'
+        lw = 3
+        
+        # read data
+        colStart = [1, 6] # B, G
+        rowStart = 82 # mean pp vv
+        if patients is None:
+            patients = self.patients
+        # loop through patient sheets
+        for i, patient in enumerate(patients):
+            if patient == 'LSPEAS_023':
+                break
+            sheet = wb.get_sheet_by_name(patient)
+            # read R1/R2
+            R1 = sheet.rows[rowStart][colStart[0]:colStart[0]+4] # +4 is read until 12M
+            R1 = [obj.value for obj in R1]
+            R2 = sheet.rows[rowStart][colStart[1]:colStart[1]+4] # +4 is read until 12M
+            R2 = [obj.value for obj in R2]
+            
+            # plot
+            color = next(colors)
+            if i > 11: # through 12 colors
+                marker = next(mStyles)
+            ax1.plot(xrange, R1, ls='-', lw=lw, marker=marker, color=color, 
+            label='%i: ID %s' % (i+1, patient[-3:]))
+            # plt.xticks(xrange, xlabels, fontsize = 14)
+            
+            ax2.plot(xrange, R2, ls='-', lw=lw, marker=marker, color=color, 
+            label='%i: ID %s' % (i+1, patient[-3:]))
+            # plt.xticks(xrange, xlabels, fontsize = 14)
+            
+        ax2.legend(loc='upper right', fontsize=8, numpoints=1, title='Patients'  )
+        
+        plt.savefig(os.path.join(self.dirsaveIm, 
+            'plot_ring_deployment.png'), papertype='a0', dpi=300)
+        
+    
+    def change_in_rdc_D_12(self, rowStart = 51, rowEnd = 66):
+        """ Do peaks expand more than valleys?
+        """
+        exceldir = self.exceldir
+        workbook_stent = self.workbook_stent
+        
+        wb = openpyxl.load_workbook(os.path.join(exceldir, workbook_stent), data_only=True)
+        sheet = wb.get_sheet_by_name('Summary')
+        
+        # read data
+        colStart = ['DY', 'DZ', 'EA', 'EB']#, 'X'] # R1 pp vv R2 pp vv
+        colStart = [(openpyxl.cell.column_index_from_string(char)-1) for char in colStart]
+        rowStart = rowStart # pt 001 summery sheet
+        rowEnd = rowEnd
+        nrows = rowEnd - rowStart + 1 
+        
+        # get arrays with change in rdc all patients
+        R1pp = sheet.columns[colStart[0]][rowStart:rowStart+nrows] # 
+        R1pp = [obj.value for obj in R1pp]
+        R1pp004 = R1pp.pop(3) # pt 004 is in between, remove from list
+        R1vv = sheet.columns[colStart[1]][rowStart:rowStart+nrows] # 
+        R1vv = [obj.value for obj in R1vv]
+        R1vv004 = R1vv.pop(3) # pt 004 is in between, remove from list
+        R2pp = sheet.columns[colStart[2]][rowStart:rowStart+nrows] # 
+        R2pp = [obj.value for obj in R2pp]
+        R2pp004 = R2pp.pop(3) # pt 004 is in between, remove from list
+        R2vv = sheet.columns[colStart[3]][rowStart:rowStart+nrows] # 
+        R2vv = [obj.value for obj in R2vv]
+        R2vv004 = R2vv.pop(3) # pt 004 is in between, remove from list
+        
+        # boxplot
+        data = [R1pp, R1vv, R2pp, R2vv]
+        labels = ['R1 peaks', 'R1 valleys', 'R2 peaks', 'R2 valleys']
+        
+        import plotly
+        from plotly.offline import plot
+        import plotly.graph_objs as go
+        
+        trace0 = go.Box(
+            y=R1pp,
+            name = 'peaks'
+            # marker=dict(
+            #         color='#3D9970'
+        )
+        trace1 = go.Box(
+            y=R1vv,
+            name = 'valleys'
+            # marker=dict(
+            #         color='#FF851B'
+        )
+        data = [trace0, trace1]
+        layout = go.Layout(
+            yaxis=dict(
+                title='Decrease residual deployment capacity ring (%)',
+                zeroline=False
+            ),
+            boxmode='group'
+        )
+        
+        fig = go.Figure(data=data, layout=layout)
+        plot(fig, image = 'png', image_filename = 'testbox', image_height=600, image_width=800) # in w/h pixels)
+        
+        # plot(data, image = 'png', image_filename = 'testbox', image_height=600, image_width=800) # in w/h pixels
+        
+        
         
         
     def plot_ellipse_pp_vv():
@@ -369,7 +511,7 @@ class ExcelAnalysis():
         """
         from stentseg.utils.fitting import sample_ellipse
         import numpy as np
-        
+        #todo: wip
         x0, y0 = 0, 0
         r1 = 20 # pp; x
         r2 = 18 # vv; y
@@ -394,7 +536,7 @@ class ExcelAnalysis():
         f1 = plt.figure(num=4, figsize=(7.6, 5))
         plt.cla()
         ax1 = f1.add_subplot(111)
-        _initaxis(ax1)
+        _initaxis([ax1])
         ax1.set_xlabel('PP', fontsize=14)
         ax1.set_ylabel('VV', fontsize=14)
         
@@ -408,16 +550,22 @@ class ExcelAnalysis():
         ax1.plot([0, 4], [0, 4], linestyle='-', color='g')
         
     
-def _initaxis(ax):
-    ax.spines["top"].set_visible(False)  
-    ax.spines["right"].set_visible(False)
-    ax.get_xaxis().tick_bottom()  
-    ax.get_yaxis().tick_left()
+def _initaxis(axis):
+    """ Set axis for nice visualization
+    axis is list such as [ax] or [ax1, ax2]
+    """
+    for ax in axis:
+        ax.spines["top"].set_visible(False)  
+        ax.spines["right"].set_visible(False)
+        ax.get_xaxis().tick_bottom()  
+        ax.get_yaxis().tick_left()
     
 
 if __name__ == '__main__':
     
     # create class object for excel analysis
     foo = ExcelAnalysis() # excel locations initialized in class
-    foo.plot_pp_vv_distance_ratio()
-    foo.plot_pp_vv_deployment()
+    # foo.plot_pp_vv_distance_ratio()
+    # foo.plot_pp_vv_deployment(ring=12)
+    # foo.plot_ring_deployment()
+    foo.change_in_rdc_D_12()
