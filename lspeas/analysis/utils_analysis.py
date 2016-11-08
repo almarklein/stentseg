@@ -476,30 +476,77 @@ class ExcelAnalysis():
         import plotly
         from plotly.offline import plot
         import plotly.graph_objs as go
+        # https://plot.ly/python/box-plots/
+        # https://plot.ly/python/axes/
+        
+        x = ['R1'] * len(R1pp) + ['R2'] * len(R2pp)
         
         trace0 = go.Box(
-            y=R1pp,
-            name = 'peaks'
-            # marker=dict(
-            #         color='#3D9970'
+            y= R1pp + R2pp,
+            x = x,
+            name = 'peaks',
+            boxmean=True,
+            fillcolor= 'white', # default is half opacity of line/marker color
+            line = dict(
+                    color='#ef8a62' # orange/red
+            ),
+            marker=dict(
+                    color='#ef8a62' # orange/red
+            ) 
         )
         trace1 = go.Box(
-            y=R1vv,
-            name = 'valleys'
-            # marker=dict(
-            #         color='#FF851B'
+            y= R1vv + R2vv,
+            x = x,
+            name = 'valleys',
+            boxmean=True,
+            fillcolor= 'white',
+            line = dict(
+                    color='#000000'
+            ),
+            marker=dict(
+                    color='#000000'
+            )
         )
         data = [trace0, trace1]
         layout = go.Layout(
             yaxis=dict(
                 title='Decrease residual deployment capacity ring (%)',
-                zeroline=False
+                zeroline=False,
+                dtick=5, # steps of 5 on y ax
+                tickfont=dict(
+                    # family='Old Standard TT, serif',
+                    size=20,
+                ),
+                titlefont = dict(
+                        # family='Arial, sans-serif',
+                        size=25
+                    ),
+                
             ),
+            xaxis=dict(
+                    # titlefont=dict(
+                    #     # family='Arial, sans-serif',
+                    #     size=25,
+                    # ),
+                    tickfont=dict(
+                        # family='Old Standard TT, serif',
+                        size=25, # size of x labels
+                    ),
+                ),
+            legend=dict(
+                    font=dict(
+                        # family='sans-serif',
+                        size=25,
+                    ),
+                    bordercolor='black',
+                    borderwidth=1
+                ),
+            
             boxmode='group'
         )
         
         fig = go.Figure(data=data, layout=layout)
-        plot(fig, image = 'png', image_filename = 'testbox', image_height=600, image_width=800) # in w/h pixels)
+        plot(fig, image = 'png', image_filename = 'testbox', image_height=1200, image_width=1500) # in w/h pixels)
         
         # plot(data, image = 'png', image_filename = 'testbox', image_height=600, image_width=800) # in w/h pixels
         
