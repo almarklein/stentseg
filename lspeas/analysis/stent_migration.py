@@ -76,9 +76,9 @@ if ctcode2:
     modelmesh2 = create_mesh(model2, meshradius)
 
 # Load vessel mesh (output Mimics)
-vessel1 = loadmesh(basedirstl,ptcode,ctcode1,vesselname1) #inverts Z
+vessel1 = loadmesh(basedirstl,ptcode,vesselname1) #inverts Z
 if ctcode2:
-    vessel2 = loadmesh(basedirstl,ptcode,ctcode2,vesselname2) #inverts Z
+    vessel2 = loadmesh(basedirstl,ptcode,vesselname2) #inverts Z
 # get pointset from STL 
 ppvessel1 = points_from_mesh(vessel1, invertZ = False) # removes duplicates
 if ctcode2:
