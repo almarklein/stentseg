@@ -1,5 +1,6 @@
 import numpy as np
 import visvis as vv
+import os
 
 from stentseg.utils import PointSet
 from stentseg.utils.centerline import find_centerline, points_from_mesh, smooth_centerline, pp_to_graph
@@ -7,7 +8,7 @@ from stentseg.utils.datahandling import select_dir, loadvol, loadmodel
 from stentseg.utils.visualization import show_ctvolume
 from stentseg.stentdirect import stentgraph
 
-TEST = 14
+TEST = 12
 
 if TEST == 1:
     import imageio
@@ -34,8 +35,10 @@ elif TEST > 10:
     # Select the ssdf basedir
     basedir = select_dir(r'D:\LSPEAS\LSPEAS_ssdf',
                         r'F:\LSPEAS_ssdf_backup', r'G:\LSPEAS_ssdf_backup')
+    basedirstl = r'D:\Profiles\koenradesma\Dropbox\UTdrive\MedDataMimics\LSPEAS_Mimics\Tests'
+    
     ptcode = 'LSPEAS_003'
-    ctcode = 'discharge'
+    ctcode = '12months'
     cropname = 'stent'
     showAxis = False  # True or False
     showVol  = 'MIP'  # MIP or ISO or 2D or None
@@ -45,17 +48,17 @@ elif TEST > 10:
     s = loadvol(basedir, ptcode, ctcode, cropname, 'avgreg') 
     
     if TEST == 11:
-        fname = r'D:\LSPEAS\LSPEAS_vessel\LSPEAS_002\12months\LSPEAS_002_MGK Smoothed_Wrapped_DRGseEditRG 2_001.stl'
+        fname = os.path.join(basedirstl, ptcode, 'LSPEAS_002_12M_MGK Smoothed_Wrapped_DRGseEditRG 2_001.stl')
         start1 = (110, 100, 70) # x,y,z ; dist
         start2 = (87, 106, 40)  # branch right
         ends = [(110, 120, 15)] # prox
     elif TEST == 12:
-        fname = r'D:\LSPEAS\LSPEAS_vessel\LSPEAS_003\12months\LSPEAS_003_MGK Smoothed_Wrapped_DRGseEditRG 2_001.stl'
+        fname = os.path.join(basedirstl, ptcode, 'LSPEAS_003_12M_MGK Smoothed_Wrapped_DRGseEditRG 2_001.stl')
         start1 = (190, 165, 60)
         start2 = (207, 184, 34) 
         ends = [(179, 169, 17)] 
     elif TEST == 13:
-        fname = r'D:\Profiles\koenradesma\Dropbox\UTdrive\MedDataMimics\LSPEAS_Mimics\LSPEAS_004\LSPEAS_004_D_stent-l-th500.stl'
+        fname = os.path.join(basedirstl, ptcode, 'LSPEAS_004_D_stent-l-th500.stl')
         start1 = (146.1, 105.3, 69.3) # x,y,z
         ends = [(112.98, 100.08, 62.03)]
     elif TEST == 14:

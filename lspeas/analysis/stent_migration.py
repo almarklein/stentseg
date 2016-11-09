@@ -22,17 +22,16 @@ from get_anaconda_ringparts import _get_model_hooks,get_midpoints_peaksvalleys,i
 basedir = select_dir(r'/LSPEAS\LSPEAS_ssdf',
                      r'/LSPEAS_ssdf_backup')
                      
-basedirMesh = select_dir(r'/LSPEAS\LSPEAS_vessel',
-                            r'/LSPEAS_vessel_backup')
+basedirstl = select_dir(r'D:\Profiles\koenradesma\Dropbox\UTdrive\MedDataMimics\LSPEAS_Mimics\Tests')
 
 # select dataset
 ptcode = 'LSPEAS_003'
 ctcodes = ctcode1, ctcode2 = 'discharge', '12months' # ctcode2 = None if no second code
 cropname = 'ring'
 modelname = 'modelavgreg'
-vesselname1 = 'LSPEAS_003_MK Smoothed_Wrapped1.0_edit-smart 4_copy_001.stl'
-# LSPEAS_003_MK Smoothed_Wrapped1.0_edit-smart 4_copy_noRenals 7_001
-vesselname2 = 'LSPEAS_003_MK Smoothed_Wrapped1.0_smart 3_copy_001.stl'
+vesselname1 = 'LSPEAS_003_D_MK Smoothed_Wrapped1.0_edit-smart 4_copy_001.stl'
+# LSPEAS_003_D_MK Smoothed_Wrapped1.0_edit-smart 4_copy_noRenals 7_001
+vesselname2 = 'LSPEAS_003_12M_MK Smoothed_Wrapped1.0_smart 3_copy_001.stl'
 sheet_renals_obs = 'renal locations obs1'
 
 showAxis = True  # True or False
@@ -77,9 +76,9 @@ if ctcode2:
     modelmesh2 = create_mesh(model2, meshradius)
 
 # Load vessel mesh (output Mimics)
-vessel1 = loadmesh(basedirMesh,ptcode,ctcode1,vesselname1) #inverts Z
+vessel1 = loadmesh(basedirstl,ptcode,ctcode1,vesselname1) #inverts Z
 if ctcode2:
-    vessel2 = loadmesh(basedirMesh,ptcode,ctcode2,vesselname2) #inverts Z
+    vessel2 = loadmesh(basedirstl,ptcode,ctcode2,vesselname2) #inverts Z
 # get pointset from STL 
 ppvessel1 = points_from_mesh(vessel1, invertZ = False) # removes duplicates
 if ctcode2:
