@@ -44,7 +44,7 @@ def show_ctvolume(vol, graph, showVol = 'MIP', clim = (0,2500), isoTh=250, remov
         t = vv.volshow(vol,clim=clim, renderStyle='iso')
         t.isoThreshold = isoTh; t.colormap = colormap
     elif showVol == '2D':
-        t = vv.volshow2(vol); t.clim
+        t = vv.volshow2(vol); t.clim = clim
     # bind ClimEditor to figure
     if not showVol is None:
         c = vv.ClimEditor(vv.gcf())
