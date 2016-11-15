@@ -91,15 +91,15 @@ fig.position = 0.00, 22.00,  1920.00, 1018.00
 
 # Show model Step 1
 a1 = vv.subplot(131)
-label = DrawModelAxes(sd._nodes1, vol, a1, clim=clim, showVol=showVol) # lc, mc
+label = DrawModelAxes(vol, sd._nodes1, a1, clim=clim, showVol=showVol) # lc, mc
 
 # Show model Step 2
 a2 = vv.subplot(132)
-DrawModelAxes(sd._nodes2, vol, a2, clim=clim, showVol=showVol)
+DrawModelAxes(vol, sd._nodes2, a2, clim=clim, showVol=showVol)
 
 # Show model Step 3
 a3 = vv.subplot(133)
-DrawModelAxes(sd._nodes3, vol, a3, meshColor=meshColor, clim=clim, showVol=showVol)
+DrawModelAxes(vol, sd._nodes3, a3, meshColor=meshColor, clim=clim, showVol=showVol)
 _utils_GUI.vis_spared_edges(sd._nodes3)
 
 # Use same camera
@@ -152,7 +152,7 @@ def on_key(event):
             sd._nodes1.remove_node(node)
             view = a1.GetView()
             a1.Clear()
-            label = DrawModelAxes(sd._nodes1, vol, a1, clim=clim, showVol=showVol)
+            label = DrawModelAxes(vol, sd._nodes1, a1, clim=clim, showVol=showVol)
             a1.SetView(view)    
         if len(selected_nodes) == 2:
             # remove edge
@@ -193,7 +193,7 @@ def on_key(event):
         # Create mesh and visualize
         view = a3.GetView()
         a3.Clear()
-        DrawModelAxes(sd._nodes3, vol, a3, meshColor=meshColor, clim=clim, showVol=showVol, lc='b', mw=8, lw=0.2)
+        DrawModelAxes(vol, sd._nodes3, a3, meshColor=meshColor, clim=clim, showVol=showVol, lc='b', mw=8, lw=0.2)
         _utils_GUI.vis_spared_edges(sd._nodes3)
         a3.SetView(view)
         print('----DO NOT FORGET TO SAVE THE MODEL TO DISK; RUN _SAVE_SEGMENTATION----')
@@ -218,7 +218,7 @@ def on_key(event):
         a1.Clear(); a2.Clear(); a3.Clear()
         sd._params = p
         sd.Step1()
-        label = DrawModelAxes(sd._nodes1, vol, a1, clim=clim, showVol=showVol) # lc, mc
+        label = DrawModelAxes(vol, sd._nodes1, a1, clim=clim, showVol=showVol) # lc, mc
         a1.SetView(view)
     if event.text == '2':
         # redo step2
@@ -227,15 +227,15 @@ def on_key(event):
         sd._params = p
         sd.Step2()
         sd.Step3(cleanNodes=cleanNodes)
-        DrawModelAxes(sd._nodes2, vol, a2, clim=clim, showVol=showVol)
-        DrawModelAxes(sd._nodes3, vol, a3, meshColor=meshColor, clim=clim, showVol=showVol)
+        DrawModelAxes(vol, sd._nodes2, a2, clim=clim, showVol=showVol)
+        DrawModelAxes(vol, sd._nodes3, a3, meshColor=meshColor, clim=clim, showVol=showVol)
         a2.SetView(view)
     if event.text == '3':
         view = a3.GetView()
         a3.Clear()
         sd._params = p
         sd.Step3(cleanNodes=cleanNodes)
-        DrawModelAxes(sd._nodes3, vol, a3, meshColor=meshColor, clim=clim, showVol=showVol)
+        DrawModelAxes(vol, sd._nodes3, a3, meshColor=meshColor, clim=clim, showVol=showVol)
         node_points = _utils_GUI.interactive_node_points(sd._nodes3, scale=0.6)
         _utils_GUI.node_points_callbacks(node_points, selected_nodes, pick=False)
         a3.SetView(view)

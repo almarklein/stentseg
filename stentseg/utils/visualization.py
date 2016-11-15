@@ -51,7 +51,7 @@ def show_ctvolume(vol, graph, showVol = 'MIP', clim = (0,2500), isoTh=250, remov
         c.position = (10, 30)
 
 
-def DrawModelAxes(graph, vol, ax=None, axVis=False, meshColor=None, getLabel=False, 
+def DrawModelAxes(vol, graph=None, ax=None, axVis=False, meshColor=None, getLabel=False, 
                   mc='b', lc='g', mw=7, lw=0.6, **kwargs):
     """ Draw model with volume with axes set
     ax = axes to draw (a1 or a2 or a3); graph = sd._nodes1 or 2 or 3
@@ -66,6 +66,10 @@ def DrawModelAxes(graph, vol, ax=None, axVis=False, meshColor=None, getLabel=Fal
     ax.bgcolor = 0,0,0
     ax.axis.visible = axVis
     vv.xlabel('x (mm)');vv.ylabel('y (mm)');vv.zlabel('z (mm)')
+    if graph is None:
+        show_ctvolume(vol, graph, removeStent=False, **kwargs) 
+        label = pick3d(vv.gca(), vol)
+        return label
     if graph.number_of_edges() == 0: # get label from picked seeds sd._nodes1 
         show_ctvolume(vol, graph, **kwargs) 
         label = pick3d(vv.gca(), vol)

@@ -31,7 +31,7 @@ exceldir = select_dir(r'C:\Users\Maaike\Desktop',
 
 # Select dataset to register
 ptcode = 'LSPEAS_025'
-ctcode = '6months'
+ctcode = '12months'
 cropname = 'ring'
 modelname = 'modelavgreg'
 
@@ -52,7 +52,7 @@ showVol = 'MIP'
 fig = vv.figure(); vv.clf()
 fig.position = 968.00, 30.00,  944.00, 1002.00
 a = vv.gca()
-label = DrawModelAxes(model, vol, a, getLabel=True, clim=clim, showVol=showVol, mw=10)
+label = DrawModelAxes(vol, model, a, getLabel=True, clim=clim, showVol=showVol, mw=10)
 vv.title('Model for LSPEAS %s  -  %s' % (ptcode[7:], ctcode))
 viewAP = {'zoom': 0.006,'fov': 0.0,
  'daspect': (1.0, 1.0, -1.0),

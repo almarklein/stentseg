@@ -20,11 +20,11 @@ fig.position = 8.00, 30.00,  1267.00, 1002.00
 
 # Show volume and graph
 a2 = vv.subplot(121)
-DrawModelAxes(sd._nodes2, vol, a2, clim=clim, showVol=showVol)
+DrawModelAxes(vol, sd._nodes2, a2, clim=clim, showVol=showVol)
 
 # Show cleaned up graph
 a3 = vv.subplot(122)
-DrawModelAxes(sd._nodes3, vol, a3, meshColor=meshColor, clim=clim, showVol=showVol, mc='b')
+DrawModelAxes(vol, sd._nodes3, a3, meshColor=meshColor, clim=clim, showVol=showVol, mc='b')
 
 # Use same camera
 a2.camera = a3.camera
@@ -121,7 +121,7 @@ def on_key(event):
         # visualize result
         view = a3.GetView()
         a3.Clear()
-        DrawModelAxes(sd._nodes3, vol, a3, clim=clim, showVol=showVol, mw=8, lw=0.2)
+        DrawModelAxes(vol, sd._nodes3, a3, clim=clim, showVol=showVol, mw=8, lw=0.2)
         node_points = _utils_GUI.interactive_node_points(sd._nodes3, scale=0.6)
         _utils_GUI.node_points_callbacks(node_points, selected_nodes, pick=False)
         a3.SetView(view)
@@ -134,7 +134,7 @@ def on_key(event):
         # Create mesh and visualize
         view = a3.GetView()
         a3.Clear()
-        DrawModelAxes(sd._nodes3, vol, a3, meshColor='g', clim=clim, showVol=showVol, lc='w', mw=8, lw=0.2)
+        DrawModelAxes(vol, sd._nodes3, a3, meshColor='g', clim=clim, showVol=showVol, lc='w', mw=8, lw=0.2)
         a3.SetView(view)
         print('----DO NOT FORGET TO SAVE THE MODEL TO DISK; RUN _SAVE_SEGMENTATION----')
     if event.text == 'q':
