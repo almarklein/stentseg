@@ -515,11 +515,11 @@ class ExcelAnalysis():
                 dtick=5, # steps of 5 on y ax
                 tickfont=dict(
                     # family='Old Standard TT, serif',
-                    size=20,
+                    size=26, # size of y ax numbers
                 ),
                 titlefont = dict(
                         # family='Arial, sans-serif',
-                        size=25
+                        size=35
                     ),
                 
             ),
@@ -530,13 +530,13 @@ class ExcelAnalysis():
                     # ),
                     tickfont=dict(
                         # family='Old Standard TT, serif',
-                        size=25, # size of x labels
+                        size=35, # size of x labels
                     ),
                 ),
             legend=dict(
                     font=dict(
                         # family='sans-serif',
-                        size=25,
+                        size=35,
                     ),
                     bordercolor='black',
                     borderwidth=1
@@ -546,7 +546,7 @@ class ExcelAnalysis():
         )
         
         fig = go.Figure(data=data, layout=layout)
-        plot(fig, image = 'png', image_filename = 'testbox', image_height=1200, image_width=1500) # in w/h pixels)
+        plot(fig, image = 'png', image_filename = 'testbox', image_height=1100, image_width=1500) # in w/h pixels)
         
         # plot(data, image = 'png', image_filename = 'testbox', image_height=600, image_width=800) # in w/h pixels
         
