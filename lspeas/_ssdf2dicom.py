@@ -24,16 +24,20 @@ if __name__ == "__main__":
     
     # Select directory to save dicom
     basedir_save = select_dir(r'D:\LSPEAS\DICOMavgreg',
-                            r'F:\DICOMavgreg_toPC')
+                            r'G:\DICOMavgreg_toPC')
     
     # Select directory to load dicom
     # the stentseg datahandling module is agnostic about where the DICOM data is
-    dicom_basedir = select_dir(r'F:\LSPEAS_data\ECGgatedCT',
+    dicom_basedir = select_dir(r'G:\LSPEAS_data\ECGgatedCT',
                             r'D:\LSPEAS\LSPEAS_data_BACKUP\ECGgatedCT')    
     # Select dataset
-    ptcodes = ['LSPEAS_008','LSPEAS_009','LSPEAS_011','LSPEAS_015','LSPEAS_017','LSPEAS_018',
-                'LSPEAS_019','LSPEAS_020','LSPEAS_021','LSPEAS_022','LSPEAS_025']
-    ctcode = 'discharge'
+    # ptcodes = ['LSPEAS_001','LSPEAS_002','LSPEAS_003','LSPEAS_005','LSPEAS_008',
+    #         'LSPEAS_009','LSPEAS_011','LSPEAS_015','LSPEAS_017','LSPEAS_018',
+    #         'LSPEAS_019','LSPEAS_020','LSPEAS_021','LSPEAS_022','LSPEAS_025', 
+    #         'LSPEAS_023']
+    ptcodes = ['LSPEAS_025', 
+            'LSPEAS_023']
+    ctcode = '6months'
     cropname = 'stent'
     what = 'avgreg' # what volume to save to dicom
     normalizeLim = 3071 # HU
@@ -49,7 +53,7 @@ if __name__ == "__main__":
         # Select basedirectory to load ssdf
         basedir_load = select_dir(os.getenv('LSPEAS_BASEDIR', ''),
                             r'D:\LSPEAS\LSPEAS_ssdf',
-                            r'F:\LSPEAS_ssdf_backup')
+                            r'G:\LSPEAS_ssdf_backup')
         
         # Load ssdf
         s = loadvol(basedir_load, ptcode, ctcode, cropname, what)
@@ -70,14 +74,20 @@ if __name__ == "__main__":
                 break
         
         # get dir of first subfolder (phase 0%)
-        dirsubfolder = os.path.join(dirname,subfolder[0])
-        # get first .dcm file
-        for filename in os.listdir(dirsubfolder):
-            if 'dcm' in filename:
-                base_filename = os.path.join(dirsubfolder,filename)
-                break # leave for loop, we have the first dicom file
+        try:
+            dirsubfolder = os.path.join(dirname,subfolder[0])
+            # get first .dcm file
+            for filename in os.listdir(dirsubfolder):
+                if 'dcm' in filename:
+                    base_filename = os.path.join(dirsubfolder,filename)
+                    break # leave for loop, we have the first dicom file
+        except NotADirectoryError: # when we have imafolders with dirfile (S10, S20..)
+            dirsubfolder = os.path.join(dirname,subfolder[1])
+            filename = os.listdir(dirsubfolder)[1]
+            base_filename = os.path.join(dirsubfolder,filename)
         
-        ds = dicom.read_file(base_filename) # read original dicom file to get ds
+        # read original dicom file to get ds
+        ds = dicom.read_file(base_filename) 
     #     assert ds.InstanceNumber == 1 # first slice
         initialUID = ds.SOPInstanceUID
         UIDtoReplace = ds.SOPInstanceUID.split('.')[-1]
