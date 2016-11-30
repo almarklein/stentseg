@@ -87,7 +87,8 @@ if __name__ == "__main__":
             base_filename = os.path.join(dirsubfolder,filename)
         
         # read original dicom file to get ds
-        ds = dicom.read_file(base_filename) 
+        ds = dicom.read_file(base_filename)
+        mainuid = ds.StudyInstanceUID 
     #     assert ds.InstanceNumber == 1 # first slice
         initialUID = ds.SOPInstanceUID
         UIDtoReplace = ds.SOPInstanceUID.split('.')[-1]
