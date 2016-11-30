@@ -35,9 +35,8 @@ if __name__ == "__main__":
     #         'LSPEAS_009','LSPEAS_011','LSPEAS_015','LSPEAS_017','LSPEAS_018',
     #         'LSPEAS_019','LSPEAS_020','LSPEAS_021','LSPEAS_022','LSPEAS_025', 
     #         'LSPEAS_023']
-    ptcodes = ['LSPEAS_025', 
-            'LSPEAS_023']
-    ctcode = '6months'
+    ptcodes = ['LSPEAS_023']
+    ctcode = '12months'
     cropname = 'stent'
     what = 'avgreg' # what volume to save to dicom
     normalizeLim = 3071 # HU
@@ -75,16 +74,26 @@ if __name__ == "__main__":
         
         # get dir of first subfolder (phase 0%)
         try:
-            dirsubfolder = os.path.join(dirname,subfolder[0])
+            dirsubfolder = os.path.join(dirname,subfolder[0]) # error when not folder
             # get first .dcm file
             for filename in os.listdir(dirsubfolder):
                 if 'dcm' in filename:
                     base_filename = os.path.join(dirsubfolder,filename)
                     break # leave for loop, we have the first dicom file
-        except NotADirectoryError: # when we have imafolders with dirfile (S10, S20..)
-            dirsubfolder = os.path.join(dirname,subfolder[1])
-            filename = os.listdir(dirsubfolder)[1]
-            base_filename = os.path.join(dirsubfolder,filename)
+        except NotADirectoryError: # when we have imafolders with dirfile (S10, S20..) or only ima files no folder
+            for folder in subfolder:
+                if folder == 'DIRFILE':
+                    continue
+                if folder.endswith('.IMA'): # IMA files are not in folder
+                    base_filename = os.path.join(dirname,folder)
+                    break # leave for loop, we have ima dicom file
+                else: # get right folder with phase
+                    subdir = os.path.join(dirname,folder)
+                    numOfFiles = len(os.listdir(subdir))
+                    if numOfFiles > 250: # gated phase with 0.5 mm spacing at least 250 slices 
+                        filename = os.listdir(subdir)[1]
+                        base_filename = os.path.join(subdir,filename)
+                        break # leave for loop, we have ima dicom file
         
         # read original dicom file to get ds
         ds = dicom.read_file(base_filename)
