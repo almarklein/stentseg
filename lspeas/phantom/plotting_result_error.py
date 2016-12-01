@@ -35,6 +35,8 @@ import openpyxl
 import matplotlib.pyplot as plt
 from stentseg.utils.datahandling import select_dir
 # import seaborn as sns  #sns.tsplot
+# https://www.wakari.io/sharing/bundle/ijstokes/pyvis-1h?has_login=False
+# http://spartanideas.msu.edu/2014/06/28/how-to-make-beautiful-data-visualizations-in-python-with-matplotlib/
 
 exceldir = select_dir(r'C:\Users\Maaike\Dropbox\UTdrive\LSPEAS\Analysis\Validation robot',
                       r'D:\Profiles\koenradesma\Dropbox\UTdrive\LSPEAS\Analysis\Validation robot')
@@ -62,16 +64,18 @@ plt.savefig(os.path.join(dirsave, 'errorgraphfreq.pdf'), papertype='a0', dpi=300
 
 
 # plot amplitude profiles
-profiles, mean_abs_error, SD, MIN, Q1, Q3, MAX  = read_error_ouput(exceldir, workbookErrors, colS=6, colE=12)
+profiles, mean_abs_error, SD, MIN, Q1, Q3, MAX  = read_error_ouput(exceldir, workbookErrors, colS=5, colE=12)
 
-f2 = plt.figure(num=2, figsize=(7.6, 5))
+f2 = plt.figure(num=3, figsize=(7.6, 5))
 ax2 = f2.add_subplot(111)
 ax2.spines["top"].set_visible(False)  
 ax2.spines["right"].set_visible(False)
 ax2.get_xaxis().tick_bottom()  
 ax2.get_yaxis().tick_left()
-ax2.plot(profiles[:-2], mean_abs_error[:-2], linestyle='', marker='o', color='b') 
-ax2.errorbar(profiles[:-2], mean_abs_error[:-2], yerr = SD[:-2], fmt=None, ecolor='b', capsize=8)
+ax2.plot(profiles[0], mean_abs_error[0], linestyle='', marker='o', color='k') 
+ax2.errorbar(profiles[0], mean_abs_error[0], yerr = SD[0], fmt=None, ecolor='k', capsize=8)
+ax2.plot(profiles[1:-2], mean_abs_error[1:-2], linestyle='', marker='o', color='b') 
+ax2.errorbar(profiles[1:-2], mean_abs_error[1:-2], yerr = SD[1:-2], fmt=None, ecolor='b', capsize=8)
 ax2.plot(profiles[-2:], mean_abs_error[-2:], linestyle='', marker='o', color='r')
 ax2.errorbar(profiles[-2:], mean_abs_error[-2:], yerr = SD[-2:], fmt=None, ecolor='r', capsize=8) 
 # ax2.plot(profiles, Q1, 'b.--')
