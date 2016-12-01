@@ -154,10 +154,12 @@ if __name__ == '__main__':
                   r'D:\Profiles\koenradesma\Dropbox\UTdrive\LSPEAS\Analysis\Validation robot')
     workbookCam = '20160215 GRAFIEKEN van camera systeem uit matlab in excel.xlsx'
     workbookAlg = '20160624 DATA Toshiba.xlsx'
-    sheetProfile = 'ZB3'
-    colSt = 'K'
+    sheetProfile = 'ZB1'
+    colSt = 'P'
     n_samplepoints = 11
     visf2 = False
+    ylim = 0.45
+    xlim = 7 # 3.5
     
     # read camera data
     time_cam_all, pos_cam_all = readCameraExcel(exceldir, workbookCam, sheetProfile, colSt)
@@ -179,7 +181,7 @@ if __name__ == '__main__':
         
         f1 = plt.figure(figsize=(18,5.25))
         ax0 = f1.add_subplot(111)
-        ax0.plot(time_cam_all, pos_cam_all, 'r.-', alpha=0.5, label='ground truth camera')
+        ax0.plot(time_cam_all, pos_cam_all, 'r.-', alpha=0.5, label='camera reference')
         
         # get errors after resampling signals
         errors_periods = []
@@ -257,8 +259,8 @@ if __name__ == '__main__':
         ax0.set_ylabel('position (mm)',fontsize=16)
         for label in (ax0.get_xticklabels() + ax0.get_yticklabels()):
             label.set_fontsize(15)
-        plt.xlim(0.2,3.5)
-        plt.ylim(0,0.85)
+        plt.xlim(0.0,xlim) # 0.2,xlim
+        plt.ylim(0,ylim)
         
         # calc errors
         rmse_profile = np.mean(rmse_val_periods)
