@@ -29,10 +29,10 @@ if __name__ == '__main__':
     savedir = select_dir(r'D:\LSPEAS\LSPEAS_mesh_ring', r'C:\Users\Maaike\Desktop\LSPEAS_ring_mesh [copy]')
     
     # Select dataset to register
-    ptcodes = ['LSPEAS_001','LSPEAS_002','LSPEAS_003','LSPEAS_005','LSPEAS_008',
-                'LSPEAS_009','LSPEAS_011','LSPEAS_015','LSPEAS_017','LSPEAS_018',
-                'LSPEAS_019','LSPEAS_020','LSPEAS_021','LSPEAS_022','LSPEAS_025']
-    # ptcodes = ['LSPEAS_001']
+    # ptcodes = ['LSPEAS_001','LSPEAS_002','LSPEAS_003','LSPEAS_005','LSPEAS_008',
+    #             'LSPEAS_009','LSPEAS_011','LSPEAS_015','LSPEAS_017','LSPEAS_018',
+    #             'LSPEAS_019','LSPEAS_020','LSPEAS_021','LSPEAS_022','LSPEAS_025']
+    ptcodes = ['LSPEAS_023']
     ctcode = 'discharge'
     cropname = 'ring'
     modelname = 'modelavgreg'
