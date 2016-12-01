@@ -5,30 +5,36 @@ flycam = alt + 1
 -keys up down F C 
 """
 
-import imageio
-import visvis as vv
-
-# record fig
-f = vv.gcf()
-r = vv.record(f)
-
-## record axes
-r = vv.record(vv.gca())
-
-## to stop recording
-
-r.Stop()
-
-## save
-imageio.mimsave(r'D:\Profiles\koenradesma\Desktop.gif', r.GetFrames())
-imageio.mimsave(r'D:\Profiles\koenradesma\Desktop\manual_pick_hookpoints_002_1M.avi', r.GetFrames())
-imageio.mimsave(r'C:\Users\Maaike\Desktop\test.avi', r.GetFrames())
-
-imageio.help('.avi')
+# import imageio
+# import visvis as vv
+# 
+# # record fig
+# f = vv.gcf()
+# r = vv.record(f)
+# 
+# ## record axes
+# r = vv.record(vv.gca())
+# 
+# ## to stop recording
+# 
+# r.Stop()
+# 
+# ## save
+# imageio.mimsave(r'D:\Profiles\koenradesma\Desktop.gif', r.GetFrames())
+# imageio.mimsave(r'D:\Profiles\koenradesma\Desktop\manual_pick_hookpoints_002_1M.avi', r.GetFrames())
+# imageio.mimsave(r'C:\Users\Maaike\Desktop\test.avi', r.GetFrames())
+# 
+# imageio.help('.avi')
 
 # todo: WARNING:root:IMAGEIO FFMPEG_WRITER WARNING: input image is not divisible by macro_block_size=16, resizing from
 
 ##
+
+import os
+import imageio
+import visvis as vv
+import datetime
+from stentseg.utils.datahandling import select_dir
 
 class recordMovie:
     """ Record a figure
@@ -36,16 +42,16 @@ class recordMovie:
     def __init__(self, fig=None, filename=None, dirsave=None, fileformat='avi'):
         """ fig or axes can be given
         """
-        import os
-        import imageio
-        import visvis as vv
-        import datetime
-        from stentseg.utils.datahandling import select_dir
+        # import os
+        # import imageio
+        # import visvis as vv
+        # import datetime
+        # from stentseg.utils.datahandling import select_dir
     
-        self.os = os
-        self.imageio = imageio
-        self.vv = vv
-        self.datetime = datetime
+        # self.os = os
+        # self.imageio = imageio
+        # self.vv = vv
+        # self.datetime = datetime
         self.r = None
         if fig is None:
             self.fig = vv.gcf()
@@ -66,7 +72,7 @@ class recordMovie:
                       r       t      u      s
         """
         if event.text == 'r':
-            self.r = self.vv.record(self.fig)
+            self.r = vv.record(self.fig)
             print('recording..')
         if event.text == 't':
             self.r.Stop()
@@ -76,9 +82,9 @@ class recordMovie:
             print('continue recording')
         if event.text == 's': # save
             if self.filename is None:
-                now = self.datetime.datetime.now()
+                now = datetime.datetime.now()
                 self.filename = now.strftime("%Y-%m-%d_%H.%M")+'_recorded'+'.'+self.fileformat
-            self.imageio.mimsave(self.os.path.join(self.dirsave,self.filename), self.r.GetFrames())
+            imageio.mimsave(os.path.join(self.dirsave,self.filename), self.r.GetFrames())
             print('Recorded movie stored')
     
     # def bindRecord(self):
