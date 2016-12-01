@@ -8,17 +8,17 @@ from stentseg.utils.datahandling import select_dir, loadvol
 from pirt.utils.deformvis import DeformableTexture3D
 
 # Select the ssdf basedir
-basedir = select_dir(r'D:\LSPEAS\Nellix_dyna\DYNA_SSDF')
+basedir = select_dir(r'F:\Nellix_chevas\CHEVAS_SSDF')
 
 # Select dataset to register
-ptcode = 'dyna_nellix_01'
-ctcode, nr = 'POSTOP', 1
-cropname = 'prox'
+ptcode = 'chevas_01'
+ctcode, nr = '12months', 1
+cropname = 'stent'
 
 ## Show 3D movie, by alternating the 10 volumes
 
 # Load volumes
-s = loadvol(basedir, ptcode, ctcode, cropname, '10phases')
+s = loadvol(basedir, ptcode, ctcode, cropname, '2phases')
 vols = []
 for key in dir(s):
     if key.startswith('vol'):
@@ -37,7 +37,7 @@ vv.title('ECG-gated CT scan Nellix %s  -  %s' % (ptcode[7:], ctcode))
 container = vv.MotionDataContainer(a)
 for vol in vols:
     #     t = vv.volshow2(vol, clim=(-550, 500)) # -750, 1000
-    t = vv.volshow(vol, clim=(0, 2000), renderStyle = 'mip')
+    t = vv.volshow(vol, clim=(0, 3000), renderStyle = 'mip')
     t.isoThreshold = 300               # iso or mip work well 
     t.parent = container
 #     t.colormap = {'g': [(0.0, 0.0), (0.33636364, 1.0)],
