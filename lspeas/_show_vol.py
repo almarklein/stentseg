@@ -6,6 +6,7 @@ import pirt
 import visvis as vv
 from stentseg.utils.datahandling import select_dir, loadvol
 from pirt.utils.deformvis import DeformableTexture3D
+from stentseg.apps.record_movie import recordMovie
 
 # Select the ssdf basedir
 basedir = select_dir(os.getenv('LSPEAS_BASEDIR', ''),
@@ -13,7 +14,7 @@ basedir = select_dir(os.getenv('LSPEAS_BASEDIR', ''),
                      r'F:\LSPEAS_ssdf_backup',r'G:\LSPEAS_ssdf_backup')
 
 # Select dataset to register
-ptcode = 'LSPEAS_003'
+ptcode = 'LSPEAS_011'
 # ctcode, nr = 'ZProfA3', 1
 ctcode, nr = '1month', 2
 cropname = 'stent'
@@ -35,21 +36,21 @@ a.daspect = 1, 1, -1
 a.axis.axisColor = 1,1,1
 a.axis.visible = False
 a.bgcolor = 0,0,0
-vv.title('ECG-gated CT scan LSPEAS %s  -  %s' % (ptcode[7:], ctcode))
+vv.title('ECG-gated CT scan %s  -  %s' % (ptcode[7:], ctcode))
 
 # Setup data container
 container = vv.MotionDataContainer(a)
 for vol in vols:
     #     t = vv.volshow2(vol, clim=(-550, 500)) # -750, 1000
     t = vv.volshow(vol, clim=(0, 3000), renderStyle = 'mip')
-    t.isoThreshold = 300               # iso or mip work well 
+    t.isoThreshold = 250               # iso or mip work well 
     t.parent = container
 #     t.colormap = {'g': [(0.0, 0.0), (0.33636364, 1.0)],
 #     'b': [(0.0, 0.0), (0.49545455, 1.0)],
 #     'a': [(0.0, 1.0), (1.0, 1.0)],
 #     'r': [(0.0, 0.0), (0.22272727, 1.0)]}
 
-
+# foo = recordMovie()
 
 ## Show 3D movie, by showing one volume that is moved by motion fields
 
@@ -107,3 +108,5 @@ a2.axis.visible = switch
 
 ## Use same camera when 2 vols are running
 a1.camera = a2.camera
+
+# foo = recordMovie()
