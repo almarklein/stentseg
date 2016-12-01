@@ -1,4 +1,4 @@
-# Copyright 2015-2016 A. Klein, M.Koenrades
+# Copyright 2015-2016 A. Klein, M. Koenrades
 
 """
 Functionality to extract centerlines based on a point cloud that for example
@@ -29,6 +29,7 @@ def dist_over_centerline(cl, cl_point1, cl_point2, type='euclidian'):
         dist = 0
         return dist
     clpart = cl[ min(indpoint1, indpoint2):max(indpoint1, indpoint2)+1]
+    # clpart = cl[min(indpoint1[0], indpoint2[0]):max(indpoint1[0], indpoint2[0])+1] # mirthe; punt wordt onthouden?
     vectors = np.vstack([clpart[i+1]-clpart[i] for i in range(len(clpart)-1)])
     if type == 'euclidian':
         d = (vectors[:,0]**2 + vectors[:,1]**2 + vectors[:,2]**2)**0.5  # 3Dvector length in mm
