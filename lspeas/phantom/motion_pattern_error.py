@@ -12,7 +12,7 @@ from prettyplotlib import brewer2mpl # colormaps
 import numpy as np
 import scipy
 import string
-from peakdetection import peakdet
+from phantom.peakdetection import peakdet
 
 
 def readCameraExcel(exceldir, workbookCam, sheetProfile, colSt='B'):
@@ -41,20 +41,30 @@ def getCameraPeriod(time, positions, T):
     
     return time, positions
 
-def getFreqCamera(t, signal):
+def getFreqCamera(t, signal, vis=False):
     import scipy
     import scipy.fftpack
     import pylab
     from scipy import pi
     FFT = abs(scipy.fft(signal))
     freqs = scipy.fftpack.fftfreq(len(signal), t[1]-t[0])
+    magn = 20*scipy.log10(FFT)
+    magn2 = magn.copy() # to sort
+    magn2.sort() # sort ascending
+    magnsignal = magn2[-2] # max magnitude is freq 0 Hz
+    i = np.where(magn == magnsignal)
+    freqsignal = freqs[i] # freq from neg and pos magnpeak
+    bpm = abs(freqsignal[0])*60
+    T = 1/freqsignal
     
-    pylab.subplot(211)
-    pylab.plot(t, signal)
-    pylab.subplot(212)
-    pylab.plot(freqs,20*scipy.log10(FFT),'x') # 20log10 provides conversion for a magnitude spectrum
-    pylab.show()
-    return freqs, 20*scipy.log10(FFT)
+    if vis == True:
+        pylab.subplot(211)
+        pylab.plot(t, signal)
+        pylab.subplot(212)
+        pylab.plot(freqs,magn,'x') # 20log10 provides conversion for a magnitude spectrum
+        pylab.show()
+     
+    return freqsignal, bpm, T
 
 def readAnalysisExcel(exceldir, workbookAlg, sheetProfile, cols=['G','H','I'], startRows=[18,31,55,68,92,105,129,142]):
     """ To read 'Data Toshiba/Siemens' with algorithm analysis. 
