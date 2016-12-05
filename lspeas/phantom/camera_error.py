@@ -75,8 +75,8 @@ if __name__ == '__main__':
     ax0.scatter(ttPeriodStarts1-offsett1, np.array(peakmin1)[:,1], color='green')
     ax0.plot(time_all_cam2t0, pos_all_cam2, 'g.-', alpha=0.5, label='camera reference 2')
     ax0.scatter(ttPeriodStarts2-offsett2, np.array(peakmin2)[:,1], color='green')
-    # ax0.plot(time_all_cam3t0, pos_all_cam3, 'b.-', alpha=0.5, label='camera reference 3')
-    # ax0.scatter(ttPeriodStarts3-offsett3, np.array(peakmin3)[:,1], color='green')
+    ax0.plot(time_all_cam3t0, pos_all_cam3, 'b.-', alpha=0.5, label='camera reference 3')
+    ax0.scatter(ttPeriodStarts3-offsett3, np.array(peakmin3)[:,1], color='green')
     
     _initaxis([ax0], legend='upper right', xlabel='time (s)', ylabel='position (mm)')
     ax0.set_ylim((-0.02, ylim))
@@ -88,17 +88,15 @@ if __name__ == '__main__':
 ax1 = f1.add_subplot(212)    
 
 peakstart = int(peakmin2[0,0]) # cam2 as ref
-peakend = int(peakmin2[-1,0])
+peakend = int(peakmin2[-1,0])+1
 tc2, pc2 = time_all_cam2t0[peakstart:peakend], pos_all_cam2[peakstart:peakend]
 pc2 = np.asarray(pc2) - min(pc2) # not always zero as min value
-amplitudeC2 = max(pc2)
-# freqC2,bpmC2,Tc2 = getFreqCamera(tc2,pc2) # see Tcam2
 
 # overlay cam1 on cam2
-rmse_val = 10000
-for i in range(-3,4): # analyse for 6 cam start points from peak
+rmse_val1 = 10000
+for i in range(-3,5): # analyse for 8 cam start points from peak
     istart = int(peakmin1[0,0])+i
-    iend = int(peakmin1[-1,0])+i
+    iend = istart+len(tc2)
     
     tc1, pc1 = time_all_cam1t0[istart:iend], pos_all_cam1[istart:iend]
     pc1 = np.asarray(pc1) - min(pc1) # not always zero as min value
@@ -111,32 +109,81 @@ for i in range(-3,4): # analyse for 6 cam start points from peak
     # root mean squared error
     rmse_val_new = rmse(pc1, pc2)
     # print('rms error for lag', i, 'is:', str(rmse_val_new))
-    rmse_val = min(rmse_val, rmse_val_new) # keep smallest, better overlay with algorithm
-    if rmse_val == rmse_val_new:
+    rmse_val1 = min(rmse_val1, rmse_val_new) # keep smallest, better overlay with algorithm
+    if rmse_val1 == rmse_val_new:
         pc1best = pc1
         tc1best = tc1shift
-        errors_best = errors
-        i_best = i # best lag / overlay
+        errors_best1 = errors
+        i_best1 = i # best lag / overlay
 
-amplitudeC1 = max(pc1best) # same when pc1
-print('period was read from index: ', i_best)
+# overlay cam3 on cam2
+rmse_val3 = 10000
+for i in range(-3,5): # analyse for 8 cam start points from peak
+    istart = int(peakmin3[0,0])+i
+    iend = istart+len(tc2)
+    
+    tc3, pc3 = time_all_cam3t0[istart:iend], pos_all_cam3[istart:iend]
+    pc3 = np.asarray(pc3) - min(pc3) # not always zero as min value
+    
+    tc3shift = tc3 - (tc3[0]-tc2[0]) # for visualisation shift tc3 to start of tc2
+    
+    # calc errors
+    errors = pc2 - pc3
+    
+    # root mean squared error
+    rmse_val_new = rmse(pc3, pc2)
+    # print('rms error for lag', i, 'is:', str(rmse_val_new))
+    rmse_val3 = min(rmse_val3, rmse_val_new) # keep smallest, better overlay with algorithm
+    if rmse_val3 == rmse_val_new:
+        pc3best = pc3
+        tc3best = tc3shift
+        errors_best3 = errors
+        i_best3 = i # best lag / overlay
 
-# calc differences
-rmse_cam1 = rmse_val
-amplitudeDiff = amplitudeC2-amplitudeC1 # r2 - r1
-Tdiff = Tcam2 - Tcam1
-
-abs_errors_cam1 = [(abs(e)) for e in errors_best]
-mean_abs_error_cam1 = np.mean(abs_errors_cam1)
-print('rmse of profile=', rmse_cam1)
-print('mean abs error of cam1 vs cam 2=', mean_abs_error_cam1)
-
-
+print('period cam1 was read from index: ', i_best1)
+print('period cam3 was read from index: ', i_best3)
 
 # vis best overlay    
 ax1.plot(tc1best, pc1best, 'r.-', alpha=0.5, label='camera reference 1')
 ax1.plot(tc2, pc2, 'g.-', alpha=0.5, label='camera reference 2')
+ax1.plot(tc3best, pc3best, 'b.-', alpha=0.5, label='camera reference 3')
 
 _initaxis([ax1], legend='upper right', xlabel='time (s)', ylabel='position (mm)')
 ax1.set_ylim((-0.02, ylim))
 ax1.set_xlim(xlim)
+
+
+## amplitude, freq and differences
+# amplitude cam signal
+amplitudeC1 = max(pc1best) # same as pc1
+amplitudeC3 = max(pc3best) # same as pc3
+amplitudeC2 = max(pc2)
+
+freqC2,bpmC2,Tc2 = getFreqCamera(tc2,pc2) # see Tcam2
+freqC1,bpmC1,Tc1 = getFreqCamera(tc1best,pc1best) # see Tcam1 
+freqC3,bpmC3,Tc3 = getFreqCamera(tc3best,pc3best) # see Tcam3 
+
+# calc differences
+rmse_cam1 = rmse_val1
+amplitudeDiff21 = amplitudeC2-amplitudeC1 # r2 - r1
+Tdiff21 = Tcam2 - Tcam1
+
+abs_errors_cam1 = [(abs(e)) for e in errors_best1]
+mean_abs_error_cam1 = np.mean(abs_errors_cam1)
+print('rmse of signal cam1=', rmse_cam1)
+print('mean abs error of cam1 vs cam 2=', mean_abs_error_cam1)
+
+rmse_cam3 = rmse_val3
+amplitudeDiff23 = amplitudeC2-amplitudeC3 # r2 - r3
+Tdiff23 = Tcam2 - Tcam3
+
+abs_errors_cam3 = [(abs(e)) for e in errors_best3]
+mean_abs_error_cam3 = np.mean(abs_errors_cam3)
+print('rmse of signal cam3=', rmse_cam3)
+print('mean abs error of cam3 vs cam 2=', mean_abs_error_cam3)
+
+## average signal
+
+
+
+
