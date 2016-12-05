@@ -597,16 +597,27 @@ class ExcelAnalysis():
         ax1.plot([0, 4], [0, 4], linestyle='-', color='g')
         
     
-def _initaxis(axis):
+def _initaxis(axis, legend=None, xlabel=None, ylabel=None, labelsize=16, axsize=15):
     """ Set axis for nice visualization
     axis is list such as [ax] or [ax1, ax2]
+    legend = None or provide location 'upper right'
+    xlabel = 'time (s)'
     """
     for ax in axis:
         ax.spines["top"].set_visible(False)  
         ax.spines["right"].set_visible(False)
         ax.get_xaxis().tick_bottom()  
         ax.get_yaxis().tick_left()
-    
+        if not legend is None:
+            ax.legend(loc=legend)
+        if not xlabel is None:
+            ax.set_xlabel(xlabel, fontsize=labelsize)
+        if not ylabel is None:
+            ax.set_ylabel(ylabel, fontsize=labelsize)
+        # set fontsize axis numbers
+        for label in (ax.get_xticklabels() + ax.get_yticklabels()):
+            label.set_fontsize(axsize)
+
 
 if __name__ == '__main__':
     
