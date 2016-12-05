@@ -148,10 +148,6 @@ ax1.plot(tc1best, pc1best, 'r.-', alpha=0.5, label='camera reference 1')
 ax1.plot(tc2, pc2, 'g.-', alpha=0.5, label='camera reference 2')
 ax1.plot(tc3best, pc3best, 'b.-', alpha=0.5, label='camera reference 3')
 
-_initaxis([ax1], legend='upper right', xlabel='time (s)', ylabel='position (mm)')
-ax1.set_ylim((-0.02, ylim))
-ax1.set_xlim(xlim)
-
 
 ## amplitude, freq and differences
 # amplitude cam signal
@@ -184,6 +180,12 @@ print('mean abs error of cam3 vs cam 2=', mean_abs_error_cam3)
 
 ## average signal
 
+tcmean = tc2
+pcmean = (pc1best+pc3best+pc2)/3
 
+ax1.plot(tcmean, pcmean, 'ko:', alpha=0.5, label='camera reference mean')
 
+_initaxis([ax1], legend='upper right', xlabel='time (s)', ylabel='position (mm)')
+ax1.set_ylim((-0.02, ylim))
+ax1.set_xlim(xlim)
 
