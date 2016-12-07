@@ -46,6 +46,7 @@ def getFreqCamera(t, signal, vis=False):
     import scipy.fftpack
     import pylab
     from scipy import pi
+    
     FFT = abs(scipy.fft(signal))
     freqs = scipy.fftpack.fftfreq(len(signal), t[1]-t[0])
     magn = 20*scipy.log10(FFT)
@@ -55,7 +56,7 @@ def getFreqCamera(t, signal, vis=False):
     i = np.where(magn == magnsignal)
     freqsignal = freqs[i] # freq from neg and pos magnpeak
     bpm = abs(freqsignal[0])*60
-    T = 1/freqsignal
+    T = 1/freqsignal[0]
     
     if vis == True:
         pylab.subplot(211)
@@ -244,7 +245,7 @@ if __name__ == '__main__':
             # vis
             # ax0.plot(time_cam_period, pos_cam_period, linewidth=3, alpha=0.5)
             ax0.plot(time_cam_period, pos_cam_period, 'rs', alpha=0.5)
-            if peak == peakmin[-2,0]: # plot legend ones, not looped 
+            if peak == peakmin[-2,0]: # last peak reached, plot legend ones, not looped 
                 ax0.plot(time_pp+time_cam_period[0], pz+min(pos_cam_period),'o:',
                     color='k',linewidth=3,alpha=0.5,label='algorithm')
             else:
