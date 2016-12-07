@@ -35,6 +35,11 @@ if __name__ == '__main__':
     time_all_cam2, pos_all_cam2 = readCameraExcel(exceldir, workbookCam2, sheetProfile, colSt2)
     time_all_cam3, pos_all_cam3 = readCameraExcel(exceldir, workbookCam3, sheetProfile, colSt3)
     
+    # make sure position min value is 0
+    pos_all_cam1 = np.asarray(pos_all_cam1) - min(pos_all_cam1)
+    pos_all_cam2 = np.asarray(pos_all_cam2) - min(pos_all_cam2)
+    pos_all_cam3 = np.asarray(pos_all_cam3) - min(pos_all_cam3)
+    
     # get local minima as starting points for camera periods
     peakmax1, peakmin1 = peakdet(pos_all_cam1, 0.05)
     if sheetProfile == 'ZB5' or sheetProfile == 'ZB6':
@@ -99,7 +104,6 @@ ax1 = f1.add_subplot(212)
 peakstart = int(peakmin2[0,0]) # cam2 as ref
 peakend = int(peakmin2[-1,0])+1
 tc2, pc2 = time_all_cam2t0[peakstart:peakend], pos_all_cam2[peakstart:peakend]
-pc2 = np.asarray(pc2) - min(pc2) # not always zero as min value
 
 # overlay cam1 on cam2
 rmse_val1 = 10000
@@ -108,7 +112,6 @@ for i in range(-3,5): # analyse for 8 cam start points from peak
     iend = istart+len(tc2)
     
     tc1, pc1 = time_all_cam1t0[istart:iend], pos_all_cam1[istart:iend]
-    pc1 = np.asarray(pc1) - min(pc1) # not always zero as min value
     
     tc1shift = tc1 - (tc1[0]-tc2[0]) # for visualisation shift tc1 to start of tc2
     
@@ -132,7 +135,6 @@ for i in range(-3,5): # analyse for 8 cam start points from peak
     iend = istart+len(tc2)
     
     tc3, pc3 = time_all_cam3t0[istart:iend], pos_all_cam3[istart:iend]
-    pc3 = np.asarray(pc3) - min(pc3) # not always zero as min value
     
     tc3shift = tc3 - (tc3[0]-tc2[0]) # for visualisation shift tc3 to start of tc2
     
