@@ -2,7 +2,7 @@
 
 """
 # add lspeas folder to pythonpath via shell
-from phantom.motion_pattern_error import readCameraExcel, rmse, getFreqCamera
+from phantom.motion_pattern_error import readCameraExcel, rmse, getFreqCamera, resample
 from phantom.peakdetection import peakdet
 from analysis.utils_analysis import _initaxis
 import matplotlib.pyplot as plt
@@ -27,6 +27,7 @@ if __name__ == '__main__':
     colSt2 = 'D'
     colSt3 = 'D'
     
+    # read the cam signal with consecutive periods
     f1 = plt.figure(figsize=(18,11), num=1); plt.clf()
     ax0 = f1.add_subplot(211)
     
@@ -96,8 +97,8 @@ if __name__ == '__main__':
     ax0.set_ylim((-0.02, ylim))
     ax0.set_xlim(xlim)
     
-    
-##  overlay signals, smallest rmse
+
+##  overlay signals with consecutive periods, smallest rmse
 
 ax1 = f1.add_subplot(212)    
 
@@ -160,7 +161,7 @@ ax1.plot(tc2, pc2, 'g.-', alpha=0.5, label='camera reference 2')
 ax1.plot(tc3best, pc3best, 'b.-', alpha=0.5, label='camera reference 3')
 
 
-## amplitude, freq and differences
+## amplitude, freq and differences cams with consecutive periods
 # amplitude cam signal
 amplitudeC1 = max(pc1best) # same as pc1
 amplitudeC3 = max(pc3best) # same as pc3
@@ -189,7 +190,7 @@ mean_abs_error_cam3 = np.mean(abs_errors_cam3)
 print('rmse of signal cam3=', rmse_cam3)
 print('mean abs error of cam3 vs cam 2=', mean_abs_error_cam3)
 
-## average signal
+## average signal of 3 cams with each still consecutive periods
 
 tcmean = tc2
 pcmean = (pc1best+pc3best+pc2)/3
@@ -200,3 +201,88 @@ _initaxis([ax1], legend='upper right', xlabel='time (s)', ylabel='position (mm)'
 ax1.set_ylim((-0.02, ylim))
 ax1.set_xlim(xlim)
 
+
+## get single periods
+
+n_samplepoints = 30 # 30fps*T
+
+def getSinglePeriods(peakmin, pos_all_cam,n_samplepoints):
+    """ based on detected minima get periods in signal
+    return tt, pp, amplitude and T for each period
+    """
+    ttperiodsC = []
+    pperiodsC = []
+    AperiodsC = []
+    TperiodsC = []
+    for i in range(len(peakmin)-1):
+        peakstart = int(peakmin[i,0]) # first peak start period
+        peakend = int(peakmin[i+1,0])+1 # start of second period
+        ttperiodC1 = time_all_cam1[peakstart:peakend]
+        pperiodC1 = pos_all_cam[peakstart:peakend]
+        # resample for equal number of points in each period
+        ttperiodC1s, pperiodC1s = resample(ttperiodC1,pperiodC1, num=n_samplepoints)
+        # make sure position min value is 0
+        pperiodC1s = pperiodC1s - min(pperiodC1s)
+        # get amplitudes
+        Aperiod = max(pperiodC1s)
+        Tperiod = ttperiodC1[-1]-ttperiodC1[0]
+        # collect all
+        ttperiodsC.append(ttperiodC1s)
+        pperiodsC.append(pperiodC1s)
+        AperiodsC.append(Aperiod)
+        TperiodsC.append(Tperiod)
+        
+    return ttperiodsC, pperiodsC, AperiodsC, TperiodsC
+
+
+ttperiodsC1, pperiodsC1, AperiodsC1, TperiodsC1 = getSinglePeriods(peakmin1, pos_all_cam1,n_samplepoints)
+ttperiodsC2, pperiodsC2, AperiodsC2, TperiodsC2 = getSinglePeriods(peakmin2, pos_all_cam2,n_samplepoints)
+ttperiodsC3, pperiodsC3, AperiodsC3, TperiodsC3 = getSinglePeriods(peakmin3, pos_all_cam3,n_samplepoints)
+
+# get signal ampl and freq std
+AperiodC1, AperiodSTDC1 = np.mean(AperiodsC1), np.std(AperiodsC1) # n = 7 bv
+AperiodC2, AperiodSTDC2 = np.mean(AperiodsC2), np.std(AperiodsC2)
+AperiodC3, AperiodSTDC3 = np.mean(AperiodsC3), np.std(AperiodsC3)
+
+# plot periods
+f2 = plt.figure(figsize=(18,5.5), num=2); plt.clf()
+ax1 = f2.add_subplot(111)
+
+colors = ['#d7191c','#fdae61','#2c7bb6'] # http://colorbrewer2.org/#type=diverging&scheme=RdYlBu&n=5
+for p, ttperiod in enumerate(ttperiodsC1):
+    offsett = ttperiod[0] # start at t=0
+    if p == 0:
+        ax1.plot(ttperiod-offsett, pperiodsC1[p], '.-', color=colors[0], alpha=0.5, label='camera reference 1')
+    else:
+        ax1.plot(ttperiod-offsett, pperiodsC1[p], '.-', color=colors[0], alpha=0.5)
+for p, ttperiod in enumerate(ttperiodsC2):
+    offsett = ttperiod[0] # start at t=0
+    if p == 0:
+        ax1.plot(ttperiod-offsett, pperiodsC2[p], '.-', color=colors[1], alpha=0.5, label='camera reference 2')
+    else:
+        ax1.plot(ttperiod-offsett, pperiodsC2[p], '.-', color=colors[1], alpha=0.5)
+for p, ttperiod in enumerate(ttperiodsC3):
+    offsett = ttperiod[0] # start at t=0
+    if p == 0:
+        ax1.plot(ttperiod-offsett, pperiodsC3[p], '.-', alpha=0.5, color=colors[2], label='camera reference 3')
+    else:
+        ax1.plot(ttperiod-offsett, pperiodsC3[p], '.-', alpha=0.5, color=colors[2])
+
+_initaxis([ax1], legend='upper right', xlabel='time (s)', ylabel='position (mm)')
+ax1.set_ylim((-0.02, ylim))
+ax1.set_xlim(-0.02,1.5)
+
+## plot average of each cam with bounds
+
+
+
+# plot
+f3 = plt.figure(figsize=(18,5.5), num=3); plt.clf()
+ax2 = f3.add_subplot(111)
+
+colors = ['#d7191c','#fdae61','#2c7bb6'] # http://colorbrewer2.org/#type=diverging&scheme=RdYlBu&n=5
+
+
+_initaxis([ax2], legend='upper right', xlabel='time (s)', ylabel='position (mm)')
+ax2.set_ylim((-0.02, ylim))
+ax2.set_xlim(xlim)
