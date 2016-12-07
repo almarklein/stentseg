@@ -20,12 +20,12 @@ if __name__ == '__main__':
     workbookCam2 = '20160215 GRAFIEKEN van camera systeem uit matlab in excel.xlsx' # 22/1/2016
     workbookCam3 = 'Grafieken camera matlab meting 25012016.xlsx' # 25/1/2016
     
-    sheetProfile = 'ZB1'
-    ylim = 0.3
-    xlim = (-1,6)
-    colSt1 = 'P'
-    colSt2 = 'P'
-    colSt3 = 'P'
+    sheetProfile = 'ZB3'
+    ylim = 0.8
+    xlim = (-1,7)
+    colSt1 = 'D'
+    colSt2 = 'D'
+    colSt3 = 'D'
     
     f1 = plt.figure(figsize=(18,11), num=1); plt.clf()
     ax0 = f1.add_subplot(211)
@@ -41,18 +41,21 @@ if __name__ == '__main__':
         peakmin1 = peakmin1[::2] # only for B5 and B6 with extra gauss peak
     ttPeriodStarts1 = [time_all_cam1[int(peak)] for peak in peakmin1[:,0]] # get time in s
     Tcam1 = (ttPeriodStarts1[-1]-ttPeriodStarts1[0])/(len(peakmin1)-1) # period of signal
+    ttPeriodPeaks1 = [time_all_cam1[int(peak)] for peak in peakmax1[:,0]] # get time in s
     
     peakmax2, peakmin2 = peakdet(pos_all_cam2, 0.05)
     if sheetProfile == 'ZB5' or sheetProfile == 'ZB6':
         peakmin2 = peakmin2[::2] # only for B5 and B6 with extra gauss peak
     ttPeriodStarts2 = [time_all_cam2[int(peak)] for peak in peakmin2[:,0]] # get time in s
     Tcam2 = (ttPeriodStarts2[-1]-ttPeriodStarts2[0])/(len(peakmin2)-1) # period of signal
+    ttPeriodPeaks2 = [time_all_cam2[int(peak)] for peak in peakmax2[:,0]] # get time in s
     
     peakmax3, peakmin3 = peakdet(pos_all_cam3, 0.05)
     if sheetProfile == 'ZB5' or sheetProfile == 'ZB6':
         peakmin3 = peakmin3[::2] # only for B5 and B6 with extra gauss peak
     ttPeriodStarts3 = [time_all_cam3[int(peak)] for peak in peakmin3[:,0]] # get time in s
     Tcam3 = (ttPeriodStarts3[-1]-ttPeriodStarts3[0])/(len(peakmin3)-1) # period of signal
+    ttPeriodPeaks3 = [time_all_cam3[int(peak)] for peak in peakmax3[:,0]] # get time in s
     
     # offset from t=0
     offsett2 = ttPeriodStarts2[0] 
@@ -66,6 +69,9 @@ if __name__ == '__main__':
     ttPeriodStarts1 = np.asarray(ttPeriodStarts1)
     ttPeriodStarts2 = np.asarray(ttPeriodStarts2)
     ttPeriodStarts3 = np.asarray(ttPeriodStarts3)
+    ttPeriodPeaks1 = np.asarray(ttPeriodPeaks1)
+    ttPeriodPeaks2 = np.asarray(ttPeriodPeaks2)
+    ttPeriodPeaks3 = np.asarray(ttPeriodPeaks3)
     
     time_all_cam1t0 = time_all_cam1-offsett1
     time_all_cam2t0 = time_all_cam2-offsett2
@@ -73,10 +79,13 @@ if __name__ == '__main__':
     # plot cam signals and start points periods
     ax0.plot(time_all_cam1t0, pos_all_cam1, 'r.-', alpha=0.5, label='camera reference 1')
     ax0.scatter(ttPeriodStarts1-offsett1, np.array(peakmin1)[:,1], color='green')
+    ax0.scatter(ttPeriodPeaks1-offsett1, np.array(peakmax1)[:,1], color='green')
     ax0.plot(time_all_cam2t0, pos_all_cam2, 'g.-', alpha=0.5, label='camera reference 2')
     ax0.scatter(ttPeriodStarts2-offsett2, np.array(peakmin2)[:,1], color='green')
+    ax0.scatter(ttPeriodPeaks2-offsett2, np.array(peakmax2)[:,1], color='green')
     ax0.plot(time_all_cam3t0, pos_all_cam3, 'b.-', alpha=0.5, label='camera reference 3')
     ax0.scatter(ttPeriodStarts3-offsett3, np.array(peakmin3)[:,1], color='green')
+    ax0.scatter(ttPeriodPeaks3-offsett3, np.array(peakmax3)[:,1], color='green')
     
     _initaxis([ax0], legend='upper right', xlabel='time (s)', ylabel='position (mm)')
     ax0.set_ylim((-0.02, ylim))
