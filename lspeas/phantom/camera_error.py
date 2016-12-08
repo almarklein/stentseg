@@ -240,9 +240,13 @@ ttperiodsC2, pperiodsC2, AperiodsC2, TperiodsC2 = getSinglePeriods(peakmin2, pos
 ttperiodsC3, pperiodsC3, AperiodsC3, TperiodsC3 = getSinglePeriods(peakmin3, pos_all_cam3,n_samplepoints)
 
 # get signal ampl and freq std
-AperiodC1, AperiodSTDC1 = np.mean(AperiodsC1), np.std(AperiodsC1) # n = 7 bv
-AperiodC2, AperiodSTDC2 = np.mean(AperiodsC2), np.std(AperiodsC2)
-AperiodC3, AperiodSTDC3 = np.mean(AperiodsC3), np.std(AperiodsC3)
+AperiodsC1mean, AperiodsC1std = np.mean(AperiodsC1), np.std(AperiodsC1) # n = 7 bv
+AperiodsC2mean, AperiodsC2std = np.mean(AperiodsC2), np.std(AperiodsC2)
+AperiodsC3mean, AperiodsC3std = np.mean(AperiodsC3), np.std(AperiodsC3)
+
+TperiodsC1mean, TperiodsC1std = np.mean(TperiodsC1), np.std(TperiodsC1)
+TperiodsC2mean, TperiodsC2std = np.mean(TperiodsC2), np.std(TperiodsC2)
+TperiodsC3mean, TperiodsC3std = np.mean(TperiodsC3), np.std(TperiodsC3)
 
 # plot periods
 f2 = plt.figure(figsize=(18,5.5), num=2); plt.clf()
@@ -270,19 +274,58 @@ for p, ttperiod in enumerate(ttperiodsC3):
 
 _initaxis([ax1], legend='upper right', xlabel='time (s)', ylabel='position (mm)')
 ax1.set_ylim((-0.02, ylim))
-ax1.set_xlim(-0.02,1.5)
+ax1.set_xlim(-0.02,max((ttperiod-offsett))+0.1)
 
 ## plot average of each cam with bounds
 
+pperiodsC1mean, pperiodsC1std = np.mean(pperiodsC1, axis=0), np.std(pperiodsC1, axis=0)
+pperiodsC2mean, pperiodsC2std = np.mean(pperiodsC2, axis=0), np.std(pperiodsC2, axis=0)
+pperiodsC3mean, pperiodsC3std = np.mean(pperiodsC3, axis=0), np.std(pperiodsC3, axis=0)
 
+pperiodsC2q25 = np.percentile(pperiodsC2, 25, axis=0)
+pperiodsC2q75 = np.percentile(pperiodsC2, 75, axis=0)
+
+ttperiodsC1t0 = [tt - tt[0] for tt in ttperiodsC1]
+ttperiodsC1mean = np.mean(ttperiodsC1t0, axis=0)
+ttperiodsC2t0 = [tt - tt[0] for tt in ttperiodsC2]
+ttperiodsC2mean = np.mean(ttperiodsC2t0, axis=0)
+ttperiodsC3t0 = [tt - tt[0] for tt in ttperiodsC3]
+ttperiodsC3mean = np.mean(ttperiodsC3t0, axis=0)
+
+# get average of all periods of the 3 cams
+ttperiodsC123t0 = np.concatenate((ttperiodsC1t0,ttperiodsC2t0,ttperiodsC3t0))
+ttperiodsC123mean = np.mean(ttperiodsC123t0, axis=0)
+pperiodsC123 = np.concatenate((pperiodsC1,pperiodsC2,pperiodsC3))
+pperiodsC123mean, pperiodsC123std = np.mean(pperiodsC123, axis=0), np.std(pperiodsC123, axis=0)
 
 # plot
 f3 = plt.figure(figsize=(18,5.5), num=3); plt.clf()
-ax2 = f3.add_subplot(111)
+ax2 = f3.add_subplot(121)
 
 colors = ['#d7191c','#fdae61','#2c7bb6'] # http://colorbrewer2.org/#type=diverging&scheme=RdYlBu&n=5
-
+ax2.plot(ttperiodsC1mean, pperiodsC1mean, '.-', color=colors[0], label='camera reference 1')
+ax2.fill_between(ttperiodsC1mean, pperiodsC1mean-pperiodsC1std, pperiodsC1mean+pperiodsC1std, 
+                color=colors[0], alpha=0.2)
+ax2.plot(ttperiodsC2mean, pperiodsC2mean, '.-', color=colors[1], label='camera reference 2')
+ax2.fill_between(ttperiodsC2mean, pperiodsC2mean-pperiodsC2std, pperiodsC2mean+pperiodsC2std, 
+                color=colors[1], alpha=0.3)
+# ax2.fill_between(ttperiodsC2mean, pperiodsC2q25, pperiodsC2q75, 
+#                 color=colors[1], alpha=0.3)
+ax2.plot(ttperiodsC3mean, pperiodsC3mean, '.-', color=colors[2], label='camera reference 3')
+ax2.fill_between(ttperiodsC3mean, pperiodsC3mean-pperiodsC3std, pperiodsC3mean+pperiodsC3std, 
+                color=colors[2], alpha=0.2)
 
 _initaxis([ax2], legend='upper right', xlabel='time (s)', ylabel='position (mm)')
-ax2.set_ylim((-0.02, ylim))
-ax2.set_xlim(xlim)
+ax2.set_ylim((0, ylim))
+ax2.set_xlim(-0.02,max(ttperiodsC3mean)+0.1)
+
+# add plot of average with bounds
+ax3 = f3.add_subplot(122)
+ax3.plot(ttperiodsC123mean, pperiodsC123mean, '.-', color='k', label='camera reference mean')
+ax3.fill_between(ttperiodsC123mean, pperiodsC123mean-pperiodsC123std, pperiodsC123mean+pperiodsC123std, 
+                color='k', alpha=0.2)
+
+_initaxis([ax3], legend='upper right', xlabel='time (s)', ylabel='position (mm)')
+ax3.set_ylim((0, ylim))
+ax3.set_xlim(-0.02,max(ttperiodsC123mean)+0.1)
+
