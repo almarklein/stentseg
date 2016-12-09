@@ -20,9 +20,9 @@ if __name__ == '__main__':
     workbookCam2 = '20160215 GRAFIEKEN van camera systeem uit matlab in excel.xlsx' # 22/1/2016
     workbookCam3 = 'Grafieken camera matlab meting 25012016.xlsx' # 25/1/2016
     
-    sheetProfile = 'ZB3'
+    sheetProfile = 'ZA1'
     ylim = 0.8
-    xlim = (-1,7)
+    xlim = (-1.5,7)
     colSt1 = 'D'
     colSt2 = 'D'
     colSt3 = 'D'
@@ -85,13 +85,13 @@ if __name__ == '__main__':
     # plot cam signals and start points periods
     ax0.plot(time_all_cam1t0, pos_all_cam1, 'r.-', alpha=0.5, label='camera reference 1')
     ax0.scatter(ttPeriodStarts1-offsett1, np.array(peakmin1)[:,1], color='green')
-    ax0.scatter(ttPeriodPeaks1-offsett1, np.array(peakmax1)[:,1], color='green')
+    ax0.scatter(ttPeriodPeaks1-offsett1, np.array(peakmax1)[:,1], color='k')
     ax0.plot(time_all_cam2t0, pos_all_cam2, 'g.-', alpha=0.5, label='camera reference 2')
     ax0.scatter(ttPeriodStarts2-offsett2, np.array(peakmin2)[:,1], color='green')
-    ax0.scatter(ttPeriodPeaks2-offsett2, np.array(peakmax2)[:,1], color='green')
+    ax0.scatter(ttPeriodPeaks2-offsett2, np.array(peakmax2)[:,1], color='k')
     ax0.plot(time_all_cam3t0, pos_all_cam3, 'b.-', alpha=0.5, label='camera reference 3')
     ax0.scatter(ttPeriodStarts3-offsett3, np.array(peakmin3)[:,1], color='green')
-    ax0.scatter(ttPeriodPeaks3-offsett3, np.array(peakmax3)[:,1], color='green')
+    ax0.scatter(ttPeriodPeaks3-offsett3, np.array(peakmax3)[:,1], color='k')
     
     _initaxis([ax0], legend='upper right', xlabel='time (s)', ylabel='position (mm)')
     ax0.set_ylim((-0.02, ylim))
@@ -102,9 +102,11 @@ if __name__ == '__main__':
 
 ax1 = f1.add_subplot(212)    
 
+numpeaks = min(len(peakmin1), len(peakmin2), len(peakmin3)) # num peaks to analyse
+
 peakstart = int(peakmin2[0,0]) # cam2 as ref
-peakend = int(peakmin2[-1,0])+1
-tc2, pc2 = time_all_cam2t0[peakstart:peakend], pos_all_cam2[peakstart:peakend]
+peakend = int(peakmin2[numpeaks-1,0])
+tc2, pc2 = time_all_cam2t0[peakstart:peakend+1], pos_all_cam2[peakstart:peakend+1]
 
 # overlay cam1 on cam2
 rmse_val1 = 10000
@@ -275,6 +277,12 @@ for p, ttperiod in enumerate(ttperiodsC3):
 _initaxis([ax1], legend='upper right', xlabel='time (s)', ylabel='position (mm)')
 ax1.set_ylim((-0.02, ylim))
 ax1.set_xlim(-0.02,max((ttperiod-offsett))+0.1)
+
+## 
+
+
+
+
 
 ## plot average of each cam with bounds
 
