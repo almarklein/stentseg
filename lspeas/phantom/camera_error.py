@@ -281,58 +281,62 @@ ax1.set_xlim(-0.02,max((ttperiod-offsett))+0.1)
 
 ## plot average of each cam with bounds, start periods is detected peak, no lag
 
-pperiodsC1mean, pperiodsC1std = np.mean(pperiodsC1, axis=0), np.std(pperiodsC1, axis=0)
-pperiodsC2mean, pperiodsC2std = np.mean(pperiodsC2, axis=0), np.std(pperiodsC2, axis=0)
-pperiodsC3mean, pperiodsC3std = np.mean(pperiodsC3, axis=0), np.std(pperiodsC3, axis=0)
+def show_periods_cam123_with_bounds(ttperiodsC1, ttperiodsC2, ttperiodsC3, 
+                                    pperiodsC1, pperiodsC2, pperiodsC3, fignum=3):
+    
+    pperiodsC1mean, pperiodsC1std = np.mean(pperiodsC1, axis=0), np.std(pperiodsC1, axis=0)
+    pperiodsC2mean, pperiodsC2std = np.mean(pperiodsC2, axis=0), np.std(pperiodsC2, axis=0)
+    pperiodsC3mean, pperiodsC3std = np.mean(pperiodsC3, axis=0), np.std(pperiodsC3, axis=0)
+    
+    pperiodsC2q25 = np.percentile(pperiodsC2, 25, axis=0)
+    pperiodsC2q75 = np.percentile(pperiodsC2, 75, axis=0)
+    
+    ttperiodsC1t0 = [tt - tt[0] for tt in ttperiodsC1]
+    ttperiodsC1mean = np.mean(ttperiodsC1t0, axis=0)
+    ttperiodsC2t0 = [tt - tt[0] for tt in ttperiodsC2]
+    ttperiodsC2mean = np.mean(ttperiodsC2t0, axis=0)
+    ttperiodsC3t0 = [tt - tt[0] for tt in ttperiodsC3]
+    ttperiodsC3mean = np.mean(ttperiodsC3t0, axis=0)
+    
+    # get average of all periods of the 3 cams
+    ttperiodsC123t0 = np.concatenate((ttperiodsC1t0,ttperiodsC2t0,ttperiodsC3t0))
+    ttperiodsC123mean = np.mean(ttperiodsC123t0, axis=0)
+    pperiodsC123 = np.concatenate((pperiodsC1,pperiodsC2,pperiodsC3))
+    pperiodsC123mean, pperiodsC123std = np.mean(pperiodsC123, axis=0), np.std(pperiodsC123, axis=0)
+    
+    # plot
+    f3 = plt.figure(figsize=(18,5.5), num=fignum); plt.clf()
+    ax2 = f3.add_subplot(121)
+    
+    colors = ['#d7191c','#fdae61','#2c7bb6'] # http://colorbrewer2.org/#type=diverging&scheme=RdYlBu&n=5
+    ax2.plot(ttperiodsC1mean, pperiodsC1mean, '.-', color=colors[0], label='camera reference 1')
+    ax2.fill_between(ttperiodsC1mean, pperiodsC1mean-pperiodsC1std, pperiodsC1mean+pperiodsC1std, 
+                    color=colors[0], alpha=0.2)
+    ax2.plot(ttperiodsC2mean, pperiodsC2mean, '.-', color=colors[1], label='camera reference 2')
+    ax2.fill_between(ttperiodsC2mean, pperiodsC2mean-pperiodsC2std, pperiodsC2mean+pperiodsC2std, 
+                    color=colors[1], alpha=0.3)
+    # ax2.fill_between(ttperiodsC2mean, pperiodsC2q25, pperiodsC2q75, 
+    #                 color=colors[1], alpha=0.3)
+    ax2.plot(ttperiodsC3mean, pperiodsC3mean, '.-', color=colors[2], label='camera reference 3')
+    ax2.fill_between(ttperiodsC3mean, pperiodsC3mean-pperiodsC3std, pperiodsC3mean+pperiodsC3std, 
+                    color=colors[2], alpha=0.2)
+    
+    _initaxis([ax2], legend='upper right', xlabel='time (s)', ylabel='position (mm)')
+    ax2.set_ylim((0, ylim))
+    ax2.set_xlim(-0.02,max(ttperiodsC3mean)+0.1)
+    
+    # add plot of average with bounds
+    ax3 = f3.add_subplot(122)
+    ax3.plot(ttperiodsC123mean, pperiodsC123mean, '.-', color='k', label='camera reference mean')
+    ax3.fill_between(ttperiodsC123mean, pperiodsC123mean-pperiodsC123std, pperiodsC123mean+pperiodsC123std, 
+                    color='k', alpha=0.2)
+    
+    _initaxis([ax3], legend='upper right', xlabel='time (s)', ylabel='position (mm)')
+    ax3.set_ylim((0, ylim))
+    ax3.set_xlim(-0.02,max(ttperiodsC123mean)+0.1)
 
-pperiodsC2q25 = np.percentile(pperiodsC2, 25, axis=0)
-pperiodsC2q75 = np.percentile(pperiodsC2, 75, axis=0)
-
-ttperiodsC1t0 = [tt - tt[0] for tt in ttperiodsC1]
-ttperiodsC1mean = np.mean(ttperiodsC1t0, axis=0)
-ttperiodsC2t0 = [tt - tt[0] for tt in ttperiodsC2]
-ttperiodsC2mean = np.mean(ttperiodsC2t0, axis=0)
-ttperiodsC3t0 = [tt - tt[0] for tt in ttperiodsC3]
-ttperiodsC3mean = np.mean(ttperiodsC3t0, axis=0)
-
-# get average of all periods of the 3 cams
-ttperiodsC123t0 = np.concatenate((ttperiodsC1t0,ttperiodsC2t0,ttperiodsC3t0))
-ttperiodsC123mean = np.mean(ttperiodsC123t0, axis=0)
-pperiodsC123 = np.concatenate((pperiodsC1,pperiodsC2,pperiodsC3))
-pperiodsC123mean, pperiodsC123std = np.mean(pperiodsC123, axis=0), np.std(pperiodsC123, axis=0)
-
-# plot
-f3 = plt.figure(figsize=(18,5.5), num=3); plt.clf()
-ax2 = f3.add_subplot(121)
-
-colors = ['#d7191c','#fdae61','#2c7bb6'] # http://colorbrewer2.org/#type=diverging&scheme=RdYlBu&n=5
-ax2.plot(ttperiodsC1mean, pperiodsC1mean, '.-', color=colors[0], label='camera reference 1')
-ax2.fill_between(ttperiodsC1mean, pperiodsC1mean-pperiodsC1std, pperiodsC1mean+pperiodsC1std, 
-                color=colors[0], alpha=0.2)
-ax2.plot(ttperiodsC2mean, pperiodsC2mean, '.-', color=colors[1], label='camera reference 2')
-ax2.fill_between(ttperiodsC2mean, pperiodsC2mean-pperiodsC2std, pperiodsC2mean+pperiodsC2std, 
-                color=colors[1], alpha=0.3)
-# ax2.fill_between(ttperiodsC2mean, pperiodsC2q25, pperiodsC2q75, 
-#                 color=colors[1], alpha=0.3)
-ax2.plot(ttperiodsC3mean, pperiodsC3mean, '.-', color=colors[2], label='camera reference 3')
-ax2.fill_between(ttperiodsC3mean, pperiodsC3mean-pperiodsC3std, pperiodsC3mean+pperiodsC3std, 
-                color=colors[2], alpha=0.2)
-
-_initaxis([ax2], legend='upper right', xlabel='time (s)', ylabel='position (mm)')
-ax2.set_ylim((0, ylim))
-ax2.set_xlim(-0.02,max(ttperiodsC3mean)+0.1)
-
-# add plot of average with bounds
-ax3 = f3.add_subplot(122)
-ax3.plot(ttperiodsC123mean, pperiodsC123mean, '.-', color='k', label='camera reference mean')
-ax3.fill_between(ttperiodsC123mean, pperiodsC123mean-pperiodsC123std, pperiodsC123mean+pperiodsC123std, 
-                color='k', alpha=0.2)
-
-_initaxis([ax3], legend='upper right', xlabel='time (s)', ylabel='position (mm)')
-ax3.set_ylim((0, ylim))
-ax3.set_xlim(-0.02,max(ttperiodsC123mean)+0.1)
-
-
+show_periods_cam123_with_bounds(ttperiodsC1, ttperiodsC2, ttperiodsC3, 
+                                    pperiodsC1, pperiodsC2, pperiodsC3, fignum=3)
 
 ## overlay all periods individually, best lag
 
@@ -397,7 +401,7 @@ def bestFitPeriods(ttperiodRef, pperiodRef, ttperiodsC, pperiodsC):
         ttbest_periods.append(ttbest)
         rmse_val_periods.append(rmse_val)
         errors_best_periods.append(errors_best)
-    
+    1/0
     return ttbest_periods, ppbest_periods, rmse_val_periods, errors_best_periods
 
 # define reference period
@@ -415,7 +419,38 @@ ttperiodsC3best, pperiodsC3best, rmse_val_periodsC3, errors_best_periodsC3 = bes
 
 ## plot average of each cam with bounds, start periods is best lag from detected peak
 
+show_periods_cam123_with_bounds(ttperiodsC1best, ttperiodsC2best, ttperiodsC3best, 
+                                    pperiodsC1best, pperiodsC2best, pperiodsC3best, fignum=4)
 
+
+
+## test, best is hetzelfde als zonder lag
+# f3 = plt.figure(figsize=(18,5.5), num=5); plt.clf()
+# ax1 = f3.add_subplot(111)
+# 
+# colors = ['#d7191c','#fdae61','#2c7bb6'] # http://colorbrewer2.org/#type=diverging&scheme=RdYlBu&n=5
+# for p, ttperiod in enumerate(ttperiodsC1best):
+#     offsett = ttperiod[0] # start at t=0
+#     if p == 0:
+#         ax1.plot(ttperiod-offsett, pperiodsC1best[p], '.-', color=colors[0], alpha=0.5, label='camera reference 1')
+#     else:
+#         ax1.plot(ttperiod-offsett, pperiodsC1best[p], '.-', color=colors[0], alpha=0.5)
+# for p, ttperiod in enumerate(ttperiodsC2best):
+#     offsett = ttperiod[0] # start at t=0
+#     if p == 0:
+#         ax1.plot(ttperiod-offsett, pperiodsC2best[p], '.-', color=colors[1], alpha=0.5, label='camera reference 2')
+#     else:
+#         ax1.plot(ttperiod-offsett, pperiodsC2best[p], '.-', color=colors[1], alpha=0.5)
+# for p, ttperiod in enumerate(ttperiodsC3best):
+#     offsett = ttperiod[0] # start at t=0
+#     if p == 0:
+#         ax1.plot(ttperiod-offsett, pperiodsC3best[p], '.-', alpha=0.5, color=colors[2], label='camera reference 3')
+#     else:
+#         ax1.plot(ttperiod-offsett, pperiodsC3best[p], '.-', alpha=0.5, color=colors[2])
+# 
+# _initaxis([ax1], legend='upper right', xlabel='time (s)', ylabel='position (mm)')
+# ax1.set_ylim((-0.02, ylim))
+# ax1.set_xlim(-0.02,max((ttperiod-offsett))+0.1)
 
 
 
