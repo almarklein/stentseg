@@ -252,36 +252,43 @@ TperiodsC2mean, TperiodsC2std = np.mean(TperiodsC2), np.std(TperiodsC2)
 TperiodsC3mean, TperiodsC3std = np.mean(TperiodsC3), np.std(TperiodsC3)
 
 # plot periods
-f2 = plt.figure(figsize=(18,5.5), num=2); plt.clf()
-ax1 = f2.add_subplot(111)
+def show_periods_cam123(ttperiodsC1, ttperiodsC2, ttperiodsC3, pperiodsC1, 
+                        pperiodsC2, pperiodsC3, ax=ax1):
+    
+    colors = ['#d7191c','#fdae61','#2c7bb6'] # http://colorbrewer2.org/#type=diverging&scheme=RdYlBu&n=5
+    for p, ttperiod in enumerate(ttperiodsC1):
+        offsett = ttperiod[0] # start at t=0
+        if p == 0:
+            ax.plot(ttperiod-offsett, pperiodsC1[p], '.-', color=colors[0], alpha=0.5, label='camera reference 1')
+        else:
+            ax.plot(ttperiod-offsett, pperiodsC1[p], '.-', color=colors[0], alpha=0.5)
+    for p, ttperiod in enumerate(ttperiodsC2):
+        offsett = ttperiod[0] # start at t=0
+        if p == 0:
+            ax.plot(ttperiod-offsett, pperiodsC2[p], '.-', color=colors[1], alpha=0.5, label='camera reference 2')
+        else:
+            ax.plot(ttperiod-offsett, pperiodsC2[p], '.-', color=colors[1], alpha=0.5)
+    for p, ttperiod in enumerate(ttperiodsC3):
+        offsett = ttperiod[0] # start at t=0
+        if p == 0:
+            ax.plot(ttperiod-offsett, pperiodsC3[p], '.-', alpha=0.5, color=colors[2], label='camera reference 3')
+        else:
+            ax.plot(ttperiod-offsett, pperiodsC3[p], '.-', alpha=0.5, color=colors[2])
+    
+    _initaxis([ax], legend='upper right', xlabel='time (s)', ylabel='position (mm)')
+    ax.set_ylim((-0.02, ylim))
+    ax.set_xlim(-0.02,max((ttperiod-offsett))+0.1)
 
-colors = ['#d7191c','#fdae61','#2c7bb6'] # http://colorbrewer2.org/#type=diverging&scheme=RdYlBu&n=5
-for p, ttperiod in enumerate(ttperiodsC1):
-    offsett = ttperiod[0] # start at t=0
-    if p == 0:
-        ax1.plot(ttperiod-offsett, pperiodsC1[p], '.-', color=colors[0], alpha=0.5, label='camera reference 1')
-    else:
-        ax1.plot(ttperiod-offsett, pperiodsC1[p], '.-', color=colors[0], alpha=0.5)
-for p, ttperiod in enumerate(ttperiodsC2):
-    offsett = ttperiod[0] # start at t=0
-    if p == 0:
-        ax1.plot(ttperiod-offsett, pperiodsC2[p], '.-', color=colors[1], alpha=0.5, label='camera reference 2')
-    else:
-        ax1.plot(ttperiod-offsett, pperiodsC2[p], '.-', color=colors[1], alpha=0.5)
-for p, ttperiod in enumerate(ttperiodsC3):
-    offsett = ttperiod[0] # start at t=0
-    if p == 0:
-        ax1.plot(ttperiod-offsett, pperiodsC3[p], '.-', alpha=0.5, color=colors[2], label='camera reference 3')
-    else:
-        ax1.plot(ttperiod-offsett, pperiodsC3[p], '.-', alpha=0.5, color=colors[2])
 
-_initaxis([ax1], legend='upper right', xlabel='time (s)', ylabel='position (mm)')
-ax1.set_ylim((-0.02, ylim))
-ax1.set_xlim(-0.02,max((ttperiod-offsett))+0.1)
+f2 = plt.figure(figsize=(18,11), num=2); plt.clf()
+ax1 = f2.add_subplot(211)
+
+show_periods_cam123(ttperiodsC1, ttperiodsC2, ttperiodsC3, pperiodsC1, 
+                        pperiodsC2, pperiodsC3, ax=ax1)
 
 ## plot average of each cam with bounds, start periods is detected peak, no lag
 
-def show_periods_cam123_with_bounds(ttperiodsC1, ttperiodsC2, ttperiodsC3, 
+def show_period_cam123_with_bounds(ttperiodsC1, ttperiodsC2, ttperiodsC3, 
                                     pperiodsC1, pperiodsC2, pperiodsC3, fignum=3):
     
     pperiodsC1mean, pperiodsC1std = np.mean(pperiodsC1, axis=0), np.std(pperiodsC1, axis=0)
@@ -334,8 +341,13 @@ def show_periods_cam123_with_bounds(ttperiodsC1, ttperiodsC2, ttperiodsC3,
     _initaxis([ax3], legend='upper right', xlabel='time (s)', ylabel='position (mm)')
     ax3.set_ylim((0, ylim))
     ax3.set_xlim(-0.02,max(ttperiodsC123mean)+0.1)
+    
+    return ttperiodsC123mean, pperiodsC123mean, pperiodsC123std
+           
 
-show_periods_cam123_with_bounds(ttperiodsC1, ttperiodsC2, ttperiodsC3, 
+# show
+ttperiodsC123mean, pperiodsC123mean, pperiodsC123std = show_period_cam123_with_bounds(
+                                    ttperiodsC1, ttperiodsC2, ttperiodsC3, 
                                     pperiodsC1, pperiodsC2, pperiodsC3, fignum=3)
 
 ## overlay all periods individually, best lag
@@ -352,13 +364,13 @@ def bestFitPeriods(ttperiodRef, pperiodRef, ttperiodsC, pperiodsC):
     rmse_val_periods = []
     errors_best_periods = []
     for j, period in enumerate(pperiodsC):
-        tt = ttperiodsC[j]
-        tt = tt - tt[0] # shift to t0=0
-        tstep = (tt[-1]-tt[0])/(len(tt)-1)
+        ttperiod = ttperiodsC[j]
+        ttperiod = ttperiod - ttperiod[0] # shift to t0=0
+        tstep = (ttperiod[-1]-ttperiod[0])/(len(ttperiod)-1)
         rmse_val = 10000
         for i in range(-2,2): # analyse for lag -2, +1 from start of period
             pp = period.copy()
-            tt = tt.copy()
+            tt = ttperiod.copy()
             if i < 0:
                 for neg in range(i,0):
                     pp = np.insert(pp, 0, 0) # add zero to start to shift right
@@ -378,6 +390,7 @@ def bestFitPeriods(ttperiodRef, pperiodRef, ttperiodsC, pperiodsC):
                 ttbest = tt # with t0=0
                 errors_best = errors
                 i_best = i # best lag / overlay
+        
         print(i_best)
         # store signal with smallest rmse for each peak/period
         ppbest_periods.append(ppbest) # num of periods equal to j+1
@@ -402,38 +415,15 @@ ttperiodsC3best, pperiodsC3best, rmse_val_periodsC3, errors_best_periodsC3 = bes
 
 ## plot average of each cam with bounds, start periods is best lag from detected peak
 
-show_periods_cam123_with_bounds(ttperiodsC1best, ttperiodsC2best, ttperiodsC3best, 
-                                    pperiodsC1best, pperiodsC2best, pperiodsC3best, fignum=4)
+ttperiodsC123bestMean, pperiodsC123bestMean, pperiodsC123bestStd = show_period_cam123_with_bounds(
+                            ttperiodsC1best, ttperiodsC2best, ttperiodsC3best, 
+                            pperiodsC1best, pperiodsC2best, pperiodsC3best, fignum=4)
 
+## plot periods cam123, with lag
 
+ax6 = f2.add_subplot(212)
 
-## test, best is hetzelfde als zonder lag
-f3 = plt.figure(figsize=(18,5.5), num=5); plt.clf()
-ax1 = f3.add_subplot(111)
-
-colors = ['#d7191c','#fdae61','#2c7bb6'] # http://colorbrewer2.org/#type=diverging&scheme=RdYlBu&n=5
-for p, ttperiod in enumerate(ttperiodsC1best):
-    offsett = ttperiod[0] # start at t=0
-    if p == 0:
-        ax1.plot(ttperiod-offsett, pperiodsC1best[p], '.-', color=colors[0], alpha=0.5, label='camera reference 1')
-    else:
-        ax1.plot(ttperiod-offsett, pperiodsC1best[p], '.-', color=colors[0], alpha=0.5)
-for p, ttperiod in enumerate(ttperiodsC2best):
-    offsett = ttperiod[0] # start at t=0
-    if p == 0:
-        ax1.plot(ttperiod-offsett, pperiodsC2best[p], '.-', color=colors[1], alpha=0.5, label='camera reference 2')
-    else:
-        ax1.plot(ttperiod-offsett, pperiodsC2best[p], '.-', color=colors[1], alpha=0.5)
-for p, ttperiod in enumerate(ttperiodsC3best):
-    offsett = ttperiod[0] # start at t=0
-    if p == 0:
-        ax1.plot(ttperiod-offsett, pperiodsC3best[p], '.-', alpha=0.5, color=colors[2], label='camera reference 3')
-    else:
-        ax1.plot(ttperiod-offsett, pperiodsC3best[p], '.-', alpha=0.5, color=colors[2])
-
-_initaxis([ax1], legend='upper right', xlabel='time (s)', ylabel='position (mm)')
-ax1.set_ylim((-0.02, ylim))
-ax1.set_xlim(-0.02,max((ttperiod-offsett))+0.1)
-
+show_periods_cam123(ttperiodsC1best, ttperiodsC2best, ttperiodsC3best, pperiodsC1best, 
+                        pperiodsC2best, pperiodsC3best, ax=ax6)
 
 
