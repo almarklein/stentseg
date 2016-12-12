@@ -357,20 +357,17 @@ def bestFitPeriods(ttperiodRef, pperiodRef, ttperiodsC, pperiodsC):
         tstep = (tt[-1]-tt[0])/(len(tt)-1)
         rmse_val = 10000
         for i in range(-1,2): # analyse for lag 1, pos and neg from start of period
+            pp = period.copy()
             if i < 0:
-                pp = period.copy()
                 for neg in range(i,0):
                     np.insert(pp, neg, 0) # add zero to start to shift right
                     np.append(tt, tt[-1]+tstep)
                 tt, pp = resample(tt,pp, num=n_samplepoints)
             elif i > 0:
-                pp = period.copy()
                 for pos in range(1,i+1):
                     pp = np.append(pp, 0) # add zero to end to shift left
                 pp = pp[i:] # tt does not change
-            else:
-                pp = period.copy()
-            
+
             # calc errors
             errors = pperiodRef - pp
             rmse_val_new = rmse(pp, pperiodRef) # root mean squared error
