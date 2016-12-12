@@ -356,17 +356,18 @@ def bestFitPeriods(ttperiodRef, pperiodRef, ttperiodsC, pperiodsC):
         tt = tt - tt[0] # shift to t0=0
         tstep = (tt[-1]-tt[0])/(len(tt)-1)
         rmse_val = 10000
-        for i in range(-1,2): # analyse for lag 1, pos and neg from start of period
+        for i in range(-2,2): # analyse for lag -2, +1 from start of period
             pp = period.copy()
+            tt = tt.copy()
             if i < 0:
                 for neg in range(i,0):
-                    np.insert(pp, neg, 0) # add zero to start to shift right
-                    np.append(tt, tt[-1]+tstep)
+                    pp = np.insert(pp, 0, 0) # add zero to start to shift right
+                    tt = np.append(tt, tt[-1]+tstep)
                 tt, pp = resample(tt,pp, num=n_samplepoints)
             elif i > 0:
                 for pos in range(1,i+1):
                     pp = np.append(pp, 0) # add zero to end to shift left
-                pp = pp[i:] # tt does not change
+                pp = pp[i:] # cut pp at start; tt does not change
 
             # calc errors
             errors = pperiodRef - pp
@@ -387,7 +388,7 @@ def bestFitPeriods(ttperiodRef, pperiodRef, ttperiodsC, pperiodsC):
     return ttbest_periods, ppbest_periods, rmse_val_periods, errors_best_periods
 
 # define reference period
-ttperiodRef, pperiodRef = ttperiodsC1[2], pperiodsC1[2] # take 3rd=middle period as ref
+ttperiodRef, pperiodRef = ttperiodsC1[1], pperiodsC1[1] # take mid period as ref
 
 # cam 1, fit each period on ref
 ttperiodsC1best, pperiodsC1best, rmse_val_periodsC1, errors_best_periodsC1 = bestFitPeriods(
@@ -407,32 +408,32 @@ show_periods_cam123_with_bounds(ttperiodsC1best, ttperiodsC2best, ttperiodsC3bes
 
 
 ## test, best is hetzelfde als zonder lag
-# f3 = plt.figure(figsize=(18,5.5), num=5); plt.clf()
-# ax1 = f3.add_subplot(111)
-# 
-# colors = ['#d7191c','#fdae61','#2c7bb6'] # http://colorbrewer2.org/#type=diverging&scheme=RdYlBu&n=5
-# for p, ttperiod in enumerate(ttperiodsC1best):
-#     offsett = ttperiod[0] # start at t=0
-#     if p == 0:
-#         ax1.plot(ttperiod-offsett, pperiodsC1best[p], '.-', color=colors[0], alpha=0.5, label='camera reference 1')
-#     else:
-#         ax1.plot(ttperiod-offsett, pperiodsC1best[p], '.-', color=colors[0], alpha=0.5)
-# for p, ttperiod in enumerate(ttperiodsC2best):
-#     offsett = ttperiod[0] # start at t=0
-#     if p == 0:
-#         ax1.plot(ttperiod-offsett, pperiodsC2best[p], '.-', color=colors[1], alpha=0.5, label='camera reference 2')
-#     else:
-#         ax1.plot(ttperiod-offsett, pperiodsC2best[p], '.-', color=colors[1], alpha=0.5)
-# for p, ttperiod in enumerate(ttperiodsC3best):
-#     offsett = ttperiod[0] # start at t=0
-#     if p == 0:
-#         ax1.plot(ttperiod-offsett, pperiodsC3best[p], '.-', alpha=0.5, color=colors[2], label='camera reference 3')
-#     else:
-#         ax1.plot(ttperiod-offsett, pperiodsC3best[p], '.-', alpha=0.5, color=colors[2])
-# 
-# _initaxis([ax1], legend='upper right', xlabel='time (s)', ylabel='position (mm)')
-# ax1.set_ylim((-0.02, ylim))
-# ax1.set_xlim(-0.02,max((ttperiod-offsett))+0.1)
+f3 = plt.figure(figsize=(18,5.5), num=5); plt.clf()
+ax1 = f3.add_subplot(111)
+
+colors = ['#d7191c','#fdae61','#2c7bb6'] # http://colorbrewer2.org/#type=diverging&scheme=RdYlBu&n=5
+for p, ttperiod in enumerate(ttperiodsC1best):
+    offsett = ttperiod[0] # start at t=0
+    if p == 0:
+        ax1.plot(ttperiod-offsett, pperiodsC1best[p], '.-', color=colors[0], alpha=0.5, label='camera reference 1')
+    else:
+        ax1.plot(ttperiod-offsett, pperiodsC1best[p], '.-', color=colors[0], alpha=0.5)
+for p, ttperiod in enumerate(ttperiodsC2best):
+    offsett = ttperiod[0] # start at t=0
+    if p == 0:
+        ax1.plot(ttperiod-offsett, pperiodsC2best[p], '.-', color=colors[1], alpha=0.5, label='camera reference 2')
+    else:
+        ax1.plot(ttperiod-offsett, pperiodsC2best[p], '.-', color=colors[1], alpha=0.5)
+for p, ttperiod in enumerate(ttperiodsC3best):
+    offsett = ttperiod[0] # start at t=0
+    if p == 0:
+        ax1.plot(ttperiod-offsett, pperiodsC3best[p], '.-', alpha=0.5, color=colors[2], label='camera reference 3')
+    else:
+        ax1.plot(ttperiod-offsett, pperiodsC3best[p], '.-', alpha=0.5, color=colors[2])
+
+_initaxis([ax1], legend='upper right', xlabel='time (s)', ylabel='position (mm)')
+ax1.set_ylim((-0.02, ylim))
+ax1.set_xlim(-0.02,max((ttperiod-offsett))+0.1)
 
 
 
