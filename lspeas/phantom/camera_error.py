@@ -278,10 +278,67 @@ _initaxis([ax1], legend='upper right', xlabel='time (s)', ylabel='position (mm)'
 ax1.set_ylim((-0.02, ylim))
 ax1.set_xlim(-0.02,max((ttperiod-offsett))+0.1)
 
-## 
+## overlay all periods individually
 
-
-
+pperiodsC = pperiodsC1.copy()
+ttperiodsC = ttperiodsC1.copy()
+#todo: make def
+ttperiodRef, pperiodRef = ttperiodsC[2], pperiodsC[2] # take 3rd=middle period as ref
+ttRef = ttperiodRef - ttperiodRef[0] # shift to t0=0
+ppbest_periods = []
+ttbest_periods = []
+rmse_val_periods = []
+errors_best_periods = []
+for j, period in enumerate(pperiodsC):
+    tt = ttperiodsC[j]
+    tt = tt - tt[0] # shift to t0=0
+    tstep = (tt[-1]-tt[0])/(len(tt)-1)
+    rmse_val = 10000
+    for i in range(-1,2): # analyse for lag 1, pos and neg from start of period
+        if i < 0:
+            pp = period.copy()
+            for neg in range(i,0):
+                np.insert(pp, neg, 0) # add zero to start to shift right
+                np.append(tt, tt[-1]+tstep)
+            ttS, pperiodS = resample(tt,pp, num=n_samplepoints)
+            # calc errors
+            errors = pperiodRef - pperiodS
+            rmse_val_new = rmse(pperiodS, pperiodRef) # root mean squared error
+            rmse_val = min(rmse_val, rmse_val_new) # keep smallest, better overlay with algorithm
+            if rmse_val == rmse_val_new:
+                ppbest = pperiodS
+                ttbest = ttS # with t0=0
+                errors_best = errors
+                i_best = i # best lag / overlay
+        elif i > 0:
+            pp = period.copy()
+            for pos in range(1,i+1):
+                pp = np.append(pp, 0) # add zero to end to shift left
+            pp = pp[i:] # tt does not change
+            # calc errors
+            errors = pperiodRef - pp
+            rmse_val_new = rmse(pp, pperiodRef) # root mean squared error
+            rmse_val = min(rmse_val, rmse_val_new) # keep smallest, better overlay with algorithm
+            if rmse_val == rmse_val_new:
+                ppbest = pp
+                ttbest = tt # with t0=0
+                errors_best = errors
+                i_best = i # best lag / overlay
+        else:
+            errors = pperiodRef - period
+            rmse_val_new = rmse(period, pperiodRef) # root mean squared error
+            rmse_val = min(rmse_val, rmse_val_new) # keep smallest, better overlay with algorithm
+            if rmse_val == rmse_val_new:
+                ppbest = period
+                ttbest = tt # with t0=0
+                errors_best = errors
+                i_best = i # best lag / overlay
+        
+    # store signal with smallest rmse for each peak/period
+    ppbest_periods.append(ppbest) # num of periods equal to j+1
+    ttbest_periods.append(ttbest)
+    rmse_val_periods.append(rmse_val)
+    errors_best_periods.append(errors_best)    
 
 
 ## plot average of each cam with bounds
