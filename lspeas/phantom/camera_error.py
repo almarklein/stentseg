@@ -362,46 +362,31 @@ def bestFitPeriods(ttperiodRef, pperiodRef, ttperiodsC, pperiodsC):
                 for neg in range(i,0):
                     np.insert(pp, neg, 0) # add zero to start to shift right
                     np.append(tt, tt[-1]+tstep)
-                ttS, pperiodS = resample(tt,pp, num=n_samplepoints)
-                # calc errors
-                errors = pperiodRef - pperiodS
-                rmse_val_new = rmse(pperiodS, pperiodRef) # root mean squared error
-                rmse_val = min(rmse_val, rmse_val_new) # keep smallest, better overlay with algorithm
-                if rmse_val == rmse_val_new:
-                    ppbest = pperiodS
-                    ttbest = ttS # with t0=0
-                    errors_best = errors
-                    i_best = i # best lag / overlay
+                tt, pp = resample(tt,pp, num=n_samplepoints)
             elif i > 0:
                 pp = period.copy()
                 for pos in range(1,i+1):
                     pp = np.append(pp, 0) # add zero to end to shift left
                 pp = pp[i:] # tt does not change
-                # calc errors
-                errors = pperiodRef - pp
-                rmse_val_new = rmse(pp, pperiodRef) # root mean squared error
-                rmse_val = min(rmse_val, rmse_val_new) # keep smallest, better overlay with algorithm
-                if rmse_val == rmse_val_new:
-                    ppbest = pp
-                    ttbest = tt # with t0=0
-                    errors_best = errors
-                    i_best = i # best lag / overlay
             else:
-                errors = pperiodRef - period
-                rmse_val_new = rmse(period, pperiodRef) # root mean squared error
-                rmse_val = min(rmse_val, rmse_val_new) # keep smallest, better overlay with algorithm
-                if rmse_val == rmse_val_new:
-                    ppbest = period
-                    ttbest = tt # with t0=0
-                    errors_best = errors
-                    i_best = i # best lag / overlay
+                pp = period.copy()
+            
+            # calc errors
+            errors = pperiodRef - pp
+            rmse_val_new = rmse(pp, pperiodRef) # root mean squared error
+            rmse_val = min(rmse_val, rmse_val_new) # keep smallest, better overlay with algorithm
+            if rmse_val == rmse_val_new:
+                ppbest = pp
+                ttbest = tt # with t0=0
+                errors_best = errors
+                i_best = i # best lag / overlay
         print(i_best)
         # store signal with smallest rmse for each peak/period
         ppbest_periods.append(ppbest) # num of periods equal to j+1
         ttbest_periods.append(ttbest)
         rmse_val_periods.append(rmse_val)
         errors_best_periods.append(errors_best)
-    1/0
+    
     return ttbest_periods, ppbest_periods, rmse_val_periods, errors_best_periods
 
 # define reference period
