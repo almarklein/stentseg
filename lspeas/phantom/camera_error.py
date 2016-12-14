@@ -4,7 +4,7 @@
 # add lspeas folder to pythonpath via shell
 from phantom.motion_pattern_error import readCameraExcel, rmse, getFreqCamera, resample
 from phantom.peakdetection import peakdet
-from analysis.utils_analysis import _initaxis
+from lspeas.analysis.utils_analysis import _initaxis
 import matplotlib.pyplot as plt
 import numpy as np
 

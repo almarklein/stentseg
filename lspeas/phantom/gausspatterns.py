@@ -228,7 +228,7 @@ vv.screenshot(os.path.join(exceldir, 'screenshot.png'), f, sf=3, bg=(1,1,1))
 
 ## Plot for paper proceedings, example
 import matplotlib.pyplot as plt
-from analysis.utils_analysis import _initaxis
+from lspeas.analysis.utils_analysis import _initaxis
 from stentseg.utils.aortamotionpattern import plot_pattern_plt
 
 dirsave = select_dir(r'C:\Users\Maaike\Desktop','D:\Profiles\koenradesma\Desktop')
