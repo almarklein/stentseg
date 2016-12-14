@@ -617,6 +617,7 @@ def _initaxis(axis, legend=None, xlabel=None, ylabel=None, labelsize=16, axsize=
         # set fontsize axis numbers
         for label in (ax.get_xticklabels() + ax.get_yticklabels()):
             label.set_fontsize(axsize)
+    plt.tight_layout() # so that labels are not cut off
 
 
 if __name__ == '__main__':
