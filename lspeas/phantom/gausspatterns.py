@@ -205,16 +205,18 @@ f.position = 0, 22, 1077, 273
 # B1  (A=0.6, T=0.8, N=20, top=0.35)
 ax1 = vv.subplot(121)#; vv.title('profile1')
 plot_pattern(*(tt1,aa1))
-ax1.axis.showGrid = True
-ax1.SetLimits(rangeX=(-1,1), rangeY=(-0.1,2.5))
+ax1.axis.showGrid = False
+ax1.axis.showBox = False
+ax1.SetLimits(rangeX=(-1,1), rangeY=(-0.02,2.5))
 vv.xlabel('time (s)')
 vv.ylabel('position (mm)')
 vv.legend('B1 (A=0.6, T=0.8)')
 # B5  (A=2.0, T=0.8, N=20, top=0.35, extra=(0.7, 0.8, 0.05))
 ax5 = vv.subplot(122)#; vv.title('profile5')
 plot_pattern(*(tt5,aa5))
-ax5.axis.showGrid = True
-ax5.SetLimits(rangeX=(-1,1), rangeY=(-0.1,2.5))
+ax5.axis.showGrid = False
+ax5.SetLimits(rangeX=(-1,1), rangeY=(-0.02,2.5))
+ax5.axis.showBox = False
 vv.xlabel('time (s)')
 vv.ylabel('position (mm)')
 vv.legend('B5 (A=2.0, T=0.8, extra=0.7, 0.8, 0.05)')
@@ -222,4 +224,29 @@ vv.legend('B5 (A=2.0, T=0.8, extra=0.7, 0.8, 0.05)')
 exceldir = select_dir(r'C:\Users\Maaike\Desktop',r'D:\Profiles\koenradesma\Desktop')
 vv.screenshot(os.path.join(exceldir, 'screenshot.png'), f, sf=3, bg=(1,1,1))
 
+## Plot for paper proceedings, example
+import matplotlib.pyplot as plt
+from analysis.utils_analysis import _initaxis
+from stentseg.utils.aortamotionpattern import plot_pattern_plt
+
+dirsave = select_dir(r'C:\Users\Maaike\Desktop','D:\Profiles\koenradesma\Desktop')
+
+xlim = (0,2)
+ylim = 2.5
+
+f1 = plt.figure(figsize=(16,4.5), num=1); plt.clf()
+ax0 = f1.add_subplot(121)
+#todo: fix red line
+plot_pattern_plt(*(tt1,aa1),label='B1 (A=0.6, T=0.8)')
+_initaxis([ax0], legend='upper right', xlabel='time (s)', ylabel='position (mm)')
+ax0.set_ylim((-0.02, ylim))
+ax0.set_xlim(xlim)
+
+ax1 = f1.add_subplot(122)
+plot_pattern_plt(*(tt5,aa5),label='B5 (A=2.0, T=0.8, extra=0.7, 0.8, 0.05)')
+_initaxis([ax1], legend='upper right', xlabel='time (s)', ylabel='position (mm)')
+ax1.set_ylim((-0.02, ylim))
+ax1.set_xlim(xlim)
+
+# f1.savefig(os.path.join(dirsave, 'patternexampleproc.pdf'), papertype='a0', dpi=300)
 
