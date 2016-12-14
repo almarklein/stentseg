@@ -207,7 +207,7 @@ ax1 = vv.subplot(121)#; vv.title('profile1')
 plot_pattern(*(tt1,aa1))
 ax1.axis.showGrid = False
 ax1.axis.showBox = False
-ax1.SetLimits(rangeX=(-1,1), rangeY=(-0.02,2.5))
+ax1.SetLimits(rangeX=(-0.01,2), rangeY=(-0.02,2.5))
 vv.xlabel('time (s)')
 vv.ylabel('position (mm)')
 vv.legend('B1 (A=0.6, T=0.8)')
@@ -215,7 +215,7 @@ vv.legend('B1 (A=0.6, T=0.8)')
 ax5 = vv.subplot(122)#; vv.title('profile5')
 plot_pattern(*(tt5,aa5))
 ax5.axis.showGrid = False
-ax5.SetLimits(rangeX=(-1,1), rangeY=(-0.02,2.5))
+ax5.SetLimits(rangeX=(-0.01,2), rangeY=(-0.02,2.5))
 ax5.axis.showBox = False
 vv.xlabel('time (s)')
 vv.ylabel('position (mm)')
@@ -226,29 +226,34 @@ f.relativeFontSize = 1.2
 exceldir = select_dir(r'C:\Users\Maaike\Desktop',r'D:\Profiles\koenradesma\Desktop')
 vv.screenshot(os.path.join(exceldir, 'screenshot.png'), f, sf=3, bg=(1,1,1))
 
-## Plot for paper proceedings, example
+## Plot for paper proceedings, patternexample
 import matplotlib.pyplot as plt
 from lspeas.analysis.utils_analysis import _initaxis
 from stentseg.utils.aortamotionpattern import plot_pattern_plt
+import numpy as np
 
 dirsave = select_dir(r'C:\Users\Maaike\Desktop','D:\Profiles\koenradesma\Desktop')
 
-xlim = (0,2)
+xlim = (-0.01,2)
 ylim = 2.5
+major_ticks = np.arange(0, xlim[1], 0.2)  
 
-f1 = plt.figure(figsize=(16,4.5), num=1); plt.clf()
+f1 = plt.figure(figsize=(13.5,4.25), num=1); plt.clf()
 ax0 = f1.add_subplot(121)
-#todo: fix red line
 plot_pattern_plt(*(tt1,aa1),label='B1 (A=0.6, T=0.8)')
 _initaxis([ax0], legend='upper right', xlabel='time (s)', ylabel='position (mm)')
 ax0.set_ylim((-0.02, ylim))
 ax0.set_xlim(xlim)
+ax0.set_xticks(major_ticks)
 
 ax1 = f1.add_subplot(122)
 plot_pattern_plt(*(tt5,aa5),label='B5 (A=2.0, T=0.8, extra=0.7, 0.8, 0.05)')
 _initaxis([ax1], legend='upper right', xlabel='time (s)', ylabel='position (mm)')
 ax1.set_ylim((-0.02, ylim))
 ax1.set_xlim(xlim)
+ax1.set_xticks(major_ticks)
 
-# f1.savefig(os.path.join(dirsave, 'patternexampleproc.pdf'), papertype='a0', dpi=300)
+plt.tight_layout() # so that labels are not cut off
+
+f1.savefig(os.path.join(dirsave, 'patternexampleproc.pdf'), papertype='a0', dpi=300)
 
