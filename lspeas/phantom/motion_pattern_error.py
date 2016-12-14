@@ -12,7 +12,7 @@ from prettyplotlib import brewer2mpl # colormaps
 import numpy as np
 import scipy
 import string
-from phantom.peakdetection import peakdet
+from lspeas.phantom.peakdetection import peakdet
 
 
 def readCameraExcel(exceldir, workbookCam, sheetProfile, colSt='B'):
