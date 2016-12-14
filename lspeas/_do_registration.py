@@ -17,14 +17,14 @@ from stentseg.utils.datahandling import select_dir, loadvol, loadmodel
 # Select the ssdf basedir
 basedir = select_dir(os.getenv('LSPEAS_BASEDIR', ''),
                      r'D:\LSPEAS\LSPEAS_ssdf',
-                     r'F:\LSPEAS_ssdf_toPC')
+                     r'G:\LSPEAS_ssdf_backup')
 
 # Select dataset to register
 # ptcode = 'QRM_FANTOOM_20160121'
 # ctcode = '12months'
-cropnames = ['stent','ring']
-ptcodes = ['LSPEAS_025']
-ctcodes = ['1month', '6months', '12months']  
+cropnames = ['stent']
+ptcodes = ['LSPEAS_024']
+ctcodes = ['6months']  
 
 for ptcode in ptcodes:
     for ctcode in ctcodes:

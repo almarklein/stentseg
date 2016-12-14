@@ -31,12 +31,11 @@ if __name__ == "__main__":
     dicom_basedir = select_dir(r'G:\LSPEAS_data\ECGgatedCT',
                             r'D:\LSPEAS\LSPEAS_data_BACKUP\ECGgatedCT')    
     # Select dataset
-    # ptcodes = ['LSPEAS_001','LSPEAS_002','LSPEAS_003','LSPEAS_005','LSPEAS_008',
-    #         'LSPEAS_009','LSPEAS_011','LSPEAS_015','LSPEAS_017','LSPEAS_018',
-    #         'LSPEAS_019','LSPEAS_020','LSPEAS_021','LSPEAS_022','LSPEAS_025', 
-    #         'LSPEAS_023']
-    ptcodes = ['LSPEAS_024']
-    ctcode = '1month'
+    ptcodes = ['LSPEAS_001','LSPEAS_002','LSPEAS_003','LSPEAS_005','LSPEAS_008',
+            'LSPEAS_009','LSPEAS_011','LSPEAS_015','LSPEAS_017','LSPEAS_018',
+            'LSPEAS_019','LSPEAS_020','LSPEAS_021','LSPEAS_022']
+    # ptcodes = ['LSPEAS_024']
+    ctcode = '12months'
     cropname = 'stent'
     what = 'avgreg' # what volume to save to dicom
     normalizeLim = 3071 # HU

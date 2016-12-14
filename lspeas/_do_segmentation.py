@@ -25,11 +25,11 @@ basedir = select_dir(os.getenv('LSPEAS_BASEDIR', ''),
 ptcode = 'LSPEAS_025'
 ctcode = '12months'
 cropname = 'ring'
-what = 'avgreg' # avgreg
+what = 'phases' # avgreg
 
 # Load volumes
 s = loadvol(basedir, ptcode, ctcode, cropname, what)
-vol = s.vol
+vol = s.vol60
 
 # h = vv.hist(vol, bins = 1000)
 # h.color = 'y'
@@ -86,7 +86,7 @@ showVol = 'MIP'
 meshColor = None # or give FaceColor
 viewLR = {'azimuth': 90, 'roll': 0}
 
-fig = vv.figure(2); vv.clf()
+fig = vv.figure(3); vv.clf()
 fig.position = 0.00, 22.00,  1920.00, 1018.00
 
 # Show model Step 1

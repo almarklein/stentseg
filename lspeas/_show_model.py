@@ -21,7 +21,7 @@ basedir = select_dir(os.getenv('LSPEAS_BASEDIR', ''),
                      r'F:\LSPEAS_ssdf_BACKUP',r'G:\LSPEAS_ssdf_BACKUP')
 
 # Select dataset to register
-ptcode = 'LSPEAS_008'
+ptcode = 'LSPEAS_011'
 ctcode, nr = '6months', 1
 # ptcode = 'QRM_FANTOOM_20160121'
 # ctcode, nr = 'ZB3-75-1.2', 1

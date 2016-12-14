@@ -35,7 +35,7 @@ class StentGraph(nx.Graph):
         """
         return self.draw(*args, **kwargs)
     
-    def draw(self, mc='g', lc='y', mw=7, lw=0.6, alpha=0.5, axes=None, simple=False):
+    def draw(self, mc='b', lc='g', mw=7, lw=0.6, alpha=0.5, axes=None, simple=False):
         """ Draw in visvis.
         """
         

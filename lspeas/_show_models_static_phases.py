@@ -21,11 +21,11 @@ basedir = select_dir(os.getenv('LSPEAS_BASEDIR', ''),
                      r'F:\LSPEAS_ssdf_backup',r'G:\LSPEAS_ssdf_backup')
 
 # Select dataset to register
-ptcode = 'FANTOOM_20151202'
+ptcode = 'LSPEAS_002'
 # codes = ctcode1, ctcode2, ctcode3, ctcode4 = 'discharge', '1month', '6months', '12months'
 # codes = ctcode1, ctcode2, ctcode3 = 'discharge', '1month', '6months'
 # codes = ctcode1, ctcode2 = 'discharge', '1month'
-codes = ctcode1 = 'Prof3'
+codes = ctcode1 = 'discharge'
 cropname = 'ring'
 modelname = 'modelavgreg'
 

@@ -20,8 +20,8 @@ basedir = select_dir(os.getenv('LSPEAS_BASEDIR', ''),
                      r'D:\LSPEAS\LSPEAS_ssdf', r'G:\LSPEAS_ssdf_backup')
 
 # Select dataset to register
-ptcode = 'LSPEAS_025'
-codes = ctcode1, ctcode2, ctcode3 = 'discharge', '1month', '12months'
+ptcode = 'LSPEAS_008'
+codes = ctcode1, ctcode2, ctcode3 = 'discharge', '6months', '12months'
 # codes = ctcode1, ctcode2 = '6months', '12months'
 # codes = ctcode1 = 'discharge'
 cropname = 'ring'
