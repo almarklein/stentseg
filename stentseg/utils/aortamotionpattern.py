@@ -109,7 +109,7 @@ def plot_pattern_plt(tt, aa, label='', ax=None):
     if ax is None:
         ax = plt.gca()
     ax.plot(tt3, aa3, '.-', alpha=1, label=label)
-    ax.plot([0, 0, T, T], [0, amax, 0, amax], 'r:')
+    ax.plot([0, 0, T, T], [0, amax, 0, amax], 'r', ls='', marker = '.')
     #todo: fix red line
 
 

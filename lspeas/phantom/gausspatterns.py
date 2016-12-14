@@ -221,6 +221,8 @@ vv.xlabel('time (s)')
 vv.ylabel('position (mm)')
 vv.legend('B5 (A=2.0, T=0.8, extra=0.7, 0.8, 0.05)')
 
+f.relativeFontSize = 1.2
+
 exceldir = select_dir(r'C:\Users\Maaike\Desktop',r'D:\Profiles\koenradesma\Desktop')
 vv.screenshot(os.path.join(exceldir, 'screenshot.png'), f, sf=3, bg=(1,1,1))
 
