@@ -83,13 +83,13 @@ def plot_pattern(tt, aa):
     # Repeats, so that you can see whether the signal is continuous
     aa3 = list(aa) * 3
     tt3 = []
-    for i in range(-1, 2):
+    for i in range(0, 3):
         tt3 += [t + i*T for t in tt]
     
     # Plot the signal and mark a single period
-    vv.plot(tt3, aa3, lw=2, lc='k', ms='.', mw=4, mc='k')
-    vv.plot([0, 0, T, T], [0, amax, 0, amax], ls='+', lc='r')
-
+    vv.plot(tt3, aa3, lw=2, lc='b', ms='.', mw=4, mc='b')
+    vv.plot([0, 0, T, T, 2*T, 2*T], [0, amax, 0, amax, 0, amax], ls='+', lc='r')
+    
 
 def plot_pattern_plt(tt, aa, label='', ax=None):
     """ Helper function to plot the pattern.
@@ -102,15 +102,16 @@ def plot_pattern_plt(tt, aa, label='', ax=None):
     # Repeats, so that you can see whether the signal is continuous
     aa3 = list(aa) * 3
     tt3 = []
-    for i in range(-1, 2):
+    for i in range(0, 3):
         tt3 += [t + i*T for t in tt]
     
     # Plot the signal and mark a single period
     if ax is None:
         ax = plt.gca()
-    ax.plot(tt3, aa3, '.-', alpha=1, label=label)
-    ax.plot([0, 0, T, T], [0, amax, 0, amax], 'r', ls='', marker = '.')
-    #todo: fix red line
+    ax.plot(tt3, aa3, 'bo-', alpha=1, label=label)
+    ax.plot([0, 0], [0, amax], 'r', ls='-', marker = '_')
+    ax.plot([T,T], [0, amax], 'r', ls='-', marker = '_')
+    ax.plot([2*T, 2*T], [0, amax], 'r', ls='-', marker = '_')
 
 
 
