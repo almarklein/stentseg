@@ -14,6 +14,37 @@ from stentseg.stentdirect import stentgraph
 from stentseg.utils import PointSet
 
 
+def get_mesh_deforms(mesh, deforms, origin, **kwargs):
+    """
+    input : mesh object
+            deforms forward for mesh?!
+            origin (from volume)
+    output: PointSet of mesh vertices (duplicates removed) and list with 
+             deforms (PointSets) of mesh vertices
+    """ 
+    from stentseg.utils import PointSet
+    from stentseg.utils.centerline import points_from_mesh
+    
+    # for vertice in mesh._vertices:
+    #     vertice[-1] = vertice[-1]*-1 # x,y,z with z flipped
+    # # Turn surfacepoints into a pointset
+    # pp = PointSet(3, dtype='float32')
+    # [pp.append(*p) for p in mesh._vertices]
+    pp = points_from_mesh(mesh, **kwargs) # removes duplicates
+    
+    # Get deformation for all points
+    pp_deforms = []
+    samplePoints = pp - PointSet([o for o in reversed(origin)], dtype='float32')
+    for deform in deforms:
+        delta_z = deform.get_field_in_points(samplePoints, 0).reshape(-1, 1)
+        delta_y = deform.get_field_in_points(samplePoints, 1).reshape(-1, 1)
+        delta_x = deform.get_field_in_points(samplePoints, 2).reshape(-1, 1)
+        delta = PointSet( np.concatenate((delta_x, delta_y, delta_z), axis=1) )
+        pp_deforms.append(delta)
+        
+    return pp, pp_deforms
+
+
 def incorporate_motion_nodes(g, deforms, origin):
     """ Incorporate motion in the graph stent module. An attribute
     _deforms is added to each node in the graph.
