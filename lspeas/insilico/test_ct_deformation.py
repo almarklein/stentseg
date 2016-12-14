@@ -24,6 +24,7 @@ s = loadvol(basedir, ptcode, ctcode, cropname, what)
 vol = s.vol80
 
 clim = (0,2500)
+# clim = (-100,300)
 showVol = '2D'
 
 fig = vv.figure(2); vv.clf()
@@ -34,4 +35,28 @@ a = vv.gca()
 
 # bind rotate view [a,d rotate; z,x axes]
 fig.eventKeyDown.Bind(lambda event: _utils_GUI.RotateView(event, [a]) )
+
+## Pseudocode
+
+# get start points [voxels]
+#     centerline stent
+#     points on stent
+# 
+# define transformation
+#     z - longitudinal
+#     y - ant-post 
+#     x - left-right
+# 
+# apply transformation to all voxels in volume
+# 
+# apply transformation only to voxels close to and including the stent
+
+from stentseg.apps._3DPointSelector import select3dpoints
+
+points = select3dpoints(vol,nr_of_stents = 2)
+StartPoints = points[0]
+EndPoints = points[1]
+
+print('StartPoints are: ' + str(StartPoints))
+print('EndPoints are: ' + str(EndPoints))
 
