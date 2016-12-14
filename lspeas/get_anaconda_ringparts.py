@@ -10,7 +10,7 @@ from stentseg.utils import PointSet
 import visvis as vv
 from stentseg.utils.visualization import show_ctvolume
 from stentseg.utils.picker import pick3d
-from utils_analysis import point_in_pointcloud_closest_to_p
+from analysis.utils_analysis import point_in_pointcloud_closest_to_p
  
 
 def add_nodes_edge_to_newmodel(modelnew, model,n,neighbour):
