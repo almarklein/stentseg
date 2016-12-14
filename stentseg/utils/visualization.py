@@ -6,6 +6,8 @@ import visvis as vv
 from stentseg.utils.picker import pick3d
 from stentseg.stentdirect.stentgraph import create_mesh
 
+def test():
+    print(0)
 
 def remove_stent_from_volume(vol, graph, stripSize=5):
     """ Give the high intensity voxels that belong to the stent a
@@ -48,7 +50,7 @@ def show_ctvolume(vol, graph, showVol = 'MIP', clim = (0,2500), isoTh=250, remov
     # bind ClimEditor to figure
     if not showVol is None:
         c = vv.ClimEditor(vv.gcf())
-        c.position = (10, 30)
+        c.position = (10, 50)
 
 
 def DrawModelAxes(vol, graph=None, ax=None, axVis=False, meshColor=None, getLabel=False, 
