@@ -7,11 +7,12 @@ import os
 import visvis as vv
 from stentseg.utils.datahandling import select_dir, loadvol
 import numpy as np
-from stentseg.utils import PointSet
+from stentseg.utils import PointSet, _utils_GUI, visualization
 from stentseg.stentdirect import stentgraph
 from visvis import ssdf
 from stentseg.utils.picker import pick3d, label2worldcoordinates
 from stentseg.stentdirect import StentDirect, getDefaultParams
+from stentseg.utils.visualization import DrawModelAxes
 
 # Select the ssdf basedir
 basedir = select_dir(os.getenv('LSPEAS_BASEDIR', ''),
@@ -23,69 +24,71 @@ exceldir = select_dir(r'C:\Users\Maaike\Desktop',
             r'D:\Profiles\koenradesma\Desktop')
 
 # Select dataset to register
-ptcode = 'LSPEAS_002'
-ctcode = '1month'
-cropname = 'ring'
-what = 'avgreg'
-
+ptcode = 'LSPEAS_009'
+ctcode = 'discharge'
+cropname = 'stent'
+what = 'phases'
+phase = 80 # % or RR interval
 
 # Load static CT image to add as reference
 s = loadvol(basedir, ptcode, ctcode, cropname, what)
-vol = s.vol
+vol = s['vol%i'% phase]
 
-# params for ssdf saving
-stentType = 'manual'
-p = 'manualSeedsMip'
-what += '_manual'
+# # params for ssdf saving
+# stentType = 'manual'
+# what += '_manual'
 
-# Visualize and activate picker
+## Visualize and activate picker
+
+clim = (0,2500)
+# clim = 250
+showVol = 'MIP' # MIP or ISO or 2D
+
 fig = vv.figure(1); vv.clf()
 fig.position = 8.00, 30.00,  944.00, 1002.00
-a = vv.gca()
-a.axis.axisColor = 1,1,1
-a.axis.visible = False
-a.bgcolor = 0,0,0
-a.daspect = 1, 1, -1
-lim = 2000
-t = vv.volshow(vol, clim=(0, lim), renderStyle='mip')
-label = pick3d(vv.gca(), vol)
-vv.xlabel('x (mm)');vv.ylabel('y (mm)');vv.zlabel('z (mm)')
-vv.title('CT Volume for LSPEAS %s  -  %s' % (ptcode[7:], ctcode))
 
+label = DrawModelAxes(vol, clim=clim, showVol=showVol, axVis = True)
+
+vv.xlabel('x (mm)');vv.ylabel('y (mm)');vv.zlabel('z (mm)')
+vv.title('CT Volume %i%% for LSPEAS %s  -  %s' % (phase, ptcode[7:], ctcode))
+
+# bind rotate view (a, d, z, x active keys)
+fig.eventKeyDown.Bind(lambda event: _utils_GUI.RotateView(event) )
 
 # instantiate stentdirect segmenter object
-sd = StentDirect(vol, getDefaultParams() )
+p = getDefaultParams()
+sd2 = StentDirect(vol, p)
 # initialize
-sd._nodes1 = stentgraph.StentGraph()
+sd2._nodes1 = stentgraph.StentGraph()
 nr = 0
 def on_key(event): 
     if event.key == vv.KEY_CONTROL:
         global nr
         coordinates = np.asarray(label2worldcoordinates(label), dtype=np.float32) # x,y,z
         n2 = tuple(coordinates.flat)
-        sd._nodes1.add_node(n2, number=nr)
+        sd2._nodes1.add_node(n2, number=nr)
         print(nr)
         if nr > 0:
-            for n in list(sd._nodes1.nodes()):
-                if sd._nodes1.node[n]['number']== nr-1:
+            for n in list(sd2._nodes1.nodes()):
+                if sd2._nodes1.node[n]['number']== nr-1:
                     path = [n2,n]
-                    sd._nodes1.add_edge(n2, n, path = PointSet(np.row_stack(path)) )
-        sd._nodes1.Draw(mc='r', mw = 10, lc='y')
+                    sd2._nodes1.add_edge(n2, n, path = PointSet(np.row_stack(path)) )
+        sd2._nodes1.Draw(mc='r', mw = 10, lc='y')
         nr += 1
     if event.key == vv.KEY_ENTER:
-        sd._graphrefined = sd._RefinePositions(sd._nodes1)
-        sd._graphrefined.Draw(mc='b', mw = 10, lc='g') 
+        sd2._graphrefined = sd2._RefinePositions(sd2._nodes1)
+        sd2._graphrefined.Draw(mc='b', mw = 10, lc='g') 
     if event.key == vv.KEY_ESCAPE:
         # Store to EXCEL
         pp1 = []
         try:
-            pp1 = sd._graphrefined.nodes()
-            pp1.sort(key=lambda x: sd._graphrefined.node[x]['number']) # sort nodes by click number
-            # pp1 = sd._graphrefined.nodes()
+            pp1 = sd2._graphrefined.nodes()
+            pp1.sort(key=lambda x: sd2._graphrefined.node[x]['number']) # sort nodes by click number
+            # pp1 = sd2._graphrefined.nodes()
             print('*** refined manual picked were stored ***')
         except AttributeError:
-            pp1 = sd._nodes1.nodes()
-            pp1.sort(key=lambda x: sd._nodes1.node[x]['number']) # sort nodes by click number
+            pp1 = sd2._nodes1.nodes()
+            pp1.sort(key=lambda x: sd2._nodes1.node[x]['number']) # sort nodes by click number
             print('*** manual picked were stored ***')
         pp1 = np.asarray(pp1)
         storeCoordinatesToExcel(pp1,exceldir)
@@ -113,9 +116,9 @@ def storeCoordinatesToExcel(pp1, exceldir):
     # write 'picked coordinates'
     rowoffset = 4
     try:
-        graph = sd._graphrefined
+        graph = sd2._graphrefined
     except AttributeError:
-        graph = sd._nodes1
+        graph = sd2._nodes1
     for i, Output in enumerate(pp1):
         worksheet.write_row(rowoffset, 1, Output) # row, columnm, point
         worksheet.write_number(rowoffset, 0, graph.node[tuple(Output)]['number'])
