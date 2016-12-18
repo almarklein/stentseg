@@ -246,15 +246,6 @@ ttperiodsC1, pperiodsC1, AperiodsC1, TperiodsC1 = getSinglePeriods(peakmin1, pos
 ttperiodsC2, pperiodsC2, AperiodsC2, TperiodsC2 = getSinglePeriods(peakmin2, pos_all_cam2,n_samplepoints)
 ttperiodsC3, pperiodsC3, AperiodsC3, TperiodsC3 = getSinglePeriods(peakmin3, pos_all_cam3,n_samplepoints)
 
-# get signal ampl and freq std
-AperiodsC1mean, AperiodsC1std = np.mean(AperiodsC1), np.std(AperiodsC1) # n = 7 bv
-AperiodsC2mean, AperiodsC2std = np.mean(AperiodsC2), np.std(AperiodsC2)
-AperiodsC3mean, AperiodsC3std = np.mean(AperiodsC3), np.std(AperiodsC3)
-
-TperiodsC1mean, TperiodsC1std = np.mean(TperiodsC1), np.std(TperiodsC1)
-TperiodsC2mean, TperiodsC2std = np.mean(TperiodsC2), np.std(TperiodsC2)
-TperiodsC3mean, TperiodsC3std = np.mean(TperiodsC3), np.std(TperiodsC3)
-
 # plot periods
 def show_periods_cam123(ttperiodsC1, ttperiodsC2, ttperiodsC3, pperiodsC1, 
                         pperiodsC2, pperiodsC3, shiftt0=True, ax=ax1):
@@ -303,27 +294,29 @@ show_periods_cam123(ttperiodsC1, ttperiodsC2, ttperiodsC3, pperiodsC1,
 ## plot average of each cam with bounds, start periods is detected peak, no lag
 
 def show_period_cam123_with_bounds(ttperiodsC1, ttperiodsC2, ttperiodsC3, 
-                                    pperiodsC1, pperiodsC2, pperiodsC3, shiftt0=True, fignum=3):
+        pperiodsC1, pperiodsC2, pperiodsC3, shiftt0=True, fignum=3):
     
     pperiodsC1mean, pperiodsC1std = np.mean(pperiodsC1, axis=0), np.std(pperiodsC1, axis=0)
     pperiodsC2mean, pperiodsC2std = np.mean(pperiodsC2, axis=0), np.std(pperiodsC2, axis=0)
     pperiodsC3mean, pperiodsC3std = np.mean(pperiodsC3, axis=0), np.std(pperiodsC3, axis=0)
     
-    pperiodsC2q25 = np.percentile(pperiodsC2, 25, axis=0)
-    pperiodsC2q75 = np.percentile(pperiodsC2, 75, axis=0)
+    # pperiodsC2q25 = np.percentile(pperiodsC2, 25, axis=0)
+    # pperiodsC2q75 = np.percentile(pperiodsC2, 75, axis=0)
+    
     # shift to t0 = 0
     if shiftt0 == True:
         ttperiodsC1 = [tt - tt[0] for tt in ttperiodsC1]
         ttperiodsC2 = [tt - tt[0] for tt in ttperiodsC2]
         ttperiodsC3 = [tt - tt[0] for tt in ttperiodsC3]
-    
+    # get mean tt per cam
     ttperiodsC1mean = np.mean(ttperiodsC1, axis=0)
     ttperiodsC2mean = np.mean(ttperiodsC2, axis=0)
     ttperiodsC3mean = np.mean(ttperiodsC3, axis=0)
-    
-    # get average of all periods of the 3 cams
+    # get average of all tt periods of the 3 cams
     ttperiodsC123t0 = np.concatenate((ttperiodsC1,ttperiodsC2,ttperiodsC3))
     ttperiodsC123mean = np.mean(ttperiodsC123t0, axis=0)
+    
+    # get average of all pp periods of the 3 cams
     pperiodsC123 = np.concatenate((pperiodsC1,pperiodsC2,pperiodsC3))
     pperiodsC123mean, pperiodsC123std = np.mean(pperiodsC123, axis=0), np.std(pperiodsC123, axis=0)
     
@@ -382,25 +375,16 @@ def bestFitPeriods(ttperiodRef, pperiodRef, ttperiodsC, pperiodsC):
     for j, period in enumerate(pperiodsC):
         ttperiod = ttperiodsC[j]
         ttperiod = ttperiod - ttperiod[0] # shift to t0=0
-        tstep = (ttperiod[-1]-ttperiod[0])/(len(ttperiod)-1)
+        tstep = ttperiod[1]
         rmse_val = 10000
-        for i in range(-3,2): # analyse for lag -3, +1 from start of period
+        for i in range(-2,2): # analyse for lag -2, +1 from start of period
             pp = period.copy()
             tt = ttperiod.copy()
             ppRef = pperiodRef.copy()
             if i < 0: # shift pp right
                 ppRef = ppRef[-i:] # cut start from ppRef, pp shifted i to right
-                # for neg in range(i,0):
-                #     ppRef = ppRef[1:] # cut start from ppRef, pp shifted 1 to right
-                    # pp = np.insert(pp, 0, 0) # add 0 to start to shift right
-                    # tt = np.append(tt, tt[-1]+tstep) # add one timepoint
-                # tt, pp = resample(tt,pp, num=n_samplepoints)
             elif i > 0: # shift pp left
                 pp = pp[i:] # cut start from pp, pp shifted i to left
-                # for pos in range(1,i+1):
-                #     pp = pp[1:] # cut start from pp, pp shifted 1 to left
-                    # pp = np.append(pp, 0) # add zero to end to shift left
-                # pp = pp[i:] # cut pp at start; tt does not change
             # arrays equal size, cut end from longest
             lendif = len(ppRef) - len(pp)
             if lendif > 0:
@@ -412,8 +396,6 @@ def bestFitPeriods(ttperiodRef, pperiodRef, ttperiodsC, pperiodsC):
             rmse_val_new = rmse(pp, ppRef) # root mean squared error
             rmse_val = min(rmse_val, rmse_val_new) # keep smallest, better overlay with algorithm
             if rmse_val == rmse_val_new: # found better overlay
-                # ppbest = pp
-                # ttbest = tt # with t0=0
                 errors_best = errors
                 i_best = i # best lag / overlay
         
@@ -421,11 +403,10 @@ def bestFitPeriods(ttperiodRef, pperiodRef, ttperiodsC, pperiodsC):
         # shift tt for best lag i
         ttbest = ttperiod + tstep*-i_best # if i_best < 0 add time and > 0 visa versa
         # store tt with smallest rmse for each peak/period
-        # ppbest_periods.append(ppbest) # num of periods equal to j+1
         ttbest_periods.append(ttbest)
         rmse_val_periods.append(rmse_val)
         errors_best_periods.append(errors_best)
-    
+        
     # return ttbest_periods, ppbest_periods, rmse_val_periods, errors_best_periods
     return ttbest_periods, rmse_val_periods, errors_best_periods
 
@@ -433,6 +414,19 @@ def bestFitPeriods(ttperiodRef, pperiodRef, ttperiodsC, pperiodsC):
 ttperiodsC1, pperiodsC1, AperiodsC1, TperiodsC1 = getSinglePeriods(peakmin1, pos_all_cam1)
 ttperiodsC2, pperiodsC2, AperiodsC2, TperiodsC2 = getSinglePeriods(peakmin2, pos_all_cam2)
 ttperiodsC3, pperiodsC3, AperiodsC3, TperiodsC3 = getSinglePeriods(peakmin3, pos_all_cam3)
+
+# get signal ampl and freq std
+AperiodsC1mean, AperiodsC1std = np.mean(AperiodsC1), np.std(AperiodsC1) # n = 7 bv
+AperiodsC2mean, AperiodsC2std = np.mean(AperiodsC2), np.std(AperiodsC2)
+AperiodsC3mean, AperiodsC3std = np.mean(AperiodsC3), np.std(AperiodsC3)
+
+TperiodsC1mean, TperiodsC1std = np.mean(TperiodsC1), np.std(TperiodsC1)
+TperiodsC2mean, TperiodsC2std = np.mean(TperiodsC2), np.std(TperiodsC2)
+TperiodsC3mean, TperiodsC3std = np.mean(TperiodsC3), np.std(TperiodsC3)
+
+Tperiods123 = np.concatenate((TperiodsC1, TperiodsC2, TperiodsC3))
+TperiodsC123mean = np.mean(Tperiods123)
+TperiodsC123std = np.std(Tperiods123)
 
 # define reference period
 ttperiodRef, pperiodRef = ttperiodsC1[1], pperiodsC1[1] # take mid period cam 1 as ref
@@ -455,18 +449,126 @@ ttperiodsC2best, rmse_val_periodsC2, errors_best_periodsC2 = bestFitPeriods(
 ttperiodsC3best, rmse_val_periodsC3, errors_best_periodsC3 = bestFitPeriods(
         ttperiodRef, pperiodRef, ttperiodsC3, pperiodsC3)
 
-## plot average of each cam with bounds, start periods is best lag position from detected peak
 
-# ttperiodsC123bestMean, pperiodsC123bestMean, pperiodsC123bestStd = show_period_cam123_with_bounds(
-#                             ttperiodsC1best, ttperiodsC2best, ttperiodsC3best, 
-#                             pperiodsC1, pperiodsC2, pperiodsC3, shiftt0=False, fignum=4)
-
-## plot periods cam123, with lag
+# plot periods cam123, with lag
 
 ax6 = f2.add_subplot(313) # num = 2
 ax6.set_title('bestFitPeriods')
 show_periods_cam123(ttperiodsC1best, ttperiodsC2best, ttperiodsC3best, pperiodsC1, 
                         pperiodsC2, pperiodsC3, shiftt0=False, ax=ax6)
 plt.tight_layout() # so that labels are not cut off
+
+## Get mean of Cam recordings
+
+def cutBefore0equalSizePeriods(ttperiodsCbest,pperiodsC):
+    """ cut pp before t=0. make periods equal length by adding NaN to shortest
+    periods
+    """
+    # cut before t=0
+    pperiodsCcut = []
+    maxlength = 0
+    for i, tt in enumerate(ttperiodsCbest):
+        pp = pperiodsC[i]
+        icut = np.array(np.where(tt==0)[0]).tolist()
+        if not icut == [0]: # tpoints before t=0
+            if icut: # only pass if list not empty, tt=0 does occur
+                pp = pp[icut[0]:]
+        #todo: also cut end after TperiodsCmean??
+        lengthpp = len(pp)
+        maxlength = max(maxlength, lengthpp)
+        pperiodsCcut.append(pp)
+    
+    # add nan's to make equal size for average
+    for j, pp in enumerate(pperiodsCcut):
+        lendif = maxlength - len(pp)
+        if lendif > 0:
+            for l in range(lendif):
+                pp = np.append(pp, np.nan)
+            pperiodsCcut[j] = pp
+    
+    return pperiodsCcut
+
+# combine cams
+ttperiodsC123best = np.concatenate((ttperiodsC1best,ttperiodsC2best,ttperiodsC3best)).tolist()
+pperiodsC123 = np.concatenate((pperiodsC1,pperiodsC2,pperiodsC3)).tolist()
+
+pperiodsC1bestCut = cutBefore0equalSizePeriods(ttperiodsC1best,pperiodsC1)
+pperiodsC2bestCut = cutBefore0equalSizePeriods(ttperiodsC2best,pperiodsC2)
+pperiodsC3bestCut = cutBefore0equalSizePeriods(ttperiodsC3best,pperiodsC3)
+
+pperiodsC123bestCut = cutBefore0equalSizePeriods(ttperiodsC123best,pperiodsC123)
+
+
+def geTttCamMean(TperiodsC1mean, pperiodsC1bestCut):
+    """ with Tmean and number of points in periods (equal length) get ttperiodmean
+    """
+    num = np.shape(pperiodsC1bestCut)[1] # (nperiods, npoints)[1]
+    tt = np.linspace(0, TperiodsC1mean, num) # sampled equidistant
+    return tt
+
+ttperiodmeanC1 = geTttCamMean(TperiodsC1mean, pperiodsC1bestCut)
+ttperiodmeanC2 = geTttCamMean(TperiodsC2mean, pperiodsC2bestCut)
+ttperiodmeanC3 = geTttCamMean(TperiodsC3mean, pperiodsC3bestCut)
+ttperiodmeanC123 = geTttCamMean(TperiodsC123mean, pperiodsC123bestCut)
+
+
+## plot average of each cam with bounds, start periods is best lag position from detected peak
+
+#todo bewerken def
+
+def show_period_cam123bestCut_with_bounds(ttperiodmeanC1, ttperiodmeanC2, 
+        ttperiodmeanC3, ttperiodmeanC123, pperiodsC1bestCut, pperiodsC2bestCut, 
+        pperiodsC3bestCut, pperiodsC123bestCut, fignum=4):
+    
+    pperiodsC1mean, pperiodsC1std = np.nanmean(pperiodsC1bestCut, axis=0), np.nanstd(pperiodsC1bestCut, axis=0)
+    pperiodsC2mean, pperiodsC2std = np.nanmean(pperiodsC2bestCut, axis=0), np.nanstd(pperiodsC2bestCut, axis=0)
+    pperiodsC3mean, pperiodsC3std = np.nanmean(pperiodsC3bestCut, axis=0), np.nanstd(pperiodsC3bestCut, axis=0)
+    
+    # get average of all pp periods of the 3 cams
+    pperiodsC123mean =  np.nanmean(pperiodsC123bestCut, axis=0)
+    pperiodsC123std = np.nanstd(pperiodsC123bestCut, axis=0)
+    
+    # plot
+    f3 = plt.figure(figsize=(18,5.5), num=fignum); plt.clf()
+    ax2 = f3.add_subplot(121)
+    
+    colors = ['#d7191c','#fdae61','#2c7bb6'] # http://colorbrewer2.org/#type=diverging&scheme=RdYlBu&n=5
+    ax2.plot(ttperiodmeanC1, pperiodsC1mean, '.-', color=colors[0], label='camera reference 1')
+    ax2.fill_between(ttperiodmeanC1, pperiodsC1mean-pperiodsC1std, pperiodsC1mean+pperiodsC1std, 
+                    color=colors[0], alpha=0.2)
+    ax2.plot(ttperiodmeanC2, pperiodsC2mean, '.-', color=colors[1], label='camera reference 2')
+    ax2.fill_between(ttperiodmeanC2, pperiodsC2mean-pperiodsC2std, pperiodsC2mean+pperiodsC2std, 
+                    color=colors[1], alpha=0.3)
+    # ax2.fill_between(ttperiodmeanC2, pperiodsC2q25, pperiodsC2q75, 
+    #                 color=colors[1], alpha=0.3)
+    ax2.plot(ttperiodmeanC3, pperiodsC3mean, '.-', color=colors[2], label='camera reference 3')
+    ax2.fill_between(ttperiodmeanC3, pperiodsC3mean-pperiodsC3std, pperiodsC3mean+pperiodsC3std, 
+                    color=colors[2], alpha=0.2)
+    
+    _initaxis([ax2], legend='upper right', xlabel='time (s)', ylabel='position (mm)')
+    ax2.set_ylim((0, ylim))
+    ax2.set_xlim(-0.1,max(ttperiodmeanC3)+0.1)
+    
+    # add plot of average with bounds
+    ax3 = f3.add_subplot(122)
+    ax3.plot(ttperiodmeanC123, pperiodsC123mean, '.-', color='k', label='camera reference mean')
+    ax3.fill_between(ttperiodmeanC123, pperiodsC123mean-pperiodsC123std, pperiodsC123mean+pperiodsC123std, 
+                    color='k', alpha=0.2)
+    
+    _initaxis([ax3], legend='upper right', xlabel='time (s)', ylabel='position (mm)')
+    ax3.set_ylim((0, ylim))
+    ax3.set_xlim(-0.1,max(ttperiodmeanC123)+0.1)
+    
+    return pperiodsC123mean, pperiodsC123std
+
+
+
+# plot bounds for bestCut periods
+pperiodsC123bestCutMean, pperiodsC123bestCutStd = show_period_cam123bestCut_with_bounds(
+        ttperiodmeanC1, ttperiodmeanC2, 
+        ttperiodmeanC3, ttperiodmeanC123, pperiodsC1bestCut, pperiodsC2bestCut, 
+        pperiodsC3bestCut, pperiodsC123bestCut, fignum=4)
+
+
 
 
