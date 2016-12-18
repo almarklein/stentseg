@@ -209,8 +209,9 @@ ax1.set_xlim(xlim)
 
 n_samplepoints = 30 # 30fps*T
 
-def getSinglePeriods(peakmin, pos_all_cam,n_samplepoints):
+def getSinglePeriods(peakmin, pos_all_cam,n_samplepoints=None):
     """ based on detected minima get periods in signal
+    if n_samplepoints is given, resample points
     return tt, pp, amplitude and T for each period
     """
     ttperiodsC = []
@@ -222,8 +223,11 @@ def getSinglePeriods(peakmin, pos_all_cam,n_samplepoints):
         peakend = int(peakmin[i+1,0])+1 # start of second period
         ttperiodC1 = time_all_cam1[peakstart:peakend]
         pperiodC1 = pos_all_cam[peakstart:peakend]
-        # resample for equal number of points in each period
-        ttperiodC1s, pperiodC1s = resample(ttperiodC1,pperiodC1, num=n_samplepoints)
+        if n_samplepoints is not None:
+            # resample for equal number of points in each period
+            ttperiodC1s, pperiodC1s = resample(ttperiodC1,pperiodC1, num=n_samplepoints)
+        else: # do not resample
+            ttperiodC1s, pperiodC1s = ttperiodC1.copy(), pperiodC1.copy()
         # make sure position min value is 0
         pperiodC1s = pperiodC1s - min(pperiodC1s)
         # get amplitudes
@@ -253,35 +257,45 @@ TperiodsC3mean, TperiodsC3std = np.mean(TperiodsC3), np.std(TperiodsC3)
 
 # plot periods
 def show_periods_cam123(ttperiodsC1, ttperiodsC2, ttperiodsC3, pperiodsC1, 
-                        pperiodsC2, pperiodsC3, ax=ax1):
+                        pperiodsC2, pperiodsC3, shiftt0=True, ax=ax1):
     
     colors = ['#d7191c','#fdae61','#2c7bb6'] # http://colorbrewer2.org/#type=diverging&scheme=RdYlBu&n=5
     for p, ttperiod in enumerate(ttperiodsC1):
-        offsett = ttperiod[0] # start at t=0
+        if shiftt0==True:
+            offsett = ttperiod[0] # start at t=0
+        else:
+            offsett = 0 # no shift
         if p == 0:
             ax.plot(ttperiod-offsett, pperiodsC1[p], '.-', color=colors[0], alpha=0.5, label='camera reference 1')
         else:
             ax.plot(ttperiod-offsett, pperiodsC1[p], '.-', color=colors[0], alpha=0.5)
     for p, ttperiod in enumerate(ttperiodsC2):
-        offsett = ttperiod[0] # start at t=0
+        if shiftt0==True:
+            offsett = ttperiod[0] # start at t=0
+        else:
+            offsett = 0 # no shift
         if p == 0:
             ax.plot(ttperiod-offsett, pperiodsC2[p], '.-', color=colors[1], alpha=0.5, label='camera reference 2')
         else:
             ax.plot(ttperiod-offsett, pperiodsC2[p], '.-', color=colors[1], alpha=0.5)
     for p, ttperiod in enumerate(ttperiodsC3):
-        offsett = ttperiod[0] # start at t=0
+        if shiftt0==True:
+            offsett = ttperiod[0] # start at t=0
+        else:
+            offsett = 0 # no shift
         if p == 0:
             ax.plot(ttperiod-offsett, pperiodsC3[p], '.-', alpha=0.5, color=colors[2], label='camera reference 3')
         else:
             ax.plot(ttperiod-offsett, pperiodsC3[p], '.-', alpha=0.5, color=colors[2])
     
-    _initaxis([ax], legend='upper right', xlabel='time (s)', ylabel='position (mm)')
     ax.set_ylim((-0.02, ylim))
-    ax.set_xlim(-0.02,max((ttperiod-offsett))+0.1)
+    ax.set_xlim(-0.1,max((ttperiod-offsett))+0.1)
+    _initaxis([ax], legend='upper right', xlabel='time (s)', ylabel='position (mm)')
 
 
-f2 = plt.figure(figsize=(18,11), num=2); plt.clf()
-ax1 = f2.add_subplot(211)
+f2 = plt.figure(figsize=(19,11), num=2); plt.clf()
+ax1 = f2.add_subplot(311)
+ax1.set_title('getSinglePeriods-resampled')
 
 show_periods_cam123(ttperiodsC1, ttperiodsC2, ttperiodsC3, pperiodsC1, 
                         pperiodsC2, pperiodsC3, ax=ax1)
@@ -289,7 +303,7 @@ show_periods_cam123(ttperiodsC1, ttperiodsC2, ttperiodsC3, pperiodsC1,
 ## plot average of each cam with bounds, start periods is detected peak, no lag
 
 def show_period_cam123_with_bounds(ttperiodsC1, ttperiodsC2, ttperiodsC3, 
-                                    pperiodsC1, pperiodsC2, pperiodsC3, fignum=3):
+                                    pperiodsC1, pperiodsC2, pperiodsC3, shiftt0=True, fignum=3):
     
     pperiodsC1mean, pperiodsC1std = np.mean(pperiodsC1, axis=0), np.std(pperiodsC1, axis=0)
     pperiodsC2mean, pperiodsC2std = np.mean(pperiodsC2, axis=0), np.std(pperiodsC2, axis=0)
@@ -297,16 +311,18 @@ def show_period_cam123_with_bounds(ttperiodsC1, ttperiodsC2, ttperiodsC3,
     
     pperiodsC2q25 = np.percentile(pperiodsC2, 25, axis=0)
     pperiodsC2q75 = np.percentile(pperiodsC2, 75, axis=0)
+    # shift to t0 = 0
+    if shiftt0 == True:
+        ttperiodsC1 = [tt - tt[0] for tt in ttperiodsC1]
+        ttperiodsC2 = [tt - tt[0] for tt in ttperiodsC2]
+        ttperiodsC3 = [tt - tt[0] for tt in ttperiodsC3]
     
-    ttperiodsC1t0 = [tt - tt[0] for tt in ttperiodsC1]
-    ttperiodsC1mean = np.mean(ttperiodsC1t0, axis=0)
-    ttperiodsC2t0 = [tt - tt[0] for tt in ttperiodsC2]
-    ttperiodsC2mean = np.mean(ttperiodsC2t0, axis=0)
-    ttperiodsC3t0 = [tt - tt[0] for tt in ttperiodsC3]
-    ttperiodsC3mean = np.mean(ttperiodsC3t0, axis=0)
+    ttperiodsC1mean = np.mean(ttperiodsC1, axis=0)
+    ttperiodsC2mean = np.mean(ttperiodsC2, axis=0)
+    ttperiodsC3mean = np.mean(ttperiodsC3, axis=0)
     
     # get average of all periods of the 3 cams
-    ttperiodsC123t0 = np.concatenate((ttperiodsC1t0,ttperiodsC2t0,ttperiodsC3t0))
+    ttperiodsC123t0 = np.concatenate((ttperiodsC1,ttperiodsC2,ttperiodsC3))
     ttperiodsC123mean = np.mean(ttperiodsC123t0, axis=0)
     pperiodsC123 = np.concatenate((pperiodsC1,pperiodsC2,pperiodsC3))
     pperiodsC123mean, pperiodsC123std = np.mean(pperiodsC123, axis=0), np.std(pperiodsC123, axis=0)
@@ -330,7 +346,7 @@ def show_period_cam123_with_bounds(ttperiodsC1, ttperiodsC2, ttperiodsC3,
     
     _initaxis([ax2], legend='upper right', xlabel='time (s)', ylabel='position (mm)')
     ax2.set_ylim((0, ylim))
-    ax2.set_xlim(-0.02,max(ttperiodsC3mean)+0.1)
+    ax2.set_xlim(-0.1,max(ttperiodsC3mean)+0.1)
     
     # add plot of average with bounds
     ax3 = f3.add_subplot(122)
@@ -340,7 +356,7 @@ def show_period_cam123_with_bounds(ttperiodsC1, ttperiodsC2, ttperiodsC3,
     
     _initaxis([ax3], legend='upper right', xlabel='time (s)', ylabel='position (mm)')
     ax3.set_ylim((0, ylim))
-    ax3.set_xlim(-0.02,max(ttperiodsC123mean)+0.1)
+    ax3.set_xlim(-0.1,max(ttperiodsC123mean)+0.1)
     
     return ttperiodsC123mean, pperiodsC123mean, pperiodsC123std
            
@@ -350,13 +366,13 @@ ttperiodsC123mean, pperiodsC123mean, pperiodsC123std = show_period_cam123_with_b
                                     ttperiodsC1, ttperiodsC2, ttperiodsC3, 
                                     pperiodsC1, pperiodsC2, pperiodsC3, fignum=3)
 
+
 ## overlay all periods individually, best lag
 
 def bestFitPeriods(ttperiodRef, pperiodRef, ttperiodsC, pperiodsC):
     """ given an array with periods (tt and pp) and a ref period,
-    overlay each period best on ref with lag + and - 1. 
-    for lag to the right, 0 is added at start and signal is resampled
-    for lag to the left, 0 is added at end and cut at the start
+    overlay each period best on ref (rmse for overlapping parts)
+    return shifted ttperiodsC
     """
     ttRef = ttperiodRef - ttperiodRef[0] # shift to t0=0
     ppbest_periods = []
@@ -368,62 +384,89 @@ def bestFitPeriods(ttperiodRef, pperiodRef, ttperiodsC, pperiodsC):
         ttperiod = ttperiod - ttperiod[0] # shift to t0=0
         tstep = (ttperiod[-1]-ttperiod[0])/(len(ttperiod)-1)
         rmse_val = 10000
-        for i in range(-2,2): # analyse for lag -2, +1 from start of period
+        for i in range(-3,2): # analyse for lag -3, +1 from start of period
             pp = period.copy()
             tt = ttperiod.copy()
-            if i < 0:
-                for neg in range(i,0):
-                    pp = np.insert(pp, 0, 0) # add zero to start to shift right
-                    tt = np.append(tt, tt[-1]+tstep)
-                tt, pp = resample(tt,pp, num=n_samplepoints)
-            elif i > 0:
-                for pos in range(1,i+1):
-                    pp = np.append(pp, 0) # add zero to end to shift left
-                pp = pp[i:] # cut pp at start; tt does not change
-
+            ppRef = pperiodRef.copy()
+            if i < 0: # shift pp right
+                ppRef = ppRef[-i:] # cut start from ppRef, pp shifted i to right
+                # for neg in range(i,0):
+                #     ppRef = ppRef[1:] # cut start from ppRef, pp shifted 1 to right
+                    # pp = np.insert(pp, 0, 0) # add 0 to start to shift right
+                    # tt = np.append(tt, tt[-1]+tstep) # add one timepoint
+                # tt, pp = resample(tt,pp, num=n_samplepoints)
+            elif i > 0: # shift pp left
+                pp = pp[i:] # cut start from pp, pp shifted i to left
+                # for pos in range(1,i+1):
+                #     pp = pp[1:] # cut start from pp, pp shifted 1 to left
+                    # pp = np.append(pp, 0) # add zero to end to shift left
+                # pp = pp[i:] # cut pp at start; tt does not change
+            # arrays equal size, cut end from longest
+            lendif = len(ppRef) - len(pp)
+            if lendif > 0:
+                ppRef = ppRef[:lendif]
+            elif lendif < 0:
+                pp = pp[:lendif]
             # calc errors
-            errors = pperiodRef - pp
-            rmse_val_new = rmse(pp, pperiodRef) # root mean squared error
+            errors = ppRef - pp
+            rmse_val_new = rmse(pp, ppRef) # root mean squared error
             rmse_val = min(rmse_val, rmse_val_new) # keep smallest, better overlay with algorithm
-            if rmse_val == rmse_val_new:
-                ppbest = pp
-                ttbest = tt # with t0=0
+            if rmse_val == rmse_val_new: # found better overlay
+                # ppbest = pp
+                # ttbest = tt # with t0=0
                 errors_best = errors
                 i_best = i # best lag / overlay
         
         print(i_best)
-        # store signal with smallest rmse for each peak/period
-        ppbest_periods.append(ppbest) # num of periods equal to j+1
+        # shift tt for best lag i
+        ttbest = ttperiod + tstep*-i_best # if i_best < 0 add time and > 0 visa versa
+        # store tt with smallest rmse for each peak/period
+        # ppbest_periods.append(ppbest) # num of periods equal to j+1
         ttbest_periods.append(ttbest)
         rmse_val_periods.append(rmse_val)
         errors_best_periods.append(errors_best)
     
-    return ttbest_periods, ppbest_periods, rmse_val_periods, errors_best_periods
+    # return ttbest_periods, ppbest_periods, rmse_val_periods, errors_best_periods
+    return ttbest_periods, rmse_val_periods, errors_best_periods
+
+# get periods for each cam without resampling the number of points
+ttperiodsC1, pperiodsC1, AperiodsC1, TperiodsC1 = getSinglePeriods(peakmin1, pos_all_cam1)
+ttperiodsC2, pperiodsC2, AperiodsC2, TperiodsC2 = getSinglePeriods(peakmin2, pos_all_cam2)
+ttperiodsC3, pperiodsC3, AperiodsC3, TperiodsC3 = getSinglePeriods(peakmin3, pos_all_cam3)
 
 # define reference period
-ttperiodRef, pperiodRef = ttperiodsC1[1], pperiodsC1[1] # take mid period as ref
+ttperiodRef, pperiodRef = ttperiodsC1[1], pperiodsC1[1] # take mid period cam 1 as ref
 
+# plot periods not resampled with ref pattern to use for lag reference 
+ax5 = f2.add_subplot(312) # num = 2
+ax5.set_title('getSinglePeriods')
+ax5.plot(ttperiodRef-ttperiodRef[0], pperiodRef, '*', color='k', label='camera ref period for lag')
+show_periods_cam123(ttperiodsC1, ttperiodsC2, ttperiodsC3, pperiodsC1, 
+                        pperiodsC2, pperiodsC3, ax=ax5)
+
+# for each cam overlay periods best
 # cam 1, fit each period on ref
-ttperiodsC1best, pperiodsC1best, rmse_val_periodsC1, errors_best_periodsC1 = bestFitPeriods(
+ttperiodsC1best, rmse_val_periodsC1, errors_best_periodsC1 = bestFitPeriods(
         ttperiodRef, pperiodRef, ttperiodsC1, pperiodsC1)
 # cam 2, fit each period on ref
-ttperiodsC2best, pperiodsC2best, rmse_val_periodsC2, errors_best_periodsC2 = bestFitPeriods(
+ttperiodsC2best, rmse_val_periodsC2, errors_best_periodsC2 = bestFitPeriods(
         ttperiodRef, pperiodRef, ttperiodsC2, pperiodsC2)
 # cam 3, fit each period on ref
-ttperiodsC3best, pperiodsC3best, rmse_val_periodsC3, errors_best_periodsC3 = bestFitPeriods(
+ttperiodsC3best, rmse_val_periodsC3, errors_best_periodsC3 = bestFitPeriods(
         ttperiodRef, pperiodRef, ttperiodsC3, pperiodsC3)
 
-## plot average of each cam with bounds, start periods is best lag from detected peak
+## plot average of each cam with bounds, start periods is best lag position from detected peak
 
-ttperiodsC123bestMean, pperiodsC123bestMean, pperiodsC123bestStd = show_period_cam123_with_bounds(
-                            ttperiodsC1best, ttperiodsC2best, ttperiodsC3best, 
-                            pperiodsC1best, pperiodsC2best, pperiodsC3best, fignum=4)
+# ttperiodsC123bestMean, pperiodsC123bestMean, pperiodsC123bestStd = show_period_cam123_with_bounds(
+#                             ttperiodsC1best, ttperiodsC2best, ttperiodsC3best, 
+#                             pperiodsC1, pperiodsC2, pperiodsC3, shiftt0=False, fignum=4)
 
 ## plot periods cam123, with lag
 
-ax6 = f2.add_subplot(212)
-
-show_periods_cam123(ttperiodsC1best, ttperiodsC2best, ttperiodsC3best, pperiodsC1best, 
-                        pperiodsC2best, pperiodsC3best, ax=ax6)
+ax6 = f2.add_subplot(313) # num = 2
+ax6.set_title('bestFitPeriods')
+show_periods_cam123(ttperiodsC1best, ttperiodsC2best, ttperiodsC3best, pperiodsC1, 
+                        pperiodsC2, pperiodsC3, shiftt0=False, ax=ax6)
+plt.tight_layout() # so that labels are not cut off
 
 
