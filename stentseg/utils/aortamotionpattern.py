@@ -91,7 +91,7 @@ def plot_pattern(tt, aa):
     vv.plot([0, 0, T, T, 2*T, 2*T], [0, amax, 0, amax, 0, amax], ls='+', lc='r')
     
 
-def plot_pattern_plt(tt, aa, label='', ax=None):
+def plot_pattern_plt(tt, aa, label='', mark=True, ax=None):
     """ Helper function to plot the pattern.
     """
     import matplotlib.pyplot as plt
@@ -109,9 +109,10 @@ def plot_pattern_plt(tt, aa, label='', ax=None):
     if ax is None:
         ax = plt.gca()
     ax.plot(tt3, aa3, 'bo-', alpha=1, label=label)
-    ax.plot([0, 0], [0, amax], 'r', ls='-', marker = '_')
-    ax.plot([T,T], [0, amax], 'r', ls='-', marker = '_')
-    ax.plot([2*T, 2*T], [0, amax], 'r', ls='-', marker = '_')
+    if mark==True:
+        ax.plot([0, 0], [0, amax], 'b', ls='-', marker = '_')
+        ax.plot([T,T], [0, amax], 'b', ls='-', marker = '_')
+        ax.plot([2*T, 2*T], [0, amax], 'b', ls='-', marker = '_')
 
 
 
