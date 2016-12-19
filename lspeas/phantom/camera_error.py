@@ -20,12 +20,12 @@ if __name__ == '__main__':
     workbookCam2 = '20160215 GRAFIEKEN van camera systeem uit matlab in excel.xlsx' # 22/1/2016
     workbookCam3 = 'Grafieken camera matlab meting 25012016.xlsx' # 25/1/2016
     
-    sheetProfile = 'ZA1'
-    ylim = 1.45 # input + 0.45 marge legend
+    sheetProfile = 'ZB6'
+    ylim = 2.95 # input + 0.45 marge legend
     xlim = (-1.5,7)
-    colSt1 = 'D'
-    colSt2 = 'D'
-    colSt3 = 'D'
+    colSt1 = 'S' # see workbookCams
+    colSt2 = 'W'
+    colSt3 = 'M'
     
     # read the cam signal with consecutive periods
     f1 = plt.figure(figsize=(18,11), num=1); plt.clf()
@@ -85,13 +85,13 @@ if __name__ == '__main__':
     # plot cam signals and start points periods
     ax0.plot(time_all_cam1t0, pos_all_cam1, 'r.-', alpha=0.5, label='camera reference 1')
     ax0.scatter(ttPeriodStarts1-offsett1, np.array(peakmin1)[:,1], color='green')
-    ax0.scatter(ttPeriodPeaks1-offsett1, np.array(peakmax1)[:,1], color='k')
+    # ax0.scatter(ttPeriodPeaks1-offsett1, np.array(peakmax1)[:,1], color='k')
     ax0.plot(time_all_cam2t0, pos_all_cam2, 'g.-', alpha=0.5, label='camera reference 2')
     ax0.scatter(ttPeriodStarts2-offsett2, np.array(peakmin2)[:,1], color='green')
-    ax0.scatter(ttPeriodPeaks2-offsett2, np.array(peakmax2)[:,1], color='k')
+    # ax0.scatter(ttPeriodPeaks2-offsett2, np.array(peakmax2)[:,1], color='k')
     ax0.plot(time_all_cam3t0, pos_all_cam3, 'b.-', alpha=0.5, label='camera reference 3')
     ax0.scatter(ttPeriodStarts3-offsett3, np.array(peakmin3)[:,1], color='green')
-    ax0.scatter(ttPeriodPeaks3-offsett3, np.array(peakmax3)[:,1], color='k')
+    # ax0.scatter(ttPeriodPeaks3-offsett3, np.array(peakmax3)[:,1], color='k')
     
     _initaxis([ax0], legend='upper right', xlabel='time (s)', ylabel='position (mm)')
     ax0.set_ylim((-0.02, ylim))
@@ -133,7 +133,7 @@ for i in range(-3,5): # analyse for 8 cam start points from peak
 
 # overlay cam3 on cam2
 rmse_val3 = 10000
-for i in range(-3,5): # analyse for 8 cam start points from peak
+for i in range(-2,3): # analyse for 4 cam start points from peak
     istart = int(peakmin3[0,0])+i
     iend = istart+len(tc2)
     
@@ -424,12 +424,32 @@ TperiodsC1mean, TperiodsC1std = np.mean(TperiodsC1), np.std(TperiodsC1)
 TperiodsC2mean, TperiodsC2std = np.mean(TperiodsC2), np.std(TperiodsC2)
 TperiodsC3mean, TperiodsC3std = np.mean(TperiodsC3), np.std(TperiodsC3)
 
+Aperiods123 = np.concatenate((AperiodsC1, AperiodsC2, AperiodsC3))
+AperiodsC123mean = np.mean(Aperiods123)
+AperiodsC123std = np.std(Aperiods123)
+
 Tperiods123 = np.concatenate((TperiodsC1, TperiodsC2, TperiodsC3))
 TperiodsC123mean = np.mean(Tperiods123)
 TperiodsC123std = np.std(Tperiods123)
 
+BPMperiodsC123 = 60/Tperiods123
+BPMperiodsC123mean, BPMperiodsC123std = np.mean(BPMperiodsC123), np.std(BPMperiodsC123)
+
+# print output A en T
+print('AperiodsC1mean, AperiodsC1std = {}, {}'.format(AperiodsC1mean, AperiodsC1std))
+print('AperiodsC2mean, AperiodsC2std = {}, {}'.format(AperiodsC2mean, AperiodsC2std))
+print('AperiodsC3mean, AperiodsC3std = {}, {}'.format(AperiodsC3mean, AperiodsC3std))
+print('AperiodsC123mean, AperiodsC123std = {}, {}'.format(AperiodsC123mean, AperiodsC123std))
+print()
+print('TperiodsC1mean, TperiodsC1std = {}, {}'.format(TperiodsC1mean, TperiodsC1std))
+print('TperiodsC2mean, TperiodsC2std = {}, {}'.format(TperiodsC2mean, TperiodsC2std))
+print('TperiodsC3mean, TperiodsC3std = {}, {}'.format(TperiodsC3mean, TperiodsC3std))
+print('TperiodsC123mean, TperiodsC123std = {}, {}'.format(TperiodsC123mean, TperiodsC123std))
+print('BPMperiodsC123mean, BPMperiodsC123std = {}, {}'.format(BPMperiodsC123mean, BPMperiodsC123std))
+print()
+
 # define reference period
-ttperiodRef, pperiodRef = ttperiodsC1[1], pperiodsC1[1] # take mid period cam 1 as ref
+ttperiodRef, pperiodRef = ttperiodsC3[1], pperiodsC3[1] # take mid period cam 1 as ref
 
 # plot periods not resampled with ref pattern to use for lag reference 
 ax5 = f2.add_subplot(312) # num = 2
@@ -564,7 +584,7 @@ def show_period_cam123bestCut_with_bounds(ttperiodmeanC1, ttperiodmeanC2,
                                         pperiodsC3mean,pperiodsC3std)
     
     # add input function simulator; first run gauspatterns.py
-    plot_pattern_plt(*(tt1a,aa1a),label='Input simulator A1', mark=False)
+    plot_pattern_plt(*(tt6,aa6),label='Input simulator B6', mark=False)
     
     colors = ['#d7191c','#fdae61','#2c7bb6'] # http://colorbrewer2.org/#type=diverging&scheme=RdYlBu&n=5
     ax2.plot(ttperiodmeanC1rep, pperiodsC1mean, '.-', color=colors[0], label='Output simulator day 1 (camera)')
@@ -582,7 +602,7 @@ def show_period_cam123bestCut_with_bounds(ttperiodmeanC1, ttperiodmeanC2,
     _initaxis([ax2], legend='upper right', xlabel='time (s)', ylabel='position (mm)')
     ax2.set_ylim((0, ylim))
     # ax2.set_xlim(-0.1,max(ttperiodmeanC3rep)+0.1)
-    xlim = 2.0
+    xlim = 1.5
     major_ticks = np.arange(0, xlim, 0.2)  
     ax2.set_xlim(-0.02,xlim)
     ax2.set_xticks(major_ticks)
@@ -590,7 +610,7 @@ def show_period_cam123bestCut_with_bounds(ttperiodmeanC1, ttperiodmeanC2,
     # add plot of average with bounds
     ax3 = f3.add_subplot(122)
     # add input function simulator
-    plot_pattern_plt(*(tt1a,aa1a),label='Input simulator A1') # (A1: A=1.0, T=1.2)')
+    plot_pattern_plt(*(tt6,aa6),label='Input simulator B6') # (A1: A=1.0, T=1.2)')
     
     ttperiodmeanC123rep, pperiodsC123meanRep, pperiodsC123stdRep = repeatCamPeriod(ttperiodmeanC123,
                                     pperiodsC123mean,pperiodsC123std, mark=True)
