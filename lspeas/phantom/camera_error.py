@@ -21,7 +21,7 @@ if __name__ == '__main__':
     workbookCam3 = 'Grafieken camera matlab meting 25012016.xlsx' # 25/1/2016
     
     sheetProfile = 'ZA1'
-    ylim = 0.8
+    ylim = 1.45 # input + 0.45 marge legend
     xlim = (-1.5,7)
     colSt1 = 'D'
     colSt2 = 'D'
@@ -514,12 +514,35 @@ ttperiodmeanC123 = geTttCamMean(TperiodsC123mean, pperiodsC123bestCut)
 
 ## plot average of each cam with bounds, start periods is best lag position from detected peak
 
-#todo bewerken def
-
 def show_period_cam123bestCut_with_bounds(ttperiodmeanC1, ttperiodmeanC2, 
         ttperiodmeanC3, ttperiodmeanC123, pperiodsC1bestCut, pperiodsC2bestCut, 
-        pperiodsC3bestCut, pperiodsC123bestCut, fignum=4):
+        pperiodsC3bestCut, pperiodsC123bestCut, fignum=4, save=True):
     
+    from stentseg.utils.aortamotionpattern import get_motion_pattern, plot_pattern
+    
+    def repeatCamPeriod(tt,aa, aastd, mark=False, **kwargs):
+        # make signal 3 periods
+        T = tt[-1]
+        amax = max(aa)
+        
+        # Repeats, so that you can see whether the signal is continuous
+        aa[0] = 0 # correct for small offset error
+        aa3 = np.asarray(list(aa) * 3)
+        aa3std = np.asarray(list(aastd) * 3)
+        tt3 = []
+        for i in range(0, 3):
+            tt3 += [t + i*T for t in tt]
+        
+        # Plot vertical line to mark a single period
+        if mark == True:
+            ax = plt.gca()
+            ax.plot([0, 0], [0, amax], 'k', ls='-', marker = '_')
+            ax.plot([T,T], [0, amax], 'k', ls='-', marker = '_')
+            ax.plot([2*T, 2*T], [0, amax], 'k', ls='-', marker = '_')
+        
+        return tt3, aa3, aa3std
+    
+    # mean and std per cam 
     pperiodsC1mean, pperiodsC1std = np.nanmean(pperiodsC1bestCut, axis=0), np.nanstd(pperiodsC1bestCut, axis=0)
     pperiodsC2mean, pperiodsC2std = np.nanmean(pperiodsC2bestCut, axis=0), np.nanstd(pperiodsC2bestCut, axis=0)
     pperiodsC3mean, pperiodsC3std = np.nanmean(pperiodsC3bestCut, axis=0), np.nanstd(pperiodsC3bestCut, axis=0)
@@ -532,35 +555,59 @@ def show_period_cam123bestCut_with_bounds(ttperiodmeanC1, ttperiodmeanC2,
     f3 = plt.figure(figsize=(18,5.5), num=fignum); plt.clf()
     ax2 = f3.add_subplot(121)
     
+    # repeat period
+    ttperiodmeanC1rep, pperiodsC1mean, pperiodsC1std = repeatCamPeriod(ttperiodmeanC1,
+                                        pperiodsC1mean,pperiodsC1std)
+    ttperiodmeanC2rep, pperiodsC2mean, pperiodsC2std = repeatCamPeriod(ttperiodmeanC2,
+                                        pperiodsC2mean,pperiodsC2std)
+    ttperiodmeanC3rep, pperiodsC3mean, pperiodsC3std = repeatCamPeriod(ttperiodmeanC3,
+                                        pperiodsC3mean,pperiodsC3std)
+    
+    # add input function simulator; first run gauspatterns.py
+    plot_pattern_plt(*(tt1a,aa1a),label='Input simulator A1', mark=False)
+    
     colors = ['#d7191c','#fdae61','#2c7bb6'] # http://colorbrewer2.org/#type=diverging&scheme=RdYlBu&n=5
-    ax2.plot(ttperiodmeanC1, pperiodsC1mean, '.-', color=colors[0], label='camera reference 1')
-    ax2.fill_between(ttperiodmeanC1, pperiodsC1mean-pperiodsC1std, pperiodsC1mean+pperiodsC1std, 
+    ax2.plot(ttperiodmeanC1rep, pperiodsC1mean, '.-', color=colors[0], label='Output simulator day 1 (camera)')
+    ax2.fill_between(ttperiodmeanC1rep, pperiodsC1mean-pperiodsC1std, pperiodsC1mean+pperiodsC1std, 
                     color=colors[0], alpha=0.2)
-    ax2.plot(ttperiodmeanC2, pperiodsC2mean, '.-', color=colors[1], label='camera reference 2')
-    ax2.fill_between(ttperiodmeanC2, pperiodsC2mean-pperiodsC2std, pperiodsC2mean+pperiodsC2std, 
+    ax2.plot(ttperiodmeanC2rep, pperiodsC2mean, '.-', color=colors[1], label='Output simulator day 2 (camera)')
+    ax2.fill_between(ttperiodmeanC2rep, pperiodsC2mean-pperiodsC2std, pperiodsC2mean+pperiodsC2std, 
                     color=colors[1], alpha=0.3)
-    # ax2.fill_between(ttperiodmeanC2, pperiodsC2q25, pperiodsC2q75, 
+    # ax2.fill_between(ttperiodmeanC2rep, pperiodsC2q25, pperiodsC2q75, 
     #                 color=colors[1], alpha=0.3)
-    ax2.plot(ttperiodmeanC3, pperiodsC3mean, '.-', color=colors[2], label='camera reference 3')
-    ax2.fill_between(ttperiodmeanC3, pperiodsC3mean-pperiodsC3std, pperiodsC3mean+pperiodsC3std, 
+    ax2.plot(ttperiodmeanC3rep, pperiodsC3mean, '.-', color=colors[2], label='Output simulator day 3 (camera)')
+    ax2.fill_between(ttperiodmeanC3rep, pperiodsC3mean-pperiodsC3std, pperiodsC3mean+pperiodsC3std, 
                     color=colors[2], alpha=0.2)
     
     _initaxis([ax2], legend='upper right', xlabel='time (s)', ylabel='position (mm)')
     ax2.set_ylim((0, ylim))
-    ax2.set_xlim(-0.1,max(ttperiodmeanC3)+0.1)
+    # ax2.set_xlim(-0.1,max(ttperiodmeanC3rep)+0.1)
+    xlim = 2.0
+    major_ticks = np.arange(0, xlim, 0.2)  
+    ax2.set_xlim(-0.02,xlim)
+    ax2.set_xticks(major_ticks)
     
     # add plot of average with bounds
     ax3 = f3.add_subplot(122)
-    ax3.plot(ttperiodmeanC123, pperiodsC123mean, '.-', color='k', label='camera reference mean')
-    ax3.fill_between(ttperiodmeanC123, pperiodsC123mean-pperiodsC123std, pperiodsC123mean+pperiodsC123std, 
-                    color='k', alpha=0.2)
+    # add input function simulator
+    plot_pattern_plt(*(tt1a,aa1a),label='Input simulator A1') # (A1: A=1.0, T=1.2)')
+    
+    ttperiodmeanC123rep, pperiodsC123meanRep, pperiodsC123stdRep = repeatCamPeriod(ttperiodmeanC123,
+                                    pperiodsC123mean,pperiodsC123std, mark=True)
+    ax3.plot(ttperiodmeanC123rep, pperiodsC123meanRep, '.-', color='k', label='Output simulator mean (camera)')
+    ax3.fill_between(ttperiodmeanC123rep, pperiodsC123meanRep-pperiodsC123stdRep,     
+                pperiodsC123meanRep+pperiodsC123stdRep, color='k', alpha=0.2)
     
     _initaxis([ax3], legend='upper right', xlabel='time (s)', ylabel='position (mm)')
     ax3.set_ylim((0, ylim))
-    ax3.set_xlim(-0.1,max(ttperiodmeanC123)+0.1)
+    # ax3.set_xlim(-0.1,max(ttperiodmeanC123rep)+0.1)
+    ax3.set_xlim(-0.02,xlim)
+    ax3.set_xticks(major_ticks)
     
+    if save:
+        f3.savefig(os.path.join(dirsave, 'simInputOutput.pdf'), papertype='a0', dpi=300)
+         
     return pperiodsC123mean, pperiodsC123std
-
 
 
 # plot bounds for bestCut periods
@@ -568,7 +615,4 @@ pperiodsC123bestCutMean, pperiodsC123bestCutStd = show_period_cam123bestCut_with
         ttperiodmeanC1, ttperiodmeanC2, 
         ttperiodmeanC3, ttperiodmeanC123, pperiodsC1bestCut, pperiodsC2bestCut, 
         pperiodsC3bestCut, pperiodsC123bestCut, fignum=4)
-
-
-
 
