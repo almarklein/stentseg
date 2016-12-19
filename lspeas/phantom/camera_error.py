@@ -388,7 +388,7 @@ def bestFitPeriods(ttperiodRef, pperiodRef, ttperiodsC, pperiodsC):
             # arrays equal size, cut end from longest
             lendif = len(ppRef) - len(pp)
             if lendif > 0:
-                ppRef = ppRef[:lendif]
+                ppRef = ppRef[:-lendif]
             elif lendif < 0:
                 pp = pp[:lendif]
             # calc errors
