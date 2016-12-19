@@ -108,7 +108,7 @@ def plot_pattern_plt(tt, aa, label='', mark=True, ax=None):
     # Plot the signal and mark a single period
     if ax is None:
         ax = plt.gca()
-    ax.plot(tt3, aa3, 'bo-', alpha=1, label=label)
+    ax.plot(tt3, aa3, 'bo-', ms=3, alpha=1, label=label)
     if mark==True:
         ax.plot([0, 0], [0, amax], 'b', ls='-', marker = '_')
         ax.plot([T,T], [0, amax], 'b', ls='-', marker = '_')
