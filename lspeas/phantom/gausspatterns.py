@@ -63,20 +63,20 @@ def patternToExcel(tt0, aa0, profile='profile0'):
 ## A series
 
 #profile0
-tt0,aa0 = get_motion_pattern(A=1.2, T=0.85714, N=20, top=0.35)
-correctoffset(aa0)
+tt0a,aa0a = get_motion_pattern(A=1.2, T=0.85714, N=20, top=0.35)
+correctoffset(aa0a)
 
 #profile1
-tt1,aa1 = get_motion_pattern(A=1.0, T=1.2, N=20, top=0.35)
-correctoffset(aa1)
+tt1a,aa1a = get_motion_pattern(A=1.0, T=1.2, N=20, top=0.35)
+correctoffset(aa1a)
 
 #profile2
-tt2,aa2 = get_motion_pattern(A=1.35, T=0.6, N=20, top=0.35)
-correctoffset(aa2)
+tt2a,aa2a = get_motion_pattern(A=1.35, T=0.6, N=20, top=0.35)
+correctoffset(aa2a)
 
 #profile3
-tt3,aa3 = get_motion_pattern(A=1.2, T=0.8, N=20, top=0.35)
-correctoffset(aa3)
+tt3a,aa3a = get_motion_pattern(A=1.2, T=0.8, N=20, top=0.35)
+correctoffset(aa3a)
 
 
 
@@ -85,22 +85,22 @@ import visvis as vv
 vv.figure(1); vv.clf();
 
 a0 = vv.subplot(241); vv.title('profile0')
-plot_pattern(*(tt0,aa0))
+plot_pattern(*(tt0a,aa0a))
 a0.SetLimits(rangeX=(-1.2,1.2), rangeY=(-0.1,1.3))
 a0.axis.showGrid = True
 
 a1 = vv.subplot(242); vv.title('profile1')
-plot_pattern(*(tt1,aa1))
+plot_pattern(*(tt1a,aa1a))
 a1.axis.showGrid = True
 a1.SetLimits(rangeX=(-1.2,1.2), rangeY=(-0.1,1.3))
 
 a2 = vv.subplot(243); vv.title('profile2')
-plot_pattern(*(tt2,aa2))
+plot_pattern(*(tt2a,aa2a))
 a2.axis.showGrid = True
 a2.SetLimits(rangeX=(-1.2,1.2), rangeY=(-0.1,1.3))
 
 a3 = vv.subplot(244); vv.title('profile3')
-plot_pattern(*(tt3,aa3))
+plot_pattern(*(tt3a,aa3a))
 a3.axis.showGrid = True
 a3.SetLimits(rangeX=(-1.2,1.2), rangeY=(-0.1,1.3))
 
