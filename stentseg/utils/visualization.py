@@ -6,8 +6,6 @@ import visvis as vv
 from stentseg.utils.picker import pick3d
 from stentseg.stentdirect.stentgraph import create_mesh
 
-def test():
-    print(0)
 
 def remove_stent_from_volume(vol, graph, stripSize=5):
     """ Give the high intensity voxels that belong to the stent a
