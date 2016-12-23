@@ -2,13 +2,14 @@
 
 """
 
+# stentType = 'Anaconda'
 
 ## Store segmentation to disk
 
 # Get graph model
 model = sd._nodes3
 
-# Build struct
+## Build struct
 s2 = vv.ssdf.new()
 # We do not need croprange, but keep for reference
 s2.sampling = s.sampling
