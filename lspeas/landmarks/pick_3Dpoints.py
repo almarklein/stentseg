@@ -15,24 +15,26 @@ from stentseg.stentdirect import StentDirect, getDefaultParams
 from stentseg.utils.visualization import DrawModelAxes
 
 # Select the ssdf basedir
-basedir = select_dir(os.getenv('LSPEAS_BASEDIR', ''),
-                     r'D:\LSPEAS\LSPEAS_ssdf',
-                     r'F:\LSPEAS_ssdf_backup',r'G:\LSPEAS_ssdf_backup')
+basedir = select_dir(r'C:\Users\Freija\Documents\M2.2 stage MST Vaatchirurgie\ssdf')
 
 # Select location storeOutputTemplate EXCEL file
-exceldir = select_dir(r'C:\Users\Maaike\Desktop',
-            r'D:\Profiles\koenradesma\Desktop')
+exceldir = select_dir(r'C:\Users\Freija\Desktop')
 
 # Select dataset to register
-ptcode = 'LSPEAS_009'
+ptcode = 'LSPEAS_008'
 ctcode = 'discharge'
 cropname = 'stent'
-what = 'phases'
-phase = 80 # % or RR interval
+what = 'phases' # 'phases'
+phase = 0 # % or RR interval
 
 # Load static CT image to add as reference
 s = loadvol(basedir, ptcode, ctcode, cropname, what)
-vol = s['vol%i'% phase]
+if what == 'phases':
+    vol = s['vol%i'% phase]
+else:
+    vol = s.vol
+
+vol2 = s.vol10
 
 # # params for ssdf saving
 # stentType = 'manual'
@@ -44,13 +46,30 @@ clim = (0,2500)
 # clim = 250
 showVol = 'MIP' # MIP or ISO or 2D
 
-fig = vv.figure(1); vv.clf()
-fig.position = 8.00, 30.00,  944.00, 1002.00
+#fig = vv.figure(1); vv.clf()
+#fig.position = 8.00, 30.00,  944.00, 1500.00
+#a1 = vv.subplot(131) #
+#label = DrawModelAxes(vol, clim=clim, showVol=showVol, axVis = True)
 
+#vv.xlabel('x (mm)');vv.ylabel('y (mm)');vv.zlabel('z (mm)')
+#vv.title('CT Volume %i%% for LSPEAS %s  -  %s' % (phase, ptcode[7:], ctcode))
+
+#subplots
+fig = vv.figure(1); vv.clf()
+fig.position = 8.00, 30.00,  944.00, 1500.00
+a1 = vv.subplot(131) 
 label = DrawModelAxes(vol, clim=clim, showVol=showVol, axVis = True)
 
 vv.xlabel('x (mm)');vv.ylabel('y (mm)');vv.zlabel('z (mm)')
 vv.title('CT Volume %i%% for LSPEAS %s  -  %s' % (phase, ptcode[7:], ctcode))
+
+a2 = vv.subplot(132) 
+label = DrawModelAxes(vol2, clim=clim, showVol=showVol, axVis = True)
+
+vv.xlabel('x (mm)');vv.ylabel('y (mm)');vv.zlabel('z (mm)')
+vv.title('CT Volume %i%% for LSPEAS %s  -  %s' % (phase, ptcode[7:], ctcode))
+
+a1.camera = a2.camera
 
 # bind rotate view (a, d, z, x active keys)
 fig.eventKeyDown.Bind(lambda event: _utils_GUI.RotateView(event) )
