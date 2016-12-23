@@ -1,6 +1,10 @@
 
-class _Test_Centerline:
+class _Get_Centerline:
     def __init__(self,ptcode,StartPoints,EndPoints,basedir):
+        """ with start and endpoints provided, calculate centerline and save as
+        ssdf in basedir as model and dynamic model
+        """
+        #todo: name of dynamic model is now deforms, should be dynamic   
         #import numpy as np
         import visvis as vv
         import numpy as np

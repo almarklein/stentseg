@@ -41,8 +41,8 @@ StartPoints = [(126.7, 99.8, 64.3), (136.7, 97.8, 66.2), (120.4, 99.8, 60.7)]
 EndPoints = [(119.8, 85.2, 113.4), (128.7, 77.2, 113.7), (104.7, 97.0, 66.6)]
 
 
-from nellix._test_centerline import _Test_Centerline
-foo = _Test_Centerline(ptcode,StartPoints,EndPoints,basedir)
+from nellix._get_centerline import _Get_Centerline
+foo = _Get_Centerline(ptcode,StartPoints,EndPoints,basedir)
 allcenterlines = foo.allcenterlines # PointSet
 print('centerline: done')
 
