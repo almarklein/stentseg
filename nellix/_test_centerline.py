@@ -8,7 +8,8 @@ class _Test_Centerline:
         import copy
         
         from stentseg.utils import PointSet
-        from centerline_Tom import find_centerline, points_from_nodes_in_graph, points_from_mesh, smooth_centerline
+        from stentseg.utils.centerline import (find_centerline, 
+        points_from_nodes_in_graph, points_from_mesh, smooth_centerline)
         from stentseg.utils.datahandling import loadmodel, loadvol
 
         stentnr = len(StartPoints)
@@ -36,7 +37,9 @@ class _Test_Centerline:
         for j in range(stentnr):
             if j == 0 or not start1[j] == ends[j-1]:
                 nodes = stentgraph.StentGraph()
-            # Find main centerline ; regsteps = distance of centerline points from where the start/end point have no affect on centerline finding
+            # Find main centerline
+            # regsteps = distance of centerline points from where the start/end 
+            # point have no affect on centerline finding
             centerline1 = find_centerline(ppp, start1[j], ends[j], step= 1, 
                                           substep=0.5, ndist=20, regfactor=0.8, 
                                           regsteps=5, verbose=True)   
