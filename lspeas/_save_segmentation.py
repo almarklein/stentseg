@@ -58,3 +58,13 @@ s.model = model.pack()
 s.paramsreg = paramsreg
 ssdf.save(os.path.join(basedir, ptcode, filename), s)
 print('saved to disk as {}.'.format(filename) )
+
+
+# option to make independent on number of phases
+# deformkeys = []
+# for key in dir(s):
+#     if key.startswith('deform'):
+#         deformkeys.append(key)
+# deforms = [s[key] for key in deformkeys]
+# deforms = [pirt.DeformationFieldBackward(*fields) for fields in deforms]
+
