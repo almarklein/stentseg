@@ -119,7 +119,9 @@ def get_mask_with_stent_likely_positions(data, th):
     
     # Criterium 1A: voxel must be above th
     # Note that we omit the edges
-    mask[25:-25,25:-25,25:-25] = (data[25:-25,25:-25,25:-25] > th[0]) * 3
+    #mask[25:-25,25:-25,25:-25] = (data[25:-25,25:-25,25:-25] > th[0]) * 3
+    mask[1:-1,1:-1,1:-1] = (data[1:-1,1:-1,1:-1] > th[0]) * 3
+    #mask[:] = (data[:] > th[0]) * 3
     
     cnt = 0
     seed = None
@@ -141,12 +143,12 @@ def get_mask_with_stent_likely_positions(data, th):
             patch[1,1,1] = 0
             themax = patch.max()
             
-            # Criterium 2: must be local max
-            if themax > val:
-                continue
-            # Also ensure at least one neighbour to be *smaller*
-            if (val > patch).sum() == 0:
-                continue
+            # # Criterium 2: must be local max
+            # if themax > val:
+            #     continue
+            # # Also ensure at least one neighbour to be *smaller*
+            # if (val > patch).sum() == 0:
+            #     continue
             
             # Criterium 3: one neighbour must be above th
             if themax <= th[0]:
@@ -158,14 +160,14 @@ def get_mask_with_stent_likely_positions(data, th):
                     print('Seed removed by higher th: ',(z,y,x),'ctvalue=', val)
                     continue
             
-            # Criterium 4: seed must be at least 5 voxels away from other seeds
-            if not seed == None:
-                newseed = np.asarray([z,y,x])
-                v = seeds - newseed
-                d = (v[:,0]**2 + v[:,1]**2 + v[:,2]**2)**0.5 # np.linalg.norm(v) # magnitude
-                if d.min() < 5:
-                    cnt+=1
-                    continue
+            # # Criterium 4: seed must be at least 5 voxels away from other seeds
+            # if not seed is None:
+            #     newseed = np.asarray([z,y,x])
+            #     v = seeds - newseed
+            #     d = (v[:,0]**2 + v[:,1]**2 + v[:,2]**2)**0.5 # np.linalg.norm(v) # magnitude
+            #     if d.min() < 5:
+            #         cnt+=1
+            #         continue
             seed = np.asarray([z,y,x])
             seeds.append(seed)
             
@@ -180,7 +182,4 @@ def get_mask_with_stent_likely_positions(data, th):
     print('Seeds removed by criterium 4: {}'.format(cnt))
     
     return mask
-    
-    
-    
-    
+
