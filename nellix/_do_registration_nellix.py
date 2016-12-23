@@ -15,13 +15,14 @@ import pirt.reg # Python Image Registration Toolkit
 from stentseg.utils.datahandling import select_dir, loadvol, loadmodel
 
 # Select the ssdf basedir
-basedir = select_dir(r'D:\LSPEAS\Nellix_chevas\CHEVAS_SSDF')
+basedir = select_dir(r'D:\LSPEAS\Nellix_chevas\CHEVAS_SSDF',
+                    r'G:\Nellix_chevas\CHEVAS_SSDF_BACKUP')
 
 # Select dataset to register
-cropname = 'stent'
+cropname = 'prox'
 ptcode = 'chevas_01'
 ctcode = '12months'
-what = '2phases'
+what = '10phases'
 
 
 # Load volumes
