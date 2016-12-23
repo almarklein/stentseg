@@ -110,9 +110,11 @@ def loadmodel(basedir, ptcode, ctcode, cropname, modelname='modelavgreg'):
     s = ssdf.load(os.path.join(basedir, ptcode, fname))
     # Turn into graph model
     from stentseg.stentdirect import stentgraph
-    model = stentgraph.StentGraph()
-    model.unpack(s.model)
-    s.model = model
+    for key in dir(s):
+        if key.startswith('model'):
+            model = stentgraph.StentGraph()
+            model.unpack(s[key])
+            s[key] = model
     return s
 
 
