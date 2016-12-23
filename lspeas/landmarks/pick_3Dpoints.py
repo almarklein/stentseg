@@ -15,10 +15,14 @@ from stentseg.stentdirect import StentDirect, getDefaultParams
 from stentseg.utils.visualization import DrawModelAxes
 
 # Select the ssdf basedir
-basedir = select_dir(r'C:\Users\Freija\Documents\M2.2 stage MST Vaatchirurgie\ssdf')
+basedir = select_dir(r'D:\LSPEAS\LSPEAS_ssdf',
+                     r'F:\LSPEAS_ssdf_BACKUP',r'G:\LSPEAS_ssdf_BACKUP', 
+                     r'C:\Users\Freija\Documents\M2.2 stage MST Vaatchirurgie\ssdf')
 
 # Select location storeOutputTemplate EXCEL file
-exceldir = select_dir(r'C:\Users\Freija\Desktop')
+exceldir = select_dir(r'C:\Users\Maaike\Desktop',
+                      r'D:\Profiles\koenradesma\Desktop',
+                      r'C:\Users\Freija\Desktop')
 
 # Select dataset to register
 ptcode = 'LSPEAS_008'
