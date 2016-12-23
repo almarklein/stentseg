@@ -18,14 +18,15 @@ from stentseg.motion.displacement import calculateMeanAmplitude
 # Select the ssdf basedir
 basedir = select_dir(os.getenv('LSPEAS_BASEDIR', ''),
                      r'D:\LSPEAS\LSPEAS_ssdf',
-                     r'F:\LSPEAS_ssdf_BACKUP',r'G:\LSPEAS_ssdf_BACKUP')
+                     r'F:\LSPEAS_ssdf_BACKUP',r'G:\LSPEAS_ssdf_BACKUP', 
+                     r'C:\Users\Freija\Documents\M2.2 stage MST Vaatchirurgie\ssdf')
 
 # Select dataset to register
-ptcode = 'LSPEAS_011'
-ctcode, nr = '6months', 1
+ptcode = 'LSPEAS_008'
+ctcode, nr = 'discharge', 1
 # ptcode = 'QRM_FANTOOM_20160121'
 # ctcode, nr = 'ZB3-75-1.2', 1
-cropname = 'ring'
+cropname = 'stent'
 modelname = 'modelavgreg'
 motion = 'sum'  # amplitude or sum
 dimension = 'xyz'
@@ -34,7 +35,7 @@ clim0  = (0,3000)
 clim2 = (0,4)
 isoTh = 250
 motionPlay = 5, 0.9  # each x ms, a step of x %
-staticref =  'avg7020'# 'avg7020'
+staticref =  'avgreg'# 'avg7020'
 
 
 # Load deformations (forward for mesh)
@@ -123,7 +124,7 @@ meanAmplitudeZ=calculateMeanAmplitude(points,pointsDeforms, dim='z')
 meanAmplitudeY=calculateMeanAmplitude(points,pointsDeforms, dim='y')
 meanAmplitudeX=calculateMeanAmplitude(points,pointsDeforms, dim='x')
 
-# Create deformable mesh
+## Create deformable mesh
 dm = DeformableMesh(a, modelmesh) # in x,y,z
 dm.SetDeforms(*[list(reversed(deform)) for deform in deforms_f]) # from z,y,x to x,y,z
 dm.clim = clim2
