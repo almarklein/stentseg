@@ -11,10 +11,10 @@ from stentseg.apps.record_movie import recordMovie
 # Select the ssdf basedir
 basedir = select_dir(os.getenv('LSPEAS_BASEDIR', ''),
                      r'D:\LSPEAS\LSPEAS_ssdf',
-                     r'F:\LSPEAS_ssdf_backup',r'G:\LSPEAS_ssdf_backup')
+                     r'F:\LSPEAS_ssdf_backup',r'G:\LSPEAS_ssdf_backup', r'C:\Users\Freija\Documents\M2.2 stage MST Vaatchirurgie\ssdf')
 
 # Select dataset to register
-ptcode = 'LSPEAS_011'
+ptcode = 'LSPEAS_008'
 # ctcode, nr = 'ZProfA3', 1
 ctcode, nr = '1month', 2
 cropname = 'stent'
