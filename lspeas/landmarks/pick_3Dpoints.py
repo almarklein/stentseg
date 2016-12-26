@@ -39,6 +39,7 @@ else:
     vol = s.vol
 
 vol2 = s.vol10
+phase2 = 10
 
 # # params for ssdf saving
 # stentType = 'manual'
@@ -50,17 +51,9 @@ clim = (0,2500)
 # clim = 250
 showVol = 'MIP' # MIP or ISO or 2D
 
-#fig = vv.figure(1); vv.clf()
-#fig.position = 8.00, 30.00,  944.00, 1500.00
-#a1 = vv.subplot(131) #
-#label = DrawModelAxes(vol, clim=clim, showVol=showVol, axVis = True)
-
-#vv.xlabel('x (mm)');vv.ylabel('y (mm)');vv.zlabel('z (mm)')
-#vv.title('CT Volume %i%% for LSPEAS %s  -  %s' % (phase, ptcode[7:], ctcode))
-
 #subplots
 fig = vv.figure(1); vv.clf()
-fig.position = 8.00, 30.00,  944.00, 1500.00
+fig.position = 0.00, 29.00,  1680.00, 973.00
 a1 = vv.subplot(131) 
 label = DrawModelAxes(vol, clim=clim, showVol=showVol, axVis = True)
 
@@ -71,7 +64,7 @@ a2 = vv.subplot(132)
 label = DrawModelAxes(vol2, clim=clim, showVol=showVol, axVis = True)
 
 vv.xlabel('x (mm)');vv.ylabel('y (mm)');vv.zlabel('z (mm)')
-vv.title('CT Volume %i%% for LSPEAS %s  -  %s' % (phase, ptcode[7:], ctcode))
+vv.title('CT Volume %i%% for LSPEAS %s  -  %s' % (phase2, ptcode[7:], ctcode))
 
 a1.camera = a2.camera
 
@@ -87,7 +80,8 @@ nr = 0
 def on_key(event): 
     if event.key == vv.KEY_CONTROL:
         global nr
-        coordinates = np.asarray(label2worldcoordinates(label), dtype=np.float32) # x,y,z
+        coordinates = np.asarray(label2worldcoordinates(label), 
+                      dtype=np.float32) # x,y,z
         n2 = tuple(coordinates.flat)
         sd2._nodes1.add_node(n2, number=nr)
         print(nr)
@@ -106,12 +100,14 @@ def on_key(event):
         pp1 = []
         try:
             pp1 = sd2._graphrefined.nodes()
-            pp1.sort(key=lambda x: sd2._graphrefined.node[x]['number']) # sort nodes by click number
+            pp1.sort(key=lambda x: sd2._graphrefined.node[x]['number']) 
+            # sort nodes by click number
             # pp1 = sd2._graphrefined.nodes()
             print('*** refined manual picked were stored ***')
         except AttributeError:
             pp1 = sd2._nodes1.nodes()
-            pp1.sort(key=lambda x: sd2._nodes1.node[x]['number']) # sort nodes by click number
+            pp1.sort(key=lambda x: sd2._nodes1.node[x]['number']) 
+            # sort nodes by click number
             print('*** manual picked were stored ***')
         pp1 = np.asarray(pp1)
         storeCoordinatesToExcel(pp1,exceldir)
