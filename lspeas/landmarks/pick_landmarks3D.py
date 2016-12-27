@@ -13,6 +13,8 @@ from visvis import ssdf
 from stentseg.utils.picker import pick3d, label2worldcoordinates
 from stentseg.stentdirect import StentDirect, getDefaultParams
 from stentseg.utils.visualization import DrawModelAxes
+from lspeas.landmarks.landmarkselection import (saveLandmarkModel, 
+     LandmarkSelector, makeModelDynamic)
 
 # Select the ssdf basedir
 basedir = select_dir(r'D:\LSPEAS\LSPEAS_ssdf',
@@ -23,12 +25,14 @@ basedir = select_dir(r'D:\LSPEAS\LSPEAS_ssdf',
 exceldir = select_dir(r'C:\Users\Maaike\Desktop',
                       r'D:\Profiles\koenradesma\Desktop',
                       r'C:\Users\Freija\Desktop')
+                      
+dirsave = select_dir(r'G:\LSPEAS_ssdf_toPC\landmarks')
 
 # Select dataset to register
 ptcode = 'LSPEAS_008'
 ctcode = 'discharge'
-cropname = 'stent'
-what = 'phases' # 'phases'
+cropname = 'stent' # use stent crops
+what = 'avgreg' # 'phases' or 'avgreg'
 phase = 0 # % or RR interval
 
 # Load static CT image to add as reference
@@ -38,18 +42,44 @@ if what == 'phases':
 else:
     vol = s.vol
 
-vol2 = s.vol10
-phase2 = 10
+# vol2 = s.vol10
+# phase2 = 10
 
-# # params for ssdf saving
-# stentType = 'manual'
-# what += '_manual'
+## Select landmarks in selected vol(s)
+clim = (0,2500)
+showVol = 'MIP' # MIP or ISO or 2D
+# run LandmarkSelector
+ls = LandmarkSelector(ptcode, s, what=what, clim=clim, showVol=showVol, axVis=True)
+
+## show model content
+s_landmarks = ls.s_landmarks
+if what == 'phases': 
+    landmarks0 = s_landmarks.landmarks0 # landmarks0.nodes returns selected points
+    landmarks10 = s_landmarks.landmarks10
+    landmarks20 = s_landmarks.landmarks20
+else:
+    landmarksavgreg = s_landmarks.landmarksavgreg
+    print(landmarksavgreg.nodes)
+
+## Store to disk
+saveLandmarkModel(ls, dirsave, ptcode, ctcode, cropname, what)
+
+## Make landmark model from avgreg dynamic with registration deformation fields
+makeModelDynamic(basedir, ptcode, ctcode, cropname, what='landmarksavgreg', 
+                 savedir=dirsave)
+                 
+## Load dynamic landmark model
+#todo: change loadmodel to work when not a folder per patient
+fname = '%s_%s_%s_%s.ssdf' % (ptcode, ctcode, cropname, 'landmarksavgreg')
+s2 = ssdf.load(os.path.join(dirsave, fname))
+# Turn into graph model
+landmarks = stentgraph.StentGraph()
+landmarks.unpack(s2.landmarksavgreg)
+landmarks.nodes()
+deforms1landmark = model.node[model.nodes()[0]]
+print(deforms1landmark)
 
 ## Visualize and activate picker
-
-clim = (0,2500)
-# clim = 250
-showVol = 'MIP' # MIP or ISO or 2D
 
 #subplots
 fig = vv.figure(1); vv.clf()
