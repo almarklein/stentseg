@@ -7,39 +7,53 @@ from stentseg.utils.visualization import DrawModelAxes
 from stentseg.utils.picker import label2worldcoordinates
 from stentseg.stentdirect import stentgraph
 from visvis import ssdf
+import visvis as vv
+import numpy as np
+from stentseg.utils.datahandling import select_dir, loadvol, loadmodel
 
 
 class LandmarkSelector:
     """ LandmarkSelector. Create MIP by default
     """
-    def __init__(self, ptcode, vol, axes=None, **kwargs):
+    def __init__(self, ptcode, s, what='phases', axes=None, **kwargs):
+        """ s is struct from loadvol
+        """
         
         self.fig = vv.figure(1); vv.clf()
-        self.fig.position = 8.00, 30.00,  944.00, 1500.00
-        self.phase = 0
-        self.vol = vol
+        self.fig.position = 0.00, 29.00,  1680.00, 973.00
+        self.defaultzoom = 0.025 # check current zoom with foo.ax.GetView()
+        self.what = what
+        self.ptcode = ptcode
+        if self.what == 'phases':
+            self.phase = 0
+        else:
+            self.phase = self.what # avgreg
+        # self.vol = s.vol0
+        self.s = s # s with vol(s)
+        self.s_landmarks = vv.ssdf.new()
         self.graph = stentgraph.StentGraph()
-        self.s = vv.ssdf.new()
         self.points = [] # selected points
         self.nodepoints = []
         self.pointindex = 0 # for selected points
-        self.defaultzoom = 0.025 # check current zoom with foo.ax.GetView()
+        try:
+            self.vol = s.vol0 # when phases
+        except AttributeError:
+            self.vol = s.vol # when avgreg
         
-        if axes is None:
-            self.ax = vv.gca()
-        else:
-            self.ax = axes
+        # if axes is None:
+        #     self.ax = vv.gca()
+        # else:
+        #     self.ax = axes
         
-        # a2 = vv.subplot(322)
-        # a3 = vv.subplot(323)
+        self.ax = vv.subplot(121)
+        self.axref = vv.subplot(122)
         
         self.label = DrawModelAxes(self.vol, ax=self.ax) # label of clicked point
-        
-        vv.xlabel('x (mm)');vv.ylabel('y (mm)');vv.zlabel('z (mm)')
-        vv.title('CT Volume %i%% for LSPEAS %s ' % (phase, ptcode[7:]))
-        
-        # create button
-        a_select = vv.Wibject(self.fig)
+        self.axref.bgcolor = 0,0,0
+        self.axref.visible = False
+       
+        # create axis for buttons
+        a_select = vv.Wibject(self.ax) # on self.ax or fig?
         a_select.position = 0.5, 0.7, 0.6, 0.5 # x, y, w, h
         
         # Create text objects
@@ -65,13 +79,13 @@ class LandmarkSelector:
         self._finished = False
         self._butclose = vv.PushButton(a_select)
         self._butclose.position = 10,210
-        self._butclose.text = 'Finish'
+        self._butclose.text = 'Finish/Next'
         
         # Create Reset View button
         self._resetview = False
         self._butresetview = vv.PushButton(a_select)
         self._butresetview.position = 10,180
-        self._butresetview.text = 'Reset Zoom' # back to default zoom
+        self._butresetview.text = 'Default Zoom' # back to default zoom
         
         # bind event handlers
         self.fig.eventClose.Bind(self._onFinish)
@@ -81,7 +95,14 @@ class LandmarkSelector:
         self._butresetview.eventPress.Bind(self._onView)
         
         self._updateTextIndex()
+        self._updateTitle()
         
+    def _updateTitle(self):
+        if self.what == 'phases':
+            vv.title('CT Volume {}% for LSPEAS {} '.format(self.phase, self.ptcode[7:]))
+        else:
+            vv.title('CT Volume {} for LSPEAS {} '.format(self.phase, self.ptcode[7:]))
+    
     def _updateTextIndex(self):
         # show number last selected point
         l = self._labelcurrentIndex
@@ -99,7 +120,7 @@ class LandmarkSelector:
                       dtype=np.float32) # x,y,z
         n = tuple(coordinates.flat)
         self.points.append(n)
-        scale = 0.2
+        scale = 0.25
         alpha = 1
         # create object sphere for point
         view = self.ax.GetView()
@@ -111,19 +132,42 @@ class LandmarkSelector:
         node_point.nr = self.pointindex
         self.ax.SetView(view)
         # store
-        self.graph.add_node(n)
+        self.graph.add_node(n, number=self.pointindex)
         self.nodepoints.append(node_point)
         # update index of total selected points
         self.pointindex += 1
         self._updateTextIndex()
-        # self.updateVisPoints()
     
     def _onFinish(self, event):
         self._finished = True
-        print(self.points) 
-        print('Finish was pressed')
-        return self.points
-        #todo: go to next vol phase
+        print(self.points)
+        phase = self.phase
+        # store model and pack
+        self.s_landmarks['landmarks{}'.format(phase)] = self.graph.pack() # s.vol0 etc
+        if self.what == 'phases':
+            # draw vol and graph of 0% in axref
+            model = stentgraph.StentGraph()
+            model.unpack(self.s_landmarks.landmarks0 )
+            DrawModelAxes(self.s.vol0, model, ax=self.axref)
+            self.axref.visible = True
+            vv.title('CT Volume 0% for LSPEAS {} with selected landmarks'.format(
+                self.ptcode[7:]))
+            # go to next phase 
+            self.phase+= 10 # next phase
+            self.points = [] # empty for new selected points
+            self.nodepoints = []
+            self.pointindex = 0 
+            self.vol = self.s['vol{}'.format(self.phase)] # set new vol
+            self.graph = stentgraph.StentGraph() # new empty graph
+            self._updateTitle()
+            self._updateTextIndex()
+            self.ax.Clear() # clear the axes. Removing all wobjects
+            self.label = DrawModelAxes(self.vol, ax=self.ax)
+            
+            self.ax.camera = self.axref.camera
+        
+        print('Finish/Next was pressed')
+        return
         
     def _onBack(self, event):
         # remove last selected point
@@ -145,11 +189,81 @@ class LandmarkSelector:
         vv.processEvents()
 
 
- 
+def saveLandmarkModel(ls, dirsave, ptcode, ctcode, cropname, what):
+    """
+    """
+    import os
+    
+    s = ls.s
+    s2 = ls.s_landmarks
+    s2.sampling = s.sampling
+    s2.origin = s.origin
+    s2.stenttype = s.stenttype
+    s2.croprange = s.croprange # keep for reference
+    for key in dir(s):
+            if key.startswith('meta'):
+                suffix = key[4:]
+                s2['meta'+suffix] = s['meta'+suffix]
+    s2.what = what
+    s2.params = 'LandmarkSelector'
+    s2.stentType = s.stenttype
+    
+    # Save
+    filename = '%s_%s_%s_%s.ssdf' % (ptcode, ctcode, cropname, 'landmarks'+what)
+    ssdf.save(os.path.join(dirsave, filename), s2)
+    print('saved to disk to {}.'.format(os.path.join(dirsave, filename)) )
 
-# self.a1 = vv.subplot(131) 
+
+def makeModelDynamic(basedir, ptcode, ctcode, cropname, what='landmarksavgreg',
+                     savedir=None):
+    """ Make model dynamic with deforms from registration 
+        (and store/overwrite to disk)
+    """
+    #todo: change in default and merge with branch landmarks?
+    import pirt
+    from stentseg.motion.dynamic import (incorporate_motion_nodes, 
+                                         incorporate_motion_edges)
+    from visvis import ssdf
+    import os
+    
+    if savedir is None:
+        savedir = basedir
+    # Load deforms
+    s = loadvol(basedir, ptcode, ctcode, cropname, 'deforms')
+    deformkeys = []
+    for key in dir(s):
+        if key.startswith('deform'):
+            deformkeys.append(key)
+    deforms = [s[key] for key in deformkeys]
+    deforms = [pirt.DeformationFieldBackward(*fields) for fields in deforms]
+    paramsreg = s.params
+    
+    # Load model where landmarks were stored
+    # s2 = loadmodel(savedir, ptcode, ctcode, cropname, what)
+    fname = '%s_%s_%s_%s.ssdf' % (ptcode, ctcode, cropname, what)
+    s2 = ssdf.load(os.path.join(savedir, fname))
+    # Turn into graph model
+    model = stentgraph.StentGraph()
+    model.unpack(s2[what])
+    
+    # Combine ...
+    incorporate_motion_nodes(model, deforms, s2.origin)
+    incorporate_motion_edges(model, deforms, s2.origin)
+    
+    # Save back
+    filename = '%s_%s_%s_%s.ssdf' % (ptcode, ctcode, cropname, what)
+    s2.model = model.pack()
+    s2.paramsreg = paramsreg
+    ssdf.save(os.path.join(savedir, filename), s2)
+    print('saved to disk to {}.'.format(os.path.join(savedir, filename)) )
 
 
-ls = LandmarkSelector(ptcode, vol, clim=clim, showVol=showVol, axVis=True)
-
-# model = ls.graph # model.nodes() return selected points
+if __name__ == '__main__':
+    
+    ls = LandmarkSelector(ptcode, s, what=what, clim=clim, showVol=showVol, axVis=True)
+    
+    # s_landmarks = ls.s_landmarks # ssdf struct with graphs for landmark models 
+    # model0 = s_landmarks.landmarks0 # model0.nodes returns selected points
+    # model10 = s_landmarks.landmarks10
+    # model20 = s_landmarks.landmarks20
+    # etc.
