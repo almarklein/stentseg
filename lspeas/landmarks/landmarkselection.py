@@ -78,7 +78,7 @@ class LandmarkSelector:
         # Create Close button
         self._finished = False
         self._butclose = vv.PushButton(a_select)
-        self._butclose.position = 10,210
+        self._butclose.position = 10,230
         self._butclose.text = 'Finish/Next'
         
         # Create Reset View button
@@ -125,6 +125,9 @@ class LandmarkSelector:
         # create object sphere for point
         view = self.ax.GetView()
         #todo: plot instead of solidShere? better vis?
+        # graph.Draw(mc='r', mw = 10, lc='y')
+        # point = vv.plot(point[0], point[1], point[2], 
+        #                 mc = 'm', ms = 'o', mw = 8, alpha=0.5)
         node_point = vv.solidSphere(translation = (n), scaling = (scale,scale,scale))
         node_point.faceColor = (0,1,0,alpha) # 'g' but with alpha
         node_point.visible = True
@@ -143,15 +146,9 @@ class LandmarkSelector:
         print(self.points)
         phase = self.phase
         # store model and pack
-        self.s_landmarks['landmarks{}'.format(phase)] = self.graph.pack() # s.vol0 etc
+        storegraph = self.graph #todo: need a copy?
+        self.s_landmarks['landmarks{}'.format(phase)] = storegraph.pack() # s.vol0 etc
         if self.what == 'phases':
-            # draw vol and graph of 0% in axref
-            model = stentgraph.StentGraph()
-            model.unpack(self.s_landmarks.landmarks0 )
-            DrawModelAxes(self.s.vol0, model, ax=self.axref)
-            self.axref.visible = True
-            vv.title('CT Volume 0% for LSPEAS {} with selected landmarks'.format(
-                self.ptcode[7:]))
             # go to next phase 
             self.phase+= 10 # next phase
             self.points = [] # empty for new selected points
@@ -163,6 +160,14 @@ class LandmarkSelector:
             self._updateTextIndex()
             self.ax.Clear() # clear the axes. Removing all wobjects
             self.label = DrawModelAxes(self.vol, ax=self.ax)
+            
+            # draw vol and graph of 0% in axref
+            model = stentgraph.StentGraph()
+            model.unpack(self.s_landmarks.landmarks0 )
+            DrawModelAxes(self.s.vol0, model, ax=self.axref)
+            self.axref.visible = True
+            vv.title('CT Volume 0% for LSPEAS {} with selected landmarks'.format(
+                self.ptcode[7:]))
             
             self.ax.camera = self.axref.camera
         
@@ -176,6 +181,7 @@ class LandmarkSelector:
             self.pointindex += -1
             self._updateTextIndex()
             removednode = self.nodepoints.pop(-1)
+            self.graph.remove_node(removednode.node)
             removednode.Destroy()
         print(self.points)    
         print('Undo was pressed')
