@@ -1,6 +1,7 @@
-""" Manual marker placement in volume MIP
-The voxel with maximum intentity under the cursor when doing a SHIFT+RIGHTCLICK
-is returned
+""" Manual landmark placement in volume MIP's
+Select landmarks by SHIFT+RIGHTCLICK on a high intensity point
+ls is returned that contains structs with graphs of selected landmark points 
+(nodes in graph)
 """
 
 import os
@@ -32,26 +33,22 @@ dirsave = select_dir(r'G:\LSPEAS_ssdf_toPC\landmarks')
 ptcode = 'LSPEAS_008'
 ctcode = 'discharge'
 cropname = 'stent' # use stent crops
-what = 'avgreg' # 'phases' or 'avgreg'
-phase = 0 # % or RR interval
+what = 'phases' # 'phases' or 'avgreg'
 
 # Load static CT image to add as reference
 s = loadvol(basedir, ptcode, ctcode, cropname, what)
-if what == 'phases':
-    vol = s['vol%i'% phase]
-else:
-    vol = s.vol
 
-# vol2 = s.vol10
-# phase2 = 10
 
 ## Select landmarks in selected vol(s)
 clim = (0,2500)
 showVol = 'MIP' # MIP or ISO or 2D
-# run LandmarkSelector
+# run LandmarkSelector to obtain an ssdf called ls with landmarkmodels for each 
+# volume that was analyzed
 ls = LandmarkSelector(ptcode, s, what=what, clim=clim, showVol=showVol, axVis=True)
 
-## show model content
+
+
+## Show contents of ls
 s_landmarks = ls.s_landmarks
 if what == 'phases': 
     landmarks0 = s_landmarks.landmarks0 # landmarks0.nodes returns selected points
@@ -61,88 +58,53 @@ else:
     landmarksavgreg = s_landmarks.landmarksavgreg
     print(landmarksavgreg.nodes)
 
-## Store to disk
+## Store landmark model to disk
 saveLandmarkModel(ls, dirsave, ptcode, ctcode, cropname, what)
+#todo: create button?
 
 ## Make landmark model from avgreg dynamic with registration deformation fields
 makeModelDynamic(basedir, ptcode, ctcode, cropname, what='landmarksavgreg', 
                  savedir=dirsave)
+    
                  
-## Load dynamic landmark model
-#todo: change loadmodel to work when not a folder per patient
+## Load dynamic landmark model avgreg
+#todo: change loadmodel() to work when there is not a folder per patient like now
 fname = '%s_%s_%s_%s.ssdf' % (ptcode, ctcode, cropname, 'landmarksavgreg')
 s2 = ssdf.load(os.path.join(dirsave, fname))
-# Turn into graph model
+# turn into graph model
 landmarks = stentgraph.StentGraph()
 landmarks.unpack(s2.landmarksavgreg)
 landmarks.nodes()
 deforms1landmark = model.node[model.nodes()[0]]
 print(deforms1landmark)
 
-## Visualize and activate picker
 
-#subplots
-fig = vv.figure(1); vv.clf()
-fig.position = 0.00, 29.00,  1680.00, 973.00
-a1 = vv.subplot(131) 
-label = DrawModelAxes(vol, clim=clim, showVol=showVol, axVis = True)
+## Export to excel als je in matlab wil plotten.. 
+# voor plotten in python:
+# matplotlib, visvis, of pyplot
 
-vv.xlabel('x (mm)');vv.ylabel('y (mm)');vv.zlabel('z (mm)')
-vv.title('CT Volume %i%% for LSPEAS %s  -  %s' % (phase, ptcode[7:], ctcode))
+# import matplotlib.pyplot as plt
+# from analysis.utils_analysis import _initaxis
+# f1 = plt.figure(figsize=(16,4.5), num=1); plt.clf()
+# ax0 = f1.add_subplot(121)
+# f1.savefig(os.path.join(dirsave, 'patternexampleproc.pdf'), papertype='a0', dpi=300)
 
-a2 = vv.subplot(132) 
-label = DrawModelAxes(vol2, clim=clim, showVol=showVol, axVis = True)
+#todo: a workflow to visualize/plot outcome
 
-vv.xlabel('x (mm)');vv.ylabel('y (mm)');vv.zlabel('z (mm)')
-vv.title('CT Volume %i%% for LSPEAS %s  -  %s' % (phase2, ptcode[7:], ctcode))
 
-a1.camera = a2.camera
+# van oude code:
 
-# bind rotate view (a, d, z, x active keys)
-fig.eventKeyDown.Bind(lambda event: _utils_GUI.RotateView(event) )
+# Store to EXCEL
+pp1 = sd2._graphrefined.nodes()
+pp1.sort(key=lambda x: sd2._graphrefined.node[x]['number']) 
+# sort nodes by click number
+# pp1 = sd2._graphrefined.nodes()
+print('*** refined manual picked were stored ***')
 
-# instantiate stentdirect segmenter object
-p = getDefaultParams()
-sd2 = StentDirect(vol, p)
-# initialize
-sd2._nodes1 = stentgraph.StentGraph()
-nr = 0
-def on_key(event): 
-    if event.key == vv.KEY_CONTROL:
-        global nr
-        coordinates = np.asarray(label2worldcoordinates(label), 
-                      dtype=np.float32) # x,y,z
-        n2 = tuple(coordinates.flat)
-        sd2._nodes1.add_node(n2, number=nr)
-        print(nr)
-        if nr > 0:
-            for n in list(sd2._nodes1.nodes()):
-                if sd2._nodes1.node[n]['number']== nr-1:
-                    path = [n2,n]
-                    sd2._nodes1.add_edge(n2, n, path = PointSet(np.row_stack(path)) )
-        sd2._nodes1.Draw(mc='r', mw = 10, lc='y')
-        nr += 1
-    if event.key == vv.KEY_ENTER:
-        sd2._graphrefined = sd2._RefinePositions(sd2._nodes1)
-        sd2._graphrefined.Draw(mc='b', mw = 10, lc='g') 
-    if event.key == vv.KEY_ESCAPE:
-        # Store to EXCEL
-        pp1 = []
-        try:
-            pp1 = sd2._graphrefined.nodes()
-            pp1.sort(key=lambda x: sd2._graphrefined.node[x]['number']) 
-            # sort nodes by click number
-            # pp1 = sd2._graphrefined.nodes()
-            print('*** refined manual picked were stored ***')
-        except AttributeError:
-            pp1 = sd2._nodes1.nodes()
-            pp1.sort(key=lambda x: sd2._nodes1.node[x]['number']) 
-            # sort nodes by click number
-            print('*** manual picked were stored ***')
-        pp1 = np.asarray(pp1)
-        storeCoordinatesToExcel(pp1,exceldir)
-        print('---stored to excel {} ---'.format(exceldir) )
-        print('---model can be stored as ssdf in do_segmentation---')
+pp1 = np.asarray(pp1)
+storeCoordinatesToExcel(pp1,exceldir)
+print('---stored to excel {} ---'.format(exceldir) )
+print('---model can be stored as ssdf in do_segmentation---')
 
 
 import xlsxwriter
@@ -179,6 +141,4 @@ def storeCoordinatesToExcel(pp1, exceldir):
     #vv.screenshot(r'C:\Users\Maaike\Desktop\storeScreenshot.png', vv.gcf(), sf=2)
     workbook.close()
 
-# Bind event handlers
-fig.eventKeyDown.Bind(on_key)
 
