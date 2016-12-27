@@ -70,20 +70,19 @@ def DrawModelAxes(vol, graph=None, ax=None, axVis=False, meshColor=None, getLabe
         show_ctvolume(vol, graph, removeStent=False, **kwargs) 
         label = pick3d(vv.gca(), vol)
         return label
-    if graph.number_of_edges() == 0: # get label from picked seeds sd._nodes1 
-        show_ctvolume(vol, graph, **kwargs) 
-        label = pick3d(vv.gca(), vol)
-        if not graph is None:
+    if hasattr(graph, 'number_of_edges'):
+        if graph.number_of_edges() == 0: # get label from picked seeds sd._nodes1 
+            show_ctvolume(vol, graph, **kwargs) 
+            label = pick3d(vv.gca(), vol)
             graph.Draw(mc=mc, lc=lc)
-        return label
-    else:
+            return label
+    else: # graph is not None
         if not meshColor is None:
             bm = create_mesh(graph, 0.6) # (argument is strut tickness)
             m = vv.mesh(bm)
             m.faceColor = meshColor # 'g'
         show_ctvolume(vol, graph, **kwargs)
-        if not graph is None:
-            graph.Draw(mc=mc, lc=lc)
+        graph.Draw(mc=mc, lc=lc)
         if getLabel == True:
             label = pick3d(vv.gca(), vol)
             return label
