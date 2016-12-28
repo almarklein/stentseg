@@ -14,19 +14,19 @@ from stentseg.utils.datahandling import savecropvols, saveaveraged, cropaveraged
 # Select base directory for LOADING DICOM data
 
 # The stentseg datahandling module is agnostic about where the DICOM data is
-dicom_basedir = select_dir(r'F:\LSPEAS_data\ECGgatedCT',
+dicom_basedir = select_dir(r'G:\LSPEAS_data\ECGgatedCT',
                             'D:\LSPEAS\LSPEAS_data_BACKUP\ECGgatedCT')
 
 # Select the ssdf basedir for SAVING
 basedir = select_dir(os.getenv('LSPEAS_BASEDIR', ''),
                      r'D:\LSPEAS\LSPEAS_ssdf',
-                     r'F:\LSPEAS_ssdf_toPC')
+                     r'G:\LSPEAS_ssdf_toPC')
 
 # Params Step A, B, C
 ctcode = '12months'  # 'pre', 'discharge', '1month', '6months', '12months', x_Profx_Water_
-ptcode = 'LSPEAS_025'  # LSPEAS_00x or FANTOOM_xxx
+ptcode = 'LSPEAS_008'  # LSPEAS_00x or FANTOOM_xxx
 stenttype = 'anaconda'         # 'anaconda 'or 'endurant' or 'excluder'
-dicomStructure = 'imaFolder' # 'dcmFolders' or 'imaFolder' or 'imaFolders' - different output data structure
+dicomStructure = 'dcmFolders' # 'dcmFolders' or 'imaFolder' or 'imaFolders' - different output data structure
 
 # Params Step B, C (to save)
 cropnames = ['stent','ring']    # save crops of stent and/or ring
@@ -52,15 +52,19 @@ def readdcm(dirname):
     if not subfolder:
         raise RuntimeError('Could not find any files for given input %s' % ptcode, ctcode)
     
-    vols = []
+    vols = [None]*10
     for volnr in range(0,10): # 0,10 for all phases from 0 up to 90%
         vol = imageio.volread(os.path.join(dirname,subfolder[volnr]), 'dicom')
         # check order of phases; gaat niet altijd goed namelijk, linux fout bv
         perc = '%i%%' % (volnr*10)
-        assert perc in vol.meta.SeriesDescription
-        
-        vols.append(vol)
+        phase = int(vol.meta.SeriesDescription[8])
+        print(phase*10,'%')
+        #assert perc in vol.meta.SeriesDescription
+        #vols.append(vol)
+        vols[phase] = vol 
         assert vol.shape==vols[0].shape
+    for vol in vols:
+        print(vol.meta.SeriesDescription)
     
     return vols  
 
@@ -87,12 +91,14 @@ if dicomStructure == 'imaFolder': #siemens from workstation
         vols2 = [vol2 for vol2 in imageio.get_reader(dicom_basedir, 'DICOM', 'V')]
         vols = []
         for vol in vols2:
-            if vol.ndim == 3 and vol.shape[0]>300 and vol.meta.sampling[0] <= 0.5: # phase should comply with this 
+            if vol.ndim == 3 and vol.shape[0]>300 and vol.meta.sampling[0] <= 0.5: 
+            # phase should comply with this 
                 vols.append(vol) # keep only gated phases
     for i, vol in enumerate(vols):
         print(vol.meta.sampling)
         assert vol.shape == vols[0].shape
-#         assert str(i*10) in vol.meta.SeriesDescription # 0% , 10% etc. # tag does not exist in siemens data anymore
+#         assert str(i*10) in vol.meta.SeriesDescription # 0% , 10% etc. # tag 
+#does not exist in siemens data anymore
 
 if dicomStructure == 'imaFolders': #toshiba from synapse
     if 'FANTOOM' in ptcode:
@@ -103,8 +109,8 @@ if dicomStructure == 'imaFolders': #toshiba from synapse
         subfolders = os.listdir(dicom_basedir)  
     vols = [None]*10
     for i, subfolder in enumerate(subfolders): 
-    # read per folder to avoid PermissionError: [Errno 13] Permission denied with imageio.get_reader and
-    # error on memory>1GB of data with mvolread
+    # read per folder to avoid PermissionError: [Errno 13] Permission denied 
+    #with imageio.get_reader and error on memory>1GB of data with mvolread
         vol = imageio.volread(os.path.join(dicom_basedir,subfolder), 'dicom') 
         index = vol.meta.SeriesDescription.index('%')
         phase = int(vol.meta.SeriesDescription[index-2:index])/10
@@ -114,7 +120,7 @@ if dicomStructure == 'imaFolders': #toshiba from synapse
         print(vol.meta.SeriesDescription)
         assert str(j*10) in vol.meta.SeriesDescription # 0% , 10% etc.
 
-# Step B: Crop and Save SSDF
+## Step B: Crop and Save SSDF
 for cropname in cropnames:
     savecropvols(vols, basedir, ptcode, ctcode, cropname, stenttype)
 
