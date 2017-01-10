@@ -22,15 +22,18 @@ basedir = select_dir(os.getenv('LSPEAS_BASEDIR', ''),
 # Select dataset to register
 # ptcode = 'QRM_FANTOOM_20160121'
 # ctcode = '12months'
-cropnames = ['stent']
-ptcodes = ['LSPEAS_024']
-ctcodes = ['6months']  
+cropnames = ['stentbone']
+ptcodes = ['LSPEAS_005']
+ctcodes = ['discharge']  
 
 for ptcode in ptcodes:
     for ctcode in ctcodes:
         for cropname in cropnames:
             # Load volumes
-            s = loadvol(basedir, ptcode, ctcode, cropname, 'phases')
+            try:
+                s = loadvol(basedir, ptcode, ctcode, cropname, 'phases')
+            except FileNotFoundError:
+                continue
             vols = [s['vol%i'%(i*10)] for i in range(10)]
             
             t0 = time.time()
