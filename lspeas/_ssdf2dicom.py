@@ -31,12 +31,12 @@ if __name__ == "__main__":
     dicom_basedir = select_dir(r'G:\LSPEAS_data\ECGgatedCT',
                             r'D:\LSPEAS\LSPEAS_data_BACKUP\ECGgatedCT')    
     # Select dataset
-    ptcodes = ['LSPEAS_001','LSPEAS_002','LSPEAS_003','LSPEAS_005','LSPEAS_008',
-            'LSPEAS_009','LSPEAS_011','LSPEAS_015','LSPEAS_017','LSPEAS_018',
-            'LSPEAS_019','LSPEAS_020','LSPEAS_021','LSPEAS_022']
-    # ptcodes = ['LSPEAS_024']
+    # ptcodes = ['LSPEAS_001','LSPEAS_002','LSPEAS_003','LSPEAS_005','LSPEAS_008',
+    #         'LSPEAS_009','LSPEAS_011','LSPEAS_015','LSPEAS_017','LSPEAS_018',
+    #         'LSPEAS_019','LSPEAS_020','LSPEAS_021','LSPEAS_022']
+    ptcodes = ['LSPEAS_025']
     ctcode = '12months'
-    cropname = 'stent'
+    cropname = 'stentbone'
     what = 'avgreg' # what volume to save to dicom
     normalizeLim = 3071 # HU
     
@@ -55,7 +55,7 @@ if __name__ == "__main__":
         
         # Load ssdf
         s = loadvol(basedir_load, ptcode, ctcode, cropname, what)
-        if s.vol.max() < 3100:
+        if s.vol.max() < 3200:
             vol = s.vol # no normalization
         else:
             vol = normalize_soft_limit(s.vol,normalizeLim) # normalize
