@@ -76,18 +76,17 @@ def DrawModelAxes(vol, graph=None, ax=None, axVis=False, meshColor=None, getLabe
             label = pick3d(vv.gca(), vol)
             graph.Draw(mc=mc, lc=lc)
             return label
-    else: # graph is not None
-        if not meshColor is None:
-            bm = create_mesh(graph, 0.6) # (argument is strut tickness)
-            m = vv.mesh(bm)
-            m.faceColor = meshColor # 'g'
-        show_ctvolume(vol, graph, **kwargs)
-        graph.Draw(mc=mc, lc=lc)
-        if getLabel == True:
-            label = pick3d(vv.gca(), vol)
-            return label
-        else:
-            pick3d(vv.gca(), vol)
-            return
+    if not meshColor is None:
+        bm = create_mesh(graph, 0.6) # (argument is strut tickness)
+        m = vv.mesh(bm)
+        m.faceColor = meshColor # 'g'
+    show_ctvolume(vol, graph, **kwargs)
+    graph.Draw(mc=mc, lc=lc)
+    if getLabel == True:
+        label = pick3d(vv.gca(), vol)
+        return label
+    else:
+        pick3d(vv.gca(), vol)
+        return
 
 
