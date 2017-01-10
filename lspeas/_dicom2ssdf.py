@@ -23,13 +23,13 @@ basedir = select_dir(os.getenv('LSPEAS_BASEDIR', ''),
                      r'G:\LSPEAS_ssdf_toPC')
 
 # Params Step A, B, C
-ctcode = '12months'  # 'pre', 'discharge', '1month', '6months', '12months', x_Profx_Water_
-ptcode = 'LSPEAS_008'  # LSPEAS_00x or FANTOOM_xxx
+ctcode = 'discharge'  # 'pre', 'discharge', '1month', '6months', '12months', x_Profx_Water_
+ptcode = 'LSPEAS_005'  # LSPEAS_00x or FANTOOM_xxx
 stenttype = 'anaconda'         # 'anaconda 'or 'endurant' or 'excluder'
 dicomStructure = 'dcmFolders' # 'dcmFolders' or 'imaFolder' or 'imaFolders' - different output data structure
 
 # Params Step B, C (to save)
-cropnames = ['stent','ring']    # save crops of stent and/or ring
+cropnames = ['stentbone']    # save crops of stent and/or ring
 # C: start and end phase in cardiac cycle to average (50,90=5 phases;70,20=6)
 phases = 70, 20
 
@@ -60,9 +60,11 @@ def readdcm(dirname):
         phase = int(vol.meta.SeriesDescription[8])
         print(phase*10,'%')
         #assert perc in vol.meta.SeriesDescription
-        #vols.append(vol)
-        vols[phase] = vol 
-        assert vol.shape==vols[0].shape
+        print(vol.meta.ImagePositionPatient)
+        vols[phase] = vol
+        if volnr == 0:
+            indexfirstvol = phase 
+        assert vol.shape==vols[indexfirstvol].shape
     for vol in vols:
         print(vol.meta.SeriesDescription)
     
@@ -95,6 +97,7 @@ if dicomStructure == 'imaFolder': #siemens from workstation
             # phase should comply with this 
                 vols.append(vol) # keep only gated phases
     for i, vol in enumerate(vols):
+        print(vol.meta.ImagePositionPatient)
         print(vol.meta.sampling)
         assert vol.shape == vols[0].shape
 #         assert str(i*10) in vol.meta.SeriesDescription # 0% , 10% etc. # tag 
@@ -139,9 +142,9 @@ for cropname in cropnames:
 phase = 60
 avg = 'avg7020'
 
-# s1 = loadvol(basedir, ptcode, ctcode, 'ring', what ='phases')
-s2 = loadvol(basedir, ptcode, ctcode, 'ring', avg)
-s3 = loadvol(basedir, ptcode, ctcode, 'stent', avg)
+s1 = loadvol(basedir, ptcode, ctcode, cropnames[0], what ='phases')
+s2 = loadvol(basedir, ptcode, ctcode, cropnames[0], avg)
+# s3 = loadvol(basedir, ptcode, ctcode, 'stent', avg)
 
 
 # Visualize and compare
@@ -151,19 +154,20 @@ fig = vv.figure(1); vv.clf()
 fig.position = 0, 22, 1366, 706
 #fig.position = -1413.00, -2.00,  1366.00, 706.00
 a1 = vv.subplot(121)
-# t = vv.volshow(s1['vol%i'% phase], clim=(0, 3000))
-t2 = vv.volshow(s3.vol, clim=(0, 3000), renderStyle='iso')
+t2 = vv.volshow(s1['vol%i'% phase], clim=(0, 3000), renderStyle='iso')
+# t2 = vv.volshow(s3.vol, clim=(0, 3000), renderStyle='iso')
 t2.isoThreshold = 250
 t2.colormap = {'r': [(0.0, 0.0), (0.17727272, 1.0)],
  'g': [(0.0, 0.0), (0.27272728, 1.0)],
  'b': [(0.0, 0.0), (0.34545454, 1.0)],
  'a': [(0.0, 1.0), (1.0, 1.0)]}
-s = vv.volshow2(s3.vol, clim=(-550, 500))
+# s = vv.volshow2(s3.vol, clim=(-550, 500))
+s = vv.volshow2(s1['vol%i'% phase], clim=(-550, 500))
 vv.xlabel('x')
 vv.ylabel('y')
 vv.zlabel('z')
-# vv.title('One volume at %i procent of cardiac cycle' % phase )
-vv.title('Averaged volume %s' % avg ) 
+vv.title('One volume at %i procent of cardiac cycle' % phase )
+# vv.title('Averaged volume %s' % avg ) 
 
 
 a2 = vv.subplot(122)
