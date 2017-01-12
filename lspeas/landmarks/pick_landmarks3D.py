@@ -3,7 +3,6 @@ Select landmarks by SHIFT+RIGHTCLICK on a high intensity point
 ls is returned that contains structs with graphs of selected landmark points 
 (nodes in graph)
 """
-# test
 import os
 import visvis as vv
 from stentseg.utils.datahandling import select_dir, loadvol
