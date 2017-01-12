@@ -54,7 +54,7 @@ class LandmarkSelector:
        
         # create axis for buttons
         a_select = vv.Wibject(self.ax) # on self.ax or fig?
-        a_select.position = 0.5, 0.7, 0.6, 0.5 # x, y, w, h
+        a_select.position = 0.5, 0.6, 0.6, 0.5 # x, y, w, h
         
         # Create text objects
         self._labelcurrentIndexT = vv.Label(a_select) # for text title
