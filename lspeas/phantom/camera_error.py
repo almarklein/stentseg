@@ -1,5 +1,9 @@
 """ Precision of camera reference signal 
 
+For final analysis: read cams+peakdet (first cell), cell 365 with bestFitPeriods,
+cell 484 cutBefore0equalSizePeriods and geTttCamMean, 
+cell 538 show_period_cam123bestCut_with_bounds, set plot_pattern_plt 590, 616 and
+run gausspatterns.py first; continue with alg_vs_cam123mean.py for error
 """
 # add lspeas folder to pythonpath via shell
 from lspeas.phantom.motion_pattern_error import readCameraExcel, rmse, getFreqCamera, resample
@@ -627,11 +631,11 @@ def show_period_cam123bestCut_with_bounds(ttperiodmeanC1, ttperiodmeanC2,
     if save:
         f3.savefig(os.path.join(dirsave, 'simInputOutput.pdf'), papertype='a0', dpi=300)
          
-    return pperiodsC123mean, pperiodsC123std
+    return pperiodsC123mean, pperiodsC123std, pperiodsC123meanRep, pperiodsC123stdRep, ttperiodmeanC123rep
 
 
 # plot bounds for bestCut periods
-pperiodsC123bestCutMean, pperiodsC123bestCutStd = show_period_cam123bestCut_with_bounds(
+pperiodsC123bestCutMean, pperiodsC123bestCutStd, pperiodsC123bestCutMeanRep, pperiodsC123bestCutStdRep, ttperiodmeanC123rep = show_period_cam123bestCut_with_bounds(
         ttperiodmeanC1, ttperiodmeanC2, 
         ttperiodmeanC3, ttperiodmeanC123, pperiodsC1bestCut, pperiodsC2bestCut, 
         pperiodsC3bestCut, pperiodsC123bestCut, fignum=4)
