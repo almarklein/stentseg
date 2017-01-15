@@ -8,7 +8,7 @@ import openpyxl # http://openpyxl.readthedocs.org/
 
 def write_alg_vs_cam_excel(dir, ttCam, ttCamS, ppCam, ppCamS, errorsPos, errorsPosAbs, 
         errorsPosAbsMeanoverall, errorsPosAbsStdoverall, errorsPosAbsMeanOfLandmarks,
-        errorsPosAbsStdOfLandmarks, MAE_errors, rmse_errors, ACam, Alandmarks, Aerror):
+        errorsPosAbsStdOfLandmarks, MAE_errors, rmse_errors, ACam, Alandmarks, Aerrors):
             """
             """
             wb = openpyxl.Workbook()
@@ -65,7 +65,7 @@ def write_alg_vs_cam_excel(dir, ttCam, ttCamS, ppCam, ppCamS, errorsPos, errorsP
             for m, A in enumerate(Alandmarks):
                 ws.cell(row=j+9+3+k+6+i+10, column=m+2).value = A
             ws.cell(row=j+9+3+k+6+i+12, column=1).value = 'Amplitude error for each landmark'
-            for m, Ae in enumerate(Aerror):
+            for m, Ae in enumerate(Aerrors):
                 ws.cell(row=j+9+3+k+6+i+13, column=m+2).value = Ae
                 ws.cell(row=j+9+3+k+6+i+15, column=m+2).value = abs(Ae)
             
@@ -79,9 +79,8 @@ dirsave =  select_dir(r'C:\Users\Maaike\Desktop','D:\Profiles\koenradesma\Deskto
 exceldir = select_dir(r'C:\Users\Maaike\Dropbox\UTdrive\LSPEAS\Analysis\Validation robot', 
                 r'D:\Profiles\koenradesma\Dropbox\UTdrive\LSPEAS\Analysis\Validation robot')
 workbookAlg = '20160624 DATA Toshiba.xlsx'
-samplepoints = 11
 
-saveFig = False
+saveFig = True
 saveErrorsExcel = True
 
 # cam data from camera_error.py
@@ -93,6 +92,7 @@ ppCamStd = pperiodsC123bestCutStd
 ppCamStdRep = pperiodsC123bestCutStdRep
 
 # resample cam signal to match algorithm point interval (n=11; 10 phases)
+samplepoints = 11
 ttCamS, ppCamS = resample(ttCam,ppCam, num=samplepoints)
 
 # read algorithm data of ring-stent points that were analyed
@@ -115,13 +115,13 @@ pz75 = np.percentile(pzall, 75, axis=0)
 
 # plot
 fignum = 5
-# xlim = 1.5
-ylim = (ppall[:,:,2]).max() + 0.3
+xlim = 1.5 # 1.5, 2.1, 1.1
+ylim = (ppall[:,:,2]).max() + 0.3 
 f1 = plt.figure(figsize=(9,5.5), num=fignum); plt.clf()
 ax4 = f1.add_subplot(111)
 
 # plot camera data from camera_error.py
-ax4.plot(ttCamRep, ppCamRep, 'k.-', label='Output simulator mean (camera)')
+ax4.plot(ttCamRep, ppCamRep, 'k.-', label='output simulator mean (camera)')
 ax4.fill_between(ttCamRep, ppCamRep-ppCamStdRep,     
             ppCamRep+ppCamStdRep, color='k', alpha=0.2)
 
@@ -131,24 +131,26 @@ ax4.plot(ttCamS, ppCamS, 'bs', alpha=0.5)
 # plot algorithm ring-stent points that were analyzed
 for i, pp in enumerate(pzall):
     if i == 0:
-        ax4.plot(ttCamS, pp, 'gs-', alpha=0.5, label='Algorithm')
+        ax4.plot(ttCamS, pp, 'gs-', alpha=0.5, label='algorithm')
     else:
          ax4.plot(ttCamS, pp, 'gs-', alpha=0.5)
 
-ax4.plot(ttCamS, pzMean, 'rs-', label='Algorithm mean of ring-stent points')
+ax4.plot(ttCamS, pzMean, 'rs-', label='algorithm mean of ring-stent points')
 ax4.plot(ttCamS, pzMax, 'r--') # dotted line for min and max
 ax4.plot(ttCamS, pzMin, 'r--')
 ax4.fill_between(ttCamS, pzMean-pzStd,     
             pzMean+pzStd, color='r', alpha=0.2)
 
 _initaxis([ax4], legend='upper right', xlabel='time (s)', ylabel='position (mm)')
+major_ticks = np.arange(0, xlim, 0.2)
 ax4.set_ylim((0, ylim))
 ax4.set_xlim(-0.02,xlim)
 ax4.set_xticks(major_ticks)
 
 # store fig
 if saveFig:
-    f1.savefig(os.path.join(dirsave, 'alg_cam123mean.pdf'), papertype='a0', dpi=300)
+    name = 'alg_cam123mean_{}_points.pdf'.format(sheetProfile)
+    f1.savefig(os.path.join(dirsave, name), papertype='a0', dpi=300)
 
 # ============================================
 # errors for pointpositions alg vs cam ref
@@ -191,9 +193,9 @@ print('max abs error for position of points analyzed: ', abs(errorsPos).max())
 
 # plot
 fignum = 6
-ylim = 0.5
-f1 = plt.figure(figsize=(9,11), num=fignum); plt.clf()
-ax5 = f1.add_subplot(211)
+ylim2 = 0.5
+f2 = plt.figure(figsize=(9,11), num=fignum); plt.clf()
+ax5 = f2.add_subplot(211)
 for i, ee in enumerate(errorsPosAbs):
     if i == 0:
         ax5.plot(ttCamS[:-1], ee, 'gs-', alpha=0.5, label='errors per stent point')
@@ -205,14 +207,14 @@ ax5.fill_between(ttCamS[:-1], errorsPosAbsMeanOfLandmarks-errorsPosAbsStdOfLandm
             errorsPosAbsMeanOfLandmarks+errorsPosAbsStdOfLandmarks, color='r', alpha=0.2)
 
 _initaxis([ax5], legend='upper right', xlabel='time (s)', ylabel='abs error (mm)')
-ax5.set_ylim((0, ylim))
+ax5.set_ylim((0, ylim2))
 ax5.set_xlim(-0.02,xlim)
 ax5.set_xticks(major_ticks)
 
 # plot points vs error
-ax6 = f1.add_subplot(212)
+ax6 = f2.add_subplot(212)
 ax6.plot(range(len(MAE_errors)), MAE_errors, 'rs-', label='MAE mean of pointpositions')
-ax6.fill_between(range(len(MAE_errors)), np.asarray(MAE_errors)-np.asarray(errorsStd),     
+ax6.fill_between(range(1,(len(MAE_errors)+1)), np.asarray(MAE_errors)-np.asarray(errorsStd),     
             np.asarray(MAE_errors)+np.asarray(errorsStd), color='y', alpha=0.2)
 _initaxis([ax6], legend='upper right', xlabel='ring points', ylabel='MAE (mm)')
 
@@ -221,13 +223,20 @@ _initaxis([ax6], legend='upper right', xlabel='ring points', ylabel='MAE (mm)')
 # errors for amplitude alg vs cam ref
 ACam = max(ppCam)
 Alandmarks = [max(ppz) for ppz in pzall]
-Aerror = Alandmarks - ACam
+Aerrors = Alandmarks - ACam
+
+fignum = 7
+f3 = plt.figure(figsize=(9,5.5), num=fignum); plt.clf()
+ax7 = f3.add_subplot(111)
+ax7.plot(range(1,(len(Aerrors)+1)), Aerrors, 'rs-', label='amplitude error per stent point')
+_initaxis([ax7], legend='upper right', xlabel='ring points', ylabel='error amplitude (mm)')
+
 
 if saveErrorsExcel:
     write_alg_vs_cam_excel(dirsave, ttCam, ttCamS, ppCam, ppCamS, errorsPos, 
         errorsPosAbs, errorsPosAbsMeanoverall, errorsPosAbsStdoverall, 
         errorsPosAbsMeanOfLandmarks, errorsPosAbsStdOfLandmarks, MAE_errors,
-        rmse_errors, ACam, Alandmarks, Aerror)
+        rmse_errors, ACam, Alandmarks, Aerrors)
     print('******************************')
 
     
