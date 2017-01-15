@@ -24,12 +24,12 @@ if __name__ == '__main__':
     workbookCam2 = '20160215 GRAFIEKEN van camera systeem uit matlab in excel.xlsx' # 22/1/2016
     workbookCam3 = 'Grafieken camera matlab meting 25012016.xlsx' # 25/1/2016
     
-    sheetProfile = 'ZB6'
-    ylim = 2.95 # input + 0.45 marge legend
+    sheetProfile = 'ZA1'
+    ylim = 1.45 # input + 0.45 marge legend
     xlim = (-1.5,7)
-    colSt1 = 'S' # see workbookCams
-    colSt2 = 'W'
-    colSt3 = 'M'
+    colSt1 = 'D' # see workbookCams
+    colSt2 = 'D'
+    colSt3 = 'D'
     
     # read the cam signal with consecutive periods
     f1 = plt.figure(figsize=(18,11), num=1); plt.clf()
@@ -497,7 +497,7 @@ def cutBefore0equalSizePeriods(ttperiodsCbest,pperiodsC):
         if not icut == [0]: # tpoints before t=0
             if icut: # only pass if list not empty, tt=0 does occur
                 pp = pp[icut[0]:]
-        #todo: also cut end after TperiodsCmean??
+        #todo: do not cut before0?
         lengthpp = len(pp)
         maxlength = max(maxlength, lengthpp)
         pperiodsCcut.append(pp)
@@ -588,25 +588,25 @@ def show_period_cam123bestCut_with_bounds(ttperiodmeanC1, ttperiodmeanC2,
                                         pperiodsC3mean,pperiodsC3std)
     
     # add input function simulator; first run gauspatterns.py
-    plot_pattern_plt(*(tt6,aa6),label='Input simulator B6', mark=False)
+    plot_pattern_plt(*(tt1a,aa1a),label='input simulator A1', mark=False)
     
     colors = ['#d7191c','#fdae61','#2c7bb6'] # http://colorbrewer2.org/#type=diverging&scheme=RdYlBu&n=5
-    ax2.plot(ttperiodmeanC1rep, pperiodsC1mean, '.-', color=colors[0], label='Output simulator day 1 (camera)')
+    ax2.plot(ttperiodmeanC1rep, pperiodsC1mean, '.-', color=colors[0], label='output simulator day 1 (camera)')
     ax2.fill_between(ttperiodmeanC1rep, pperiodsC1mean-pperiodsC1std, pperiodsC1mean+pperiodsC1std, 
                     color=colors[0], alpha=0.2)
-    ax2.plot(ttperiodmeanC2rep, pperiodsC2mean, '.-', color=colors[1], label='Output simulator day 2 (camera)')
+    ax2.plot(ttperiodmeanC2rep, pperiodsC2mean, '.-', color=colors[1], label='output simulator day 2 (camera)')
     ax2.fill_between(ttperiodmeanC2rep, pperiodsC2mean-pperiodsC2std, pperiodsC2mean+pperiodsC2std, 
                     color=colors[1], alpha=0.3)
     # ax2.fill_between(ttperiodmeanC2rep, pperiodsC2q25, pperiodsC2q75, 
     #                 color=colors[1], alpha=0.3)
-    ax2.plot(ttperiodmeanC3rep, pperiodsC3mean, '.-', color=colors[2], label='Output simulator day 3 (camera)')
+    ax2.plot(ttperiodmeanC3rep, pperiodsC3mean, '.-', color=colors[2], label='output simulator day 3 (camera)')
     ax2.fill_between(ttperiodmeanC3rep, pperiodsC3mean-pperiodsC3std, pperiodsC3mean+pperiodsC3std, 
                     color=colors[2], alpha=0.2)
     
     _initaxis([ax2], legend='upper right', xlabel='time (s)', ylabel='position (mm)')
     ax2.set_ylim((0, ylim))
     # ax2.set_xlim(-0.1,max(ttperiodmeanC3rep)+0.1)
-    xlim = 1.5
+    xlim = 2.1 # 1.5, 2.1, 1.1
     major_ticks = np.arange(0, xlim, 0.2)  
     ax2.set_xlim(-0.02,xlim)
     ax2.set_xticks(major_ticks)
@@ -614,11 +614,11 @@ def show_period_cam123bestCut_with_bounds(ttperiodmeanC1, ttperiodmeanC2,
     # add plot of average with bounds
     ax3 = f3.add_subplot(122)
     # add input function simulator
-    plot_pattern_plt(*(tt6,aa6),label='Input simulator B6') # (A1: A=1.0, T=1.2)')
+    plot_pattern_plt(*(tt1a,aa1a),label='input simulator A1') # (A1: A=1.0, T=1.2)')
     
     ttperiodmeanC123rep, pperiodsC123meanRep, pperiodsC123stdRep = repeatCamPeriod(ttperiodmeanC123,
                                     pperiodsC123mean,pperiodsC123std, mark=True)
-    ax3.plot(ttperiodmeanC123rep, pperiodsC123meanRep, '.-', color='k', label='Output simulator mean (camera)')
+    ax3.plot(ttperiodmeanC123rep, pperiodsC123meanRep, '.-', color='k', label='output simulator mean (camera)')
     ax3.fill_between(ttperiodmeanC123rep, pperiodsC123meanRep-pperiodsC123stdRep,     
                 pperiodsC123meanRep+pperiodsC123stdRep, color='k', alpha=0.2)
     
