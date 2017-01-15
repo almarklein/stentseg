@@ -62,19 +62,19 @@ def patternToExcel(tt0, aa0, profile='profile0'):
     
 ## A series
 
-#profile0
+#profile0 - ZA0
 tt0a,aa0a = get_motion_pattern(A=1.2, T=0.85714, N=20, top=0.35)
 correctoffset(aa0a)
 
-#profile1
+#profile1 - ZA1
 tt1a,aa1a = get_motion_pattern(A=1.0, T=1.2, N=20, top=0.35)
 correctoffset(aa1a)
 
-#profile2
+#profile2 - ZA2
 tt2a,aa2a = get_motion_pattern(A=1.35, T=0.6, N=20, top=0.35)
 correctoffset(aa2a)
 
-#profile3
+#profile3 - ZA3
 tt3a,aa3a = get_motion_pattern(A=1.2, T=0.8, N=20, top=0.35)
 correctoffset(aa3a)
 
@@ -113,11 +113,11 @@ a3.SetLimits(rangeX=(-1.2,1.2), rangeY=(-0.1,1.3))
 # tt0,aa0 = get_motion_pattern()
 # correctoffset(aa0)
 
-#profile1
+#profile1 - ZB1
 tt1,aa1 = get_motion_pattern(A=0.6, T=0.8, N=20, top=0.35)
 correctoffset(aa1)
 
-#profile2
+#profile2 - ZB2
 tt2,aa2 = get_motion_pattern(A=0.8, T=0.8, N=20, top=0.35)
 correctoffset(aa2)
 
