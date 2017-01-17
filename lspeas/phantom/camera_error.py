@@ -497,7 +497,7 @@ def cutBefore0equalSizePeriods(ttperiodsCbest,pperiodsC):
         if not icut == [0]: # tpoints before t=0
             if icut: # only pass if list not empty, tt=0 does occur
                 pp = pp[icut[0]:]
-        #todo: do not cut before0?
+        #todo: do not cut before0? ; should add Nan if first timepoint is > 0; cut after TperiodsCmean?
         lengthpp = len(pp)
         maxlength = max(maxlength, lengthpp)
         pperiodsCcut.append(pp)
@@ -538,33 +538,33 @@ ttperiodmeanC123 = geTttCamMean(TperiodsC123mean, pperiodsC123bestCut)
 
 ## plot average of each cam with bounds, start periods is best lag position from detected peak
 
+def repeatCamPeriod(tt,aa, aastd, mark=False, **kwargs):
+    # make signal 3 periods
+    T = tt[-1]
+    amax = max(aa)
+    
+    # Repeats, so that you can see whether the signal is continuous
+    aa[0] = 0 # correct for small offset error
+    aa3 = np.asarray(list(aa) * 3)
+    aa3std = np.asarray(list(aastd) * 3)
+    tt3 = []
+    for i in range(0, 3):
+        tt3 += [t + i*T for t in tt]
+    
+    # Plot vertical line to mark a single period
+    if mark == True:
+        ax = plt.gca()
+        ax.plot([0, 0], [0, amax], 'k', ls='-', marker = '_')
+        ax.plot([T,T], [0, amax], 'k', ls='-', marker = '_')
+        ax.plot([2*T, 2*T], [0, amax], 'k', ls='-', marker = '_')
+    
+    return tt3, aa3, aa3std
+
 def show_period_cam123bestCut_with_bounds(ttperiodmeanC1, ttperiodmeanC2, 
         ttperiodmeanC3, ttperiodmeanC123, pperiodsC1bestCut, pperiodsC2bestCut, 
         pperiodsC3bestCut, pperiodsC123bestCut, fignum=4, save=True):
     
     from stentseg.utils.aortamotionpattern import get_motion_pattern, plot_pattern
-    
-    def repeatCamPeriod(tt,aa, aastd, mark=False, **kwargs):
-        # make signal 3 periods
-        T = tt[-1]
-        amax = max(aa)
-        
-        # Repeats, so that you can see whether the signal is continuous
-        aa[0] = 0 # correct for small offset error
-        aa3 = np.asarray(list(aa) * 3)
-        aa3std = np.asarray(list(aastd) * 3)
-        tt3 = []
-        for i in range(0, 3):
-            tt3 += [t + i*T for t in tt]
-        
-        # Plot vertical line to mark a single period
-        if mark == True:
-            ax = plt.gca()
-            ax.plot([0, 0], [0, amax], 'k', ls='-', marker = '_')
-            ax.plot([T,T], [0, amax], 'k', ls='-', marker = '_')
-            ax.plot([2*T, 2*T], [0, amax], 'k', ls='-', marker = '_')
-        
-        return tt3, aa3, aa3std
     
     # mean and std per cam 
     pperiodsC1mean, pperiodsC1std = np.nanmean(pperiodsC1bestCut, axis=0), np.nanstd(pperiodsC1bestCut, axis=0)
