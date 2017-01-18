@@ -80,20 +80,43 @@ exceldir = select_dir(r'C:\Users\Maaike\Dropbox\UTdrive\LSPEAS\Analysis\Validati
                 r'D:\Profiles\koenradesma\Dropbox\UTdrive\LSPEAS\Analysis\Validation robot')
 workbookAlg = '20160624 DATA Toshiba.xlsx'
 
+profile = 'B4'
 saveFig = True
 saveErrorsExcel = True
 
 # cam data from camera_error.py
 ttCam = ttperiodmeanC123
-ttCamRep = ttperiodmeanC123rep
+ttCamRep2 = ttperiodmeanC123rep
 ppCam = pperiodsC123bestCutMean
-ppCamRep = pperiodsC123bestCutMeanRep
+# ppCamRep = pperiodsC123bestCutMeanRep
 ppCamStd = pperiodsC123bestCutStd
-ppCamStdRep = pperiodsC123bestCutStdRep
+# ppCamStdRep = pperiodsC123bestCutStdRep
+
+# shift ppCam, have ppCam period end when position is 0, since alg is 0 at t=T
+zero  = 0.002 # noise limit 0.02
+for i in [-2,-1]: # used lag 2 so check for last 2 points
+    if ppCam[i] < zero: # move to start of signal
+        if i == -2:
+            ppCam = np.insert(ppCam, 0, ppCam[-1])
+            ppCam = np.insert(ppCam, 0, (ppCam[-2]+ppCam[-3])/2)
+            ppCam = ppCam[:i]
+            ppCamStd = np.insert(ppCamStd, 0, ppCamStd[-1])
+            ppCamStd = np.insert(ppCamStd, 0, (ppCamStd[-2]+ppCamStd[-3])/2)
+            ppCamStd = ppCamStd[:-2]
+            break
+        if i == -1:
+            ppCam = np.insert(ppCam, 0, ppCam[-1])
+            ppCam = ppCam[:i]
+            ppCamStd = np.insert(ppCamStd, 0, (ppCamStd[-1]+ppCamStd[-1])/2)
+            ppCamStd = ppCamStd[:-1]
+            break
 
 # resample cam signal to match algorithm point interval (n=11; 10 phases)
 samplepoints = 11
 ttCamS, ppCamS = resample(ttCam,ppCam, num=samplepoints)
+# repeat cam pattern
+ttCamSrep, ppCamSrep = repeatCamPeriod(ttCamS, ppCamS, correct0=False)
+ttCamRep, ppCamRep, ppCamStdRep  = repeatCamPeriod(ttCam, ppCam, ppCamStd, correct0=False)
 
 # read algorithm data of ring-stent points that were analyed
 ppall = readAnalysisExcel(exceldir, workbookAlg, sheetProfile) # reads 8x10x3
@@ -113,35 +136,42 @@ pzStd = np.std(pzall, axis=0)
 pz25 = np.percentile(pzall, 25, axis=0)
 pz75 = np.percentile(pzall, 75, axis=0)
 
+# repeat alg
+pzMean = np.asarray(list(pzMean) * 3)
+pzMin = np.asarray(list(pzMin) * 3)
+pzMax = np.asarray(list(pzMax) * 3)
+pzStd = np.asarray(list(pzStd) * 3)
+
 # plot
 fignum = 5
-xlim = 1.5 # 1.5, 2.1, 1.1
-ylim = (ppall[:,:,2]).max() + 0.3 
+xlim = 2.1 # 1.5, 2.1, 1.1
+ylim = (ppall[:,:,2]).max() + 0.2 
 f1 = plt.figure(figsize=(9,5.5), num=fignum); plt.clf()
 ax4 = f1.add_subplot(111)
 
 # plot camera data from camera_error.py
-ax4.plot(ttCamRep, ppCamRep, 'k.-', label='output simulator mean (camera)')
+ax4.plot(ttCamRep, ppCamRep, 'k.-', label='reference (camera)')
 ax4.fill_between(ttCamRep, ppCamRep-ppCamStdRep,     
             ppCamRep+ppCamStdRep, color='k', alpha=0.2)
 
 # plot cam ref sampled
-ax4.plot(ttCamS, ppCamS, 'bs', alpha=0.5)
+ax4.plot(ttCamSrep, ppCamSrep, 'ks', alpha=0.6)
 
 # plot algorithm ring-stent points that were analyzed
-for i, pp in enumerate(pzall):
-    if i == 0:
-        ax4.plot(ttCamS, pp, 'gs-', alpha=0.5, label='algorithm')
-    else:
-         ax4.plot(ttCamS, pp, 'gs-', alpha=0.5)
+# for i, pp in enumerate(pzall):
+#     if i == 0:
+#         ax4.plot(ttCamS, pp, 'gs-', alpha=0.5, label='algorithm')
+#     else:
+#          ax4.plot(ttCamS, pp, 'gs-', alpha=0.5)
 
-ax4.plot(ttCamS, pzMean, 'rs-', label='algorithm mean of ring-stent points')
-ax4.plot(ttCamS, pzMax, 'r--') # dotted line for min and max
-ax4.plot(ttCamS, pzMin, 'r--')
-ax4.fill_between(ttCamS, pzMean-pzStd,     
+ax4.plot(ttCamSrep, pzMean, 'rs-', alpha=0.6, label='algorithm') #mean of ring-stent points
+ax4.plot(ttCamSrep, pzMax, 'r--') # dotted line for min and max
+ax4.plot(ttCamSrep, pzMin, 'r--')
+ax4.fill_between(ttCamSrep, pzMean-pzStd,     
             pzMean+pzStd, color='r', alpha=0.2)
 
-_initaxis([ax4], legend='upper right', xlabel='time (s)', ylabel='position (mm)')
+_initaxis([ax4], legend='upper right', xlabel='time (s)', ylabel='position (mm)',
+           legendtitle=profile)
 major_ticks = np.arange(0, xlim, 0.2)
 ax4.set_ylim((0, ylim))
 ax4.set_xlim(-0.02,xlim)
@@ -149,7 +179,7 @@ ax4.set_xticks(major_ticks)
 
 # store fig
 if saveFig:
-    name = 'alg_cam123mean_{}_points.pdf'.format(sheetProfile)
+    name = 'alg_cam123mean_{}.pdf'.format(sheetProfile)
     f1.savefig(os.path.join(dirsave, name), papertype='a0', dpi=300)
 
 # ============================================

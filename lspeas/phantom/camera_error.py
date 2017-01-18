@@ -24,12 +24,12 @@ if __name__ == '__main__':
     workbookCam2 = '20160215 GRAFIEKEN van camera systeem uit matlab in excel.xlsx' # 22/1/2016
     workbookCam3 = 'Grafieken camera matlab meting 25012016.xlsx' # 25/1/2016
     
-    sheetProfile = 'ZA1'
-    ylim = 1.45 # input + 0.45 marge legend
+    sheetProfile = 'ZB5'
+    ylim = 2.0 # input + 0.45 marge legend
     xlim = (-1.5,7)
-    colSt1 = 'D' # see workbookCams
-    colSt2 = 'D'
-    colSt3 = 'D'
+    colSt1 = 'Q' # see workbookCams
+    colSt2 = 'N'
+    colSt3 = 'AB'
     
     # read the cam signal with consecutive periods
     f1 = plt.figure(figsize=(18,11), num=1); plt.clf()
@@ -89,13 +89,13 @@ if __name__ == '__main__':
     # plot cam signals and start points periods
     ax0.plot(time_all_cam1t0, pos_all_cam1, 'r.-', alpha=0.5, label='camera reference 1')
     ax0.scatter(ttPeriodStarts1-offsett1, np.array(peakmin1)[:,1], color='green')
-    # ax0.scatter(ttPeriodPeaks1-offsett1, np.array(peakmax1)[:,1], color='k')
+    ax0.scatter(ttPeriodPeaks1-offsett1, np.array(peakmax1)[:,1], color='k')
     ax0.plot(time_all_cam2t0, pos_all_cam2, 'g.-', alpha=0.5, label='camera reference 2')
     ax0.scatter(ttPeriodStarts2-offsett2, np.array(peakmin2)[:,1], color='green')
-    # ax0.scatter(ttPeriodPeaks2-offsett2, np.array(peakmax2)[:,1], color='k')
+    ax0.scatter(ttPeriodPeaks2-offsett2, np.array(peakmax2)[:,1], color='k')
     ax0.plot(time_all_cam3t0, pos_all_cam3, 'b.-', alpha=0.5, label='camera reference 3')
     ax0.scatter(ttPeriodStarts3-offsett3, np.array(peakmin3)[:,1], color='green')
-    # ax0.scatter(ttPeriodPeaks3-offsett3, np.array(peakmax3)[:,1], color='k')
+    ax0.scatter(ttPeriodPeaks3-offsett3, np.array(peakmax3)[:,1], color='k')
     
     _initaxis([ax0], legend='upper right', xlabel='time (s)', ylabel='position (mm)')
     ax0.set_ylim((-0.02, ylim))
@@ -538,15 +538,17 @@ ttperiodmeanC123 = geTttCamMean(TperiodsC123mean, pperiodsC123bestCut)
 
 ## plot average of each cam with bounds, start periods is best lag position from detected peak
 
-def repeatCamPeriod(tt,aa, aastd, mark=False, **kwargs):
+def repeatCamPeriod(tt,aa, aastd=None, mark=False, correct0=True, **kwargs):
     # make signal 3 periods
     T = tt[-1]
     amax = max(aa)
     
     # Repeats, so that you can see whether the signal is continuous
-    aa[0] = 0 # correct for small offset error
+    if correct0 == True:
+        aa[0] = 0 # correct for small offset error
     aa3 = np.asarray(list(aa) * 3)
-    aa3std = np.asarray(list(aastd) * 3)
+    if aastd is not None:
+        aa3std = np.asarray(list(aastd) * 3)
     tt3 = []
     for i in range(0, 3):
         tt3 += [t + i*T for t in tt]
@@ -558,6 +560,8 @@ def repeatCamPeriod(tt,aa, aastd, mark=False, **kwargs):
         ax.plot([T,T], [0, amax], 'k', ls='-', marker = '_')
         ax.plot([2*T, 2*T], [0, amax], 'k', ls='-', marker = '_')
     
+    if aastd is None:
+        return tt3, aa3
     return tt3, aa3, aa3std
 
 def show_period_cam123bestCut_with_bounds(ttperiodmeanC1, ttperiodmeanC2, 
