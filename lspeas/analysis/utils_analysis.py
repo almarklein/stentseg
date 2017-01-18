@@ -597,7 +597,8 @@ class ExcelAnalysis():
         ax1.plot([0, 4], [0, 4], linestyle='-', color='g')
         
     
-def _initaxis(axis, legend=None, xlabel=None, ylabel=None, labelsize=16, axsize=15):
+def _initaxis(axis, legend=None, xlabel=None, ylabel=None, labelsize=16, 
+              axsize=15, legendtitle=None):
     """ Set axis for nice visualization
     axis is list such as [ax] or [ax1, ax2]
     legend = None or provide location 'upper right'
@@ -609,7 +610,10 @@ def _initaxis(axis, legend=None, xlabel=None, ylabel=None, labelsize=16, axsize=
         ax.get_xaxis().tick_bottom()  
         ax.get_yaxis().tick_left()
         if not legend is None:
-            ax.legend(loc=legend)
+            if not legendtitle is None:
+                ax.legend(loc=legend, title=legendtitle)
+            else:
+                ax.legend(loc=legend)
         if not xlabel is None:
             ax.set_xlabel(xlabel, fontsize=labelsize)
         if not ylabel is None:
