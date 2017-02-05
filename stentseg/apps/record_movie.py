@@ -40,7 +40,7 @@ class recordMovie:
     """ Record a figure
     """
     def __init__(self, fig=None, filename=None, dirsave=None, fileformat='avi'):
-        """ fig or axes can be given
+        """ fig or axes can be given. gif swf or avi possible
         """
         # import os
         # import imageio
@@ -68,8 +68,8 @@ class recordMovie:
         self.fig.eventKeyUp.Bind(self.record)
     
     def record(self, event): 
-        """ keys to record, stop, continue save figure
-                      r       t      u      s
+        """ keys to record, stop, continue save  clear r of figure
+                      r       t      u      s     q
         """
         if event.text == 'r':
             self.r = vv.record(self.fig)
@@ -80,6 +80,9 @@ class recordMovie:
         if event.text == 'u':
             self.r.Continue()
             print('continue recording')
+        if event.text == 'q':
+            self.r.Clear()
+            print('clear recording')
         if event.text == 's': # save
             if self.filename is None:
                 now = datetime.datetime.now()
