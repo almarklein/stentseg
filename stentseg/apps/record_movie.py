@@ -36,10 +36,13 @@ import visvis as vv
 import datetime
 from stentseg.utils.datahandling import select_dir
 
+#todo: which framerate to use for save? default uses 10 fps but then faster than real-world
+
 class recordMovie:
     """ Record a figure
     """
-    def __init__(self, fig=None, filename=None, dirsave=None, fileformat='avi'):
+    def __init__(self, fig=None, filename=None, dirsave=None, fileformat='avi',
+                 frameRate=None):
         """ fig or axes can be given. gif swf or avi possible
         """
         # import os
@@ -53,6 +56,7 @@ class recordMovie:
         # self.vv = vv
         # self.datetime = datetime
         self.r = None
+        self.frameRate = frameRate
         if fig is None:
             self.fig = vv.gcf()
         else:
@@ -64,6 +68,7 @@ class recordMovie:
                             r'D:\Profiles\koenradesma\Desktop')
         else:
             self.dirsave = dirsave
+        print('"recordMovie" active, use r, t, u, s, q to rec, stop, continue, save, clear')
         # Bind eventhandler record
         self.fig.eventKeyUp.Bind(self.record)
     
@@ -87,7 +92,11 @@ class recordMovie:
             if self.filename is None:
                 now = datetime.datetime.now()
                 self.filename = now.strftime("%Y-%m-%d_%H.%M")+'_recorded'+'.'+self.fileformat
-            imageio.mimsave(os.path.join(self.dirsave,self.filename), self.r.GetFrames())
+            if self.frameRate is None:
+                imageio.mimsave(os.path.join(self.dirsave,self.filename), self.r.GetFrames())
+            else:
+                imageio.mimsave(os.path.join(self.dirsave,self.filename), self.r.GetFrames(), 
+                fps=self.frameRate)
             print('Recorded movie stored')
     
     # def bindRecord(self):
