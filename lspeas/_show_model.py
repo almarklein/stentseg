@@ -30,12 +30,12 @@ modelname = 'modelavgreg'
 motion = 'amplitude'  # amplitude or sum
 dimension = 'xyz'
 showVol  = 'MIP'  # MIP or ISO or 2D or None
-clim0  = (-100,1000)
+clim0  = (-10,1000) 
 clim2 = (0,1.5)
 isoTh = 250
-motionPlay = 5, 0.9  # each x ms, a step of x %
+motionPlay = 9, 1  # each x ms, a step of perc of T
 staticref =  'avg7020'# 'avg7020'
-meshWithColors = False
+meshWithColors = True
 
 
 # Load deformations (forward for mesh)
@@ -67,7 +67,7 @@ else:
 
 # Load static CT image to add as reference
 try:
-    s2 = loadvol(basedir, ptcode, ctcode, 'stent', staticref)
+    s2 = loadvol(basedir, ptcode, ctcode, 'full', staticref)
 except FileNotFoundError:
     s2 = loadvol(basedir, ptcode, ctcode, 'ring', staticref)
 vol = s2.vol
