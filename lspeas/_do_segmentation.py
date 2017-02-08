@@ -22,10 +22,10 @@ basedir = select_dir(os.getenv('LSPEAS_BASEDIR', ''),
                      r'F:\LSPEAS_ssdf_backup',r'G:\LSPEAS_ssdf_backup')
 
 # Select dataset to register
-ptcode = 'LSPEAS_025'
+ptcode = 'LSPEAS_004'
 ctcode = '12months'
 cropname = 'ring'
-what = 'phases' # avgreg
+what = 'avgreg' # avgreg
 
 # Load volumes
 s = loadvol(basedir, ptcode, ctcode, cropname, what)
@@ -197,7 +197,7 @@ def on_key(event):
         _utils_GUI.vis_spared_edges(sd._nodes3)
         a3.SetView(view)
         print('----DO NOT FORGET TO SAVE THE MODEL TO DISK; RUN _SAVE_SEGMENTATION----')
-    if event.key == vv.KEY_CONTROL and event.key == vv.KEY_SHIFT:
+    if event.text == 'n':
         # add picked seed to nodes_1
         coord2 = get_picked_seed(vol, label)
         sd._nodes1.add_node(tuple(coord2))
@@ -253,7 +253,7 @@ fig.eventKeyDown.Bind(on_key)
 
 # Print user instructions
 print('')
-print('CTRL+SHIFT = add [picked point] (SHIFT+R-click) as seed')
+print('n = add [picked point] (SHIFT+R-click) as seed')
 print('PageDown = remove graph posterior (y-axis) to [picked point] (spine seeds)')
 print('1 = redo step 1; 2 = redo step 2; 3 = redo step 3')
 print('z/x = axis invisible/visible')

@@ -161,5 +161,7 @@ print('ENTER   = restore edge [select 2 nodes]')
 print('DELETE  = remove edge [select 2 ndoes] or pop node [select 1 node]')
 print('ALT     = clean nodes: crossings, pop, corner, tails, clusters<3')
 print('ESCAPE  = FINISH: refine, smooth')
+print('z/x     = axis visible/invisible')
+print('q       = activate "interactiveClusterRemoval"')
 print('')
 
