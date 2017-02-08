@@ -164,6 +164,7 @@ class LandmarkSelector:
             # draw vol and graph of 0% in axref
             model = stentgraph.StentGraph()
             model.unpack(self.s_landmarks.landmarks0 )
+            self.axref.Clear()
             DrawModelAxes(self.s.vol0, model, ax=self.axref)
             self.axref.visible = True
             vv.title('CT Volume 0% for LSPEAS {} with selected landmarks'.format(
