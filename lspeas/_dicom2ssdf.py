@@ -77,8 +77,8 @@ def readdcm(dirname):
 if dicomStructure == 'dcmFolders': #toshiba from workstation
     if 'FANTOOM' in ptcode:
         dicom_basedir = os.path.join(dicom_basedir.replace('ECGgatedCT', ''), ptcode)
-        subfolder = os.listdir(dicom_basedir) # folder UID
-        dicom_basedir = os.path.join(dicom_basedir, subfolder[0],ctcode)
+        # subfolder = os.listdir(dicom_basedir) # folder UID
+        dicom_basedir = os.path.join(dicom_basedir, ctcode)
         vols = readdcm(dicom_basedir)
     else:
         vols = readdcm(os.path.join(dicom_basedir, ptcode, ptcode+'_'+ctcode))

@@ -34,8 +34,8 @@ if __name__ == "__main__":
     # ptcodes = ['LSPEAS_001','LSPEAS_002','LSPEAS_003','LSPEAS_005','LSPEAS_008',
     #         'LSPEAS_009','LSPEAS_011','LSPEAS_015','LSPEAS_017','LSPEAS_018',
     #         'LSPEAS_019','LSPEAS_020','LSPEAS_021','LSPEAS_022']
-    ptcodes = ['LSPEAS_025']
-    ctcode = '12months'
+    ptcodes = ['xx']
+    ctcode = 'xx'
     cropname = 'stentbone'
     what = 'avgreg' # what volume to save to dicom
     normalizeLim = 3071 # HU
@@ -43,8 +43,8 @@ if __name__ == "__main__":
     for ptcode in ptcodes:
         if 'FANTOOM' in ptcode:
             dirname = os.path.join(dicom_basedir.replace('ECGgatedCT', ''), ptcode)
-            subfolder = os.listdir(dirname)
-            dirname = os.path.join(dirname, subfolder[0],ctcode)
+            # subfolder = os.listdir(dirname)
+            dirname = os.path.join(dirname, ctcode)
         else:
             dirname = os.path.join(dicom_basedir, ptcode, ptcode+'_'+ctcode)
         
