@@ -58,6 +58,7 @@ def DrawModelAxes(vol, graph=None, ax=None, axVis=False, meshColor=None, getLabe
     meshColor = None or faceColor e.g. 'g'
     """
     #todo: prevent TypeError: draw() got an unexpected keyword argument mc/lc when not given as required variable
+    #todo: *args voor vol in drawModelAxes of **kwargs[key] in functies hieronder
     if ax is None:
         ax = vv.gca()
     ax.MakeCurrent()
