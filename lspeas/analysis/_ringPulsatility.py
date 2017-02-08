@@ -30,7 +30,7 @@ exceldir = select_dir(r'C:\Users\Maaike\Desktop',
             r'D:\Profiles\koenradesma\Desktop')
 
 # Select dataset to register
-ptcode = 'LSPEAS_025'
+ptcode = 'LSPEAS_004'
 ctcode = '12months'
 cropname = 'ring'
 modelname = 'modelavgreg'
@@ -50,7 +50,7 @@ clim = (0,2500)
 showVol = 'MIP'
 
 fig = vv.figure(); vv.clf()
-fig.position = 968.00, 30.00,  944.00, 1002.00
+fig.position = 9.00, 30.00,  944.00, 1002.00
 a = vv.gca()
 label = DrawModelAxes(vol, model, a, getLabel=True, clim=clim, showVol=showVol, mw=10)
 vv.title('Model for LSPEAS %s  -  %s' % (ptcode[7:], ctcode))
@@ -60,7 +60,7 @@ viewAP = {'zoom': 0.006,'fov': 0.0,
  'roll': 0.0}
 
 # Set view
-a.SetView(viewAP)
+# a.SetView(viewAP)
 
 # Initialize labels
 t0 = vv.Label(a, '\b{Node nr|location}: ', fontSize=11, color='w')
@@ -115,7 +115,7 @@ def on_key(event):
         t4.visible, t5.visible, t6.visible = True, True, True
         for node_point in node_points:
             node_point.visible = True
-    if event.key == vv.KEY_CONTROL and event.key == vv.KEY_SHIFT:
+    if event.text == 'n':
         # add clickable point: point on graph closest to picked point (SHIFT+R-click )
         view = a.GetView()
         for node_point in node_points:
@@ -469,3 +469,9 @@ def storeOutputToExcel(storeOutput, exceldir):
 fig.eventKeyDown.Bind(on_key)
 _utils_GUI.node_points_callbacks(node_points, selected_nodes, t0=t0) # bind callback functions to node points
 
+# Print user instructions
+print('')
+print('n = add node to click from graph point closest to [picked point]')
+print('Enter = get distance between selected nodes and/or midpoints')
+print('Esc = finish analysis, STORE TO EXCEL desktop')
+print('z/x = axis invisible/visible')
