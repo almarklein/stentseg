@@ -1,5 +1,5 @@
 """ Compare algortihm to mean of cam123 (=reference)
-
+continue from camera_error.py
 """
 
 from stentseg.utils.datahandling import select_dir
@@ -81,8 +81,9 @@ exceldir = select_dir(r'C:\Users\Maaike\Dropbox\UTdrive\LSPEAS\Analysis\Validati
 workbookAlg = '20160624 DATA Toshiba.xlsx'
 
 profile = 'B4'
-saveFig = True
-saveErrorsExcel = True
+saveFig = False
+saveErrorsExcel = False
+ylim = 1.7
 
 # cam data from camera_error.py
 ttCam = ttperiodmeanC123
@@ -145,7 +146,7 @@ pzStd = np.asarray(list(pzStd) * 3)
 # plot
 fignum = 5
 xlim = 2.1 # 1.5, 2.1, 1.1
-ylim = (ppall[:,:,2]).max() + 0.2 
+# ylim = (ppall[:,:,2]).max() + 0.3 
 f1 = plt.figure(figsize=(9,5.5), num=fignum); plt.clf()
 ax4 = f1.add_subplot(111)
 
@@ -172,10 +173,12 @@ ax4.fill_between(ttCamSrep, pzMean-pzStd,
 
 _initaxis([ax4], legend='upper right', xlabel='time (s)', ylabel='position (mm)',
            legendtitle=profile)
-major_ticks = np.arange(0, xlim, 0.2)
+major_ticksx = np.arange(0, xlim, 0.2)
+major_ticksy = np.arange(0, ylim, 0.2)
 ax4.set_ylim((0, ylim))
 ax4.set_xlim(-0.02,xlim)
-ax4.set_xticks(major_ticks)
+ax4.set_xticks(major_ticksx)
+ax4.set_yticks(major_ticksy)
 
 # store fig
 if saveFig:
