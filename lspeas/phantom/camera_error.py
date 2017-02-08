@@ -24,12 +24,12 @@ if __name__ == '__main__':
     workbookCam2 = '20160215 GRAFIEKEN van camera systeem uit matlab in excel.xlsx' # 22/1/2016
     workbookCam3 = 'Grafieken camera matlab meting 25012016.xlsx' # 25/1/2016
     
-    sheetProfile = 'ZB5'
+    sheetProfile = 'ZB4'
     ylim = 2.0 # input + 0.45 marge legend
     xlim = (-1.5,7)
-    colSt1 = 'Q' # see workbookCams
-    colSt2 = 'N'
-    colSt3 = 'AB'
+    colSt1 = 'M' # see workbookCams en Errors cam123ref_vs_alg Toshiba.xlsx
+    colSt2 = 'C'
+    colSt3 = 'T'
     
     # read the cam signal with consecutive periods
     f1 = plt.figure(figsize=(18,11), num=1); plt.clf()

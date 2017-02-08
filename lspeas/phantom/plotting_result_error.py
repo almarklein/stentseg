@@ -1,5 +1,5 @@
 """ Plotting result of motion_pattern_error
-
+used for SPIE abstract
 """
 
 
