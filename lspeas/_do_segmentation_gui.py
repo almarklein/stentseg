@@ -30,6 +30,20 @@ DrawModelAxes(vol, sd._nodes3, a3, meshColor=meshColor, clim=clim, showVol=showV
 a2.camera = a3.camera
 
 # Start GUI
+# initialize labels
+t1 = vv.Label(a3, 'Edge ctvalue: ', fontSize=11, color='c')
+t1.position = 0.1, 5, 0.5, 20  # x (frac w), y, w (frac), h
+t1.bgcolor = None
+t1.visible = False
+t2 = vv.Label(a3, 'Edge cost: ', fontSize=11, color='c')
+t2.position = 0.1, 25, 0.5, 20
+t2.bgcolor = None
+t2.visible = False
+t3 = vv.Label(a3, 'Edge length: ', fontSize=11, color='c')
+t3.position = 0.1, 45, 0.5, 20
+t3.bgcolor = None
+t3.visible = False
+
 def on_key(event):
     """KEY commands for user interaction
     UP/DOWN = show/hide nodes
@@ -130,13 +144,20 @@ def on_key(event):
         # ESCAPE will FINISH model
         stentgraph.pop_nodes(sd._nodes3)
         sd._nodes3 = sd._RefinePositions(sd._nodes3) # subpixel locations 
-        stentgraph.smooth_paths(sd._nodes3, 3)
+        stentgraph.smooth_paths(sd._nodes3, 2)
         # Create mesh and visualize
         view = a3.GetView()
         a3.Clear()
         DrawModelAxes(vol, sd._nodes3, a3, meshColor='g', clim=clim, showVol=showVol, lc='w', mw=8, lw=0.2)
         a3.SetView(view)
         print('----DO NOT FORGET TO SAVE THE MODEL TO DISK; RUN _SAVE_SEGMENTATION----')
+    if event.text == 's':
+        # additional smooth
+        stentgraph.smooth_paths(sd._nodes3, 2)
+        view = a3.GetView()
+        a3.Clear()
+        DrawModelAxes(vol, sd._nodes3, a3, meshColor='g', clim=clim, showVol=showVol, lc='w', mw=8, lw=0.2)
+        a3.SetView(view)
     if event.text == 'q':
         view = a3.GetView()
         _utils_GUI.interactiveClusterRemoval(sd._nodes3)
@@ -163,5 +184,6 @@ print('ALT     = clean nodes: crossings, pop, corner, tails, clusters<3')
 print('ESCAPE  = FINISH: refine, smooth')
 print('z/x     = axis visible/invisible')
 print('q       = activate "interactiveClusterRemoval"')
+print('s       = additional smooth')
 print('')
 
