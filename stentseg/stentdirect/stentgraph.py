@@ -438,6 +438,8 @@ def pop_nodes(graph):
             if node not in neighbours:  # cannot pop if we only connect to self
                 if graph.node[node].get('corner', False):
                     pass  # explicitly prevent popping when corner=True
+                elif graph.node[node].get('nopop', False):
+                    pass  # explicitly prevent popping when nopop=True
                 else:
                     _pop_node(graph, node)
 

@@ -23,10 +23,10 @@ basedir = select_dir(os.getenv('LSPEAS_BASEDIR', ''),
 
 # Select dataset to register
 ptcode = 'LSPEAS_004'
-ctcode = '24months'
+ctcode = '12months'
 cropname = 'ring'
 what = 'avgreg' # avgreg
-normalize = False
+normalize = True
 
 # Load volumes
 s = loadvol(basedir, ptcode, ctcode, cropname, what)
@@ -45,9 +45,10 @@ stentType = 'anacondaRing'  # 'anacondaRing' runs modified pruning algorithm in 
 
 p = getDefaultParams(stentType)
 p.seed_threshold = [1100,3000]        # step 1 [lower th] or [lower th, higher th]
-p.mcp_speedFactor = 1000                 # step 2, costToCtValue; lower-> longer paths -- higher-> short paths
-p.mcp_maxCoverageFronts = 0.005         # step 2, base.py; replaces mcp_evolutionThreshold
-p.graph_weakThreshold = 1000             # step 3, stentgraph.prune_very_weak
+p.mcp_speedFactor = 1000                 # step 2, costToCtValue; 
+                                        # lower-> longer paths (costs low) -- higher-> short paths (costs high)
+p.mcp_maxCoverageFronts = 0.003         # step 2, base.py; replaces mcp_evolutionThreshold
+p.graph_weakThreshold = 500             # step 3, stentgraph.prune_very_weak
 p.graph_expectedNumberOfEdges = 3       # step 3, stentgraph.prune_weak
 p.graph_trimLength =  0                 # step 3, stentgraph.prune_tails
 p.graph_minimumClusterSize = 10         # step 3, stentgraph.prune_clusters
@@ -150,7 +151,7 @@ def on_key(event):
     if event.key == vv.KEY_DELETE:
         if len(selected_nodes) == 0:
             # remove node closest to picked point
-            node = _utils_GUI.snap_picked_point_to_graph(sd._nodes1, vol, label)
+            node = _utils_GUI.snap_picked_point_to_graph(sd._nodes1, vol, label, nodesOnly=True)
             sd._nodes1.remove_node(node)
             view = a1.GetView()
             a1.Clear()
@@ -206,6 +207,15 @@ def on_key(event):
         view = a1.GetView()
         point = vv.plot(coord2[0], coord2[1], coord2[2], mc= 'b', ms = 'o', mw= 8, alpha=0.5, axes=a1)
         a1.SetView(view)
+    if event.text == 'p':
+        # protect node from pop
+        pickedNode = _utils_GUI.snap_picked_point_to_graph(sd._nodes1, vol, label, nodesOnly=True) 
+        sd._nodes1.add_node(pickedNode, nopop = True)
+        sd._nodes2.add_node(pickedNode, nopop = True)
+        view = a1.GetView()
+        point = vv.plot(pickedNode[0], pickedNode[1], pickedNode[2], mc= 'y', ms = 'o', mw= 8, alpha=0.5, axes=a1)
+        a1.SetView(view)
+        # now rerun step 3
     if event.key == vv.KEY_PAGEDOWN:
         # remove false seeds posterior to picked point, e.g. for spine
         try:
@@ -256,6 +266,7 @@ fig.eventKeyDown.Bind(on_key)
 # Print user instructions
 print('')
 print('n = add [picked point] (SHIFT+R-click) as seed')
+print('p = protect node closest to picked point in nodes1 axes, no pop')
 print('PageDown = remove graph posterior (y-axis) to [picked point] (spine seeds)')
 print('1 = redo step 1; 2 = redo step 2; 3 = redo step 3')
 print('z/x = axis invisible/visible')

@@ -217,7 +217,7 @@ def vis_spared_edges(graph, radius = 0.6, axes=None):
             line = vv.solidLine(pp, radius = radius)
             line.faceColor = 'y'
 
-def snap_picked_point_to_graph(graph, vol, label):
+def snap_picked_point_to_graph(graph, vol, label, nodesOnly=False):
     """ Snap picked point to graph and return point on graph as tuple
     Also return edge of point and its index on this edge
     """
@@ -225,7 +225,7 @@ def snap_picked_point_to_graph(graph, vol, label):
     
     coord = get_picked_seed(vol, label)
     dist = 10000.0
-    if graph.number_of_edges() == 0: # no edges, get node closest to picked point
+    if nodesOnly == True: # no edges, get node closest to picked point
         for n in sorted(graph.nodes()):
             vec = np.asarray(n) - coord
             d = (vec[0]**2 + vec[1]**2 + vec[2]**2)**0.5
