@@ -23,13 +23,14 @@ basedir = select_dir(os.getenv('LSPEAS_BASEDIR', ''),
 
 # Select dataset to register
 ptcode = 'LSPEAS_004'
-ctcode = '12months'
+ctcode = '24months'
 cropname = 'ring'
 what = 'avgreg' # avgreg
+normalize = False
 
 # Load volumes
 s = loadvol(basedir, ptcode, ctcode, cropname, what)
-vol = s.vol60
+vol = s.vol
 
 # h = vv.hist(vol, bins = 1000)
 # h.color = 'y'
@@ -43,14 +44,14 @@ vol = s.vol60
 stentType = 'anacondaRing'  # 'anacondaRing' runs modified pruning algorithm in Step3
 
 p = getDefaultParams(stentType)
-p.seed_threshold = [1000,3000]        # step 1 [lower th] or [lower th, higher th]
-p.mcp_speedFactor = 150                 # step 2, costToCtValue; lower-> longer paths -- higher-> short paths
-p.mcp_maxCoverageFronts = 0.003         # step 2, base.py; replaces mcp_evolutionThreshold
-p.graph_weakThreshold = 650             # step 3, stentgraph.prune_very_weak
+p.seed_threshold = [1100,3000]        # step 1 [lower th] or [lower th, higher th]
+p.mcp_speedFactor = 1000                 # step 2, costToCtValue; lower-> longer paths -- higher-> short paths
+p.mcp_maxCoverageFronts = 0.005         # step 2, base.py; replaces mcp_evolutionThreshold
+p.graph_weakThreshold = 1000             # step 3, stentgraph.prune_very_weak
 p.graph_expectedNumberOfEdges = 3       # step 3, stentgraph.prune_weak
 p.graph_trimLength =  0                 # step 3, stentgraph.prune_tails
 p.graph_minimumClusterSize = 10         # step 3, stentgraph.prune_clusters
-p.graph_strongThreshold = 3000          # step 3, stentgraph.prune_weak and stentgraph.prune_redundant
+p.graph_strongThreshold = 1500          # step 3, stentgraph.prune_weak and stentgraph.prune_redundant
 p.graph_min_strutlength = 5             # step 3, stent_anaconda prune_redundant
 p.graph_max_strutlength = 13            # step 3, stent_anaconda prune_redundant
 p.graph_angleVector = 5                 # step 3, corner detect
@@ -64,8 +65,9 @@ cleanNodes = True
 
 #todo: compare different datasets. can we apply one range of params when we normalize?
 # Normalize vol to certain limit
-sd.Step0(3071)
-vol = sd._vol
+if normalize:
+    sd.Step0(3071)
+    vol = sd._vol
 
 # Perform the three steps of stentDirect
 sd.Step1()
@@ -202,7 +204,7 @@ def on_key(event):
         coord2 = get_picked_seed(vol, label)
         sd._nodes1.add_node(tuple(coord2))
         view = a1.GetView()
-        point = vv.plot(coord2[0], coord2[1], coord2[2], mc= 'b', ms = 'o', mw= 8, alpha=0.5)
+        point = vv.plot(coord2[0], coord2[1], coord2[2], mc= 'b', ms = 'o', mw= 8, alpha=0.5, axes=a1)
         a1.SetView(view)
     if event.key == vv.KEY_PAGEDOWN:
         # remove false seeds posterior to picked point, e.g. for spine
@@ -221,7 +223,7 @@ def on_key(event):
         label = DrawModelAxes(vol, sd._nodes1, a1, clim=clim, showVol=showVol) # lc, mc
         a1.SetView(view)
     if event.text == '2':
-        # redo step2
+        # redo step2 and 3
         view = a2.GetView()
         a2.Clear(); a3.Clear()
         sd._params = p
