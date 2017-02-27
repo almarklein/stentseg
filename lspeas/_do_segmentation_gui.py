@@ -7,7 +7,8 @@ from stentseg.stentdirect.stentgraph import create_mesh
 ## Rerun step 3 without removing nodes
 
 sd.Step3(cleanNodes=False) # False when using GUI with restore: clean nodes and smooth after correct/restore
-
+p.graph_minimumClusterSize = 1
+sd._params = p
 
 ## Visualize with GUI
 
@@ -20,7 +21,7 @@ fig.position = 8.00, 30.00,  1267.00, 1002.00
 
 # Show volume and graph
 a2 = vv.subplot(121)
-DrawModelAxes(vol, sd._nodes2, a2, clim=clim, showVol=showVol)
+label = DrawModelAxes(vol, sd._nodes2, a2, clim=clim, showVol=showVol, getLabel=True)
 
 # Show cleaned up graph
 a3 = vv.subplot(122)
@@ -32,15 +33,15 @@ a2.camera = a3.camera
 # Start GUI
 # initialize labels
 t1 = vv.Label(a3, 'Edge ctvalue: ', fontSize=11, color='c')
-t1.position = 0.1, 5, 0.5, 20  # x (frac w), y, w (frac), h
+t1.position = 0.1, 15, 0.5, 20  # x (frac w), y, w (frac), h
 t1.bgcolor = None
 t1.visible = False
 t2 = vv.Label(a3, 'Edge cost: ', fontSize=11, color='c')
-t2.position = 0.1, 25, 0.5, 20
+t2.position = 0.1, 35, 0.5, 20
 t2.bgcolor = None
 t2.visible = False
 t3 = vv.Label(a3, 'Edge length: ', fontSize=11, color='c')
-t3.position = 0.1, 45, 0.5, 20
+t3.position = 0.1, 55, 0.5, 20
 t3.bgcolor = None
 t3.visible = False
 
@@ -151,6 +152,16 @@ def on_key(event):
         DrawModelAxes(vol, sd._nodes3, a3, meshColor='g', clim=clim, showVol=showVol, lc='w', mw=8, lw=0.2)
         a3.SetView(view)
         print('----DO NOT FORGET TO SAVE THE MODEL TO DISK; RUN _SAVE_SEGMENTATION----')
+    if event.text == 'r':
+        # restore this node
+        pickedNode = _utils_GUI.snap_picked_point_to_graph(sd._nodes2, vol, label, nodesOnly=True) # x,y,z
+        sd._nodes3.add_node(pickedNode)
+        view = a3.GetView()
+        a3.Clear()
+        DrawModelAxes(vol, sd._nodes3, a3, clim=clim, showVol=showVol, mw=8, lw=0.2)
+        node_points = _utils_GUI.interactive_node_points(sd._nodes3, scale=0.6)
+        _utils_GUI.node_points_callbacks(node_points, selected_nodes, pick=False)
+        a3.SetView(view)
     if event.text == 's':
         # additional smooth
         stentgraph.smooth_paths(sd._nodes3, 2)
@@ -185,5 +196,6 @@ print('ESCAPE  = FINISH: refine, smooth')
 print('z/x     = axis visible/invisible')
 print('q       = activate "interactiveClusterRemoval"')
 print('s       = additional smooth')
+print('r       = restore node in nodes3, node closest to picked point nodes 2')
 print('')
 
