@@ -133,7 +133,7 @@ def remove_nodes_by_selected_point(graph, vol, axes, label, clim, dim=1, **kwarg
     graph.remove_nodes_from(tuple(map(tuple, falseseeds)) ) # use map to convert to tuples
     view = axes.GetView()
     axes.Clear()
-    DrawModelAxes(graph, vol, axes, clim=clim, **kwargs)
+    DrawModelAxes(vol, graph, ax=axes, clim=clim, **kwargs)
     axes.SetView(view)
     if graph.number_of_edges() == 0: # get label from picked seeds sd._nodes1 
         label = pick3d(vv.gca(), vol)
