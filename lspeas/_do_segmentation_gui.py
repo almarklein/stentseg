@@ -191,12 +191,7 @@ def on_key(event):
         view = a3.GetView()
         _utils_GUI.interactiveClusterRemoval(sd._nodes3)
         a3.SetView(view)
-    if event.text == 'z':
-        # axes not visible
-        _utils_GUI.AxesVis((a1,a2,a3))
-    if event.text == 'x':
-        # exes visible
-        _utils_GUI.AxesVis((a1,a2,a3), axVis=True)
+
 
 #Add clickable nodes
 node_points = _utils_GUI.interactive_node_points(sd._nodes3, scale=0.6)
@@ -204,6 +199,7 @@ node_points = _utils_GUI.interactive_node_points(sd._nodes3, scale=0.6)
 selected_nodes = list()
 # Bind event handlers
 fig.eventKeyDown.Bind(on_key)
+fig.eventKeyDown.Bind(lambda event: _utils_GUI.RotateView(event, [a2,a3]) )
 _utils_GUI.node_points_callbacks(node_points, selected_nodes, pick=False)
 print('')
 print('UP/DOWN = show/hide nodes')
@@ -211,10 +207,10 @@ print('ENTER   = restore edge [select 2 nodes]')
 print('DELETE  = remove edge [select 2 ndoes] or pop node [select 1 node]')
 print('ALT     = clean nodes: crossings, pop, corner, tails, clusters<3')
 print('ESCAPE  = FINISH: refine, smooth')
-print('z/x     = axis visible/invisible')
+print('z/x/a/d = axis invisible/visible/rotate')
 print('q       = activate "interactiveClusterRemoval"')
 print('s       = additional smooth')
-print('e       = smooth selected edge)
+print('e       = smooth selected edge')
 print('r       = restore node in nodes3, node closest to picked point nodes 2')
 print('')
 

@@ -22,11 +22,11 @@ basedir = select_dir(os.getenv('LSPEAS_BASEDIR', ''),
                      r'F:\LSPEAS_ssdf_backup',r'G:\LSPEAS_ssdf_backup')
 
 # Select dataset to register
-ptcode = 'LSPEAS_004'
-ctcode = '12months'
+ptcode = 'LSPEAS_017'
+ctcode = '24months'
 cropname = 'ring'
 what = 'avgreg' # avgreg
-normalize = True
+normalize = False
 
 # Load volumes
 s = loadvol(basedir, ptcode, ctcode, cropname, what)
@@ -41,18 +41,18 @@ vol = s.vol
 # vv.gca().daspect = 1,1,-1
 
 ## Initialize segmentation parameters
-stentType = 'anacondaRing'  # 'anacondaRing' runs modified pruning algorithm in Step3
+stentType = 'anacondaRing'  # 'anacondaRing' runs modified pruning algorithm in Step3 and crossings _Step3_iter
 
 p = getDefaultParams(stentType)
-p.seed_threshold = [1100,3000]        # step 1 [lower th] or [lower th, higher th]
-p.mcp_speedFactor = 1000                 # step 2, costToCtValue; 
+p.seed_threshold = [1000,3000]        # step 1 [lower th] or [lower th, higher th]
+p.mcp_speedFactor = 750                 # step 2, costToCtValue; 
                                         # lower-> longer paths (costs low) -- higher-> short paths (costs high)
-p.mcp_maxCoverageFronts = 0.003         # step 2, base.py; replaces mcp_evolutionThreshold
+p.mcp_maxCoverageFronts = 0.004         # step 2, base.py; replaces mcp_evolutionThreshold
 p.graph_weakThreshold = 500             # step 3, stentgraph.prune_very_weak
 p.graph_expectedNumberOfEdges = 3       # step 3, stentgraph.prune_weak
 p.graph_trimLength =  0                 # step 3, stentgraph.prune_tails
-p.graph_minimumClusterSize = 10         # step 3, stentgraph.prune_clusters
-p.graph_strongThreshold = 1500          # step 3, stentgraph.prune_weak and stentgraph.prune_redundant
+p.graph_minimumClusterSize = 7         # step 3, stentgraph.prune_clusters
+p.graph_strongThreshold = 3000          # step 3, stentgraph.prune_weak and stentgraph.prune_redundant
 p.graph_min_strutlength = 5             # step 3, stent_anaconda prune_redundant
 p.graph_max_strutlength = 13            # step 3, stent_anaconda prune_redundant
 p.graph_angleVector = 5                 # step 3, corner detect
@@ -251,17 +251,13 @@ def on_key(event):
         node_points = _utils_GUI.interactive_node_points(sd._nodes3, scale=0.6)
         _utils_GUI.node_points_callbacks(node_points, selected_nodes, pick=False)
         a3.SetView(view)
-    if event.text == 'z':
-        # axes not visible
-        _utils_GUI.AxesVis((a1,a2,a3))
-    if event.text == 'x':
-        # axes visible
-        _utils_GUI.AxesVis((a1,a2,a3), axVis=True)
+
 
 # Init list for nodes
 selected_nodes = list()
 # Bind event handlers
 fig.eventKeyDown.Bind(on_key)
+fig.eventKeyDown.Bind(lambda event: _utils_GUI.RotateView(event, [a1,a2,a3]) )
 
 # Print user instructions
 print('')
@@ -269,7 +265,7 @@ print('n = add [picked point] (SHIFT+R-click) as seed')
 print('p = protect node closest to picked point in nodes1 axes, no pop')
 print('PageDown = remove graph posterior (y-axis) to [picked point] (spine seeds)')
 print('1 = redo step 1; 2 = redo step 2; 3 = redo step 3')
-print('z/x = axis invisible/visible')
+print('z/x/a/d = axis invisible/visible/rotate')
 
 if guiRemove==True:
         # Add clickable nodes to remove edges
