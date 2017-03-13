@@ -7,8 +7,8 @@ from stentseg.stentdirect.stentgraph import create_mesh
 ## Rerun step 3 without removing nodes
 
 sd.Step3(cleanNodes=False) # False when using GUI with restore: clean nodes and smooth after correct/restore
-p.graph_minimumClusterSize = 1
-sd._params = p
+# p.graph_minimumClusterSize = 1
+# sd._params = p
 
 ## Visualize with GUI
 
@@ -169,6 +169,24 @@ def on_key(event):
         a3.Clear()
         DrawModelAxes(vol, sd._nodes3, a3, meshColor='g', clim=clim, showVol=showVol, lc='w', mw=8, lw=0.2)
         a3.SetView(view)
+    if event.text == 'e':
+        # smooth selected edge
+        edgegraph = stentgraph.StentGraph() #empty graph
+        select1 = selected_nodes[0].node
+        select2 = selected_nodes[1].node
+        edge_info = sd._nodes3.edge[select1][select2]
+        edgegraph.add_edge(select1, select2,edge_info)
+        stentgraph.smooth_paths(edgegraph, 2)
+        sd._nodes3.edge[select1][select2]['path'] = edgegraph.edge[select1][select2]['path']
+        selected_nodes[1].faceColor = 'b'
+        selected_nodes[0].faceColor = 'b'
+        selected_nodes.clear()
+        view = a3.GetView()
+        a3.Clear()
+        DrawModelAxes(vol, sd._nodes3, a3, clim=clim, showVol=showVol, mw=8, lw=0.2)
+        node_points = _utils_GUI.interactive_node_points(sd._nodes3, scale=0.6)
+        _utils_GUI.node_points_callbacks(node_points, selected_nodes, pick=False)
+        a3.SetView(view)
     if event.text == 'q':
         view = a3.GetView()
         _utils_GUI.interactiveClusterRemoval(sd._nodes3)
@@ -196,6 +214,7 @@ print('ESCAPE  = FINISH: refine, smooth')
 print('z/x     = axis visible/invisible')
 print('q       = activate "interactiveClusterRemoval"')
 print('s       = additional smooth')
+print('e       = smooth selected edge)
 print('r       = restore node in nodes3, node closest to picked point nodes 2')
 print('')
 
