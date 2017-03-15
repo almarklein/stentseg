@@ -14,15 +14,16 @@ from stentseg.motion.vis import create_mesh_with_abs_displacement
 import pirt
 import numpy as np
 from stentseg.utils import _utils_GUI
+from stentseg.utils.picker import pick3d
 
 # Select the ssdf basedir
 basedir = select_dir(os.getenv('LSPEAS_BASEDIR', ''),
-                     r'D:\LSPEAS\LSPEAS_ssdf', r'G:\LSPEAS_ssdf_backup')
+                     r'D:\LSPEAS\LSPEAS_ssdf', r'F:\LSPEAS_ssdf_backup')
 
 # Select dataset to register
-ptcode = 'LSPEAS_008'
-codes = ctcode1, ctcode2, ctcode3 = 'discharge', '6months', '12months'
-# codes = ctcode1, ctcode2 = '6months', '12months'
+ptcode = 'LSPEAS_021'
+codes = ctcode1, ctcode2, ctcode3 = '1month', '6months', '12months'
+# codes = ctcode1, ctcode2 = 'discharge', '12months'
 # codes = ctcode1 = 'discharge'
 cropname = 'ring'
 modelname = 'modelavgreg'
@@ -66,8 +67,8 @@ if len(codes) == 3:
 f = vv.figure(1); vv.clf()
 f.position = 0.00, 22.00,  1920.00, 1018.00
 
-clim = (0,2500)
-# clim = -550,500
+# clim = (0,2500)
+clim = -550,500
 clim2 = (0,1.5)
 isoTh = 250
 
@@ -82,6 +83,7 @@ else:
 if codes==ctcode1 :
     a = vv.subplot(121)
     t = show_ctvolume(vol1, s1.model, showVol=showVol, clim=clim, isoTh=isoTh, removeStent=True)
+    label = pick3d(vv.gca(), vol1)
     if drawModelLines == True:
         s1.model.Draw(mc='b', mw = mw, lc=lc)
     if drawMesh == True:
@@ -105,6 +107,7 @@ if codes==ctcode1 :
 if len(codes) == 2:
     a1 = vv.subplot(121)
     t = show_ctvolume(vol1, s1.model, showVol=showVol, clim=clim, isoTh=isoTh, removeStent=True)
+    label = pick3d(vv.gca(), vol1)
     if drawModelLines == True:
         s1.model.Draw(mc='b', mw = mw, lc=lc)
     if drawMesh == True:
@@ -117,6 +120,7 @@ if len(codes) == 2:
     vv.title('Model for LSPEAS %s  -  %s' % (ptcode[7:], ctcode1))
     a2 = vv.subplot(122)
     t = show_ctvolume(vol2, s2.model, showVol=showVol, clim=clim, isoTh=isoTh, removeStent=True)
+    label = pick3d(vv.gca(), vol2)
     if drawModelLines == True:
         s2.model.Draw(mc='b', mw = mw, lc=lc)
     if drawMesh == True:
@@ -136,6 +140,7 @@ if len(codes) == 2:
 if len(codes) == 3:
     a1 = vv.subplot(131)
     t = show_ctvolume(vol1, s1.model, showVol=showVol, clim=clim, isoTh=isoTh, removeStent=True)
+    label = pick3d(vv.gca(), vol1)
     if drawModelLines == True:
         s1.model.Draw(mc='b', mw = mw, lc=lc)
     if drawMesh == True:
@@ -148,6 +153,7 @@ if len(codes) == 3:
     vv.title('Model for LSPEAS %s  -  %s' % (ptcode[7:], ctcode1))
     a2 = vv.subplot(132)
     t = show_ctvolume(vol2, s2.model, showVol=showVol, clim=clim, isoTh=isoTh, removeStent=True)
+    label = pick3d(vv.gca(), vol2)
     if drawModelLines == True:
         s2.model.Draw(mc='b', mw = mw, lc=lc)
     if drawMesh == True:
@@ -160,6 +166,7 @@ if len(codes) == 3:
     vv.title('Model for LSPEAS %s  -  %s' % (ptcode[7:], ctcode2))
     a3 = vv.subplot(133)
     t = show_ctvolume(vol3, s3.model, showVol=showVol, clim=clim, isoTh=isoTh, removeStent=True)
+    label = pick3d(vv.gca(), vol3)
     if drawModelLines == True:
         s3.model.Draw(mc='b', mw = mw, lc=lc)
     if drawMesh == True:
