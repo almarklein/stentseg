@@ -140,7 +140,7 @@ if __name__ == "__main__":
             ds.SeriesDescription = cropname+' '+what+' '+ctcode
             # adjust slice z-position
             # note: in world coordinates the z-position is decreasing to match the "patient orientation"
-            ds.ImagePositionPatient[2] =  -(s.vol.origin[0] + (instance * s.vol.sampling[0])) # z-flipped, feet first
+            ds.ImagePositionPatient[2] =  -(s.vol.origin[0] + (instance * s.vol.sampling[0])) # z-flipped
             ds.ImagePositionPatient[1] = s.vol.origin[1] # y
             ds.ImagePositionPatient[0] = s.vol.origin[2] # x
             ds.InstanceNumber = instance + 1 # start at 1
