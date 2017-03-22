@@ -14,24 +14,27 @@ from stentseg.utils.datahandling import savecropvols, saveaveraged, cropaveraged
 # Select base directory for LOADING DICOM data
 
 # The stentseg datahandling module is agnostic about where the DICOM data is
-dicom_basedir = select_dir(r'G:\LSPEAS_data\ECGgatedCT',
-                            'D:\LSPEAS\LSPEAS_data_BACKUP\ECGgatedCT')
+# dicom_basedir = select_dir(r'E:\LSPEAS_data\ECGgatedCT',
+#                             'D:\LSPEAS\LSPEAS_data_BACKUP\ECGgatedCT')
+dicom_basedir = select_dir(r'D:\LSPEAS_F\CT_dicom')
 
 # Select the ssdf basedir for SAVING
-basedir = select_dir(os.getenv('LSPEAS_BASEDIR', ''),
-                     r'D:\LSPEAS\LSPEAS_ssdf',
-                     r'G:\LSPEAS_ssdf_toPC')
+# basedir = select_dir(os.getenv('LSPEAS_BASEDIR', ''),
+#                      r'D:\LSPEAS\LSPEAS_ssdf',
+#                      r'F:\LSPEAS_ssdf_toPC')
+basedir = select_dir(r'D:\LSPEAS_F\LSPEASF_ssdf')
 
 # Params Step A, B, C
-ctcode = 'discharge'  # 'pre', 'discharge', '1month', '6months', '12months', x_Profx_Water_
-ptcode = 'LSPEAS_005'  # LSPEAS_00x or FANTOOM_xxx
+ctcode = 'D'  # 'pre', 'discharge', '1month', '6months', '12months', x_Profx_Water_
+ptcode = 'LSPEASF_C_01'  # LSPEAS_00x or FANTOOM_xxx
 stenttype = 'anaconda'         # 'anaconda 'or 'endurant' or 'excluder'
-dicomStructure = 'dcmFolders' # 'dcmFolders' or 'imaFolder' or 'imaFolders' - different output data structure
+dicomStructure = 'imaFEVAR' # 'dcmFolders' or 'imaFolder' or 'imaFolders' or 'imaFEVAR' - different output data structure
 
 # Params Step B, C (to save)
-cropnames = ['stentbone']    # save crops of stent and/or ring
+cropnames = ['ring', 'stent']    # save crops of stent and/or ring
+# cropnames = ['ringFOV128'] 
 # C: start and end phase in cardiac cycle to average (50,90=5 phases;70,20=6)
-phases = 70, 20
+phases = 60, 10
 
 # todo: use imageio.mvolread instead when fixed
 def readdcm(dirname):
@@ -93,13 +96,15 @@ if dicomStructure == 'imaFolder': #siemens from workstation
         vols2 = [vol2 for vol2 in imageio.get_reader(dicom_basedir, 'DICOM', 'V')]
         vols = []
         for vol in vols2:
-            if vol.ndim == 3 and vol.shape[0]>300 and vol.meta.sampling[0] <= 0.5: 
+            if vol.ndim == 3 and vol.shape[0]>300 and vol.meta.sampling[0] == 0.5: # z,y,x
             # phase should comply with this 
                 vols.append(vol) # keep only gated phases
     for i, vol in enumerate(vols):
         print(vol.meta.ImagePositionPatient)
+    for i, vol in enumerate(vols):
         print(vol.meta.sampling)
         assert vol.shape == vols[0].shape
+        assert vol.meta.SeriesTime == vols[0].meta.SeriesTime
 #         assert str(i*10) in vol.meta.SeriesDescription # 0% , 10% etc. # tag 
 #does not exist in siemens data anymore
 
@@ -123,6 +128,22 @@ if dicomStructure == 'imaFolders': #toshiba from synapse
         print(vol.meta.SeriesDescription)
         assert str(j*10) in vol.meta.SeriesDescription # 0% , 10% etc.
 
+if dicomStructure == 'imaFEVAR':
+    dicom_basedir = os.path.join(dicom_basedir,ptcode,ptcode+'_'+ctcode)
+    vols2 = [vol2 for vol2 in imageio.get_reader(dicom_basedir, 'DICOM', 'V')]
+    volsphases = []
+    for vol in vols2:
+        if vol.ndim == 3 and vol.shape[0]>400 and vol.meta.sampling == (0.5, 0.5, 0.5): # z,y,x
+            volsphases.append(vol) # keep only gated phases
+    for i, vol in enumerate(volsphases):
+        print(vol.meta.ImagePositionPatient)
+    for i, vol in enumerate(volsphases):
+        print(vol.meta.SeriesTime)
+    for i, vol in enumerate(volsphases):
+        print(vol.meta.sampling)
+        assert vol.shape == volsphases[0].shape
+        assert vol.meta.SeriesTime == volsphases[0].meta.SeriesTime
+
 ## Step B: Crop and Save SSDF
 for cropname in cropnames:
     savecropvols(vols, basedir, ptcode, ctcode, cropname, stenttype)
@@ -140,10 +161,10 @@ for cropname in cropnames:
 
 # Load one volume/phase from ssdf with phases
 phase = 60
-avg = 'avg7020'
+avg = 'avg6010'
 
-s1 = loadvol(basedir, ptcode, ctcode, cropnames[0], what ='phases')
-s2 = loadvol(basedir, ptcode, ctcode, cropnames[0], avg)
+s1 = loadvol(basedir, ptcode, ctcode, 'ring', what ='phases')
+s2 = loadvol(basedir, ptcode, ctcode, 'ring', avg)
 # s3 = loadvol(basedir, ptcode, ctcode, 'stent', avg)
 
 
