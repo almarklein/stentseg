@@ -15,16 +15,18 @@ import pirt.reg # Python Image Registration Toolkit
 from stentseg.utils.datahandling import select_dir, loadvol, loadmodel
 
 # Select the ssdf basedir
-basedir = select_dir(os.getenv('LSPEAS_BASEDIR', ''),
-                     r'D:\LSPEAS\LSPEAS_ssdf',
-                     r'G:\LSPEAS_ssdf_backup')
+# basedir = select_dir(os.getenv('LSPEAS_BASEDIR', ''),
+#                      r'D:\LSPEAS\LSPEAS_ssdf',
+#                      r'G:\LSPEAS_ssdf_backup')
+
+basedir = select_dir(r'D:\LSPEAS_F\LSPEASF_ssdf')
 
 # Select dataset to register
 # ptcode = 'QRM_FANTOOM_20160121'
 # ctcode = '12months'
-cropnames = ['stentbone']
-ptcodes = ['LSPEAS_005']
-ctcodes = ['discharge']  
+cropnames = ['ringFOV128', 'ring', 'stent']
+ptcodes = ['LSPEASF_C_01']
+ctcodes = ['D', 'pre']  
 
 for ptcode in ptcodes:
     for ctcode in ctcodes:
@@ -45,7 +47,7 @@ for ptcode in ptcodes:
             reg.params.deform_wise = 'groupwise' # groupwise!
             reg.params.mapping = 'backward'
             reg.params.deform_limit = 1.0
-            reg.params.final_scale = 1.0  # We might set this a wee bit lower (but slower!)
+            reg.params.final_scale = 1.0  # We might set this a wee bit lower than 1 (but slower!)
             reg.params.grid_sampling_factor = 0.5 # !! important especially for Laplace !!
             # most important params
             reg.params.speed_factor = 1.0
@@ -117,4 +119,5 @@ for ptcode in ptcodes:
             print("avgreg saved to disk.")
             
             t1 = time.time()
-            print('Registration completed, which took %1.2f min.' % ((t1-t0)/60))
+            t_in_min = (t1-t0)/60
+            print('Registration completed for %s - %s, which took %1.2f min.' % (ptcode,ctcode, t_in_min))
