@@ -78,7 +78,7 @@ def DrawModelAxes(vol, graph=None, ax=None, axVis=False, meshColor=None, getLabe
             graph.Draw(mc=mc, lc=lc)
             return label
     if not meshColor is None:
-        bm = create_mesh(graph, 0.6) # (argument is strut tickness)
+        bm = create_mesh(graph, 0.5) # (argument is strut tickness)
         m = vv.mesh(bm)
         m.faceColor = meshColor # 'g'
     show_ctvolume(vol, graph, **kwargs)

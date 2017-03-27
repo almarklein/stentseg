@@ -22,18 +22,25 @@ basedir = select_dir(os.getenv('LSPEAS_BASEDIR', ''),
 
 # Select dataset to register
 ptcode = 'LSPEAS_021'
-codes = ctcode1, ctcode2, ctcode3 = '1month', '6months', '12months'
-# codes = ctcode1, ctcode2 = 'discharge', '12months'
-# codes = ctcode1 = 'discharge'
+# codes = ctcode1, ctcode2, ctcode3 = '1month', '6months', '12months'
+codes = ctcode1, ctcode2 = 'discharge', '12months'
+# codes = ctcode1 = '12months'
 cropname = 'ring'
 modelname = 'modelavgreg'
-cropvol = 'stent'
+cropvol = 'ring'
 
-drawModelLines = True  # True or False
+drawModelLines = False  # True or False
 drawMesh = False
 showAxis = False
 dimensions = 'xyz'
-showVol  = 'MIP'  # MIP or ISO or 2D or None
+showVol  = 'ISO'  # MIP or ISO or 2D or None
+showvol2D = True
+
+clim = (0,2500)
+clim2D = -200,500
+clim2 = (0,1.5)
+isoTh = 250
+
 # view1 = 
 #  
 # view2 = 
@@ -67,11 +74,6 @@ if len(codes) == 3:
 f = vv.figure(1); vv.clf()
 f.position = 0.00, 22.00,  1920.00, 1018.00
 
-# clim = (0,2500)
-clim = -550,500
-clim2 = (0,1.5)
-isoTh = 250
-
 if drawMesh == True:
     lc = 'w'
     mw = 10
@@ -84,6 +86,8 @@ if codes==ctcode1 :
     a = vv.subplot(121)
     t = show_ctvolume(vol1, s1.model, showVol=showVol, clim=clim, isoTh=isoTh, removeStent=True)
     label = pick3d(vv.gca(), vol1)
+    if showvol2D:
+        t2 = vv.volshow2(vol1, clim=clim2D)
     if drawModelLines == True:
         s1.model.Draw(mc='b', mw = mw, lc=lc)
     if drawMesh == True:
@@ -129,6 +133,9 @@ if len(codes) == 2:
         m.clim = clim2
         m.colormap = vv.CM_JET
         vv.colorbar()
+    if showvol2D:
+        t2 = vv.volshow2(vol1, clim=clim2D, axes=a1)
+        t2 = vv.volshow2(vol2, clim=clim2D, axes=a2 )
     vv.xlabel('x (mm)');vv.ylabel('y (mm)');vv.zlabel('z (mm)')
     vv.title('Model for LSPEAS %s  -  %s' % (ptcode[7:], ctcode2))
     a1.axis.axisColor= a2.axis.axisColor = 1,1,1
@@ -175,6 +182,11 @@ if len(codes) == 3:
         m.clim = clim2
         m.colormap = vv.CM_JET
         vv.colorbar()
+    if showvol2D:
+        t2 = vv.volshow2(vol1, clim=clim2D, axes=a1)
+        t2 = vv.volshow2(vol2, clim=clim2D, axes=a2)
+        t2 = vv.volshow2(vol3, clim=clim2D, axes=a3)
+        
     vv.xlabel('x (mm)');vv.ylabel('y (mm)');vv.zlabel('z (mm)')
     vv.title('Model for LSPEAS %s  -  %s' % (ptcode[7:], ctcode3))
     a1.axis.axisColor= a2.axis.axisColor= a3.axis.axisColor = 1,1,1
