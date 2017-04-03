@@ -26,7 +26,8 @@ def remove_stent_from_volume(vol, graph, stripSize=5):
     return vol2
 
 
-def show_ctvolume(vol, graph, showVol = 'MIP', clim = (0,2500), isoTh=250, removeStent=True):
+def show_ctvolume(vol, graph, axis=None, showVol='MIP', clim =(0,2500), isoTh=250, 
+                  removeStent=True, climEditor=True):
     """ Different ways to visualize the CT volume as reference
     For '2D' clim (-550,500) often good range
     """
@@ -36,6 +37,9 @@ def show_ctvolume(vol, graph, showVol = 'MIP', clim = (0,2500), isoTh=250, remov
                 'g': [(0.0, 0.0), (0.27272728, 1.0)],
                 'b': [(0.0, 0.0), (0.34545454, 1.0)],
                 'a': [(0.0, 1.0), (1.0, 1.0)]}
+    if axis is None:
+        axis = vv.gca()
+    axis.MakeCurrent()
     if showVol == 'MIP':
         t = vv.volshow(vol, clim=clim, renderStyle='mip')
     elif showVol == 'ISO':
@@ -46,9 +50,10 @@ def show_ctvolume(vol, graph, showVol = 'MIP', clim = (0,2500), isoTh=250, remov
     elif showVol == '2D':
         t = vv.volshow2(vol); t.clim = clim
     # bind ClimEditor to figure
-    if not showVol is None:
-        c = vv.ClimEditor(vv.gcf())
+    if climEditor:
+        c = vv.ClimEditor(vv.gca())
         c.position = (10, 50)
+    return t
 
 
 def DrawModelAxes(vol, graph=None, ax=None, axVis=False, meshColor=None, getLabel=False, 
@@ -68,12 +73,12 @@ def DrawModelAxes(vol, graph=None, ax=None, axVis=False, meshColor=None, getLabe
     ax.axis.visible = axVis
     vv.xlabel('x (mm)');vv.ylabel('y (mm)');vv.zlabel('z (mm)')
     if graph is None:
-        show_ctvolume(vol, graph, removeStent=False, **kwargs) 
+        show_ctvolume(vol, graph, axis=ax, removeStent=False, **kwargs) 
         label = pick3d(vv.gca(), vol)
         return label
     if hasattr(graph, 'number_of_edges'):
         if graph.number_of_edges() == 0: # get label from picked seeds sd._nodes1 
-            show_ctvolume(vol, graph, **kwargs) 
+            show_ctvolume(vol, graph, axis=ax, **kwargs) 
             label = pick3d(vv.gca(), vol)
             graph.Draw(mc=mc, lc=lc)
             return label
@@ -81,7 +86,7 @@ def DrawModelAxes(vol, graph=None, ax=None, axVis=False, meshColor=None, getLabe
         bm = create_mesh(graph, 0.5) # (argument is strut tickness)
         m = vv.mesh(bm)
         m.faceColor = meshColor # 'g'
-    show_ctvolume(vol, graph, **kwargs)
+    show_ctvolume(vol, graph, axis=ax, **kwargs)
     graph.Draw(mc=mc, lc=lc)
     if getLabel == True:
         label = pick3d(vv.gca(), vol)
