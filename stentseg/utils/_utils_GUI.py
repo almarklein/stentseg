@@ -52,6 +52,44 @@ alpha = 0.8
 #             label = DrawModelAxes(sd._nodes1, vol, a1, clim=clim, showVol=showVol) # lc, mc
 #             a1.SetView(view)
 
+def ViewPresets(event, axis=None):
+    """ View presets for anatmic views: anterior, posterior, left, right, top,
+    bottom. F1, F2.. keys
+    Can be used with f.eventKeyDown.Bind(lambda event: _utils_GUI.ViewPresets(event, [a1, a2]) )
+    """
+    #todo: afmaken alle views
+    if axis is None:
+        ax = vv.gca()
+        axis = [ax]
+    for ax in axis:
+        view = ax.GetView()
+        view['roll'] = 0
+        # sagital LR
+        if event.text == '1':
+            view['azimuth'] = 90
+            view['elevation'] = 0
+        # posterior
+        elif event.text == '2':
+            view['azimuth'] = 0
+            view['elevation'] = 0
+        # sagital RL
+        elif event.text == '3':
+            view['azimuth'] = -90
+            view['elevation'] = 0
+        elif event.text == '4':
+            view['azimuth'] = -180
+            view['elevation'] = 90
+        elif event.text == '5':
+            view['azimuth'] = 0
+            view['elevation'] = -90
+        ax.SetView(view)
+    if event.text == 'z':
+        # axes not visible
+        AxesVis(axis)
+    if event.text == 'x':
+        # axes visible
+        AxesVis(axis, axVis=True)
+
 def AxesVis(axis, axVis=False):
     """ Axis input list with axes
     axVis is True or False
