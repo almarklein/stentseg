@@ -29,7 +29,7 @@ s2.model = model.pack()
 # Save
 filename = '%s_%s_%s_%s.ssdf' % (ptcode, ctcode, cropname, 'model'+what)
 ssdf.save(os.path.join(basedir, ptcode, filename), s2)
-print('saved to disk as {}.'.format(filename) )
+print('saved to disk in {} as {}.'.format(basedir, filename) )
 
 
 ## Make model dynamic (and store/overwrite to disk)
@@ -57,7 +57,7 @@ filename = '%s_%s_%s_%s.ssdf' % (ptcode, ctcode, cropname, 'model'+what)
 s.model = model.pack()
 s.paramsreg = paramsreg
 ssdf.save(os.path.join(basedir, ptcode, filename), s)
-print('saved to disk as {}.'.format(filename) )
+print('saved to disk as {} in {}.'.format(basedir, filename) )
 
 
 # option to make independent on number of phases
