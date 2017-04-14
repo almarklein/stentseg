@@ -14,6 +14,7 @@ import pirt
 import numpy as np
 from stentseg.motion.displacement import _calculateAmplitude, _calculateSumMotion
 from stentseg.motion.displacement import calculateMeanAmplitude
+from ecgslider import runEcgSlider
 
 # Select the ssdf basedir
 basedir = select_dir(os.getenv('LSPEAS_BASEDIR', ''),
@@ -21,20 +22,20 @@ basedir = select_dir(os.getenv('LSPEAS_BASEDIR', ''),
                      r'F:\LSPEAS_ssdf_BACKUP',r'G:\LSPEAS_ssdf_BACKUP')
 
 # Select dataset to register
-# ptcode = 'LSPEAS_011'
-# ctcode, nr = '6months', 1
-ptcode = 'QRM_FANTOOM_20160121'
-ctcode, nr = 'ZA3-75-1.2', 1
+ptcode = 'LSPEAS_002'
+ctcode, nr = '12months', 1
+# ptcode = 'QRM_FANTOOM_20160121'
+# ctcode, nr = 'ZA3-75-1.2', 1
 cropname = 'ring'
 modelname = 'modelavgreg'
 motion = 'amplitude'  # amplitude or sum
 dimension = 'xyz'
-showVol  = 'MIP'  # MIP or ISO or 2D or None
-clim0  = (-10,1000) 
-clim2 = (0,1.5)
+showVol  = 'ISO'  # MIP or ISO or 2D or None
+clim0  = (-10,2500) 
+clim2 = (0,3)
 isoTh = 250
 motionPlay = 9, 1  # each x ms, a step of perc of T
-staticref =  'avg7020'# 'avg7020'
+staticref =  'avgreg'# 'avg7020'
 meshWithColors = True
 
 
@@ -61,7 +62,7 @@ deforms_b = [f.as_backward() for f in deforms_f]
 s = loadmodel(basedir, ptcode, ctcode, cropname, modelname)
 model = s.model
 if meshWithColors:
-    modelmesh = create_mesh_with_abs_displacement(model, radius = 1.0, dim = dimension, motion = motion)
+    modelmesh = create_mesh_with_abs_displacement(model, radius = 0.7, dim = dimension, motion = motion)
 else:
     modelmesh = create_mesh(model, 1.0)  # Param is thickness
 
@@ -76,9 +77,9 @@ vol = s2.vol
 ## Start vis
 f = vv.figure(nr); vv.clf()
 if nr == 1:
-    f.position = 8.00, 30.00,  944.00, 1008.00
+    f.position = 8.00, 30.00,  944.00, 980.00
 else:
-    f.position = 968.00, 30.00,  944.00, 1008.00
+    f.position = 968.00, 30.00,  944.00, 980.00
 a = vv.gca()
 a.axis.axisColor = 1,1,1
 a.axis.visible = False
@@ -144,10 +145,10 @@ else:
 # Run mesh
 a.SetLimits()
 # a.SetView(viewringcrop)
-dm.MotionPlay(motionPlay[0], motionPlay[1])  # (10, 0.2) = each 10 ms do a step of 20%
+dm.MotionPlay(motionPlay[0], motionPlay[1])  # (10, 0.2) = each 10 ms do a step of 20% for a phase
 dm.motionSplineType = 'B-spline'
 dm.motionAmplitude = 1.0  # For a mesh we can (more) safely increase amplitude
-
+#todo: dm.SetValues in loop for changing color?
 
 # Add clickable nodes
 t0 = vv.Label(a, 'Node nr|location: ', fontSize=11, color='w')
@@ -258,6 +259,10 @@ f.eventKeyDown.Bind(on_key)
 for node_point in node_points:
     node_point.eventEnter.Bind(pick_node)
     node_point.eventLeave.Bind(unpick_node)
+
+# run ecgslider
+ecg = runEcgSlider(dm, f, a, motionPlay)
+
 
 # In stentseg.motion.vis are a few functions, but they need to be adjusted
 # to work with the new stent model.
