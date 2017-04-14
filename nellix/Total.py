@@ -7,8 +7,8 @@ import os
 from stentseg.utils.datahandling import select_dir
 
 ptcode = 'chevas_07'
-dicom_basedir = r'G:\Nellix_chevas\CT\no 7\STD00001\10phases'
-basedir = select_dir('E:/CT/SSDF/', r'G:\Nellix_chevas\CT\SSDF')
+dicom_basedir = r'F:\Nellix_chevas\CT_SSDF\no 7\STD00001\10phases'
+basedir = select_dir('E:/CT/SSDF/', r'F:\Nellix_chevas\CT_SSDF\SSDF')
 print(dicom_basedir)
 
 ##
@@ -37,8 +37,8 @@ print('Get Endpoints: done')
 ##
 # # Points no 
 
-StartPoints = [(126.7, 99.8, 64.3), (136.7, 97.8, 66.2), (120.4, 99.8, 60.7)]
-EndPoints = [(119.8, 85.2, 113.4), (128.7, 77.2, 113.7), (104.7, 97.0, 66.6)]
+# StartPoints = [(126.7, 99.8, 64.3), (136.7, 97.8, 66.2), (120.4, 99.8, 60.7)]
+# EndPoints = [(119.8, 85.2, 113.4), (128.7, 77.2, 113.7), (104.7, 97.0, 66.6)]
 
 
 from nellix._get_centerline import _Get_Centerline

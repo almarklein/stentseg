@@ -8,9 +8,9 @@ class _Select_Stent_Endpoints:
     def __init__(self,ptcode,basedir):
         """ select start and endpoints to be used for centerline generation
         """
-        from Tom_utils._3DPointSelector import select3dpoints
-        from Tom_utils.mydialog import MyDialog
-        from PyQt4 import QtGui
+        from stentseg.apps._3DPointSelector import select3dpoints
+        # from stentseg.apps.ui_dialog import MyDialog
+        # from PyQt4 import QtGui
         
         import imageio
         import os
@@ -37,7 +37,6 @@ class _Select_Stent_Endpoints:
         # nr_of_stents = int(m.combo.currentText())
         
         # Endpoint selection
-        from Tom_utils._3DPointSelector import select3dpoints
         points = select3dpoints(s.vol,nr_of_stents = 6)
         self.StartPoints = points[0]
         self.EndPoints = points[1]

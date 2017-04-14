@@ -16,7 +16,7 @@ class _Do_Segmentation:
         from stentseg.stentdirect.stentgraph import create_mesh
         from stentseg.stentdirect import stentgraph, StentDirect, getDefaultParams, AnacondaDirect, EndurantDirect, NellixDirect
         from stentseg.utils.picker import pick3d, label2worldcoordinates, label2volindices
-        from stentseg.apps.graph_manualprune import interactiveClusterRemovalGraph
+        # from stentseg.apps.graph_manualprune import interactiveClusterRemovalGraph
         import scipy
         from scipy import ndimage
         import copy

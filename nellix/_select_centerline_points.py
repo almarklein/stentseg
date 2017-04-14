@@ -18,7 +18,8 @@ class _Select_Centerline_Points:
         from stentseg.utils.datahandling import select_dir, loadvol, loadmodel
         from stentseg.utils.new_pointset import PointSet
         from stentseg.stentdirect.stentgraph import create_mesh
-        from stentseg.motion.vis import show_ctvolume, create_mesh_with_abs_displacement
+        from stentseg.motion.vis import create_mesh_with_abs_displacement
+        from stentseg.utils.visualization import show_ctvolume
         # from stentseg.motion.displacement import _calculateAmplitude, _calculateSumMotion ,calculateMeanAmplitude
         from pirt.utils.deformvis import DeformableTexture3D, DeformableMesh
         from stentseg.utils import PointSet
@@ -28,9 +29,9 @@ class _Select_Centerline_Points:
         from visvis.processing import lineToMesh, combineMeshes
         from visvis import ssdf
         from stentseg.utils.picker import pick3d
-        from PyQt4 import QtCore, QtGui
-        from Tom_utils.mydialog import MyDialog
-        from centerline_Tom import dist_over_centerline # added for Mirthe 
+        # from PyQt4 import QtCore, QtGui
+        # from Tom_utils.mydialog import MyDialog
+        from stentseg.utils.centerline import dist_over_centerline # added for Mirthe 
         import copy
         
         
