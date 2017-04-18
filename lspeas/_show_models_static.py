@@ -15,6 +15,7 @@ import pirt
 import numpy as np
 from stentseg.utils import _utils_GUI
 from stentseg.utils.picker import pick3d
+from lspeas.utils.vis import showModelsStatic
 
 # Select the ssdf basedir
 basedir = select_dir(os.getenv('LSPEAS_BASEDIR', ''),
@@ -22,9 +23,10 @@ basedir = select_dir(os.getenv('LSPEAS_BASEDIR', ''),
 
 # Select dataset to register
 ptcode = 'LSPEAS_002'
-# codes = ctcode1, ctcode2, ctcode3 = '1month', '6months', '12months'
+# codes = ctcode1, ctcode2, ctcode3 = '6months', '12months', '24months'
 # codes = ctcode1, ctcode2 = '12months', '24months'
-codes = ctcode1 = '12months'
+# codes = ctcode1 = '12months'
+codes = ctcode1, ctcode2, ctcode3, ctcode4 = 'discharge', '6months', '12months', '24months'
 cropname = 'ring'
 modelname = 'modelavgreg'
 cropvol = 'stent'
@@ -54,158 +56,48 @@ s1 = loadmodel(basedir, ptcode, ctcode1, cropname, modelname)
 # modelmesh1 = create_mesh(s1.model, 1.0)  # Param is thickness
 modelmesh1 = create_mesh_with_abs_displacement(s1.model, radius = 0.7, dim=dimensions)
 vol1 = loadvol(basedir, ptcode, ctcode1, cropvol, 'avgreg').vol
+vols = [vol1]
+ss = [s1]
+mm = [modelmesh1]
 
 # 2 models
-if len(codes) == 2 or len(codes) == 3:
+if len(codes) == 2 or len(codes) == 3 or len(codes) == 4:
     s2 = loadmodel(basedir, ptcode, ctcode2, cropname, modelname)
 #     modelmesh2 = create_mesh(s2.model, 1.0)  # Param is thickness
     modelmesh2 = create_mesh_with_abs_displacement(s2.model, radius = 0.7, dim=dimensions)
     vol2 = loadvol(basedir, ptcode, ctcode2, cropvol, 'avgreg').vol
+    vols = [vol1, vol2]
+    ss = [s1,s2]
+    mm = [modelmesh1, modelmesh2]
 
 # 3 models
-if len(codes) == 3:
+if len(codes) == 3 or len(codes) == 4:
     s3 = loadmodel(basedir, ptcode, ctcode3, cropname, modelname)
 #     modelmesh3 = create_mesh(s3.model, 1.0)  # Param is thickness   
     modelmesh3 = create_mesh_with_abs_displacement(s3.model, radius = 0.7, dim=dimensions)
     vol3 = loadvol(basedir, ptcode, ctcode3, cropvol, 'avgreg').vol
+    vols = [vol1, vol2, vol3]
+    ss = [s1,s2,s3]
+    mm = [modelmesh1, modelmesh2, modelmesh3]
 
+# 4 models
+if len(codes) == 4:
+    s4 = loadmodel(basedir, ptcode, ctcode4, cropname, modelname)
+#     modelmesh4 = create_mesh(s4.model, 1.0)  # Param is thickness   
+    modelmesh4 = create_mesh_with_abs_displacement(s4.model, radius = 0.7, dim=dimensions)
+    vol4 = loadvol(basedir, ptcode, ctcode4, cropvol, 'avgreg').vol
+    vols = [vol1, vol2, vol3, vol4]
+    ss = [s1,s2,s3,s4]
+    mm = [modelmesh1, modelmesh2, modelmesh3, modelmesh4]
 
-## Visualize
-f = vv.figure(1); vv.clf()
-f.position = 0.00, 22.00,  1920.00, 1018.00
+## Visualize multipanel
+axes, cbars = showModelsStatic(ptcode, codes, vols, ss, mm, showVol, clim, isoTh, 
+        clim2, clim2D, drawMesh, drawModelLines, showvol2D, showAxis)
 
-if drawMesh == True:
-    lc = 'w'
-    mw = 10
-else:
-    lc = 'g'
-    mw = 7
-
-# 1 model
-if codes==ctcode1:
-    a1 = vv.subplot(121)
-    t = show_ctvolume(vol1, s1.model, axis=a1, showVol=showVol, clim=clim, isoTh=isoTh, removeStent=True)
-    label = pick3d(vv.gca(), vol1)
-    if drawModelLines == True:
-        s1.model.Draw(mc='b', mw = mw, lc=lc)
-    if showvol2D:
-        t2 = vv.volshow2(vol1, clim=clim2D)
-    if drawMesh == True:
-        m = vv.mesh(modelmesh1)
-        # m.faceColor = 'g' # OR
-        m.clim = clim2
-        m.colormap = vv.CM_JET
-        v1 = vv.colorbar()
-    vv.xlabel('x (mm)');vv.ylabel('y (mm)');vv.zlabel('z (mm)')
-    vv.title('Model for LSPEAS %s  -  %s' % (ptcode[7:], ctcode1))
-    a1.axis.axisColor= 1,1,1
-    a1.bgcolor= 0,0,0
-    a1.daspect= 1, 1, -1  # z-axis flipped
-    a1.axis.visible = showAxis
-    a2 = vv.subplot(122)
-    a2.bgcolor= 0,0,0
-    a2.daspect= 1, 1, -1
-    a2.axis.visible = False
-    v = [v1]
-
-# 2 models
-if len(codes) == 2:
-    a1 = vv.subplot(121)
-    a2 = vv.subplot(122)
-    for i, ax in enumerate([a1, a2]):
-        ax.MakeCurrent()
-        vv.xlabel('x (mm)');vv.ylabel('y (mm)');vv.zlabel('z (mm)')
-        vv.title('Model for LSPEAS %s  -  %s' % (ptcode[7:], codes[i]))
-    t = show_ctvolume(vol1, s1.model, axis=a1, showVol=showVol, clim=clim, isoTh=isoTh, removeStent=True)
-    label = pick3d(a1, vol1)
-    if drawModelLines == True:
-        s1.model.Draw(mc='b', mw = mw, lc=lc)
-    t = show_ctvolume(vol2, s2.model, axis=a2, showVol=showVol, clim=clim, isoTh=isoTh, removeStent=True)
-    label = pick3d(a2, vol2)
-    if drawModelLines == True:
-        s2.model.Draw(mc='b', mw = mw, lc=lc)
-    if showvol2D:
-        t2 = vv.volshow2(vol1, clim=clim2D, axes=a1)
-        t2 = vv.volshow2(vol2, clim=clim2D, axes=a2)
-    if drawMesh == True:
-        m = vv.mesh(modelmesh2, axes=a2)
-        #m.faceColor = 'g' # OR
-        m.clim = clim2
-        m.colormap = vv.CM_JET
-        v2 = vv.colorbar(a2)
-        m = vv.mesh(modelmesh1, axes=a1)
-        # m.faceColor = 'g' # OR
-        m.clim = clim2
-        m.colormap = vv.CM_JET
-        v1 = vv.colorbar(a1)
-    a1.axis.axisColor= a2.axis.axisColor = 1,1,1
-    a1.bgcolor= a2.bgcolor = 0,0,0
-    a1.daspect= a2.daspect = 1, 1, -1  # z-axis flipped
-    a1.axis.visible= a2.axis.visible = showAxis
-    v = [v1,v2]
-    
-# 3 models
-if len(codes) == 3:
-    a1 = vv.subplot(131)
-    a2 = vv.subplot(132)
-    a3 = vv.subplot(133)
-    for i, ax in enumerate([a1, a2, a3]):
-        ax.MakeCurrent()
-        vv.xlabel('x (mm)');vv.ylabel('y (mm)');vv.zlabel('z (mm)')
-        vv.title('Model for LSPEAS %s  -  %s' % (ptcode[7:], codes[i]))
-    t = show_ctvolume(vol1, s1.model, axis=a1, showVol=showVol, clim=clim, isoTh=isoTh, removeStent=True)
-    label = pick3d(a1, vol1)
-    if drawModelLines == True:
-        s1.model.Draw(mc='b', mw = mw, lc=lc)
-    t = show_ctvolume(vol2, s2.model, axis=a2, showVol=showVol, clim=clim, isoTh=isoTh, removeStent=True)
-    label = pick3d(a2, vol2)
-    if drawModelLines == True:
-        s2.model.Draw(mc='b', mw = mw, lc=lc)
-    t = show_ctvolume(vol3, s3.model, axis=a3, showVol=showVol, clim=clim, isoTh=isoTh, removeStent=True)
-    label = pick3d(a3, vol3)
-    if drawModelLines == True:
-        s3.model.Draw(mc='b', mw = mw, lc=lc)
-    if showvol2D:
-        t2 = vv.volshow2(vol1, clim=clim2D, axes=a1)
-        t2 = vv.volshow2(vol2, clim=clim2D, axes=a2)
-        t2 = vv.volshow2(vol3, clim=clim2D, axes=a3)
-    if drawMesh == True:
-        m = vv.mesh(modelmesh3)
-        #m.faceColor = 'g' # OR
-        m.clim = clim2
-        m.colormap = vv.CM_JET
-        v1 = vv.colorbar()
-        m = vv.mesh(modelmesh1)
-        #m.faceColor = 'g' # OR
-        m.clim = clim2
-        m.colormap = vv.CM_JET
-        v2 = vv.colorbar()
-        m = vv.mesh(modelmesh2)
-        #m.faceColor = 'g' # OR
-        m.clim = clim2
-        v3 = m.colormap = vv.CM_JET
-        vv.colorbar()
-    a1.axis.axisColor= a2.axis.axisColor= a3.axis.axisColor = 1,1,1
-    a1.bgcolor= a2.bgcolor= a3.bgcolor = 0,0,0
-    a1.daspect= a2.daspect= a3.daspect = 1, 1, -1  # z-axis flipped
-    a1.axis.visible= a2.axis.visible= a3.axis.visible = showAxis
-    v = [v1,v2,v3]
-
-
-## Axis on or off
-
-if codes==ctcode1:
-    # bind rotate view
-    f.eventKeyDown.Bind(lambda event: _utils_GUI.RotateView(event, [a1, a2]) )
-    f.eventKeyDown.Bind(lambda event: _utils_GUI.ViewPresets(event, [a1, a2]) )
-if len(codes) == 2:
-    # bind rotate view
-    f.eventKeyDown.Bind(lambda event: _utils_GUI.RotateView(event, [a1, a2]) )
-    f.eventKeyDown.Bind(lambda event: _utils_GUI.ViewPresets(event, [a1, a2]) )
-if len(codes) == 3:
-    # bind rotate view
-    f.eventKeyDown.Bind(lambda event: _utils_GUI.RotateView(event, [a1, a2, a3]) )
-    f.eventKeyDown.Bind(lambda event: _utils_GUI.ViewPresets(event, [a1, a2, a3]) )
+# bind rotate view
+f = vv.gcf()
+f.eventKeyDown.Bind(lambda event: _utils_GUI.RotateView(event, axes) )
+f.eventKeyDown.Bind(lambda event: _utils_GUI.ViewPresets(event, axes) )
 
 ## Set view
 # a1.SetView(view1)
@@ -216,7 +108,6 @@ if len(codes) == 3:
 #a1.camera = a2.camera = a3.camera
 
 ## Set colorbar position
-for cbar in v:
-    p1 = cbar.position
-    cbar.position = (p1[0], 20, p1[2], 0.98) # x,y,w,h
-
+# for cbar in cbars:
+#     p1 = cbar.position
+#     cbar.position = (p1[0], 20, p1[2], 0.98) # x,y,w,h
