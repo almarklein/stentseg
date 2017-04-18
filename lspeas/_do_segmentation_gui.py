@@ -21,11 +21,11 @@ fig.position = 8.00, 30.00,  1267.00, 1002.00
 
 # Show volume and graph
 a2 = vv.subplot(121)
-label = DrawModelAxes(vol, sd._nodes2, a2, clim=clim, showVol=showVol, getLabel=True)
+label = DrawModelAxes(vol, sd._nodes2, a2, clim=clim, showVol=showVol, getLabel=True, removeStent=False)
 
 # Show cleaned up graph
 a3 = vv.subplot(122)
-DrawModelAxes(vol, sd._nodes3, a3, meshColor=meshColor, clim=clim, showVol=showVol, mc='b')
+DrawModelAxes(vol, sd._nodes3, a3, meshColor=meshColor, clim=clim, showVol=showVol, mc='b', climEditor=False, removeStent=False)
 
 # Use same camera
 a2.camera = a3.camera
@@ -136,7 +136,7 @@ def on_key(event):
         # visualize result
         view = a3.GetView()
         a3.Clear()
-        DrawModelAxes(vol, sd._nodes3, a3, clim=clim, showVol=showVol, mw=8, lw=0.2)
+        DrawModelAxes(vol, sd._nodes3, a3, clim=clim, showVol=showVol, mw=8, lw=0.2, climEditor=False)
         node_points = _utils_GUI.interactive_node_points(sd._nodes3, scale=0.6)
         _utils_GUI.node_points_callbacks(node_points, selected_nodes, pick=False)
         a3.SetView(view)
@@ -149,7 +149,7 @@ def on_key(event):
         # Create mesh and visualize
         view = a3.GetView()
         a3.Clear()
-        DrawModelAxes(vol, sd._nodes3, a3, meshColor='g', clim=clim, showVol=showVol, lc='w', mw=8, lw=0.2)
+        DrawModelAxes(vol, sd._nodes3, a3, meshColor='g', clim=clim, showVol=showVol, lc='w', mw=8, lw=0.2, climEditor=False)
         a3.SetView(view)
         print('----DO NOT FORGET TO SAVE THE MODEL TO DISK; RUN _SAVE_SEGMENTATION----')
     if event.text == 'r':
@@ -158,7 +158,7 @@ def on_key(event):
         sd._nodes3.add_node(pickedNode)
         view = a3.GetView()
         a3.Clear()
-        DrawModelAxes(vol, sd._nodes3, a3, clim=clim, showVol=showVol, mw=8, lw=0.2)
+        DrawModelAxes(vol, sd._nodes3, a3, clim=clim, showVol=showVol, mw=8, lw=0.2, climEditor=False)
         node_points = _utils_GUI.interactive_node_points(sd._nodes3, scale=0.6)
         _utils_GUI.node_points_callbacks(node_points, selected_nodes, pick=False)
         a3.SetView(view)
@@ -167,7 +167,7 @@ def on_key(event):
         stentgraph.smooth_paths(sd._nodes3, 2)
         view = a3.GetView()
         a3.Clear()
-        DrawModelAxes(vol, sd._nodes3, a3, meshColor='g', clim=clim, showVol=showVol, lc='w', mw=8, lw=0.2)
+        DrawModelAxes(vol, sd._nodes3, a3, meshColor='g', clim=clim, showVol=showVol, lc='w', mw=8, lw=0.2, climEditor=False)
         a3.SetView(view)
     if event.text == 'e':
         # smooth selected edge
@@ -183,7 +183,7 @@ def on_key(event):
         selected_nodes.clear()
         view = a3.GetView()
         a3.Clear()
-        DrawModelAxes(vol, sd._nodes3, a3, clim=clim, showVol=showVol, mw=8, lw=0.2)
+        DrawModelAxes(vol, sd._nodes3, a3, clim=clim, showVol=showVol, mw=8, lw=0.2, climEditor=False)
         node_points = _utils_GUI.interactive_node_points(sd._nodes3, scale=0.6)
         _utils_GUI.node_points_callbacks(node_points, selected_nodes, pick=False)
         a3.SetView(view)
