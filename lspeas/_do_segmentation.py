@@ -22,7 +22,7 @@ basedir = select_dir(os.getenv('LSPEAS_BASEDIR', ''),
                      r'F:\LSPEAS_ssdf_backup',r'G:\LSPEAS_ssdf_backup')
 
 # Select dataset to register
-ptcode = 'LSPEAS_017'
+ptcode = 'LSPEAS_025'
 ctcode = '24months'
 cropname = 'ring'
 what = 'avgreg' # avgreg
@@ -51,7 +51,7 @@ p.mcp_maxCoverageFronts = 0.004         # step 2, base.py; replaces mcp_evolutio
 p.graph_weakThreshold = 500             # step 3, stentgraph.prune_very_weak
 p.graph_expectedNumberOfEdges = 3       # step 3, stentgraph.prune_weak
 p.graph_trimLength =  0                 # step 3, stentgraph.prune_tails
-p.graph_minimumClusterSize = 7         # step 3, stentgraph.prune_clusters
+p.graph_minimumClusterSize = 10         # step 3, stentgraph.prune_clusters
 p.graph_strongThreshold = 3000          # step 3, stentgraph.prune_weak and stentgraph.prune_redundant
 p.graph_min_strutlength = 5             # step 3, stent_anaconda prune_redundant
 p.graph_max_strutlength = 13            # step 3, stent_anaconda prune_redundant
@@ -94,15 +94,15 @@ fig.position = 0.00, 22.00,  1920.00, 1018.00
 
 # Show model Step 1
 a1 = vv.subplot(131)
-label = DrawModelAxes(vol, sd._nodes1, a1, clim=clim, showVol=showVol) # lc, mc
+label = DrawModelAxes(vol, sd._nodes1, a1, clim=clim, showVol=showVol, removeStent=False) # lc, mc
 
 # Show model Step 2
 a2 = vv.subplot(132)
-DrawModelAxes(vol, sd._nodes2, a2, clim=clim, showVol=showVol)
+DrawModelAxes(vol, sd._nodes2, a2, clim=clim, showVol=showVol, climEditor=False, removeStent=False)
 
 # Show model Step 3
 a3 = vv.subplot(133)
-DrawModelAxes(vol, sd._nodes3, a3, meshColor=meshColor, clim=clim, showVol=showVol)
+DrawModelAxes(vol, sd._nodes3, a3, meshColor=meshColor, clim=clim, showVol=showVol, climEditor=False, removeStent=False)
 _utils_GUI.vis_spared_edges(sd._nodes3)
 
 # Use same camera
@@ -155,7 +155,7 @@ def on_key(event):
             sd._nodes1.remove_node(node)
             view = a1.GetView()
             a1.Clear()
-            label = DrawModelAxes(vol, sd._nodes1, a1, clim=clim, showVol=showVol)
+            label = DrawModelAxes(vol, sd._nodes1, a1, clim=clim, showVol=showVol, removeStent=False)
             a1.SetView(view)    
         if len(selected_nodes) == 2:
             # remove edge
@@ -230,7 +230,7 @@ def on_key(event):
         a1.Clear(); a2.Clear(); a3.Clear()
         sd._params = p
         sd.Step1()
-        label = DrawModelAxes(vol, sd._nodes1, a1, clim=clim, showVol=showVol) # lc, mc
+        label = DrawModelAxes(vol, sd._nodes1, a1, clim=clim, showVol=showVol, removeStent=False) # lc, mc
         a1.SetView(view)
     if event.text == '2':
         # redo step2 and 3
@@ -239,15 +239,15 @@ def on_key(event):
         sd._params = p
         sd.Step2()
         sd.Step3(cleanNodes=cleanNodes)
-        DrawModelAxes(vol, sd._nodes2, a2, clim=clim, showVol=showVol)
-        DrawModelAxes(vol, sd._nodes3, a3, meshColor=meshColor, clim=clim, showVol=showVol)
+        DrawModelAxes(vol, sd._nodes2, a2, clim=clim, showVol=showVol,removeStent=False)
+        DrawModelAxes(vol, sd._nodes3, a3, meshColor=meshColor, clim=clim, showVol=showVol,removeStent=False)
         a2.SetView(view)
     if event.text == '3':
         view = a3.GetView()
         a3.Clear()
         sd._params = p
         sd.Step3(cleanNodes=cleanNodes)
-        DrawModelAxes(vol, sd._nodes3, a3, meshColor=meshColor, clim=clim, showVol=showVol)
+        DrawModelAxes(vol, sd._nodes3, a3, meshColor=meshColor, clim=clim, showVol=showVol,removeStent=False)
         node_points = _utils_GUI.interactive_node_points(sd._nodes3, scale=0.6)
         _utils_GUI.node_points_callbacks(node_points, selected_nodes, pick=False)
         a3.SetView(view)
