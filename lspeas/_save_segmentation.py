@@ -7,6 +7,7 @@
 
 # Get graph model
 model = sd._nodes3
+seeds = sd._nodes1
 
 # Build struct
 s2 = vv.ssdf.new()
@@ -24,6 +25,7 @@ s2.params = p
 s2.stentType = stentType
 # Store model
 s2.model = model.pack()
+s2.seeds = seeds.pack()
 #s2.mesh = ssdf.new()
 
 # Save
@@ -57,7 +59,7 @@ filename = '%s_%s_%s_%s.ssdf' % (ptcode, ctcode, cropname, 'model'+what)
 s.model = model.pack()
 s.paramsreg = paramsreg
 ssdf.save(os.path.join(basedir, ptcode, filename), s)
-print('saved to disk as {} in {}.'.format(basedir, filename) )
+print('saved dynamic to disk in {} as {}.'.format(basedir, filename) )
 
 
 # option to make independent on number of phases
