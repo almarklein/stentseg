@@ -693,10 +693,10 @@ class ExcelAnalysis():
         ax1.set_ylim(ylim)
         ax2.set_ylim(ylim)
         ax1.set_xlim([0.8, len(xlabels)+0.2]) # xlim margins 0.2
-        ax2.set_xlim([0.8, len(xlabels)+0.2])
+        ax2.set_xlim([0.8, len(xlabels)+1.2])
         # plot horizontal line at 1
         ax1.plot([0,max(xrange)],[1,1], ls='--', color='dimgrey')
-        ax1.plot([0,max(xrange)],[1,1], ls='--', color='dimgrey')
+        ax2.plot([0,max(xrange)],[1,1], ls='--', color='dimgrey')
         
         # lines and colors; 12-class Paired
         colors = itertools.cycle(['#a6cee3','#1f78b4','#b2df8a','#33a02c',
@@ -834,9 +834,9 @@ if __name__ == '__main__':
     
     # create class object for excel analysis
     foo = ExcelAnalysis() # excel locations initialized in class
-    foo.plot_pp_vv_distance_ratio(patients=patients, ylim=[0.6,1.6], saveFig=True)
+    foo.plot_pp_vv_distance_ratio(patients=patients, ylim=[0.6,1.5], saveFig=True)
     # foo.plot_pp_vv_deployment(ring=12, saveFig=False)
-    foo.plot_ring_deployment(patients=patients, ylim=[0, 42], ylim_mm=[18,33.5], saveFig=True)
+    # foo.plot_ring_deployment(patients=patients, ylim=[0, 42], ylim_mm=[18,33.5], saveFig=True)
     # foo.change_in_rdc_D_12()
     
     
