@@ -12,6 +12,23 @@ from visvis.utils import cropper
 import os
 import sys
 import numpy as np
+import scipy
+from scipy import ndimage
+
+#todo: verify resample_vol function 
+def resample_vol(vol, xsampling=0.5, ysampling=0.5, zsampling=0.5):
+    """ input: vol with vol.sampling
+        output: vol with new sampling
+    """
+    currentSampling = vol.sampling # vol in z,y,x
+    zscale = vol.sampling[0] / zsampling # z / znew
+    yscale = vol.sampling[1] / ysampling # y / ynew
+    xscale = vol.sampling[2] / xsampling # x / xnew
+    vol_sampled = scipy.ndimage.interpolation.zoom(vol,[zscale,yscale,xscale],'float32')
+    newSampling = (zsampling,ysampling,xsampling)
+    # adjust vol with sampling and origin
+    vol_sampled_type = vv.Aarray(vol_sampled, newSampling, vol.origin)
+    vol = vol_sampled_type
 
 
 def normalize_soft_limit(vol, limit):
