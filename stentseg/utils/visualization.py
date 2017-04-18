@@ -51,7 +51,7 @@ def show_ctvolume(vol, graph, axis=None, showVol='MIP', clim =(0,2500), isoTh=25
         t = vv.volshow2(vol); t.clim = clim
     # bind ClimEditor to figure
     if climEditor:
-        c = vv.ClimEditor(vv.gca())
+        c = vv.ClimEditor(vv.gcf())
         c.position = (10, 50)
     return t
 
