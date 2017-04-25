@@ -54,9 +54,9 @@ def _initaxis(axis, legend=None, xlabel=None, ylabel=None, labelsize=16,
 
 
 def grouped_boxplot_2subgroups(data, group_names=['A', 'B', 'C'], 
-                    subgroup_names=['Apples', 'Oranges'], 
-                    ax=None, subgroup_colors=['blue', 'red'], drawMean = True,
-                    box_width=0.6, box_spacing=1.0, ylim=[0,30]):
+            subgroup_names=['Apples', 'Oranges'], ax=None, 
+            subgroup_colors=['blue', 'red'], drawMean = True,
+            box_width=0.6, box_spacing=1.0, ylim=[0,30], legendloc='upper right'):
     """ Draws a grouped boxplot for two subgroups.
         data: dict as:
             data = { 'A':[np.random.randn(100), np.random.randn(100) + 5],
@@ -129,7 +129,7 @@ def grouped_boxplot_2subgroups(data, group_names=['A', 'B', 'C'],
     # draw temporary red and blue lines and use them to create a legend
     hB, = plot([1,1], linestyle='-', color=subgroup_colors[0])
     hR, = plot([1,1], linestyle='-', color=subgroup_colors[1])
-    legend((hB, hR),(subgroup_names[0], subgroup_names[1]))
+    legend((hB, hR),(subgroup_names[0], subgroup_names[1]), loc=legendloc)
     hB.set_visible(False)
     hR.set_visible(False)
     
@@ -630,6 +630,57 @@ class ExcelAnalysis():
             plt.savefig(os.path.join(self.dirsaveIm, 
             'box_ring_deploymentR1R2.png'), papertype='a0', dpi=300)
         
+    
+    def box_ring_distances(self, rows=[120,134] , ylim=[18, 34], saveFig=True):
+        """ Boxplot distances ring OUTER, mean peak and valley diameters
+        """
+        
+        exceldir = self.exceldir
+        workbook_stent = self.workbook_stent
+        
+        wb = openpyxl.load_workbook(os.path.join(exceldir, workbook_stent), data_only=True)
+        sheet = wb.get_sheet_by_name('Summary')
+        
+        # read excel
+        colStart = ['E', 'J'] # R1 R2
+        colStart = [(openpyxl.cell.column_index_from_string(char)-1) for char in colStart]
+        rowStart = rows[0]
+        rowEnd = rows[1]
+        
+        groups = ['D', '1M', '6M', '12M', '24M'] # xlabels
+        # get arrays with rdc R1 and R2 all patients in rows
+        ttRarray = []
+        for i in range(len(groups)):
+            tR1 = sheet.columns[colStart[0]+i][rowStart:rowEnd+1] 
+            tR1 = [obj.value for obj in tR1]
+            tR2 = sheet.columns[colStart[1]+i][rowStart:rowEnd+1] 
+            tR2 = [obj.value for obj in tR2]
+            ttRarray.append([tR1, tR2])
+        
+        f1 = plt.figure(num=1, figsize=(7.6, 5))
+        ax1 = f1.add_subplot(111)
+        
+        data = { 'D':ttRarray[0], # D met R1 en R2
+                '1M':ttRarray[1],
+                '6M':ttRarray[2],
+                '12M':ttRarray[3],
+                '24M':ttRarray[4]
+            }
+        
+        grouped_boxplot_2subgroups(data, group_names=groups, ax=ax1,
+            subgroup_names=['R1', 'R2'], 
+            subgroup_colors=['#D02D2E', 'blue'],
+            box_width=0.6, box_spacing=1.0, ylim=ylim, legendloc='lower right')
+        plt.show()
+        
+        # set axis
+        ax1.set_ylabel('Diameter (%)', fontsize=15) # diam peaks valleys
+        _initaxis([ax1])
+        
+        if saveFig:
+            plt.savefig(os.path.join(self.dirsaveIm, 
+            'box_ring_diametersR1R2.png'), papertype='a0', dpi=300)
+    
     
     def change_in_rdc_D_12(self, rowStart = 53, rowEnd = 67):
         """ Do peaks expand more than valleys?
