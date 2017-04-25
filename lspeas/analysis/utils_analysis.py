@@ -432,10 +432,180 @@ class ExcelAnalysis():
         if saveFig:
             plt.savefig(os.path.join(self.dirsaveIm, 
             'plot_pp_vv_deployment_R{}.png'.format(ring)), papertype='a0', dpi=300)
-
+    
+    
+    def plot_ring_deployment_lines(self, rowsrd=[76,90], rowsmm=[120,134], 
+                ylim=[0, 42], ylim_mm=[18, 34], 
+                subgroup_colors=['#D02D2E', 'blue'], saveFig=True):
+        """
+        plot mean with std and colors to show spread
+        """
+        
+        exceldir = self.exceldir
+        workbook_stent = self.workbook_stent
+        # workbook_vars = self.workbook_variables
+        
+        wb = openpyxl.load_workbook(os.path.join(exceldir, workbook_stent), data_only=True)
+        # wbvars = openpyxl.load_workbook(os.path.join(exceldir, workbook_vars), data_only=True)
+        sheet = wb.get_sheet_by_name('Summary')
+        
+        # init figure
+        f1 = plt.figure(num=3, figsize=(11.6, 4.6)) # 4.6
+        xlabels = ['D', '1M', '6M', '12M', '24M']
+        xrange = range(1,1+len(xlabels)) # not start from x=0 to play with margin xlim
+        
+        # init axis
+        ax1 = f1.add_subplot(1,2,1)
+        plt.xticks(xrange, xlabels, fontsize = 14)
+        ax2 = f1.add_subplot(1,2,2)
+        plt.xticks(xrange, xlabels, fontsize = 14)
+        
+        ax1.set_ylabel('Residual deployment capacity (%)', fontsize=15) # ring deployment capacity
+        ax1.set_ylim(ylim)
+        ax1.set_xlim([0.8, len(xlabels)+0.2]) # xlim margins 0.2
+        # plots in mm
+        ax2.set_ylabel('Diameter (mm)', fontsize=15) # mean distance pp vv
+        ax2.set_ylim(ylim_mm)
+        ax2.set_xlim([0.8, len(xlabels)+0.2]) # xlim margins 0.2
+        
+        # read excel
+        colStart = ['E', 'J'] # R1 R2
+        colStart = [(openpyxl.cell.column_index_from_string(char)-1) for char in colStart]
+        rowStart = rowsrd[0]
+        rowEnd = rowsrd[1]
+        
+        # get arrays with rdc R1 and R2 all patients in rows
+        ttRarray_rd = [] # to collect data elements over time
+        for i in range(len(xlabels)):
+            tR1 = sheet.columns[colStart[0]+i][rowStart:rowEnd+1] 
+            tR1 = [obj.value for obj in tR1]
+            tR2 = sheet.columns[colStart[1]+i][rowStart:rowEnd+1] 
+            tR2 = [obj.value for obj in tR2]
+            ttRarray_rd.append([tR1, tR2])
+        
+        data_rd = { 'D':ttRarray_rd[0], # D met R1 en R2
+                '1M':ttRarray_rd[1],
+                '6M':ttRarray_rd[2],
+                '12M':ttRarray_rd[3],
+                '24M':ttRarray_rd[4]
+            }
+        
+        rowStart = rowsmm[0]
+        rowEnd = rowsmm[1]
+        
+        # get arrays with distances R1 and R2 all patients in rows
+        ttRarray_mm = []
+        for i in range(len(xlabels)):
+            tR1 = sheet.columns[colStart[0]+i][rowStart:rowEnd+1] 
+            tR1 = [obj.value for obj in tR1]
+            tR2 = sheet.columns[colStart[1]+i][rowStart:rowEnd+1] 
+            tR2 = [obj.value for obj in tR2]
+            ttRarray_mm.append([tR1, tR2])
+        
+        data_mm = { 'D':ttRarray_mm[0], # D met R1 en R2
+                '1M':ttRarray_mm[1],
+                '6M':ttRarray_mm[2],
+                '12M':ttRarray_mm[3],
+                '24M':ttRarray_mm[4]
+            }
+        
+        # get means and std for rdc
+        means_rd = [] # n x 2 for n timepoints R1, R2
+        stds_rd = []
+        mins_rd = []
+        maxs_rd = [] 
+        for timepoint in xlabels:
+            # remove missing datapoints
+            datagroup = data_rd[timepoint]
+            datagroupori = datagroup.copy()
+            datagroup[0] = [el for el in datagroup[0] if el is not None] #R1
+            datagroup[1] = [el for el in datagroup[1] if el is not None] #R2
+            if not datagroup == datagroupori:
+                print("warning: some data elements are missing in group {}".format(timepoint))
+            
+            data_rd_mean = [np.mean(l) for l in datagroup] # mean of R1 and R2
+            data_rd_std = [np.std(l) for l in datagroup]
+            data_rd_max = [np.max(l) for l in datagroup]
+            data_rd_min = [np.min(l) for l in datagroup]
+            means_rd.append(data_rd_mean)
+            stds_rd.append(data_rd_std)
+            maxs_rd.append(data_rd_max)
+            mins_rd.append(data_rd_min)
+        
+        # get means and std for distance in mm
+        means_mm = [] # n x 2 for n timepoints R1, R2
+        stds_mm = []
+        mins_mm = []
+        maxs_mm = [] 
+        for timepoint in xlabels:
+            # remove missing datapoints
+            datagroup = data_mm[timepoint]
+            datagroupori = datagroup.copy()
+            datagroup[0] = [el for el in datagroup[0] if el is not None] #R1
+            datagroup[1] = [el for el in datagroup[1] if el is not None] #R2
+            if not datagroup == datagroupori:
+                print("warning: some data elements are missing in group {}".format(timepoint))
+            
+            data_mm_mean = [np.mean(l) for l in datagroup] # mean of R1 and R2
+            data_mm_std = [np.std(l) for l in datagroup]
+            data_mm_max = [np.max(l) for l in datagroup]
+            data_mm_min = [np.min(l) for l in datagroup]
+            means_mm.append(data_mm_mean)
+            stds_mm.append(data_mm_std)
+            maxs_mm.append(data_mm_max)
+            mins_mm.append(data_mm_min)
+        
+        marker = 'o'
+        markersize = 4
+        # plot rdc
+        # plot data R1
+        ax1.plot(xrange, np.asarray(means_rd)[:,0], ls='-', marker='o', color=subgroup_colors[0]) 
+        ax1.errorbar(xrange, np.asarray(means_rd)[:,0], 
+            yerr = np.asarray(stds_rd)[:,0], fmt=None, ecolor=subgroup_colors[0], capsize=8)
+        # ax1.fill_between(xrange, np.asarray(mins_rd)[:,0], np.asarray(maxs_rd)[:,0], color=subgroup_colors[0], alpha=0.2)
+        ax1.plot(xrange, np.asarray(mins_rd)[:,0], ls='', marker=marker , color='w', 
+            markeredgecolor=subgroup_colors[0], markersize=markersize)
+        ax1.plot(xrange, np.asarray(maxs_rd)[:,0], ls='', marker=marker , color='w', 
+            markeredgecolor=subgroup_colors[0], markersize=markersize) 
+        # plot data R2
+        ax1.plot(xrange, np.asarray(means_rd)[:,1], ls='-', marker='o', color=subgroup_colors[1]) 
+        ax1.errorbar(xrange, np.asarray(means_rd)[:,1], 
+            yerr = np.asarray(stds_rd)[:,1], fmt=None, ecolor=subgroup_colors[1], capsize=8)
+        # ax1.fill_between(xrange, np.asarray(mins_rd)[:,1], np.asarray(maxs_rd)[:,1], color=subgroup_colors[1], alpha=0.2)
+        ax1.plot(xrange, np.asarray(mins_rd)[:,1], ls='', marker=marker , color='w', 
+            markeredgecolor=subgroup_colors[1], markersize=markersize)
+        ax1.plot(xrange, np.asarray(maxs_rd)[:,1], ls='', marker=marker , color='w', 
+            markeredgecolor=subgroup_colors[1], markersize=markersize) 
+        
+        # plot mm
+        # plot data R1
+        ax2.plot(xrange, np.asarray(means_mm)[:,0], ls='-', marker='o', color=subgroup_colors[0]) 
+        ax2.errorbar(xrange, np.asarray(means_mm)[:,0], 
+            yerr = np.asarray(stds_mm)[:,0], fmt=None, ecolor=subgroup_colors[0], capsize=8)
+        # ax2.fill_between(xrange, np.asarray(mins_mm)[:,0], np.asarray(maxs_mm)[:,0], color=subgroup_colors[0], alpha=0.2)
+        ax2.plot(xrange, np.asarray(mins_mm)[:,0], ls='', marker=marker , color='w', 
+            markeredgecolor=subgroup_colors[0], markersize=markersize)
+        ax2.plot(xrange, np.asarray(maxs_mm)[:,0], ls='', marker=marker , color='w', 
+            markeredgecolor=subgroup_colors[0], markersize=markersize) 
+        # plot data R2
+        ax2.plot(xrange, np.asarray(means_mm)[:,1], ls='-', marker='o', color=subgroup_colors[1]) 
+        ax2.errorbar(xrange, np.asarray(means_mm)[:,1], 
+            yerr = np.asarray(stds_mm)[:,1], fmt=None, ecolor=subgroup_colors[1], capsize=8)
+        # ax2.fill_between(xrange, np.asarray(mins_mm)[:,1], np.asarray(maxs_mm)[:,1], color=subgroup_colors[1], alpha=0.2)
+        ax2.plot(xrange, np.asarray(mins_mm)[:,1], ls='', marker=marker , color='w', 
+            markeredgecolor=subgroup_colors[1], markersize=markersize)
+        ax2.plot(xrange, np.asarray(maxs_mm)[:,1], ls='', marker=marker , color='w', 
+            markeredgecolor=subgroup_colors[1], markersize=markersize) 
+        
+        
+        _initaxis([ax1, ax2])
+        
+        
+        
     
     def plot_ring_deployment(self, patients=None, ylim=[0, 42], ylim_mm=[20,33], saveFig=True):
-        """ Plot residual deployment capacity ring OUTER, mean peak and valley diameters
+        """ Plot residual deployment capacity ring individul patients lines
+        OUTER, mean peak and valley diameters
         """
         
         exceldir = self.exceldir
@@ -631,7 +801,7 @@ class ExcelAnalysis():
             'box_ring_deploymentR1R2.png'), papertype='a0', dpi=300)
         
     
-    def box_ring_distances(self, rows=[120,134] , ylim=[18, 34], saveFig=True):
+    def box_ring_distances(self, rows=[120,134], ylim=[18, 34], saveFig=True):
         """ Boxplot distances ring OUTER, mean peak and valley diameters
         """
         
@@ -1024,7 +1194,7 @@ if __name__ == '__main__':
     foo = ExcelAnalysis() # excel locations initialized in class
     # foo.plot_pp_vv_distance_ratio(patients=patients, ylim=[0.6,1.5], saveFig=False)
     # foo.plot_pp_vv_deployment(ring=12, saveFig=False)
-    # foo.plot_ring_deployment(patients=patients, ylim=[0, 42], ylim_mm=[18,33.5], saveFig=True)
+    # foo.plot_ring_deployment(patients=patients, ylim=[0, 42], ylim_mm=[18,33.5], saveFig=False)
     # foo.change_in_rdc_D_12()
     
     
