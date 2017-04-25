@@ -53,6 +53,90 @@ def _initaxis(axis, legend=None, xlabel=None, ylabel=None, labelsize=16,
     plt.tight_layout() # so that labels are not cut off
 
 
+def grouped_boxplot_2subgroups(data, group_names=['A', 'B', 'C'], 
+                    subgroup_names=['Apples', 'Oranges'], 
+                    ax=None, subgroup_colors=['blue', 'red'], drawMean = True,
+                    box_width=0.6, box_spacing=1.0, ylim=[0,30]):
+    """ Draws a grouped boxplot for two subgroups.
+        data: dict as:
+            data = { 'A':[np.random.randn(100), np.random.randn(100) + 5],
+            'B':[np.random.randn(100)+1, np.random.randn(100) + 9],
+            'C':[np.random.randn(100)-3, np.random.randn(100) -5]
+            }
+        group_names: list of strings
+        
+        based on http://stackoverflow.com/questions/16592222/matplotlib-group-boxplots
+        works with matplotlib 1.3.1, newer error on flyers?
+    """ 
+    
+    from matplotlib.pyplot import plot, show, savefig, xlim, figure, \
+                    hold, legend, boxplot, setp, axes
+    
+    # function for setting the colors of the box plots pairs
+    def setBoxColors(bp):
+        setp(bp['boxes'][0], color=subgroup_colors[0])
+        setp(bp['caps'][0], color=subgroup_colors[0])
+        setp(bp['caps'][1], color=subgroup_colors[0])
+        setp(bp['whiskers'][0], color=subgroup_colors[0], linestyle='-')
+        setp(bp['whiskers'][1], color=subgroup_colors[0], linestyle='-')
+        setp(bp['fliers'][0], color=subgroup_colors[0])
+        setp(bp['fliers'][1], color=subgroup_colors[0])
+        setp(bp['medians'][0], color=subgroup_colors[0])
+    
+        setp(bp['boxes'][1], color=subgroup_colors[1])
+        setp(bp['caps'][2], color=subgroup_colors[1])
+        setp(bp['caps'][3], color=subgroup_colors[1])
+        setp(bp['whiskers'][2], color=subgroup_colors[1], linestyle='-')
+        setp(bp['whiskers'][3], color=subgroup_colors[1], linestyle='-')
+        setp(bp['fliers'][2], color=subgroup_colors[1])
+        setp(bp['fliers'][3], color=subgroup_colors[1])
+        setp(bp['medians'][1], color=subgroup_colors[1])
+    
+    if ax is None:
+        fig = figure()
+        ax = fig.add_subplot(111)
+    hold(True)
+    
+    spos = 1
+    xtickpositions = []
+    for i, group in enumerate(group_names):
+        # per boxplot pair
+        if not i == 0:
+            spos+= 2 + box_spacing # 2 subgroups
+        positions = [spos,spos+1]
+        datagroup = data[group] # e.g. data['A'] or data['1M'], holds data R1 and R2, 2 lists of n elements
+        # remove missing datapoints
+        datagroupori = datagroup.copy()
+        datagroup[0] = [el for el in datagroup[0] if el is not None]
+        datagroup[1] = [el for el in datagroup[1] if el is not None]
+        if not datagroup == datagroupori:
+            print("warning: some data elements are missing in group {}".format(group)) 
+        bp = boxplot(datagroup, positions = positions, widths = box_width)
+        setBoxColors(bp)
+        if drawMean:
+            # draw a black diamond for the mean
+            plt.plot(positions, [np.mean(datagroup[0]), np.mean(datagroup[1])], 
+            color='k', marker='D', markeredgecolor='k', markersize=2, linestyle='')
+        xtickpositions.append(spos+0.5)
+        
+    # set axes limits and labels
+    xlim(0,spos+2)
+    ax.set_ylim(ylim)
+    ax.set_xticklabels(group_names)
+    # ax.set_xticks([1.5, 4.5, 7.5])
+    ax.set_xticks(xtickpositions)
+    
+    # draw temporary red and blue lines and use them to create a legend
+    hB, = plot([1,1], linestyle='-', color=subgroup_colors[0])
+    hR, = plot([1,1], linestyle='-', color=subgroup_colors[1])
+    legend((hB, hR),(subgroup_names[0], subgroup_names[1]))
+    hB.set_visible(False)
+    hR.set_visible(False)
+    
+    # savefig('boxcompare.png')
+    show()
+
+
 class ExcelAnalysis():
     """ Create graphs from excel data
     """
@@ -495,8 +579,59 @@ class ExcelAnalysis():
             plt.savefig(os.path.join(self.dirsaveIm, 
             'plot_ring_deployment.png'), papertype='a0', dpi=300)
         
+   
+    def box_ring_deployment(self, rows=[76,90] , ylim=[0, 42], saveFig=True):
+        """ Boxplot residual deployment capacity ring OUTER, mean peak and valley diameters
+        """
+        
+        exceldir = self.exceldir
+        workbook_stent = self.workbook_stent
+        
+        wb = openpyxl.load_workbook(os.path.join(exceldir, workbook_stent), data_only=True)
+        sheet = wb.get_sheet_by_name('Summary')
+        
+        # read excel
+        colStart = ['E', 'J'] # R1 R2
+        colStart = [(openpyxl.cell.column_index_from_string(char)-1) for char in colStart]
+        rowStart = rows[0]
+        rowEnd = rows[1]
+        
+        groups = ['D', '1M', '6M', '12M', '24M'] # xlabels
+        # get arrays with rdc R1 and R2 all patients in rows
+        ttRarray = []
+        for i in range(len(groups)):
+            tR1 = sheet.columns[colStart[0]+i][rowStart:rowEnd+1] 
+            tR1 = [obj.value for obj in tR1]
+            tR2 = sheet.columns[colStart[1]+i][rowStart:rowEnd+1] 
+            tR2 = [obj.value for obj in tR2]
+            ttRarray.append([tR1, tR2])
+        
+        f1 = plt.figure(num=1, figsize=(7.6, 5))
+        ax1 = f1.add_subplot(111)
+        
+        data = { 'D':ttRarray[0], # D met R1 en R2
+                '1M':ttRarray[1],
+                '6M':ttRarray[2],
+                '12M':ttRarray[3],
+                '24M':ttRarray[4]
+            }
+        
+        grouped_boxplot_2subgroups(data, group_names=groups, ax=ax1,
+            subgroup_names=['R1', 'R2'], 
+            subgroup_colors=['#D02D2E', 'blue'],
+            box_width=0.6, box_spacing=1.0)
+        plt.show()
+        
+        # set axis
+        ax1.set_ylabel('Residual deployment capacity (%)', fontsize=15) # ring deployment capacity
+        _initaxis([ax1])
+        
+        if saveFig:
+            plt.savefig(os.path.join(self.dirsaveIm, 
+            'box_ring_deploymentR1R2.png'), papertype='a0', dpi=300)
+        
     
-    def change_in_rdc_D_12(self, rowStart = 51, rowEnd = 66):
+    def change_in_rdc_D_12(self, rowStart = 53, rowEnd = 67):
         """ Do peaks expand more than valleys?
         """
         exceldir = self.exceldir
@@ -506,7 +641,7 @@ class ExcelAnalysis():
         sheet = wb.get_sheet_by_name('Summary')
         
         # read data
-        colStart = ['DY', 'DZ', 'EA', 'EB']#, 'X'] # R1 pp vv R2 pp vv
+        colStart = ['L', 'M', 'N', 'O']#, 'X'] # R1 pp vv R2 pp vv
         colStart = [(openpyxl.cell.column_index_from_string(char)-1) for char in colStart]
         rowStart = rowStart # pt 001 summery sheet
         rowEnd = rowEnd
@@ -578,9 +713,10 @@ class ExcelAnalysis():
                         # family='Arial, sans-serif',
                         size=35
                     ),
-                
+                showticklabels=True
             ),
             xaxis=dict(
+                    zeroline=False,
                     # titlefont=dict(
                     #     # family='Arial, sans-serif',
                     #     size=25,
@@ -589,6 +725,7 @@ class ExcelAnalysis():
                         # family='Old Standard TT, serif',
                         size=35, # size of x labels
                     ),
+                    showticklabels=True
                 ),
             legend=dict(
                     font=dict(
@@ -834,7 +971,7 @@ if __name__ == '__main__':
     
     # create class object for excel analysis
     foo = ExcelAnalysis() # excel locations initialized in class
-    foo.plot_pp_vv_distance_ratio(patients=patients, ylim=[0.6,1.5], saveFig=True)
+    # foo.plot_pp_vv_distance_ratio(patients=patients, ylim=[0.6,1.5], saveFig=False)
     # foo.plot_pp_vv_deployment(ring=12, saveFig=False)
     # foo.plot_ring_deployment(patients=patients, ylim=[0, 42], ylim_mm=[18,33.5], saveFig=True)
     # foo.change_in_rdc_D_12()
