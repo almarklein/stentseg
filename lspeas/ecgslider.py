@@ -16,12 +16,14 @@ class ecgSlider:
         """ dm is deformable mesh
         """
         
-        self.slider = vv.Slider(ax, fullRange=(0,90), value=0 )
+        self.container = vv.Wibject(ax)
+        self.slider = vv.Slider(self.container, fullRange=(0,90), value=0 )
         self.slider.showTicks = True
         self.slider.edgeColor = 0,0,0
-        self.slider.bgcolor = 1,0,0
+        self.container.bgcolor = 1,0,0
         yslider = fig.position[3]-fig.position[1]-35
-        self.slider.position = 0.15, yslider, 0.7, 20
+        self.container.position = 0.15, -20, 0.7, 20
+        self.slider.position = 0, 0, 1, 15
         self.fig = fig
         self.maxRange = self.slider.fullRange.max
         self.dm = dm
@@ -54,6 +56,7 @@ class ecgSlider:
     def _OnKey(self, event):
         if event.text == 'w':
             self.dm.MotionStop()
+            self._finished = True
         if event.text == 'q':
             self.dm.MotionPlay(self.motionPlay[0], self.motionPlay[1])
         if event.text == 's':
