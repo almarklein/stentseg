@@ -5,7 +5,10 @@ conda install vispy
 ===========================================
 
 """
-from PyQt4 import QtCore, QtGui
+try:
+    from PyQt4 import QtCore, QtGui # PyQt5
+except ImportError:
+    from PySide import QtCore, QtGui # PySide2
 
 class MyDialog(QtGui.QDialog):
     """ Pop-up dialog
@@ -36,4 +39,4 @@ class MyDialog(QtGui.QDialog):
 # m = MyDialog()
 # m.show()
 # m.exec_()
-# nr_of_stents = int(m.edit.currentText())
+# nr_of_stents = int(m.edit.text())
