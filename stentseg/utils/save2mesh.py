@@ -32,9 +32,13 @@ if __name__ == '__main__':
     # ptcodes = ['LSPEAS_001','LSPEAS_002','LSPEAS_003','LSPEAS_005','LSPEAS_008',
     #             'LSPEAS_009','LSPEAS_011','LSPEAS_015','LSPEAS_017','LSPEAS_018',
     #             'LSPEAS_019','LSPEAS_020','LSPEAS_021','LSPEAS_022','LSPEAS_025',
-    #             'LSPEAS_023']
+    #             'LSPEAS_023', 'LSPEAS_004']
+    # ptcodes = ['LSPEAS_001','LSPEAS_002','LSPEAS_003','LSPEAS_005','LSPEAS_008',
+    #             'LSPEAS_009','LSPEAS_011','LSPEAS_017',
+    #             'LSPEAS_019','LSPEAS_020','LSPEAS_021'
+    #             ]
     ptcodes = ['LSPEAS_004']
-    ctcode = '12months'
+    ctcode = '24months'
     cropname = 'ring'
     modelname = 'modelavgreg'
     

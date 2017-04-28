@@ -12,12 +12,13 @@ from stentseg.apps.record_movie import recordMovie
 basedir = select_dir(os.getenv('LSPEAS_BASEDIR', ''),
                      r'D:\LSPEAS\LSPEAS_ssdf',
                      r'F:\LSPEAS_ssdf_backup',r'G:\LSPEAS_ssdf_backup')
-basedir = select_dir(r'D:\LSPEAS_F\LSPEASF_ssdf')
+# basedir = select_dir(r'D:\LSPEAS_F\LSPEASF_ssdf', 
+#                      r'E:\LSPEASF_ssdf_backup\LSPEASF_C_01')
 
 # Select dataset to register
-ptcode = 'LSPEASF_C_01'
+ptcode = 'LSPEAS_020'
 # ctcode, nr = 'ZProfA3', 1
-ctcode, nr = 'pre', 2
+ctcode, nr = '24months', 2
 cropname = 'ring'
 
 ## Show 3D movie, by alternating the 10 volumes
@@ -42,18 +43,18 @@ vv.title('ECG-gated CT scan %s  -  %s' % (ptcode[7:], ctcode))
 # Setup data container
 container = vv.MotionDataContainer(a)
 for vol in vols:
-    #     t = vv.volshow2(vol, clim=(-550, 500)) # -750, 1000
-    t = vv.volshow(vol, clim=(0, 3000), renderStyle = 'iso')
+    t = vv.volshow2(vol, clim=(-550, 500)) # -750, 1000
+    # t = vv.volshow(vol, clim=(0, 5000), renderStyle = 'mip')
     t.parent = container
-    t.isoThreshold = 310               # iso or mip work well 
-    t.colormap = {'r': [(0.0, 0.0), (0.17727272, 1.0)],
-                'g': [(0.0, 0.0), (0.27272728, 1.0)],
-                'b': [(0.0, 0.0), (0.34545454, 1.0)],
-                'a': [(0.0, 1.0), (1.0, 1.0)]}
+    # t.isoThreshold = 310               # iso or mip work well 
+    # t.colormap = {'r': [(0.0, 0.0), (0.17727272, 1.0)],
+    #             'g': [(0.0, 0.0), (0.27272728, 1.0)],
+    #             'b': [(0.0, 0.0), (0.34545454, 1.0)],
+    #             'a': [(0.0, 1.0), (1.0, 1.0)]}
 # c = vv.ClimEditor(vv.gcf())
 # c.position = (10, 50)
 
-# foo = recordMovie()
+# foo = recordMovie(frameRate=10)
 
 ## Show 3D movie, by showing one volume that is moved by motion fields
 
