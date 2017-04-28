@@ -15,18 +15,18 @@ import pirt.reg # Python Image Registration Toolkit
 from stentseg.utils.datahandling import select_dir, loadvol, loadmodel
 
 # Select the ssdf basedir
-# basedir = select_dir(os.getenv('LSPEAS_BASEDIR', ''),
-#                      r'D:\LSPEAS\LSPEAS_ssdf',
-#                      r'G:\LSPEAS_ssdf_backup')
+basedir = select_dir(os.getenv('LSPEAS_BASEDIR', ''),
+                     r'D:\LSPEAS\LSPEAS_ssdf',
+                     r'G:\LSPEAS_ssdf_backup')
 
-basedir = select_dir(r'D:\LSPEAS_F\LSPEASF_ssdf')
+# basedir = select_dir(r'D:\LSPEAS_F\LSPEASF_ssdf')
 
 # Select dataset to register
 # ptcode = 'QRM_FANTOOM_20160121'
 # ctcode = '12months'
-cropnames = ['ringFOV128', 'ring', 'stent']
-ptcodes = ['LSPEASF_C_01']
-ctcodes = ['D', 'pre']  
+cropnames = ['stent']
+ptcodes = ['LSPEAS_018', 'LSPEAS_025', 'LSPEAS_023','LSPEAS_024']
+ctcodes = ['24months']  
 
 for ptcode in ptcodes:
     for ctcode in ctcodes:
@@ -37,6 +37,10 @@ for ptcode in ptcodes:
             except FileNotFoundError:
                 continue
             vols = [s['vol%i'%(i*10)] for i in range(10)]
+            
+            #todo: resample to isotropic?
+            # for vol in vols:
+                # see function in datahandling
             
             t0 = time.time()
             
