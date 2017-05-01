@@ -56,7 +56,6 @@ class ecgSlider:
     def _OnKey(self, event):
         if event.text == 'w':
             self.dm.MotionStop()
-            self._finished = True
         if event.text == 'q':
             self.dm.MotionPlay(self.motionPlay[0], self.motionPlay[1])
         if event.text == 's':
@@ -69,7 +68,7 @@ class ecgSlider:
         if event.key == vv.KEY_ESCAPE:
             # destroy slider
             self._finished = True
-            self.slider.Destroy()
+            # self.slider.Destroy()
     
     def Run(self):
         vv.processEvents()
