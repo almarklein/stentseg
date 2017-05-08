@@ -152,7 +152,7 @@ class ExcelAnalysis():
         self.workbook_renal = 'postop_measures_renal_aortic.xlsx'
         self.workbook_variables = 'LSPEAS_Variables.xlsx'
         self.workbook_variables_presheet = 'preCTA_bone_align'
-        self.sheet_peak_valley = 'peak valley locations'
+        self.sheet_valley = 'valley locations'
         self.patients =['LSPEAS_001', 'LSPEAS_002',	'LSPEAS_003', 'LSPEAS_005',	
                         'LSPEAS_008', 'LSPEAS_009',	'LSPEAS_011', 'LSPEAS_015',	'LSPEAS_017',	
                         'LSPEAS_018', 'LSPEAS_019',	'LSPEAS_020', 'LSPEAS_021',	'LSPEAS_022',
@@ -160,7 +160,7 @@ class ExcelAnalysis():
 
 
     def readRingExcel(self, ptcode, ctcode, ring='R1'):
-        """ To read peak and valley locations, R1 or R2
+        """ To read peak and valley locations, R1 or R2, up to 24M
         """
         
         exceldir = self.exceldir
@@ -171,9 +171,9 @@ class ExcelAnalysis():
         sheet = wb.get_sheet_by_name(sheet)
         
         if ring == 'R1':
-            colsStart = [1,5,9,13]
+            colsStart = [1,5,9,13,17]
         elif ring == 'R2':
-            colsStart = [17,21,25,29]
+            colsStart = [21,25,29,33,37]
         if ctcode == 'discharge':
             R1_ant = sheet.rows[16][colsStart[0]:colsStart[0]+3]
             R1_ant = [obj.value for obj in R1_ant]
@@ -210,6 +210,15 @@ class ExcelAnalysis():
             R1_left = [obj.value for obj in R1_left]
             R1_right = sheet.rows[66][colsStart[3]:colsStart[3]+3]
             R1_right = [obj.value for obj in R1_right]
+        elif ctcode == '24months':
+            R1_ant = sheet.rows[16][colsStart[4]:colsStart[4]+3]
+            R1_ant = [obj.value for obj in R1_ant]
+            R1_post = sheet.rows[29][colsStart[4]:colsStart[4]+3]
+            R1_post = [obj.value for obj in R1_post] 
+            R1_left = sheet.rows[53][colsStart[4]:colsStart[4]+3]
+            R1_left = [obj.value for obj in R1_left]
+            R1_right = sheet.rows[66][colsStart[4]:colsStart[4]+3]
+            R1_right = [obj.value for obj in R1_right]
         else:
             print('ctcode not known')
             ValueError
@@ -217,17 +226,17 @@ class ExcelAnalysis():
         return R1_ant, R1_post, R1_left, R1_right
 
 
-    def writeRingPatientsExcel(self, ptcodes='all', ctcodes='all'):
-        """ Write peak valley locations from multiple patients
-        ptcodes/ctcodes can be 'all' or a list with ptcode/ctcode strings
-        overwrites 'peak valleys locations
+    def writeRingPatientsExcel(self, ptcodes='anaconda', ctcodes='all'):
+        """ Write valley locations from multiple patients
+        ptcodes/ctcodes can be a list with ptcode/ctcode strings
+        overwrites excel peak valleys locations!
         """
         
         sheetwrite = 'peak valley locations'
         exceldir = self.exceldir
         workbook_stent = self.workbook_stent
         workbook_renal = self.workbook_renal
-        sheetwrite = self.sheet_peak_valley
+        sheetwrite = self.sheet_valley
         
         wb = openpyxl.load_workbook(os.path.join(exceldir, workbook_renal), data_only=True)
         sheet_to_write = wb.get_sheet_by_name(sheetwrite)
@@ -236,19 +245,30 @@ class ExcelAnalysis():
                     'LSPEAS_008', 'LSPEAS_009',	'LSPEAS_011', 'LSPEAS_015',	'LSPEAS_017',	
                     'LSPEAS_018', 'LSPEAS_019',	'LSPEAS_020', 'LSPEAS_021',	'LSPEAS_022',
                     'LSPEAS_025']#, 'LSPEAS_023', 'LSPEAS_024', 'LSPEAS_004']
-        codes = ['discharge', '1month', '6months', '12months']#, '24months'] first adjust excel
-        if ptcodes == 'all':
+        codes = ['discharge', '1month', '6months', '12months', '24months']
+        if ptcodes == 'anaconda':
             ptcodes = patients
         if ctcodes == 'all':
             ctcodes = codes
-        rowStart = [8,31,54,77] # ant, post, left, right; for writing
-        colStart = [4,8,12,16]#,20] ; for writing ctcodes
+        rowStart = [8,31] # left, right; for writing
+        colStart = [4,8,12,16,20] # for writing ctcodes; 4 = D
         for ctcode in ctcodes:
             col = colStart[ctcodes.index(ctcode)]
             for ptcode in ptcodes:
-                R1_ant, R1_post, R1_left, R1_right = readRingExcel(workbook_stent, ptcode, ctcode, ring='R1')
+                R_ant, R_post, R_left, R_right = self.readRingExcel(ptcode, ctcode, ring='R2')
+                # check which is left and right (origin is right anterior)
+                if not None in (R_left or R_right): # datapoint is missing
+                    if R_left[0] > R_right[0]: # x from right to left
+                        R_LR = [R_left, R_right]
+                    elif R_left[0] == R_right[0]:
+                        print("Error for {} {}, ring position in x is the same for left and right".format(ptcode, ctcode)) 
+                    else:
+                        R_LR = [R_right, R_left]
+                else:
+                    R_LR = [R_left, R_right]
+                    print("None was encountered in ring position for {} {}".format(ptcode, ctcode))
                 # write positions
-                for i, position in enumerate([R1_ant, R1_post, R1_left, R1_right]):
+                for i, position in enumerate(R_LR):
                     row = rowStart[i] + patients.index(ptcode)
                     for j, coordinate in enumerate(position):
                         sheet_to_write.cell(row=row, column=col+j).value = coordinate
@@ -256,54 +276,83 @@ class ExcelAnalysis():
         print('worksheet "%s" overwritten in workbook "%s"' % (sheetwrite,workbook_renal) )
     
 
-    def readRenalsExcel(self, sheet, ptcode, ctcode, zPositive=True):
-        """ To read renal locations. zPositive True will return z as non-negative
-        use sheet to specify sheet in excel for observer
+    def distanceRenalToValley(self, sheetRA='renal_obs1', sheet_write='dist_V_RA_obs1'):
+        """ To read renal and ring locations and get distance between them. 
+        use 'sheet' to specify sheet in excel for observer
         """
         
         exceldir = self.exceldir
         workbook_renal = self.workbook_renal
+        sheet_valleys = self.sheet_valley
+        sheet_write_distances = sheet_write
         
         wb = openpyxl.load_workbook(os.path.join(exceldir, workbook_renal), data_only=True)
-        sheet = wb.get_sheet_by_name(sheet)
+        sheetRA = wb.get_sheet_by_name(sheetRA)
+        sheetV = wb.get_sheet_by_name(sheet_valleys)
         
-        colsStart = [5,9,13,17,21]
-        patients = self.patients
-        
-        if ctcode == 'discharge':
-            col = colsStart[0]
-        elif ctcode == '1month':
-            col = colsStart[1]
-        elif ctcode == '6months':
-            col = colsStart[2]
-        elif ctcode == '12months':
-            col = colsStart[3]
-        elif ctcode == '24months':
-            col = colsStart[4]
-        else:
-            print('ctcode not known')
-            ValueError
+        # Renals
+        colsStart = ['H', 'L', 'P', 'T', 'X'] # z coordinate renals ctcodes
+        colsStart = [(openpyxl.cell.column_index_from_string(char)-1) for char in colsStart]
         
         rowstartleft = 7 # left renal
         rowstartright = 30 # right renal
         
-        rowleft = rowstartleft + patients.index(ptcode)
-        rowright = rowstartright + patients.index(ptcode)
+        renal_lowest_z_cts = []
+        # iterate cols for ct scans
+        for col in colsStart: 
+            renals_left_z = sheetRA.columns[col][rowstartleft:rowstartleft+18]
+            renals_left_z = [obj.value for obj in renals_left_z]
+            renals_right_z = sheetRA.columns[col][rowstartright:rowstartright+18]
+            renals_right_z = [obj.value for obj in renals_right_z]
+            # if z is entered negative flip becasue ring z is defined positive
+            for z in renals_left_z:
+                if z is None:
+                    continue
+                if z < 0:
+                    z*= -1
+            for z in renals_right_z:
+                if z is None:
+                    continue
+                if z < 0:
+                    z*= -1
+            # get lowest renals
+            renal_lowest_z = []
+            for i, el in enumerate(renals_left_z):
+                if el is None and renals_right_z[i] is None:
+                    renal_lowest_z.append(np.nan)
+                    print("renal values not entered at {}".format(i))
+                elif el is None:
+                    renal_lowest_z.append(renals_right_z[i])
+                    print("left renal value not entered, right is used")
+                elif renals_right_z[i] is None:
+                    renal_lowest_z.append(el)
+                    print("right renal value not entered, left is used")
+                elif el >= renals_right_z[i]:
+                    renal_lowest_z.append(el)
+                else:
+                    renal_lowest_z.append(renals_right_z[i])
+            renal_lowest_z_cts.renal_lowest_z
+            
+        # Ring valleys
+        colsStart = ['F', 'J', 'N', 'R', 'V'] # z coordinate valleys ctcodes
+        colsStart = [(openpyxl.cell.column_index_from_string(char)-1) for char in colsStart]
         
-        renal_left = sheet.rows[rowleft][col:col+3]
-        renal_left = [obj.value for obj in renal_left]
-        renal_right = sheet.rows[rowright][col:col+3]
-        renal_right = [obj.value for obj in renal_right] 
+        rowstartleft = 7 # left valley
+        rowstartright = 30 # right valley
         
-        if zPositive == True:
-            for renal in [renal_left, renal_right]:
-                if renal[-1] < 0:
-                    renal[-1] *= -1
+        for col in colsStart: # per ct scan
+            valleys_left_z = sheetV.columns[col][rowstartleft:rowstartleft+18]
+            valleys_left_z = [obj.value for obj in valleys_left_z]
+            valleys_left_z = [np.nan if val is None else val for val in valleys_left_z]
+            valleys_right_z = sheetV.columns[col][rowstartright:rowstartright+18]
+            valleys_right_z = [obj.value for obj in valleys_right_z]
+            valleys_right_z = [np.nan if val is None else val for val in valleys_right_z]
         
-        renal_left = PointSet(renal_left)
-        renal_right = PointSet(renal_right)
+            valleys_mid_z = (np.asarray(valleys_left_z)+np.asarray(valleys_right_z))/2
         
-        return renal_left, renal_right
+        
+            
+        return
 
 
     def plot_distance_to_renal(self, sheet, ptcode):
