@@ -10,6 +10,7 @@ import matplotlib.pyplot as plt
 import matplotlib as mpl
 import numpy as np 
 import itertools
+from matplotlib import gridspec
 
 
 def point_in_pointcloud_closest_to_p(pp, point):
@@ -1053,7 +1054,7 @@ class ExcelAnalysis():
             papertype='a0', dpi=300)
     
     
-    def plot_pp_vv_distance_ratio(self, patients=None, preop=False, ylim=[0,1.5],saveFig=True):
+    def plot_pp_vv_distance_ratio(self, patients=None, preop=False, ylim=[0.6,1.5],saveFig=True):
         """ Plot pp and vv distance ratio
         show asymmetry change over time
         """
@@ -1074,9 +1075,12 @@ class ExcelAnalysis():
         xrange = range(1,1+len(xlabels)) # not start from x=0 to play with margin xlim
         
         # init axis
-        ax1 = f1.add_subplot(1,2,1)
+        gs = gridspec.GridSpec(1, 2, width_ratios=[1, (6.1/5.2)]) 
+        # ax1 = f1.add_subplot(1,2,1)
+        ax1 = plt.subplot(gs[0])
         plt.xticks(xrange, xlabels, fontsize = 14)
-        ax2 = f1.add_subplot(1,2,2)
+        # ax2 = f1.add_subplot(1,2,2)
+        ax2 = plt.subplot(gs[1])
         plt.xticks(xrange, xlabels, fontsize = 14)
         
         ax1.set_ylabel('Asymmetry ratio PP/VV R1', fontsize=15)
@@ -1084,7 +1088,7 @@ class ExcelAnalysis():
         ax1.set_ylim(ylim)
         ax2.set_ylim(ylim)
         ax1.set_xlim([0.8, len(xlabels)+0.2]) # xlim margins 0.2
-        ax2.set_xlim([0.8, len(xlabels)+1.2])
+        ax2.set_xlim([0.8, len(xlabels)+1.1]) # longer for legend
         # plot horizontal line at 1
         ax1.plot([0,max(xrange)],[1,1], ls='--', color='dimgrey')
         ax2.plot([0,max(xrange)],[1,1], ls='--', color='dimgrey')
@@ -1132,20 +1136,27 @@ class ExcelAnalysis():
             #     marker = next(mStyles)
             if devicesize == 25.5:
                 marker = markers[0]
+                olb = 'OLB25'
             elif devicesize == 28:
                 marker = markers[1]
+                olb = 'OLB28'
             elif devicesize == 30.5:
                 marker = markers[2]
+                olb = 'OLB30'
             elif devicesize == 32:
                 marker = markers[3]
+                olb = 'OLB32'
             else:
                 marker = markers[4]
+                olb = 'OLB34'
             if patient == 'LSPEAS_004': # FEVAR
                 color = 'k'
                 ls = ':'
+                olb = 'OLB32'
             elif patient == 'LSPEAS_023': # endurant
                 color = 'k'
                 ls = '-.'
+                olb = 'BODY28'
                 
             # when scans are not scored in excel do not plot '#DIV/0!'
             ratioR1 = [el if not isinstance(el, str) else None for el in ratioR1]
@@ -1158,16 +1169,17 @@ class ExcelAnalysis():
                 xaxis = xrange
             # plot postop ratio
             ax1.plot(xaxis, ratioR1, ls=ls, lw=lw, marker=marker, color=color, 
-            label='%i: ID %s' % (i+1, patient[-3:]), alpha=alpha)
+            # label='%i: ID %s' % (i+1, patient[-3:]), alpha=alpha)
+            label='%i: %s' % (i+1, olb), alpha=alpha)
             ax2.plot(xaxis, ratioR2, ls=ls, lw=lw, marker=marker, color=color, 
-            label='%i: ID %s' % (i+1, patient[-3:]), alpha=alpha)
+            label='%i: %s' % (i+1, olb), alpha=alpha)
             if preop:
                 # plot preop ratio
                 if not isinstance(ratiopreR1, str): # not yet scored in excel so '#DIV/0!'
                     ax1.plot(xrange[:2], [ratiopreR1,ratioR1[0]], ls=ls, lw=lw, marker=marker, color=color, alpha=alpha)
                 if not isinstance(ratiopreR2, str):
                     ax2.plot(xrange[:2], [ratiopreR2,ratioR2[0]], ls=ls, lw=lw, marker=marker, color=color, alpha=alpha)
-            
+        
         ax2.legend(loc='upper right', fontsize=8, numpoints=1, title='Patients')
         _initaxis([ax1, ax2])
         
@@ -1230,7 +1242,7 @@ if __name__ == '__main__':
     
     # create class object for excel analysis
     foo = ExcelAnalysis() # excel locations initialized in class
-    foo.plot_pp_vv_distance_ratio(patients=patients, ylim=[0.6,1.5], saveFig=False)
+    foo.plot_pp_vv_distance_ratio(patients=patients, ylim=[0.6,1.5], saveFig=True)
     # foo.plot_pp_vv_deployment(ring=12, saveFig=False)
     # foo.plot_ring_deployment(patients=patients, ylim=[0, 30], ylim_mm=[20,33.5], saveFig=True)
     # foo.change_in_rdc_D_12()
