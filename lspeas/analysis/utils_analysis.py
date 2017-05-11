@@ -149,7 +149,7 @@ class ExcelAnalysis():
         self.exceldir =  ExcelAnalysis.exceldir
         self.dirsaveIm = ExcelAnalysis.dirsaveIm
         self.workbook_stent = 'LSPEAS_pulsatility_expansion_avgreg_subp_v15.3.xlsx'
-        self.workbook_renal = 'postop_measures_renal_aortic.xlsx'
+        self.workbook_renal = 'postop_measures_renal_ring.xlsx'
         self.workbook_variables = 'LSPEAS_Variables.xlsx'
         self.workbook_variables_presheet = 'preCTA_bone_align'
         self.sheet_valley = 'valley locations'
@@ -624,7 +624,7 @@ class ExcelAnalysis():
         
         
     
-    def plot_ring_deployment(self, patients=None, ylim=[0, 42], ylim_mm=[20,33], saveFig=True):
+    def plot_ring_deployment(self, patients=None, preop=False, ylim=[0, 30], ylim_mm=[20,33.5], saveFig=True):
         """ Plot residual deployment capacity ring individul patients lines
         OUTER, mean peak and valley diameters
         """
@@ -638,7 +638,10 @@ class ExcelAnalysis():
         
         # init figure
         f1 = plt.figure(num=3, figsize=(11.6, 9.2)) # 4.6
-        xlabels = ['Pre','D', '1M', '6M', '12M', '24M']
+        if preop:
+            xlabels = ['Pre','D', '1M', '6M', '12M', '24M']
+        else:
+            xlabels = ['D', '1M', '6M', '12M', '24M']
         xrange = range(1,1+len(xlabels)) # not start from x=0 to play with margin xlim
         
         # init axis
@@ -741,27 +744,33 @@ class ExcelAnalysis():
             R1mm = [el if not isinstance(el, str) else None for el in R1mm]
             R2mm = [el if not isinstance(el, str) else None for el in R2mm]
             alpha = 1
+            if preop:
+                xaxis = xrange[1:]
+            else:
+                xaxis = xrange
             # plot postop rdc
-            ax1.plot(xrange[1:], R1, ls=ls, lw=lw, marker=marker, color=color, 
+            ax1.plot(xaxis, R1, ls=ls, lw=lw, marker=marker, color=color, 
             label='%i: ID %s' % (i+1, patient[-3:]), alpha=alpha)
-            ax2.plot(xrange[1:], R2, ls=ls, lw=lw, marker=marker, color=color, 
+            ax2.plot(xaxis, R2, ls=ls, lw=lw, marker=marker, color=color, 
             label='%i: ID %s' % (i+1, patient[-3:]), alpha=alpha)
-            # plot preop rdc
-            if not isinstance(preR1, str): # not yet scored in excel so '#DIV/0!'
-                ax1.plot(xrange[:2], [preR1,R1[0]], ls=ls, lw=lw, marker=marker, color=color, alpha=alpha)
-            if not isinstance(preR2, str):
-                ax2.plot(xrange[:2], [preR2,R2[0]], ls=ls, lw=lw, marker=marker, color=color, alpha=alpha)
+            if preop:
+                # plot preop rdc
+                if not isinstance(preR1, str): # not yet scored in excel so '#DIV/0!'
+                    ax1.plot(xrange[:2], [preR1,R1[0]], ls=ls, lw=lw, marker=marker, color=color, alpha=alpha)
+                if not isinstance(preR2, str):
+                    ax2.plot(xrange[:2], [preR2,R2[0]], ls=ls, lw=lw, marker=marker, color=color, alpha=alpha)
             
             # plot in mm postop
-            ax3.plot(xrange[1:], R1mm, ls=ls, lw=lw, marker=marker, color=color, 
+            ax3.plot(xaxis, R1mm, ls=ls, lw=lw, marker=marker, color=color, 
             label='%i: ID %s' % (i+1, patient[-3:]), alpha=alpha)
-            ax4.plot(xrange[1:], R2mm, ls=ls, lw=lw, marker=marker, color=color, 
+            ax4.plot(xaxis, R2mm, ls=ls, lw=lw, marker=marker, color=color, 
             label='%i: ID %s' % (i+1, patient[-3:]), alpha=alpha)
-            # plot in mm preop
-            if not isinstance(preR1mm, str): # not yet scored in excel so '#DIV/0!'
-                ax3.plot(xrange[:2], [preR1mm,R1mm[0]], ls=ls, lw=lw, marker=marker, color=color, alpha=alpha)
-            if not isinstance(preR2mm, str):
-                ax4.plot(xrange[:2], [preR2mm,R2mm[0]], ls=ls, lw=lw, marker=marker, color=color, alpha=alpha)
+            if preop:
+                # plot in mm preop
+                if not isinstance(preR1mm, str): # not yet scored in excel so '#DIV/0!'
+                    ax3.plot(xrange[:2], [preR1mm,R1mm[0]], ls=ls, lw=lw, marker=marker, color=color, alpha=alpha)
+                if not isinstance(preR2mm, str):
+                    ax4.plot(xrange[:2], [preR2mm,R2mm[0]], ls=ls, lw=lw, marker=marker, color=color, alpha=alpha)
             
         ax2.legend(loc='upper right', fontsize=8, numpoints=1, title='Patients')
         _initaxis([ax1, ax2, ax3, ax4])
@@ -1044,7 +1053,7 @@ class ExcelAnalysis():
             papertype='a0', dpi=300)
     
     
-    def plot_pp_vv_distance_ratio(self, patients=None, ylim=[0,1.5],saveFig=True):
+    def plot_pp_vv_distance_ratio(self, patients=None, preop=False, ylim=[0,1.5],saveFig=True):
         """ Plot pp and vv distance ratio
         show asymmetry change over time
         """
@@ -1058,7 +1067,10 @@ class ExcelAnalysis():
         
         # init figure
         f1 = plt.figure(num=4, figsize=(14.55, 6.9)) # 11.6,4.6
-        xlabels = ['Pre','D', '1M', '6M', '12M', '24M']
+        if preop:
+            xlabels = ['Pre','D', '1M', '6M', '12M', '24M']
+        else:
+            xlabels = ['D', '1M', '6M', '12M', '24M']
         xrange = range(1,1+len(xlabels)) # not start from x=0 to play with margin xlim
         
         # init axis
@@ -1083,7 +1095,7 @@ class ExcelAnalysis():
         # lStyles = ['-', '--']
         # mStyles = itertools.cycle(['^', '^'])#'D', 's', '+'])
         # marker = 'o'
-        markers = ['D', 'o', '^', 's', '*']
+        markers = ['D', 'o', '^', 's', '*'] # for device size
         lw = 1
         
         # read data
@@ -1140,16 +1152,21 @@ class ExcelAnalysis():
             ratioR2 = [el if not isinstance(el, str) else None for el in ratioR2]
             
             alpha = 0.9
+            if preop:
+                xaxis = xrange[1:]
+            else:
+                xaxis = xrange
             # plot postop ratio
-            ax1.plot(xrange[1:], ratioR1, ls=ls, lw=lw, marker=marker, color=color, 
+            ax1.plot(xaxis, ratioR1, ls=ls, lw=lw, marker=marker, color=color, 
             label='%i: ID %s' % (i+1, patient[-3:]), alpha=alpha)
-            ax2.plot(xrange[1:], ratioR2, ls=ls, lw=lw, marker=marker, color=color, 
+            ax2.plot(xaxis, ratioR2, ls=ls, lw=lw, marker=marker, color=color, 
             label='%i: ID %s' % (i+1, patient[-3:]), alpha=alpha)
-            # plot preop ratio
-            if not isinstance(ratiopreR1, str): # not yet scored in excel so '#DIV/0!'
-                ax1.plot(xrange[:2], [ratiopreR1,ratioR1[0]], ls=ls, lw=lw, marker=marker, color=color, alpha=alpha)
-            if not isinstance(ratiopreR2, str):
-                ax2.plot(xrange[:2], [ratiopreR2,ratioR2[0]], ls=ls, lw=lw, marker=marker, color=color, alpha=alpha)
+            if preop:
+                # plot preop ratio
+                if not isinstance(ratiopreR1, str): # not yet scored in excel so '#DIV/0!'
+                    ax1.plot(xrange[:2], [ratiopreR1,ratioR1[0]], ls=ls, lw=lw, marker=marker, color=color, alpha=alpha)
+                if not isinstance(ratiopreR2, str):
+                    ax2.plot(xrange[:2], [ratiopreR2,ratioR2[0]], ls=ls, lw=lw, marker=marker, color=color, alpha=alpha)
             
         ax2.legend(loc='upper right', fontsize=8, numpoints=1, title='Patients')
         _initaxis([ax1, ax2])
@@ -1213,9 +1230,9 @@ if __name__ == '__main__':
     
     # create class object for excel analysis
     foo = ExcelAnalysis() # excel locations initialized in class
-    # foo.plot_pp_vv_distance_ratio(patients=patients, ylim=[0.6,1.5], saveFig=False)
+    foo.plot_pp_vv_distance_ratio(patients=patients, ylim=[0.6,1.5], saveFig=False)
     # foo.plot_pp_vv_deployment(ring=12, saveFig=False)
-    # foo.plot_ring_deployment(patients=patients, ylim=[0, 42], ylim_mm=[18,33.5], saveFig=False)
+    # foo.plot_ring_deployment(patients=patients, ylim=[0, 30], ylim_mm=[20,33.5], saveFig=True)
     # foo.change_in_rdc_D_12()
     
     
