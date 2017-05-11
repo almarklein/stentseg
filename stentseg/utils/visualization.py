@@ -18,7 +18,7 @@ def remove_stent_from_volume(vol, graph, stripSize=5):
     for n1,n2 in graph.edges():
         path = graph.edge[n1][n2]['path']
         path = Pointset(path)  # Make a visvis pointset
-        stripSize2 = stripSize // 2
+        stripSize2 = stripSize // 2 # floor division
         for point in path:
             z,y,x = vol2.point_to_index(point)
             vol2[z-stripSize:z+stripSize2+1, y-stripSize:y+stripSize+1, x-stripSize:x+stripSize+1] = 0
