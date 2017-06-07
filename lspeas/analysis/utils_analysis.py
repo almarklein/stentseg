@@ -149,14 +149,14 @@ class ExcelAnalysis():
     def __init__(self):
         self.exceldir =  ExcelAnalysis.exceldir
         self.dirsaveIm = ExcelAnalysis.dirsaveIm
-        self.workbook_stent = 'LSPEAS_pulsatility_expansion_avgreg_subp_v15.3.xlsx'
+        self.workbook_stent = 'LSPEAS_pulsatility_expansion_avgreg_subp_v15.4.xlsx'
         self.workbook_renal = 'postop_measures_renal_ring.xlsx'
         self.workbook_variables = 'LSPEAS_Variables.xlsx'
         self.workbook_variables_presheet = 'preCTA_bone_align'
         self.sheet_valley = 'valley locations'
         self.patients =['LSPEAS_001', 'LSPEAS_002',	'LSPEAS_003', 'LSPEAS_005',	
                         'LSPEAS_008', 'LSPEAS_009',	'LSPEAS_011', 'LSPEAS_015',	'LSPEAS_017',	
-                        'LSPEAS_018', 'LSPEAS_019',	'LSPEAS_020', 'LSPEAS_021',	'LSPEAS_022',
+                        'LSPEAS_018', 'LSPEAS_020', 'LSPEAS_021', 'LSPEAS_022', 'LSPEAS_019',
                         'LSPEAS_025', 'LSPEAS_023', 'LSPEAS_024', 'LSPEAS_004']   
 
 
@@ -244,7 +244,7 @@ class ExcelAnalysis():
         
         patients = ['LSPEAS_001', 'LSPEAS_002',	'LSPEAS_003', 'LSPEAS_005',	
                     'LSPEAS_008', 'LSPEAS_009',	'LSPEAS_011', 'LSPEAS_015',	'LSPEAS_017',	
-                    'LSPEAS_018', 'LSPEAS_019',	'LSPEAS_020', 'LSPEAS_021',	'LSPEAS_022',
+                    'LSPEAS_018', 'LSPEAS_020', 'LSPEAS_021', 'LSPEAS_022', 'LSPEAS_019',
                     'LSPEAS_025']#, 'LSPEAS_023', 'LSPEAS_024', 'LSPEAS_004']
         codes = ['discharge', '1month', '6months', '12months', '24months']
         if ptcodes == 'anaconda':
@@ -456,11 +456,12 @@ class ExcelAnalysis():
             'plot_pp_vv_deployment_R{}.png'.format(ring)), papertype='a0', dpi=300)
     
     
-    def plot_ring_deployment_lines(self, rowsrd=[76,90], rowsmm=[120,134], 
-                ylim=[0, 42], ylim_mm=[18, 34], 
+    def plot_ring_deployment_lines(self, rowsrd=[211,225], rowsmm=[120,134], 
+                ylim=[72, 100], ylim_mm=[18, 34], 
                 subgroup_colors=['#D02D2E', 'blue'], saveFig=True):
         """
-        plot mean with std and colors to show spread
+        plot mean with std and colors to show spread. 
+        for rdc rowsrd=[76,90] with ylim=[0,42]
         """
         
         exceldir = self.exceldir
@@ -469,7 +470,7 @@ class ExcelAnalysis():
         
         wb = openpyxl.load_workbook(os.path.join(exceldir, workbook_stent), data_only=True)
         # wbvars = openpyxl.load_workbook(os.path.join(exceldir, workbook_vars), data_only=True)
-        sheet = wb.get_sheet_by_name('Summary')
+        sheet = wb.get_sheet_by_name('Deployment')
         
         # init figure
         f1 = plt.figure(num=3, figsize=(11.6, 4.6)) # 4.6
@@ -482,7 +483,7 @@ class ExcelAnalysis():
         ax2 = f1.add_subplot(1,2,2)
         plt.xticks(xrange, xlabels, fontsize = 14)
         
-        ax1.set_ylabel('Residual deployment capacity (%)', fontsize=15) # ring deployment capacity
+        ax1.set_ylabel('Deployment (%)', fontsize=15) # ring deployment
         ax1.set_ylim(ylim)
         ax1.set_xlim([0.8, len(xlabels)+0.2]) # xlim margins 0.2
         # plots in mm
@@ -579,25 +580,30 @@ class ExcelAnalysis():
         
         marker = 'o'
         markersize = 4
+        minmaxmarkers = False
         # plot rdc
         # plot data R1
-        ax1.plot(xrange, np.asarray(means_rd)[:,0], ls='-', marker='o', color=subgroup_colors[0]) 
+        ax1.plot(xrange, np.asarray(means_rd)[:,0], ls='-', marker='o', color=subgroup_colors[0], label='R1') 
         ax1.errorbar(xrange, np.asarray(means_rd)[:,0], 
             yerr = np.asarray(stds_rd)[:,0], fmt=None, ecolor=subgroup_colors[0], capsize=8)
         # ax1.fill_between(xrange, np.asarray(mins_rd)[:,0], np.asarray(maxs_rd)[:,0], color=subgroup_colors[0], alpha=0.2)
-        ax1.plot(xrange, np.asarray(mins_rd)[:,0], ls='', marker=marker , color='w', 
-            markeredgecolor=subgroup_colors[0], markersize=markersize)
-        ax1.plot(xrange, np.asarray(maxs_rd)[:,0], ls='', marker=marker , color='w', 
-            markeredgecolor=subgroup_colors[0], markersize=markersize) 
+        # plot min and max markers
+        if minmaxmarkers:
+            ax1.plot(xrange, np.asarray(mins_rd)[:,0], ls='', marker=marker , color='w', 
+                markeredgecolor=subgroup_colors[0], markersize=markersize)
+            ax1.plot(xrange, np.asarray(maxs_rd)[:,0], ls='', marker=marker , color='w', 
+                markeredgecolor=subgroup_colors[0], markersize=markersize) 
         # plot data R2
-        ax1.plot(xrange, np.asarray(means_rd)[:,1], ls='-', marker='o', color=subgroup_colors[1]) 
+        ax1.plot(xrange, np.asarray(means_rd)[:,1], ls='-', marker='o', color=subgroup_colors[1], label='R2') 
         ax1.errorbar(xrange, np.asarray(means_rd)[:,1], 
             yerr = np.asarray(stds_rd)[:,1], fmt=None, ecolor=subgroup_colors[1], capsize=8)
         # ax1.fill_between(xrange, np.asarray(mins_rd)[:,1], np.asarray(maxs_rd)[:,1], color=subgroup_colors[1], alpha=0.2)
-        ax1.plot(xrange, np.asarray(mins_rd)[:,1], ls='', marker=marker , color='w', 
-            markeredgecolor=subgroup_colors[1], markersize=markersize)
-        ax1.plot(xrange, np.asarray(maxs_rd)[:,1], ls='', marker=marker , color='w', 
-            markeredgecolor=subgroup_colors[1], markersize=markersize) 
+        # plot min and max markers
+        if minmaxmarkers:
+            ax1.plot(xrange, np.asarray(mins_rd)[:,1], ls='', marker=marker , color='w', 
+                markeredgecolor=subgroup_colors[1], markersize=markersize)
+            ax1.plot(xrange, np.asarray(maxs_rd)[:,1], ls='', marker=marker , color='w', 
+                markeredgecolor=subgroup_colors[1], markersize=markersize) 
         
         # plot mm
         # plot data R1
@@ -605,28 +611,34 @@ class ExcelAnalysis():
         ax2.errorbar(xrange, np.asarray(means_mm)[:,0], 
             yerr = np.asarray(stds_mm)[:,0], fmt=None, ecolor=subgroup_colors[0], capsize=8)
         # ax2.fill_between(xrange, np.asarray(mins_mm)[:,0], np.asarray(maxs_mm)[:,0], color=subgroup_colors[0], alpha=0.2)
-        ax2.plot(xrange, np.asarray(mins_mm)[:,0], ls='', marker=marker , color='w', 
-            markeredgecolor=subgroup_colors[0], markersize=markersize)
-        ax2.plot(xrange, np.asarray(maxs_mm)[:,0], ls='', marker=marker , color='w', 
-            markeredgecolor=subgroup_colors[0], markersize=markersize) 
+        # plot min and max markers
+        if minmaxmarkers:
+            ax2.plot(xrange, np.asarray(mins_mm)[:,0], ls='', marker=marker , color='w', 
+                markeredgecolor=subgroup_colors[0], markersize=markersize)
+            ax2.plot(xrange, np.asarray(maxs_mm)[:,0], ls='', marker=marker , color='w', 
+                markeredgecolor=subgroup_colors[0], markersize=markersize) 
         # plot data R2
         ax2.plot(xrange, np.asarray(means_mm)[:,1], ls='-', marker='o', color=subgroup_colors[1]) 
         ax2.errorbar(xrange, np.asarray(means_mm)[:,1], 
             yerr = np.asarray(stds_mm)[:,1], fmt=None, ecolor=subgroup_colors[1], capsize=8)
         # ax2.fill_between(xrange, np.asarray(mins_mm)[:,1], np.asarray(maxs_mm)[:,1], color=subgroup_colors[1], alpha=0.2)
-        ax2.plot(xrange, np.asarray(mins_mm)[:,1], ls='', marker=marker , color='w', 
-            markeredgecolor=subgroup_colors[1], markersize=markersize)
-        ax2.plot(xrange, np.asarray(maxs_mm)[:,1], ls='', marker=marker , color='w', 
-            markeredgecolor=subgroup_colors[1], markersize=markersize) 
+        # plot min and max markers
+        if minmaxmarkers:
+            ax2.plot(xrange, np.asarray(mins_mm)[:,1], ls='', marker=marker , color='w', 
+                markeredgecolor=subgroup_colors[1], markersize=markersize)
+            ax2.plot(xrange, np.asarray(maxs_mm)[:,1], ls='', marker=marker , color='w', 
+                markeredgecolor=subgroup_colors[1], markersize=markersize) 
         
-        
+        ax1.legend(loc='lower right', fontsize=12, numpoints=1)
         _initaxis([ax1, ax2])
         
-        
+        if saveFig:
+            plt.savefig(os.path.join(self.dirsaveIm, 
+            'plot_means_deployment_mm.png'), papertype='a0', dpi=300)
         
     
     def plot_ring_deployment(self, patients=None, preop=False, ylim=[0, 30], ylim_mm=[20,33.5], saveFig=True):
-        """ Plot residual deployment capacity ring individul patients lines
+        """ Plot deployment/residual deployment capacity ring individul patients lines
         OUTER, mean peak and valley diameters
         """
         
@@ -655,8 +667,10 @@ class ExcelAnalysis():
         ax4 = f1.add_subplot(2,2,4)
         plt.xticks(xrange, xlabels, fontsize = 14)
         
-        ax1.set_ylabel('Residual deployment capacity R1 (%)', fontsize=15) # ring deployment capacity
-        ax2.set_ylabel('Residual deployment capacity R2 (%)', fontsize=15) # ring deployment capacity
+        # ax1.set_ylabel('Residual deployment capacity R1 (%)', fontsize=15) # ring deployment capacity
+        # ax2.set_ylabel('Residual deployment capacity R2 (%)', fontsize=15) # ring deployment capacity
+        ax1.set_ylabel('Deployment R1 (%)', fontsize=15)
+        ax2.set_ylabel('Deployment R2 (%)', fontsize=15)
         ax1.set_ylim(ylim)
         ax2.set_ylim(ylim)
         ax1.set_xlim([0.8, len(xlabels)+0.2]) # xlim margins 0.2
@@ -680,7 +694,7 @@ class ExcelAnalysis():
         
         # read data
         colStart = [1, 6] # B, G
-        rowStart = 97 # 82 = mean pp vv middle bundle, row 83 excel
+        rowStart = 104 # 97 outer rdc; 82 = mean pp vv middle bundle, row 83 excel
         rowStartmm = 96 # 81 = mean pp vv distance middle bundle, row 82 excel
         if patients is None:
             patients = self.patients
@@ -724,26 +738,37 @@ class ExcelAnalysis():
             #     marker = next(mStyles)
             if devicesize == 25.5:
                 marker = markers[0]
+                olb = 'OLB25' 
             elif devicesize == 28:
                 marker = markers[1]
+                olb = 'OLB28' 
             elif devicesize == 30.5:
                 marker = markers[2]
+                olb = 'OLB30'
             elif devicesize == 32:
                 marker = markers[3]
+                olb = 'OLB32'
             else:
                 marker = markers[4]
+                olb = 'OLB34'
             if patient == 'LSPEAS_004': # FEVAR
                 color = 'k'
                 ls = ':'
+                olb = 'OLB32'
             elif patient == 'LSPEAS_023': # endurant
                 color = 'k'
                 ls = '-.'
+                olb = 'body28'
             
             # when scans are not scored in excel do not plot '#DIV/0!'
             R1 = [el if not isinstance(el, str) else None for el in R1]
             R2 = [el if not isinstance(el, str) else None for el in R2]
             R1mm = [el if not isinstance(el, str) else None for el in R1mm]
             R2mm = [el if not isinstance(el, str) else None for el in R2mm]
+            # get deployment% (in excel percentage is used)
+            R1 = [100*(1-el) if not el is None else None for el in R1]
+            R2 = [100*(1-el) if not el is None else None for el in R2]
+            
             alpha = 1
             if preop:
                 xaxis = xrange[1:]
@@ -751,9 +776,10 @@ class ExcelAnalysis():
                 xaxis = xrange
             # plot postop rdc
             ax1.plot(xaxis, R1, ls=ls, lw=lw, marker=marker, color=color, 
-            label='%i: ID %s' % (i+1, patient[-3:]), alpha=alpha)
-            ax2.plot(xaxis, R2, ls=ls, lw=lw, marker=marker, color=color, 
-            label='%i: ID %s' % (i+1, patient[-3:]), alpha=alpha)
+                    label='%s: %s' % (patient[-2:], olb), alpha=alpha)
+            ax2.plot(xaxis, R2, ls=ls, lw=lw, marker=marker, color=color,
+                    label='%s: %s' % (patient[-2:], olb), alpha=alpha)
+            # label='%i: ID %s' % (i+1, patient[-3:]), alpha=alpha)
             if preop:
                 # plot preop rdc
                 if not isinstance(preR1, str): # not yet scored in excel so '#DIV/0!'
@@ -763,9 +789,9 @@ class ExcelAnalysis():
             
             # plot in mm postop
             ax3.plot(xaxis, R1mm, ls=ls, lw=lw, marker=marker, color=color, 
-            label='%i: ID %s' % (i+1, patient[-3:]), alpha=alpha)
+                    label='%s: %s' % (patient[-2:], olb), alpha=alpha)
             ax4.plot(xaxis, R2mm, ls=ls, lw=lw, marker=marker, color=color, 
-            label='%i: ID %s' % (i+1, patient[-3:]), alpha=alpha)
+                    label='%s: %s' % (patient[-2:], olb), alpha=alpha)
             if preop:
                 # plot in mm preop
                 if not isinstance(preR1mm, str): # not yet scored in excel so '#DIV/0!'
@@ -773,7 +799,7 @@ class ExcelAnalysis():
                 if not isinstance(preR2mm, str):
                     ax4.plot(xrange[:2], [preR2mm,R2mm[0]], ls=ls, lw=lw, marker=marker, color=color, alpha=alpha)
             
-        ax2.legend(loc='upper right', fontsize=8, numpoints=1, title='Patients')
+        ax1.legend(loc='lower right', fontsize=9, numpoints=1, title='Patients')
         _initaxis([ax1, ax2, ax3, ax4])
         
         if saveFig:
@@ -789,7 +815,7 @@ class ExcelAnalysis():
         workbook_stent = self.workbook_stent
         
         wb = openpyxl.load_workbook(os.path.join(exceldir, workbook_stent), data_only=True)
-        sheet = wb.get_sheet_by_name('Summary')
+        sheet = wb.get_sheet_by_name('Deployment')
         
         # read excel
         colStart = ['E', 'J'] # R1 R2
@@ -840,7 +866,7 @@ class ExcelAnalysis():
         workbook_stent = self.workbook_stent
         
         wb = openpyxl.load_workbook(os.path.join(exceldir, workbook_stent), data_only=True)
-        sheet = wb.get_sheet_by_name('Summary')
+        sheet = wb.get_sheet_by_name('Deployment')
         
         # read excel
         colStart = ['E', 'J'] # R1 R2
@@ -890,7 +916,7 @@ class ExcelAnalysis():
         workbook_stent = self.workbook_stent
         
         wb = openpyxl.load_workbook(os.path.join(exceldir, workbook_stent), data_only=True)
-        sheet = wb.get_sheet_by_name('Summary')
+        sheet = wb.get_sheet_by_name('Deployment')
         
         # read data
         colStart = ['L', 'M', 'N', 'O']#, 'X'] # R1 pp vv R2 pp vv
@@ -1067,7 +1093,7 @@ class ExcelAnalysis():
         wbvars = openpyxl.load_workbook(os.path.join(exceldir, workbook_vars), data_only=True)
         
         # init figure
-        f1 = plt.figure(num=4, figsize=(14.55, 6.9)) # 11.6,4.6
+        f1 = plt.figure(num=4, figsize=(11.6, 4.6)) # 11.6,4.6
         if preop:
             xlabels = ['Pre','D', '1M', '6M', '12M', '24M']
         else:
@@ -1075,7 +1101,7 @@ class ExcelAnalysis():
         xrange = range(1,1+len(xlabels)) # not start from x=0 to play with margin xlim
         
         # init axis
-        gs = gridspec.GridSpec(1, 2, width_ratios=[1, (6.1/5.2)]) 
+        gs = gridspec.GridSpec(1, 2, width_ratios=[1, (6.4/5.2)]) 
         # ax1 = f1.add_subplot(1,2,1)
         ax1 = plt.subplot(gs[0])
         plt.xticks(xrange, xlabels, fontsize = 14)
@@ -1083,12 +1109,14 @@ class ExcelAnalysis():
         ax2 = plt.subplot(gs[1])
         plt.xticks(xrange, xlabels, fontsize = 14)
         
-        ax1.set_ylabel('Asymmetry ratio PP/VV R1', fontsize=15)
-        ax2.set_ylabel('Asymmetry ratio PP/VV R2', fontsize=15)
+        # ax1.set_ylabel('Asymmetry ratio $d_{p-p}$/$d_{v-v}$ R1', fontsize=15)
+        # ax2.set_ylabel('Asymmetry ratio $d_{p-p}$/$d_{v-v}$ R2', fontsize=15)
+        ax1.set_ylabel('Asymmetry ratio R1', fontsize=15)
+        ax2.set_ylabel('Asymmetry ratio R2', fontsize=15)
         ax1.set_ylim(ylim)
         ax2.set_ylim(ylim)
         ax1.set_xlim([0.8, len(xlabels)+0.2]) # xlim margins 0.2
-        ax2.set_xlim([0.8, len(xlabels)+1.1]) # longer for legend
+        ax2.set_xlim([0.8, len(xlabels)+1.4]) # longer for legend
         # plot horizontal line at 1
         ax1.plot([0,max(xrange)],[1,1], ls='--', color='dimgrey')
         ax2.plot([0,max(xrange)],[1,1], ls='--', color='dimgrey')
@@ -1162,17 +1190,17 @@ class ExcelAnalysis():
             ratioR1 = [el if not isinstance(el, str) else None for el in ratioR1]
             ratioR2 = [el if not isinstance(el, str) else None for el in ratioR2]
             
-            alpha = 0.9
+            alpha = 1
             if preop:
                 xaxis = xrange[1:]
             else:
                 xaxis = xrange
             # plot postop ratio
             ax1.plot(xaxis, ratioR1, ls=ls, lw=lw, marker=marker, color=color, 
+            label='%s: %s' % (patient[-2:], olb), alpha=alpha)
             # label='%i: ID %s' % (i+1, patient[-3:]), alpha=alpha)
-            label='%i: %s' % (i+1, olb), alpha=alpha)
             ax2.plot(xaxis, ratioR2, ls=ls, lw=lw, marker=marker, color=color, 
-            label='%i: %s' % (i+1, olb), alpha=alpha)
+            label='%s: %s' % (patient[-2:], olb), alpha=alpha)
             if preop:
                 # plot preop ratio
                 if not isinstance(ratiopreR1, str): # not yet scored in excel so '#DIV/0!'
@@ -1180,7 +1208,7 @@ class ExcelAnalysis():
                 if not isinstance(ratiopreR2, str):
                     ax2.plot(xrange[:2], [ratiopreR2,ratioR2[0]], ls=ls, lw=lw, marker=marker, color=color, alpha=alpha)
         
-        ax2.legend(loc='upper right', fontsize=8, numpoints=1, title='Patients')
+        ax2.legend(loc='upper right', fontsize=9, numpoints=1, title='Patients')
         _initaxis([ax1, ax2])
         
         if saveFig:
@@ -1237,14 +1265,14 @@ if __name__ == '__main__':
     
     patients =['LSPEAS_001', 'LSPEAS_002',	'LSPEAS_003', 'LSPEAS_005',	
                 'LSPEAS_008', 'LSPEAS_009',	'LSPEAS_011', 'LSPEAS_015',	'LSPEAS_017',	
-                'LSPEAS_018', 'LSPEAS_019',	'LSPEAS_020', 'LSPEAS_021',	'LSPEAS_022',
+                'LSPEAS_018', 'LSPEAS_020', 'LSPEAS_021', 'LSPEAS_022', 'LSPEAS_019',
                 'LSPEAS_025']#, 'LSPEAS_004', 'LSPEAS_023']#, 'LSPEAS_024'] 
     
     # create class object for excel analysis
     foo = ExcelAnalysis() # excel locations initialized in class
-    foo.plot_pp_vv_distance_ratio(patients=patients, ylim=[0.6,1.5], saveFig=True)
+    # foo.plot_pp_vv_distance_ratio(patients=patients, ylim=[0.6,1.5], saveFig=True)
     # foo.plot_pp_vv_deployment(ring=12, saveFig=False)
-    # foo.plot_ring_deployment(patients=patients, ylim=[0, 30], ylim_mm=[20,33.5], saveFig=True)
+    # foo.plot_ring_deployment(patients=patients, ylim=[72, 100], ylim_mm=[20,33.5], saveFig=True)
     # foo.change_in_rdc_D_12()
     
     
