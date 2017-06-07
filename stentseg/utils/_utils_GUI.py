@@ -116,6 +116,15 @@ def RotateView(event, axis=None):
             min90 = view['azimuth'] - 90
             view['azimuth'] = min90
             ax.SetView(view)
+        #todo: rotate with left and right keys, how to update smoothly?
+        if event.key == vv.KEY_LEFT:
+            min1 = view['azimuth'] - 2
+            view['azimuth'] = min1
+            ax.SetView(view)
+        if event.key == vv.KEY_RIGHT:
+            plus1 = view['azimuth'] + 2
+            view['azimuth'] = plus1
+            ax.SetView(view)
     if event.text == 'z':
         # axes not visible
         AxesVis(axis)
