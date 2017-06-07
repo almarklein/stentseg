@@ -8,7 +8,8 @@ from stentseg.utils.visualization import show_ctvolume
 import numpy as np
 
 def showModelsStatic(ptcode,codes, vols, ss, mm, showVol, clim, isoTh, clim2, 
-    clim2D, drawMesh=True, drawModelLines=True, showvol2D=False, showAxis=False):
+    clim2D, drawMesh=True, meshDisplacement=True, drawModelLines=True, 
+    showvol2D=False, showAxis=False, **kwargs):
     """ show one to four models in multipanel figure. 
     Input: arrays of codes, vols, ssdfs; params from show_models_static
     Output: axes, colorbars 
@@ -38,6 +39,13 @@ def showModelsStatic(ptcode,codes, vols, ss, mm, showVol, clim, isoTh, clim2,
         a3 = vv.subplot(223)
         a4 = vv.subplot(224)
         axes = [a1,a2,a3,a4]
+    elif codes == (codes[0],codes[1], codes[2], codes[3], codes[4]):
+        a1 = vv.subplot(151)
+        a2 = vv.subplot(152)
+        a3 = vv.subplot(153)
+        a4 = vv.subplot(154)
+        a5 = vv.subplot(155)
+        axes = [a1,a2,a3,a4,a5]
     else:
         a1 = vv.subplot(111)
         axes = [a1]
@@ -45,7 +53,7 @@ def showModelsStatic(ptcode,codes, vols, ss, mm, showVol, clim, isoTh, clim2,
         ax.MakeCurrent()
         vv.xlabel('x (mm)');vv.ylabel('y (mm)');vv.zlabel('z (mm)')
         vv.title('Model for LSPEAS %s  -  %s' % (ptcode[7:], codes[i]))
-        t = show_ctvolume(vols[i], ss[i].model, axis=ax, showVol=showVol, clim=clim, isoTh=isoTh, removeStent=True)
+        t = show_ctvolume(vols[i], ss[i].model, axis=ax, showVol=showVol, clim=clim, isoTh=isoTh, removeStent=True, **kwargs)
         label = pick3d(ax, vols[i])
         if drawModelLines == True:
             ss[i].model.Draw(mc='b', mw = mw, lc=lc)
@@ -56,11 +64,13 @@ def showModelsStatic(ptcode,codes, vols, ss, mm, showVol, clim, isoTh, clim2,
     if drawMesh == True:
         for i, ax in enumerate(axes):
             m = vv.mesh(mm[i], axes=ax)
-            #m.faceColor = 'g' # OR
-            m.clim = clim2
-            m.colormap = vv.CM_JET
-            cb = vv.colorbar(ax)
-            cbars.append(cb)
+            if meshDisplacement:
+                m.clim = clim2
+                m.colormap = vv.CM_JET
+                cb = vv.colorbar(ax)
+                cbars.append(cb)
+            # else:
+            #     m.faceColor = 'g'
     for ax in axes:
         ax.axis.axisColor = 1,1,1
         ax.bgcolor = 0,0,0
