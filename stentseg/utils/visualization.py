@@ -27,7 +27,7 @@ def remove_stent_from_volume(vol, graph, stripSize=5):
 
 
 def show_ctvolume(vol, graph, axis=None, showVol='MIP', clim =(0,2500), isoTh=250, 
-                  removeStent=True, climEditor=True):
+                  removeStent=True, climEditor=False):
     """ Different ways to visualize the CT volume as reference
     For '2D' clim (-550,500) often good range
     """
@@ -44,7 +44,7 @@ def show_ctvolume(vol, graph, axis=None, showVol='MIP', clim =(0,2500), isoTh=25
         t = vv.volshow(vol, clim=clim, renderStyle='mip')
     elif showVol == 'ISO':
         if removeStent == True:
-            vol = remove_stent_from_volume(vol, graph, stripSize=7) # rings are removed for vis.
+            vol = remove_stent_from_volume(vol, graph, stripSize=6) # rings are removed for vis.
         t = vv.volshow(vol,clim=clim, renderStyle='iso')
         t.isoThreshold = isoTh; t.colormap = colormap
     elif showVol == '2D':

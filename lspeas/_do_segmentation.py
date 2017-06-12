@@ -22,11 +22,11 @@ basedir = select_dir(os.getenv('LSPEAS_BASEDIR', ''),
                      r'F:\LSPEAS_ssdf_backup',r'G:\LSPEAS_ssdf_backup')
 
 # Select dataset to register
-ptcode = 'LSPEAS_025'
-ctcode = '24months'
+ptcode = 'LSPEAS_011'
+ctcode = '12months'
 cropname = 'ring'
 what = 'avgreg' # avgreg
-normalize = False
+normalize = True
 
 # Load volumes
 s = loadvol(basedir, ptcode, ctcode, cropname, what)
@@ -48,7 +48,7 @@ p.seed_threshold = [1000,3000]        # step 1 [lower th] or [lower th, higher t
 p.mcp_speedFactor = 750                 # step 2, costToCtValue; 
                                         # lower-> longer paths (costs low) -- higher-> short paths (costs high)
 p.mcp_maxCoverageFronts = 0.004         # step 2, base.py; replaces mcp_evolutionThreshold
-p.graph_weakThreshold = 500             # step 3, stentgraph.prune_very_weak
+p.graph_weakThreshold = 750             # step 3, stentgraph.prune_very_weak
 p.graph_expectedNumberOfEdges = 3       # step 3, stentgraph.prune_weak
 p.graph_trimLength =  0                 # step 3, stentgraph.prune_tails
 p.graph_minimumClusterSize = 10         # step 3, stentgraph.prune_clusters
@@ -81,7 +81,8 @@ except AssertionError:
     print('--------------')
 
 ## Visualize
-#todo: depending on the speedFactor fronts do not propagate from manually added seeds. how does mcp work exactly? can we prioritize manually added seeds?
+#todo: depending on the speedFactor fronts do not propagate from manually added seeds. 
+# see costfunction, from speedfactor > 750 it works
 
 guiRemove = False # option to remove nodes/edges but takes longer
 clim = (0,2500)
@@ -94,7 +95,7 @@ fig.position = 0.00, 22.00,  1920.00, 1018.00
 
 # Show model Step 1
 a1 = vv.subplot(131)
-label = DrawModelAxes(vol, sd._nodes1, a1, clim=clim, showVol=showVol, removeStent=False) # lc, mc
+label = DrawModelAxes(vol, sd._nodes1, a1, clim=clim, showVol=showVol, climEditor=True, removeStent=False) # lc, mc
 
 # Show model Step 2
 a2 = vv.subplot(132)

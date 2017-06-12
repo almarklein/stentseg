@@ -21,7 +21,7 @@ fig.position = 8.00, 30.00,  1267.00, 1002.00
 
 # Show volume and graph
 a2 = vv.subplot(121)
-label = DrawModelAxes(vol, sd._nodes2, a2, clim=clim, showVol=showVol, getLabel=True, removeStent=False)
+label = DrawModelAxes(vol, sd._nodes2, a2, clim=clim, showVol=showVol, getLabel=True, climEditor=True, removeStent=False)
 
 # Show cleaned up graph
 a3 = vv.subplot(122)
@@ -164,7 +164,7 @@ def on_key(event):
         a3.SetView(view)
     if event.text == 's':
         # additional smooth
-        stentgraph.smooth_paths(sd._nodes3, 2)
+        stentgraph.smooth_paths(sd._nodes3, 1)
         view = a3.GetView()
         a3.Clear()
         DrawModelAxes(vol, sd._nodes3, a3, meshColor='g', clim=clim, showVol=showVol, lc='w', mw=8, lw=0.2, climEditor=False)
