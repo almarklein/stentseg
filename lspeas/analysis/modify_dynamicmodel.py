@@ -43,38 +43,57 @@ def on_key(event):
             stentgraph._pop_node(model, select1) # asserts degree == 2
             selected_nodes[0].faceColor = 'w'
             selected_nodes.clear()
+    if event.text == 's':
+        # additional smooth
+        stentgraph.smooth_paths(model, 2)
+        reDrawModel(vol, model)
+    if event.key == vv.KEY_ALT:
+        # ALT will POP nodes
+        stentgraph.pop_nodes(model)
+        reDrawModel(vol, model)
     if event.key == vv.KEY_ESCAPE:
-        make_model_dynamic(model, deforms, origin)
-        a = vv.gca()
-        view = a.GetView()
-        a.Clear()
+        g = make_model_dynamic(model, deforms, origin)
+        reDrawModel(vol, g, interactive=False)
+        # Save back
+        filename = '%s_%s_%s_%s.ssdf' % (ptcode, ctcode, cropname, modelname)
+        s.model = g.pack()
+        print('Done, model dynamic')
+        # ssdf.save(os.path.join(basedir, ptcode, filename), s)
+        # print('saved dynamic to disk in {} as {}.'.format(basedir, filename) )
+
+def reDrawModel(vol, model, interactive=True, ax=None):
+        if ax is None:
+            ax = vv.gca()
+        view = ax.GetView()
+        ax.Clear()
         lim = (0,2500)
         t = vv.volshow(vol, clim=lim, renderStyle='mip')
         pick3d(vv.gca(), vol)
         model.Draw(mc='g', mw = 10, lc='g')
-        a.SetView(view)
-        print('Done, model dynamic')
-
+        if interactive:
+            #todo: doesnt work?
+            node_points = _utils_GUI.interactive_node_points(model, scale=0.6)
+            _utils_GUI.node_points_callbacks(node_points, selected_nodes, pick=False)
+        ax.SetView(view)
+        
 
 def make_model_dynamic(model, deforms,  modelOrigin):
-    #todo: why are deforms stored as PointSet and not ndarray as in saved dynamic models?
-    # #first clear deforms in graph, to maintain ndarray and not get PointSet
-    # for n1,n2 in model.edges():
-    #     attre = model.edge[n1][n2]
-    #     if 'pathdeforms' in attre:
-    #         del attre['pathdeforms']
-    #     for n in [n1, n2]:
-    #         attrn = model.node[n]
-    #         if 'deforms' in attrn:
-    #             del attrn['deforms']
-    # combine model with deforms        
-    incorporate_motion_nodes(model, deforms, modelOrigin)
-    incorporate_motion_edges(model, deforms, modelOrigin)
-    # # try pack unpack, nu wel ndarray?
-    # s.model = model.pack()
-    # model = stentgraph.StentGraph()
-    # model.unpack(s.model)
-
+    # modelpacked = model.pack()
+    # g = stentgraph.StentGraph()
+    # g.unpack(modelpacked)
+    # First clear deforms in graph 
+    for n in model.nodes():
+        d = model.node[n]
+        p = d.pop('deforms', None)
+    
+    for n1,n2 in model.edges():
+        d = model.edge[n1][n2]
+        p = d.pop('pathdeforms', None)
+    
+    incorporate_motion_nodes(model, deforms, modelOrigin) # adds deforms PointSets
+    incorporate_motion_edges(model, deforms, modelOrigin) # adds deforms PointSets
+    
+    return model
 
 def nodeInteraction(model, vol, selected_nodes): 
     """ modify edges in dynamic model and make dynamic again
@@ -113,8 +132,32 @@ if __name__ == '__main__':
     
     import pirt
     from stentseg.motion.dynamic import incorporate_motion_nodes, incorporate_motion_edges
+    from stentseg.stentdirect import stentgraph
+    from stentseg.utils.datahandling import select_dir, loadvol, loadmodel
+    import os
+    import visvis as vv
+    from visvis import ssdf
+    from visvis import Pointset
+    from stentseg.utils.picker import pick3d, get_picked_seed
+    from stentseg.utils import PointSet, _utils_GUI, visualization
     
-    #load deforms
+    basedir = select_dir(os.getenv('LSPEAS_BASEDIR', ''),
+                        r'D:\LSPEAS\LSPEAS_ssdf',
+                        r'F:\LSPEAS_ssdf_BACKUP',r'G:\LSPEAS_ssdf_BACKUP')
+
+    ptcode = 'LSPEAS_011'
+    ctcode = '1month'
+    cropname = 'ring'
+    modelname = 'modelavgreg'
+    
+    s = loadmodel(basedir, ptcode, ctcode, cropname, modelname)
+    model = s.model.copy()
+    
+    # Load volume
+    s = loadvol(basedir, ptcode, ctcode, cropname, 'avgreg')
+    vol = s.vol
+    
+    # Load deforms
     s_deforms = loadvol(basedir, ptcode, ctcode, cropname, 'deforms')
     deformkeys = []
     for key in dir(s_deforms):
@@ -127,6 +170,5 @@ if __name__ == '__main__':
     node_points = nodeInteraction(model, vol, selected_nodes)
     
     origin = s_deforms.origin # origin of vol
-    
-    
+
     
