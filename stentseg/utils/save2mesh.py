@@ -26,7 +26,7 @@ if __name__ == '__main__':
                         r'F:\LSPEAS_ssdf_backup',r'G:\LSPEAS_ssdf_backup')
     
     # Dir to save mesh
-    savedir = select_dir(r'D:\LSPEAS\LSPEAS_mesh_ring', r'C:\Users\Maaike\Desktop\LSPEAS_ring_mesh [copy C to PC]')
+    savedir = select_dir(r'D:\LSPEAS\LSPEAS_mesh_ring', r'C:\Users\Maaike\Desktop\tempmeshring')
     
     # Select dataset to register
     # ptcodes = ['LSPEAS_001','LSPEAS_002','LSPEAS_003','LSPEAS_005','LSPEAS_008',
@@ -37,7 +37,7 @@ if __name__ == '__main__':
     #             'LSPEAS_009','LSPEAS_011','LSPEAS_017',
     #             'LSPEAS_019','LSPEAS_020','LSPEAS_021'
     #             ]
-    ptcodes = ['LSPEAS_004']
+    ptcodes = ['LSPEAS_018', 'LSPEAS_025', 'LSPEAS_023']
     ctcode = '24months'
     cropname = 'ring'
     modelname = 'modelavgreg'
