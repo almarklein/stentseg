@@ -24,24 +24,29 @@ if __name__ == "__main__":
     print("----------------------------")
     
     ## Select directory to save dicom
-    basedir_save = select_dir(r'D:\LSPEAS\DICOMavgreg',
-                            r'F:\DICOMavgreg_toPC')
-    # basedir_save = select_dir(r'D:\LSPEAS_F\DICOMavgreg')
+    # basedir_save = select_dir(r'D:\LSPEAS\DICOMavgreg',
+    #                         r'F:\DICOMavgreg_toPC')
+    basedir_save = select_dir(r'D:\LSPEAS_F\DICOMavgreg')
     
     ## Select directory to load dicom
-    dicom_basedir = select_dir(r'F:\LSPEAS_data\ECGgatedCT',
-                            r'D:\LSPEAS\LSPEAS_data_BACKUP\ECGgatedCT')
-    # dicom_basedir = select_dir(r'D:\LSPEAS_F\CT_dicom_backup')
+    # dicom_basedir = select_dir(r'F:\LSPEAS_data\ECGgatedCT',
+    #                         r'D:\LSPEAS\LSPEAS_data_BACKUP\ECGgatedCT')
+    dicom_basedir = select_dir(r'D:\LSPEAS_F\CT_dicom_backup')
     
     # *** or set a slice location manual ***
-    # dicomfolder = r''
-    dicomfile = 'LSPEAS_FEVAR001_PO_1.CT.0004.0001.2017.02.08.10.07.57.428321.447272392.IMA'
-    manualdicomslice = False
+    manualdicomslice = True
+    
+    dicomfolderRead = r'D:\LSPEAS_F\CT_dicom_backup\LSPEASF_C_01\LSPEASF_C_01_pre'
+    dicomfileRead = 'LSPEAS_FEVAR001_PO_1.CT.0004.0001.2017.02.08.10.07.57.428321.447272392.ima'
+    
+    # use to get ds and write on
+    dicomfolderWrite = r'D:\LSPEAS\LSPEAS_data_BACKUP\ECGgatedCT\LSPEAS_001\LSPEAS_001_discharge\1.2.392.200036.9116.2.6.1.48.1214833767.1399597166.677650\1.2.392.200036.9116.2.6.1.48.1214833767.1399597810.119489'
+    dicomfileWrite = '1.2.392.200036.9116.2.6.1.48.1214833767.1399597831.761589.dcm'
     
     ## Select basedirectory to load ssdf
-    basedir_load = select_dir(os.getenv('LSPEAS_BASEDIR', ''),
-                        r'D:\LSPEAS\LSPEAS_ssdf',
-                        r'F:\LSPEAS_ssdf_backup')
+    # basedir_load = select_dir(os.getenv('LSPEAS_BASEDIR', ''),
+    #                     r'D:\LSPEAS\LSPEAS_ssdf',
+    #                     r'F:\LSPEAS_ssdf_backup')
                         
     basedir_load = select_dir(r'D:\LSPEAS_F\LSPEASF_ssdf')
     
@@ -49,11 +54,12 @@ if __name__ == "__main__":
     # ptcodes = ['LSPEAS_001','LSPEAS_002','LSPEAS_003','LSPEAS_005','LSPEAS_008',
     #         'LSPEAS_009','LSPEAS_011','LSPEAS_015','LSPEAS_017','LSPEAS_018',
     #         'LSPEAS_019','LSPEAS_020','LSPEAS_021','LSPEAS_022']
-    ptcodes = ['LSPEAS_023']
+    ptcodes = ['LSPEASF_C_01']
     ctcode = 'pre'
     cropname = 'stent'
     what = 'avgreg' # what volume to save to dicom
     normalizeLim = 3071 # HU
+    studyDescription = 'LSPEAS-F'
     
     ## loop through ptcodes
     for ptcode in ptcodes:
@@ -68,8 +74,15 @@ if __name__ == "__main__":
         
         ## -------- Read dicom file to rewrite slices from s --------
         if manualdicomslice:
-            ds = dicom.read_file(os.path.join(dicomfolder,dicomfile)) # read original dicom file to get ds
-            mainuid = ds.StudyInstanceUID
+            # read original dicom file to get original UID
+            dsToRead = dicom.read_file(os.path.join(dicomfolderRead,dicomfileRead)) 
+            mainuid = dsToRead.StudyInstanceUID
+            initialUID = dsToRead.SOPInstanceUID
+            UIDtoReplace = dsToRead.SOPInstanceUID.split('.')[-1]
+            
+            # read a dicom file to get ds for writing
+            ds = dicom.read_file(os.path.join(dicomfolderWrite,dicomfileWrite))
+            # mainuid = ds.StudyInstanceUID
         else:
             if 'FANTOOM' in ptcode:
                 dirname = os.path.join(dicom_basedir.replace('ECGgatedCT', ''), ptcode)
@@ -116,11 +129,11 @@ if __name__ == "__main__":
                             ds = dicom.read_file(base_filename) # read original dicom file to get ds
                             mainuid = ds.StudyInstanceUID
                             break # leave for loop, we have ima dicom file
+            initialUID = ds.SOPInstanceUID
+            UIDtoReplace = ds.SOPInstanceUID.split('.')[-1]
         # ------------------------------------------------------
     
         ## --------------- Get ds keys for rewriting ----------
-        initialUID = ds.SOPInstanceUID
-        UIDtoReplace = ds.SOPInstanceUID.split('.')[-1]
         instance = 0
         
         # Rewrite slices to ds
@@ -150,7 +163,34 @@ if __name__ == "__main__":
             ds.AcquisitionTime = s.meta0.AcquisitionTime
             ds.Manufacturer = s.meta0.Manufacturer
             ds.ReferringPhysicianName = ''
-            
+            ds.PatientName = s.meta0.PatientName
+            ds.PatientSex = s.meta0.PatientSex
+            if manualdicomslice:
+                # dstags = ['SoftwareVersions', 'KVP', 'SliceThickness', 'ConvolutionKernel', 'StudyDescription',
+                # 'StudyID', 'StudyInstanceUID', 'StudyTime', 'InstitutionName', 'StationName', 'PatientAge',
+                # 'PatientBirthDate', 'PatientID'] 
+                # for key in dstags:
+                #     try:
+                #         ds.key = dsToRead.get(key) 
+                #     except AttributeError:
+                #         continue
+                #todo: ValueError on ds[key] string
+                
+                ds.SoftwareVersions = dsToRead.SoftwareVersions
+                
+                ds.KVP = dsToRead.KVP
+                ds.SliceThickness = dsToRead.SliceThickness
+                ds.ConvolutionKernel = dsToRead.ConvolutionKernel
+                ds.StudyDescription = studyDescription
+                ds.StudyID = dsToRead.StudyID
+                ds.StudyInstanceUID = dsToRead.StudyInstanceUID
+                ds.StudyTime = dsToRead.StudyTime
+                # ds.InstitutionName = dsToRead.InstitutionName
+                ds.XRayTubeCurrent = dsToRead.XRayTubeCurrent
+                ds.PatientAge = ''
+                ds.PatientBirthDate = dsToRead.PatientBirthDate
+                ds.PatientID = dsToRead.PatientID
+                
             instance += 1
             
             # save ds
