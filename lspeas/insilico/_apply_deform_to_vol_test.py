@@ -54,7 +54,7 @@ s3 = loadvol(basedir, ptcode, ctcode, cropname, 'phases')
 vol0ori = s3.vol0
 
 # todo: backward/forward based on how deforms were obtained??
-# deforms was obtained as backward, from original to mean volume avgreg
+# deforms was obtained as backward, from original phases to mean volume avgreg
 deform = pirt.DeformationFieldBackward(deforms[0])
 # vol2 = pirt.interp.deform_backward(vol, deforms[0]) # te low level, gebruikt awarp niet
 vol2 = deform.inverse().as_backward().apply_deformation(vol) # gebruikt pirt deformation.py
