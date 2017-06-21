@@ -1,6 +1,6 @@
 
 class _Select_Centerline_Points:
-    def __init__(self,ptcode,allcenterlines,StartPoints,EndPoints,basedir):
+    def __init__(self,ptcode,ctcode,allcenterlines,basedir):
         """
         Script to show the stent plus centerline model and select ponits on 
         centerlines for motion analysis 
@@ -20,7 +20,6 @@ class _Select_Centerline_Points:
         from stentseg.stentdirect.stentgraph import create_mesh
         from stentseg.motion.vis import create_mesh_with_abs_displacement
         from stentseg.utils.visualization import show_ctvolume
-        # from stentseg.motion.displacement import _calculateAmplitude, _calculateSumMotion ,calculateMeanAmplitude
         from pirt.utils.deformvis import DeformableTexture3D, DeformableMesh
         from stentseg.utils import PointSet
         from stentseg.stentdirect import stentgraph
@@ -29,21 +28,25 @@ class _Select_Centerline_Points:
         from visvis.processing import lineToMesh, combineMeshes
         from visvis import ssdf
         from stentseg.utils.picker import pick3d
-        # from PyQt4 import QtCore, QtGui
-        # from Tom_utils.mydialog import MyDialog
+        try:
+            from PyQt4 import QtCore, QtGui # PyQt5
+        except ImportError:
+            from PySide import QtCore, QtGui # PySide2
+        from stentseg.apps.ui_dialog import MyDialog
         from stentseg.utils.centerline import dist_over_centerline # added for Mirthe 
         import copy
         
         
         cropname = 'prox'
-        ctcode = '12months'
-     
+        
         exceldir = os.path.join(basedir,ptcode)
         
         # Load deformations and avg ct (forward for mesh)
-        m = loadmodel(basedir, ptcode, ctcode, cropname, modelname = 'centerline_total_modelavgreg_deforms') # centerlines combined in 1 model
+        # centerlines combined in 1 model
+        m = loadmodel(basedir, ptcode, ctcode, cropname, modelname = 'centerline_total_modelavgreg_deforms') 
         model = m.model
-        m_sep = loadmodel(basedir, ptcode, ctcode, cropname, modelname = 'centerline_modelavgreg_deforms') # centerlines separated in a model for each centerline
+        # centerlines separated in a model for each centerline
+        # m_sep = loadmodel(basedir, ptcode, ctcode, cropname, modelname = 'centerline_modelavgreg_deforms')
         s = loadvol(basedir, ptcode, ctcode, cropname, what='avgreg')
         vol_org = copy.deepcopy(s.vol)
         s.vol.sampling = [vol_org.sampling[1], vol_org.sampling[1], vol_org.sampling[2]]
@@ -66,13 +69,6 @@ class _Select_Centerline_Points:
         b = model.Draw(mc='b', mw = 0, lc='g', alpha = 0.5)
         vv.xlabel('x (mm)');vv.ylabel('y (mm)');vv.zlabel('z (mm)')
         vv.title('Model for LSPEAS %s  -  %s' % (ptcode[7:], ctcode))
-        viewringcrop = {'zoom': 0.012834824098558318,
-        'fov': 0.0,
-        'daspect': (1.0, 1.0, -1.0),
-        'loc': (139.818258268377, 170.0738625060885, 80.55734045456558),
-        'elevation': 11.471611096074625,
-        'azimuth': 25.71485900482051,
-        'roll': 0.0}
         
         # Add clickable nodes
         node_points = []
@@ -353,6 +349,7 @@ class _Select_Centerline_Points:
             
             return {'point_to_pointMin': point_to_pointMin, 'point_to_pointQ1': point_to_pointQ1, 'point_to_pointMedian': point_to_pointMedian, 'point_to_pointQ3': point_to_pointQ3, 'point_to_pointMax': point_to_pointMax, 'point_to_pointP': point_to_pointP, 'Node1': [point1, point1Deforms], 'Node2': [point2, point2Deforms], 'distances': distances, 'dist_cl': dist_cl, 'cl_min_index': cl_min_index, 'cl_max_index': cl_max_index, 'cl_min': cl_min, 'cl_max': cl_max}
             
+        
         def line_line_angulation(point1, point1Deforms, point2, point2Deforms, point3, point3Deforms):
             n1Indices = point1 + point1Deforms
             n2Indices = point2 + point2Deforms
