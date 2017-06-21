@@ -121,7 +121,6 @@ def get_mask_with_stent_likely_positions(data, th):
     # Note that we omit the edges
     #mask[25:-25,25:-25,25:-25] = (data[25:-25,25:-25,25:-25] > th[0]) * 3
     mask[1:-1,1:-1,1:-1] = (data[1:-1,1:-1,1:-1] > th[0]) * 3
-    #mask[:] = (data[:] > th[0]) * 3
     
     cnt = 0
     seed = None
