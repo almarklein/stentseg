@@ -1,6 +1,6 @@
 
 class _Show_Model:
-    def __init__(self,ptcode,basedir):
+    def __init__(self,ptcode,ctcode,basedir):
         """
         Script to show the stent model. [ nellix]
         """
@@ -17,12 +17,8 @@ class _Show_Model:
         import copy
 
         import numpy as np
-        #from stentseg.motion.displacement import _calculateAmplitude, _calculateSumMotion
-        #from stentseg.motion.displacement import calculateMeanAmplitude
         
         cropname = 'prox'
-        ctcode = '12months'
-        print ('ctcode')
         # params
         nr = 40
         motion = 'amplitude'  # amplitude or sum
@@ -59,12 +55,6 @@ class _Show_Model:
             if key.startswith('model'):
                 modelmesh[key] = create_mesh(m[key], 0.5, fullPaths = False)
                 
-        # radius : scalar
-        #     The radius of the tube that is created. Radius can also be a 
-        #     sequence of values (containing a radius for each point).
-        
-        #modelmesh = create_mesh_with_abs_displacement(model, radius = 1.0, dim = dimension, motion = motion)
-        
         ## Start vis
         m = loadvol(basedir, ptcode, ctcode, cropname, what='avgreg')
         vol_org = copy.deepcopy(m.vol)
