@@ -5,7 +5,7 @@ Created on 28 jun. 2016
 '''
 
 class _Select_Stent_Endpoints:
-    def __init__(self,ptcode,basedir):
+    def __init__(self,ptcode,ctcode,basedir):
         """ select start and endpoints to be used for centerline generation
         """
         from stentseg.apps._3DPointSelector import select3dpoints
@@ -20,7 +20,6 @@ class _Select_Stent_Endpoints:
         
         # Select dataset to register
         cropname = 'prox'
-        ctcode = '12months'
         what = 'avgreg'
         
         # Load volumes
