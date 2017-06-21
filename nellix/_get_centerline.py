@@ -1,6 +1,6 @@
 
 class _Get_Centerline:
-    def __init__(self,ptcode,StartPoints,EndPoints,basedir):
+    def __init__(self,ptcode,ctcode,StartPoints,EndPoints,basedir):
         """ with start and endpoints provided, calculate centerline and save as
         ssdf in basedir as model and dynamic model
         """
@@ -15,26 +15,22 @@ class _Get_Centerline:
         from stentseg.utils.centerline import (find_centerline, 
         points_from_nodes_in_graph, points_from_mesh, smooth_centerline)
         from stentseg.utils.datahandling import loadmodel, loadvol
+        from stentseg.utils.visualization import show_ctvolume
 
         stentnr = len(StartPoints)
-        #print(,stentnr,)
         
-        #basedir = r'C:\Users\User\Desktop\Nellix_chevas\CHEVAS_SSDF' 
-        ctcode = '12months'
         cropname = 'prox'
         what = 'modelavgreg'
         what_vol = 'avgreg'
-        #part_date = 'total_28-04'
         m = loadmodel(basedir, ptcode, ctcode, cropname, what)
         s = loadvol(basedir, ptcode, ctcode, cropname, what_vol)
         
-        start1 = StartPoints
-        ends = EndPoints
+        start1 = StartPoints.copy()
+        ends = EndPoints.copy()
         
         from stentseg.stentdirect import stentgraph
         ppp = points_from_nodes_in_graph(m.model)
-        # # Get pointset from STL, remove duplicates
-        # pp = points_from_mesh(fname)
+        
         allcenterlines = []
         centerlines = []
         nodes_total = stentgraph.StentGraph()
@@ -44,16 +40,21 @@ class _Get_Centerline:
             # Find main centerline
             # regsteps = distance of centerline points from where the start/end 
             # point have no affect on centerline finding
-            centerline1 = find_centerline(ppp, start1[j], ends[j], step= 1, 
-                                          substep=0.5, ndist=20, regfactor=0.8, 
-                                          regsteps=5, verbose=True)   
-            pp = centerline1
+            centerline1 = find_centerline(ppp, start1[j], ends[j], step= 0.5, 
+                                          substep=0.25, ndist=40, regfactor=0.9, 
+                                          regsteps=0.5, verbose=False)
+                                          # reg 0.9 for smoother   
+            print('Centerline calculation completed')
+            # do not use first 2 points, as they are influenced by user selected points
+            pp = centerline1[2:-2]
+            # smooth the cut centerline
+            pp = smooth_centerline(pp, n=3)
+            # pp = centerline1
           
-            allcenterlines.append(centerline1)
+            allcenterlines.append(pp)
             self.allcenterlines = allcenterlines
             
             for i, p in enumerate(pp[:-1]):
-                v = p - pp[i+1]
                 p_as_tuple = tuple(p.flat)
                 p1_as_tuple = tuple(pp[i+1].flat)
                 # nodes.add_node(p_as_tuple)
@@ -66,11 +67,8 @@ class _Get_Centerline:
         
         ## Store segmentation to disk
          
-        # Get graph model
-         
         # Build struct
         s2 = vv.ssdf.new()
-        # We do not need croprange, but keep for reference
         s2.sampling = s.sampling
         s2.origin = s.origin
         s2.stenttype = m.stenttype
@@ -82,6 +80,8 @@ class _Get_Centerline:
         s2.what = what
         s2.params = s.params
         s2.stentType = 'nellix'
+        s2.StartPoints = StartPoints
+        s2.EndPoints = EndPoints
         
         s3 = copy.deepcopy(s2)
         s3['model'] = nodes_total.pack()
@@ -103,6 +103,8 @@ class _Get_Centerline:
         print('saved to disk as {}.'.format(filename) )
         
         # remove intermediate centerline points
+        start1 = tuple(map(tuple, start1)) # added MK for when stored as array
+        ends = tuple(map(tuple, ends)) # "
         startpoints_clean = copy.deepcopy(start1)
         endpoints_clean = copy.deepcopy(ends)
         duplicates = list(set(start1) & set(ends))
@@ -117,10 +119,10 @@ class _Get_Centerline:
        
         vv.plot(ppp, ms='.', ls='', alpha=0.6, mw=2)
         for j in range(len(startpoints_clean)):
-            vv.plot(PointSet(list(startpoints_clean[j])), ms='.', ls='', mc='g', mw=6) # startpoint green
-            vv.plot(PointSet(list(endpoints_clean[j])),  ms='.', ls='', mc='r', mw=6) # endpoint red
+            vv.plot(PointSet(list(startpoints_clean[j])), ms='.', ls='', mc='g', mw=20) # startpoint green
+            vv.plot(PointSet(list(endpoints_clean[j])),  ms='.', ls='', mc='r', mw=20) # endpoint red
         for j in range(stentnr):
-            vv.plot(allcenterlines[j], ms='.', ls='', mw=2, mc='y')        
+            vv.plot(allcenterlines[j], ms='.', ls='', mw=10, mc='y')        
         vv.title('Centerlines and seed points')
         vv.xlabel('x (mm)');vv.ylabel('y (mm)');vv.zlabel('z (mm)')
         
@@ -130,12 +132,14 @@ class _Get_Centerline:
         
         vv.plot(ppp, ms='.', ls='', alpha=0.6, mw=2)
         for j in range(len(startpoints_clean)):
-            vv.plot(PointSet(list(startpoints_clean[j])), ms='.', ls='', mc='g', mw=6) # startpoint green
-            vv.plot(PointSet(list(endpoints_clean[j])),  ms='.', ls='', mc='r', mw=6) # endpoint red
+            vv.plot(PointSet(list(startpoints_clean[j])), ms='.', ls='', mc='g', mw=20) # startpoint green
+            vv.plot(PointSet(list(endpoints_clean[j])),  ms='.', ls='', mc='r', mw=20) # endpoint red
         for j in range(stentnr):
-            vv.plot(allcenterlines[j], ms='.', ls='', mw=2, mc='y')
+            vv.plot(allcenterlines[j], ms='.', ls='', mw=10, mc='y')
         clim = (0,2000)
-        vv.volshow(s.vol, clim=clim, renderStyle = 'mip')           
+        # vv.volshow(s.vol, clim=clim, renderStyle = 'mip')           
+        t = show_ctvolume(s.vol, axis=None, showVol='MIP', clim =(0,2500), isoTh=250, 
+                        removeStent=False, climEditor=True)
         a2.axis.visible = False
         
         vv.title('Centerlines and seed points')
@@ -171,31 +175,29 @@ class _Get_Centerline:
         # Load model
         s2 = loadmodel(basedir, ptcode, ctcode, cropname, 'centerline_'+what)
         s3 = loadmodel(basedir, ptcode, ctcode, cropname, 'centerline_total_'+what)
-        whatvol = 'avgreg'
-        
-        # Load volumes
-        s4 = loadvol(basedir, ptcode, ctcode, cropname, whatvol)
-
         
         # Combine ...
         for key in dir(s2):
                 if key.startswith('model'):
-                    incorporate_motion_nodes(s2[key], deforms, s4.origin)
+                    incorporate_motion_nodes(s2[key], deforms, s.origin)
                     model = s2[key]
                     s2[key] = model.pack()
         # Combine ...
         for key in dir(s3):
                 if key.startswith('model'):
-                    incorporate_motion_nodes(s3[key], deforms, s4.origin)
+                    incorporate_motion_nodes(s3[key], deforms, s.origin)
                     model = s3[key]
                     s3[key] = model.pack()
                     
         # Save
+        s2.paramsreg = paramsreg
         filename = '%s_%s_%s_%s.ssdf' % (ptcode, ctcode, cropname, 'centerline_'+what+'_deforms')
         vv.ssdf.save(os.path.join(basedir, ptcode, filename), s2)
         print('saved to disk as {}.'.format(filename) )
         
         # Save
+        s3.paramsreg = paramsreg
         filename = '%s_%s_%s_%s.ssdf' % (ptcode, ctcode, cropname, 'centerline_total_'+what+'_deforms')
         vv.ssdf.save(os.path.join(basedir, ptcode, filename), s3)
         print('saved to disk as {}.'.format(filename) )
+        
