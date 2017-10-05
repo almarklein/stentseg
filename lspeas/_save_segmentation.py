@@ -51,8 +51,8 @@ s = loadmodel(basedir, ptcode, ctcode, cropname, 'model'+what)
 model = s.model
 
 # Combine ...
-incorporate_motion_nodes(model, deforms, s.origin)
-incorporate_motion_edges(model, deforms, s.origin)
+incorporate_motion_nodes(model, deforms, s.origin) # adds deforms PointSets
+incorporate_motion_edges(model, deforms, s.origin) # adds deforms PointSets
 
 # Save back
 filename = '%s_%s_%s_%s.ssdf' % (ptcode, ctcode, cropname, 'model'+what)
