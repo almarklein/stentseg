@@ -7,6 +7,8 @@ from stentseg.utils.picker import pick3d
 from stentseg.utils.visualization import show_ctvolume
 import numpy as np
 from stentseg.utils.centerline import points_from_mesh
+from stentseg.utils import _utils_GUI
+from stentseg.utils.datahandling import select_dir, loadvol
 
 def showModelsStatic(ptcode,codes, vols, ss, mm, vs, showVol, clim, isoTh, clim2, 
     clim2D, drawMesh=True, meshDisplacement=True, drawModelLines=True, 
@@ -35,10 +37,10 @@ def showModelsStatic(ptcode,codes, vols, ss, mm, vs, showVol, clim, isoTh, clim2
         a3 = vv.subplot(133)
         axes = [a1,a2,a3]
     elif codes == (codes[0],codes[1], codes[2], codes[3]):
-        a1 = vv.subplot(221)
-        a2 = vv.subplot(222)
-        a3 = vv.subplot(223)
-        a4 = vv.subplot(224)
+        a1 = vv.subplot(141)
+        a2 = vv.subplot(142)
+        a3 = vv.subplot(143)
+        a4 = vv.subplot(144)
         axes = [a1,a2,a3,a4]
     elif codes == (codes[0],codes[1], codes[2], codes[3], codes[4]):
         a1 = vv.subplot(151)
@@ -94,10 +96,68 @@ def showVesselMesh(vesselstl, ax=None, **kwargs):
     """
     if ax is None:
         ax = vv.gca()
+    if vesselstl is None:
+        return
     # # get pointset from STL 
     # ppvessel = points_from_mesh(vesselstl, invertZ = False) # removes duplicates
     # vv.plot(ppvessel, ms='.', ls='', mc= 'r', alpha=0.2, mw = 7, axes = ax)
     v = vv.mesh(vesselstl, axes=ax)
     v.faceColor = (1,0,0,0.6)
     return v
+
+
+def showVolPhases(basedir, ptcode, ctcode, cropname, showVol='iso', isoTh=310,
+            slider=False, clim=(0,3000), clim2D=(-550, 500)):
+    """ showVol= mip or iso or 2D;
+    """
+    # Load volumes
+    s = loadvol(basedir, ptcode, ctcode, cropname, 'phases')
+    vols = []
+    for key in dir(s):
+        if key.startswith('vol'):
+            vols.append(s[key])
     
+    # Start vis
+    f = vv.figure(1); vv.clf()
+    f.position = 9.00, 38.00,  942.00, 985.00
+    a = vv.gca()
+    a.daspect = 1, 1, -1
+    a.axis.axisColor = 1,1,1
+    a.axis.visible = False
+    a.bgcolor = 0,0,0
+    vv.title('ECG-gated CT scan %s  -  %s' % (ptcode[7:], ctcode))
+    
+    # Setup data container
+    container = vv.MotionDataContainer(a)
+    for vol in vols:
+        if showVol == '2D':
+            t = vv.volshow2(vol, clim=clim2D) # -750, 1000
+            t.parent = container
+        else:
+            t = vv.volshow(vol, clim=clim, renderStyle = showVol)
+            t.parent = container
+            if showVol == 'iso':
+                t.isoThreshold = isoTh    # iso or mip work well 
+                t.colormap = {'r': [(0.0, 0.0), (0.17727272, 1.0)],
+                            'g': [(0.0, 0.0), (0.27272728, 1.0)],
+                            'b': [(0.0, 0.0), (0.34545454, 1.0)],
+                            'a': [(0.0, 1.0), (1.0, 1.0)]}
+    # bind ClimEditor to figure
+    if slider:
+        if showVol=='mip':
+            c = vv.ClimEditor(vv.gcf())
+            c.position = (10, 50)
+            f.eventKeyDown.Bind(lambda event: _utils_GUI.ShowHideSlider(event, c) )
+        if showVol=='iso':
+            c = IsoThEditor(vv.gcf())
+            c.position = (10, 50)
+            f.eventKeyDown.Bind(lambda event: _utils_GUI.ShowHideSlider(event, c) )
+    
+    f.eventKeyDown.Bind(lambda event: _utils_GUI.ViewPresets(event, [a]) )
+    print('------------------------')
+    print('Use keys 1, 2, 3, 4 and 5 for preset anatomic views')
+    print('Use v for a default zoomed view')
+    print('Use z and x to show and hide axis')
+    print('------------------------')
+    
+    return t
