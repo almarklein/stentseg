@@ -45,7 +45,7 @@ deforms = [s[key] for key in deformkeys]
 # deforms = [[field[::2,::2,::2] for field in fields] for fields in deforms]
 
 try:
-    s2 = loadvol(basedir, ptcode, ctcode, 'full', staticref)
+    s2 = loadvol(basedir, ptcode, ctcode, 'ring', staticref)
 except FileNotFoundError:
     s2 = loadvol(basedir, ptcode, ctcode, 'ring', staticref)
 vol = s2.vol
@@ -57,19 +57,24 @@ vol0ori = s3.vol0
 # deforms was obtained as backward, from original phases to mean volume avgreg
 deform = pirt.DeformationFieldBackward(deforms[0])
 # vol2 = pirt.interp.deform_backward(vol, deforms[0]) # te low level, gebruikt awarp niet
-vol2 = deform.inverse().as_backward().apply_deformation(vol) # gebruikt pirt deformation.py
+vol2 = deform.inverse().as_backward().apply_deformation(vol0ori) # gebruikt pirt deformation.py
 
 vv.figure(1); vv.clf()
-a1 = vv.subplot(111); t1 = vv.volshow(vol)
-vv.figure(2); vv.clf()
-a2 = vv.subplot(111); t2 = vv.volshow(vol2)
-vv.figure(3); vv.clf()
-a3 = vv.subplot(111); t3 = vv.volshow2(vol2-vol0ori)
-
+a1 = vv.subplot(131); t1 = vv.volshow(vol)
+a1.daspect = (1, 1, -1)
+vv.title('vol average of cardiac cycle')
+# vv.figure(2); vv.clf()
+a2 = vv.subplot(132); t2 = vv.volshow(vol2)
+a2.daspect = (1, 1, -1)
+vv.title('deformed volume')
+# vv.figure(3); vv.clf()
+a3 = vv.subplot(133); t3 = vv.volshow2((vol2-vol0ori), clim=(-500,500))
+a3.daspect = (1, 1, -1)
+vv.title('difference')
 
 a1.camera = a2.camera = a3.camera
 t1.clim = t2.clim = 0, 2000
-t3 = -2000, 2000
+t3.clim = -500, 500
 
 
 
