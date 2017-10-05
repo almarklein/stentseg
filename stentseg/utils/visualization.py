@@ -26,7 +26,7 @@ def remove_stent_from_volume(vol, graph, stripSize=5):
     return vol2
 
 
-def show_ctvolume(vol, graph, axis=None, showVol='MIP', clim =(0,2500), isoTh=250, 
+def show_ctvolume(vol, graph=None, axis=None, showVol='MIP', clim =(0,2500), isoTh=250, 
                   removeStent=True, climEditor=False):
     """ Different ways to visualize the CT volume as reference
     For '2D' clim (-550,500) often good range
