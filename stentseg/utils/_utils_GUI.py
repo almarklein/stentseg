@@ -1,3 +1,4 @@
+# Copyright (C) M.A Koenrades
 """ Functionality for segmentation and graph modeling using GUI
 
 """
@@ -53,11 +54,10 @@ alpha = 0.8
 #             a1.SetView(view)
 
 def ViewPresets(event, axis=None):
-    """ View presets for anatmic views: anterior, posterior, left, right, top,
-    bottom. F1, F2.. keys
+    """ View presets for anatomic views: anterior, posterior, left, right, top,
+    bottom. 1, 2.. keys
     Can be used with f.eventKeyDown.Bind(lambda event: _utils_GUI.ViewPresets(event, [a1, a2]) )
     """
-    #todo: afmaken alle views
     if axis is None:
         ax = vv.gca()
         axis = [ax]
@@ -82,20 +82,34 @@ def ViewPresets(event, axis=None):
         elif event.text == '5':
             view['azimuth'] = 0
             view['elevation'] = -90
+        elif event.text == 'v':
+            view['zoom'] = 0.0198
         ax.SetView(view)
-    if event.text == 'z':
-        # axes not visible
-        AxesVis(axis)
     if event.text == 'x':
-        # axes visible
-        AxesVis(axis, axVis=True)
+        # axes visible or hide
+        AxesVis(axis)
 
-def AxesVis(axis, axVis=False):
-    """ Axis input list with axes
-    axVis is True or False
+
+def ShowHideSlider(event, c):
+    """ View/hide the slider (clim/isoth editor)
     """
+    if event.text == 's':
+        switch = c.visible
+        if switch == True:
+            c.visible = False
+        else:
+            c.visible = True
+
+def AxesVis(axis):
+    """ Axis input list with axes
+    show or hide axes
+    """
+    switch = axis[0].axis.visible
     for ax in axis:
-        ax.axis.visible = axVis
+        if switch == True:
+            ax.axis.visible = False
+        else:
+            ax.axis.visible = True
 
 def RotateView(event, axis=None):
     """ Rotate view in axes given in list axis. Use a and d keys 
@@ -111,26 +125,39 @@ def RotateView(event, axis=None):
         if event.text == 'a':
             plus90 = view['azimuth'] + 90
             view['azimuth'] = plus90
-            ax.SetView(view)
-        if event.text == 'd':
+        elif event.text == 'd':
             min90 = view['azimuth'] - 90
             view['azimuth'] = min90
-            ax.SetView(view)
+        elif event.key == vv.KEY_UP and vv.KEY_CONTROL in event.modifiers:
+            v = view['elevation'] - 5 # tilt
+            view['elevation'] = v
+        elif event.key == vv.KEY_DOWN and vv.KEY_CONTROL in event.modifiers:
+            v = view['elevation'] + 5 # tilt
+            view['elevation'] = v
         #todo: rotate with left and right keys, how to update smoothly?
-        if event.key == vv.KEY_LEFT:
-            min1 = view['azimuth'] - 2
+        elif event.key == vv.KEY_LEFT and vv.KEY_CONTROL in event.modifiers:
+            min1 = view['azimuth'] - 0.5
             view['azimuth'] = min1
-            ax.SetView(view)
-        if event.key == vv.KEY_RIGHT:
-            plus1 = view['azimuth'] + 2
+        elif event.key == vv.KEY_RIGHT and vv.KEY_CONTROL in event.modifiers:
+            plus1 = view['azimuth'] + 0.5
             view['azimuth'] = plus1
-            ax.SetView(view)
-    if event.text == 'z':
-        # axes not visible
-        AxesVis(axis)
+        #todo: how to move perpendicular to screen L and R?
+        elif event.key == vv.KEY_LEFT:
+            min1 = view['loc'][1] + 5 # shift in y
+            view['loc'] = (view['loc'][0],min1,view['loc'][2])
+        elif event.key == vv.KEY_RIGHT:
+            min1 = view['loc'][1] - 5 # shift in y
+            view['loc'] = (view['loc'][0],min1,view['loc'][2])
+        elif event.key == vv.KEY_UP:
+            min1 = view['loc'][-1] + 5 # shift in z
+            view['loc'] = (view['loc'][0],view['loc'][1],min1)
+        elif event.key == vv.KEY_DOWN:
+            plus1 = view['loc'][-1] - 5 # shift in z
+            view['loc'] = (view['loc'][0],view['loc'][1],plus1)
+        ax.SetView(view)
     if event.text == 'x':
-        # axes visible
-        AxesVis(axis, axVis=True)
+        # axes visible or hide
+        AxesVis(axis)
 
 def node_points_callbacks(node_points, selected_nodes, pick=True, t0=None):
     """ Bind callback functions to node points
@@ -363,4 +390,58 @@ def interactiveClusterRemoval(graph, radius=0.7, axVis=False,
     
     # Done return axes
     return a
+
+
+from visvis import BaseMapableEditor
+from visvis.wibjects.sliders import RangeSlider
+
+class IsoThEditor(BaseMapableEditor):
+    """ IsoThEditor(parent, *args) (Adapted from CLimEditor(parent, *args))
+    
+    A wibject to edit the isothreshold property of an iso rendering
+    
+    During initialization, SetMapables(*args) is called. The easiest way 
+    to use this wibject is to attach it to an axes or figure instance. 
+    The wibject then controls the colormaps of all mapable objects in them.
+    
+    """
+    
+    def __init__(self, parent, *args):
+        BaseMapableEditor.__init__(self, parent)
+        
+        # init size
+        self.position.w = 300
+        self.position.h = 50
+        
+        # Init mappables
+        self._mapables = []
+        
+        # Create slider widget
+        self._slider = RangeSlider(self, fullRange=(0,500))
+        self._slider.range = 0, 310 # init
+        self._slider.position = 15,5,-30,-30 # 80 = 55+25
+        self._slider.showTicks = True
+        
+        # Bind events
+        self._slider.eventSliderChanged.Bind(self._UpdateFull)
+        
+        # Set mappables
+        self.SetMapables(*args)
+        # self._InitFromMapables()
+    
+    
+    @property
+    def slider(self):
+        """ Get the slider instance of this tool.
+        """
+        return self._slider
+    
+    def _UpdateFull(self, event):
+        for mappable in self.GetMapables():
+            ra = self._slider.range
+            if hasattr(mappable, 'isoThreshold'):
+                mappable.isoThreshold=ra.max
+            else:
+                print('mappable has no attribute isoThreshold')
+
 
