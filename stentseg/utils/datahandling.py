@@ -135,7 +135,7 @@ def loadmodel(basedir, ptcode, ctcode, cropname, modelname='modelavgreg'):
     return s
 
 
-def savecropvols(vols, basedir, ptcode, ctcode, cropname, stenttype):
+def savecropvols(vols, basedir, ptcode, ctcode, cropname, stenttype, sampling=None, meta=None):
     """ Step B: Crop and Save SSDF
     Input: vols from Step A
     Save 2 or 10 volumes (cardiac cycle phases) in one ssdf file
@@ -144,7 +144,11 @@ def savecropvols(vols, basedir, ptcode, ctcode, cropname, stenttype):
     Meta information (dicom), origin, stenttype and cropping range are saved
     """
 
-    vol0 = vv.Aarray(vols[0], vols[0].meta.sampling)  # vv.Aarray defines origin: 0,0,0
+    try:
+        vol0 = vv.Aarray(vols[0], vols[0].meta.sampling)  # vv.Aarray defines origin: 0,0,0
+    except AttributeError:
+        print('AttributeError no meta with vol, use given sampling')
+        vol0 = vv.Aarray(vols[0], sampling)
     
     # Open cropper tool
     print('Set the appropriate cropping range for "%s" '
@@ -185,11 +189,19 @@ def savecropvols(vols, basedir, ptcode, ctcode, cropname, stenttype):
         for volnr in range(0,len(vols)):
             phase = volnr*10
             if len(vols) == 2: # when only diastolic/systolic volume
-                phase = vols[volnr].meta.SeriesDescription[:2] # '78%, iDose'
-                phase = int(phase)
+                try:
+                    phase = vols[volnr].meta.SeriesDescription[:2] # '78%, iDose'
+                    phase = int(phase)
+                except AttributeError: # has no meta
+                    phase = volnr
             s['vol%i'% phase]  = vols[volnr][rz[0]:rz[1], ry[0]:ry[1], rx[0]:rx[1]]
-            s['meta%i'% phase] = vols[volnr].meta
-            vols[volnr].meta.PixelData = None  # avoid ssdf warning
+            try:
+                s['meta%i'% phase] = vols[volnr].meta
+                vols[volnr].meta.PixelData = None  # avoid ssdf warning
+            except AttributeError: # has no meta
+                pass
+                # s['meta%i'% phase] = meta # given input var
+                # todo: meta type now error TypeError: unorderable types: DataElement() < DataElement()
         filename = '%s_%s_%s_phases.ssdf' % (ptcode, ctcode, cropname)
     file_out = os.path.join(basedir,ptcode, filename )
     ssdf.save(file_out, s)
