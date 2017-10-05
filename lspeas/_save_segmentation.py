@@ -42,7 +42,12 @@ from visvis import ssdf
 
 # Load deforms
 s = loadvol(basedir, ptcode, ctcode, cropname, 'deforms')
-deforms = [s['deform%i'%(i*10)] for i in range(10)]
+# deforms = [s['deform%i'%(i*10)] for i in range(10)]
+deformkeys = []
+for key in dir(s):
+    if key.startswith('deform'):
+        deformkeys.append(key)
+deforms = [s[key] for key in deformkeys]
 deforms = [pirt.DeformationFieldBackward(*fields) for fields in deforms]
 paramsreg = s.params
 
@@ -60,13 +65,3 @@ s.model = model.pack()
 s.paramsreg = paramsreg
 ssdf.save(os.path.join(basedir, ptcode, filename), s)
 print('saved dynamic to disk in {} as {}.'.format(basedir, filename) )
-
-
-# option to make independent on number of phases
-# deformkeys = []
-# for key in dir(s):
-#     if key.startswith('deform'):
-#         deformkeys.append(key)
-# deforms = [s[key] for key in deformkeys]
-# deforms = [pirt.DeformationFieldBackward(*fields) for fields in deforms]
-
