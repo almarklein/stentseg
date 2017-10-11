@@ -91,7 +91,7 @@ def plot_pattern(tt, aa):
     vv.plot([0, 0, T, T, 2*T, 2*T], [0, amax, 0, amax, 0, amax], ls='+', lc='r')
     
 
-def plot_pattern_plt(tt, aa, label='', mark=True, ax=None):
+def plot_pattern_plt(tt, aa, label='', ls='--', mark=True, ax=None):
     """ Helper function to plot the pattern.
     """
     import matplotlib.pyplot as plt
@@ -108,7 +108,7 @@ def plot_pattern_plt(tt, aa, label='', mark=True, ax=None):
     # Plot the signal and mark a single period
     if ax is None:
         ax = plt.gca()
-    ax.plot(tt3, aa3, 'bo-', ms=3, alpha=1, label=label)
+    ax.plot(tt3, aa3, 'bo', mec='b', ls=ls, ms=3, alpha=1, label=label) #bo refers to marker
     if mark==True:
         ax.plot([0, 0], [0, amax], 'b', ls='-', marker = '_')
         ax.plot([T,T], [0, amax], 'b', ls='-', marker = '_')
