@@ -1,9 +1,15 @@
 """ Precision of camera reference signal 
 
-For final analysis: read cams+peakdet (first cell), cell 365 with bestFitPeriods,
+run gausspatterns.py first, than execute this file
+
+For final analysis we actually use in the current scipt: 
+first cell read cams+peakdet, cell 365 with bestFitPeriods,
 cell 484 cutBefore0equalSizePeriods and geTttCamMean, 
-cell 538 show_period_cam123bestCut_with_bounds, set plot_pattern_plt 590, 616 and
-run gausspatterns.py first; continue with alg_vs_cam123mean.py for error
+cell 538 show_period_cam123bestCut_with_bounds
+  ----> set plot_pattern_plt 590, 616
+
+continue with alg_vs_cam123mean.py for error
+
 """
 # add lspeas folder to pythonpath via shell
 from lspeas.phantom.motion_pattern_error import readCameraExcel, rmse, getFreqCamera, resample
@@ -24,12 +30,12 @@ if __name__ == '__main__':
     workbookCam2 = '20160215 GRAFIEKEN van camera systeem uit matlab in excel.xlsx' # 22/1/2016
     workbookCam3 = 'Grafieken camera matlab meting 25012016.xlsx' # 25/1/2016
     
-    sheetProfile = 'ZB4'
-    ylim = 2.0 # input + 0.45 marge legend
+    sheetProfile = 'ZA1'
+    ylim = 1.5 # input + 0.45 marge legend
     xlim = (-1.5,7)
-    colSt1 = 'M' # see workbookCams en Errors cam123ref_vs_alg Toshiba.xlsx
-    colSt2 = 'C'
-    colSt3 = 'T'
+    colSt1 = 'D' # see workbookCams en Summery in Errors cam123ref_vs_alg Toshiba.xlsx
+    colSt2 = 'D'
+    colSt3 = 'D'
     
     # read the cam signal with consecutive periods
     f1 = plt.figure(figsize=(18,11), num=1); plt.clf()
@@ -444,6 +450,7 @@ print('AperiodsC1mean, AperiodsC1std = {}, {}'.format(AperiodsC1mean, AperiodsC1
 print('AperiodsC2mean, AperiodsC2std = {}, {}'.format(AperiodsC2mean, AperiodsC2std))
 print('AperiodsC3mean, AperiodsC3std = {}, {}'.format(AperiodsC3mean, AperiodsC3std))
 print('AperiodsC123mean, AperiodsC123std = {}, {}'.format(AperiodsC123mean, AperiodsC123std))
+print('AperiodsC123min, AperiodsC123max = {}, {}'.format(np.min(Aperiods123), np.max(Aperiods123)))
 print()
 print('TperiodsC1mean, TperiodsC1std = {}, {}'.format(TperiodsC1mean, TperiodsC1std))
 print('TperiodsC2mean, TperiodsC2std = {}, {}'.format(TperiodsC2mean, TperiodsC2std))
@@ -568,7 +575,7 @@ def show_period_cam123bestCut_with_bounds(ttperiodmeanC1, ttperiodmeanC2,
         ttperiodmeanC3, ttperiodmeanC123, pperiodsC1bestCut, pperiodsC2bestCut, 
         pperiodsC3bestCut, pperiodsC123bestCut, fignum=4, save=True):
     
-    from stentseg.utils.aortamotionpattern import get_motion_pattern, plot_pattern
+    from stentseg.utils.aortamotionpattern import get_motion_pattern, plot_pattern_plt
     
     # mean and std per cam 
     pperiodsC1mean, pperiodsC1std = np.nanmean(pperiodsC1bestCut, axis=0), np.nanstd(pperiodsC1bestCut, axis=0)
@@ -592,18 +599,18 @@ def show_period_cam123bestCut_with_bounds(ttperiodmeanC1, ttperiodmeanC2,
                                         pperiodsC3mean,pperiodsC3std)
     
     # add input function simulator; first run gauspatterns.py
-    plot_pattern_plt(*(tt1a,aa1a),label='input simulator A1', mark=False)
+    plot_pattern_plt(*(tt1a,aa1a),label='input A1', ls='--', mark=False)
     
     colors = ['#d7191c','#fdae61','#2c7bb6'] # http://colorbrewer2.org/#type=diverging&scheme=RdYlBu&n=5
-    ax2.plot(ttperiodmeanC1rep, pperiodsC1mean, '.-', color=colors[0], label='output simulator day 1 (camera)')
+    ax2.plot(ttperiodmeanC1rep, pperiodsC1mean, '.-', color=colors[0], label='output day 1 (camera)')
     ax2.fill_between(ttperiodmeanC1rep, pperiodsC1mean-pperiodsC1std, pperiodsC1mean+pperiodsC1std, 
                     color=colors[0], alpha=0.2)
-    ax2.plot(ttperiodmeanC2rep, pperiodsC2mean, '.-', color=colors[1], label='output simulator day 2 (camera)')
+    ax2.plot(ttperiodmeanC2rep, pperiodsC2mean, '.-', color=colors[1], label='output day 2 (camera)')
     ax2.fill_between(ttperiodmeanC2rep, pperiodsC2mean-pperiodsC2std, pperiodsC2mean+pperiodsC2std, 
                     color=colors[1], alpha=0.3)
     # ax2.fill_between(ttperiodmeanC2rep, pperiodsC2q25, pperiodsC2q75, 
     #                 color=colors[1], alpha=0.3)
-    ax2.plot(ttperiodmeanC3rep, pperiodsC3mean, '.-', color=colors[2], label='output simulator day 3 (camera)')
+    ax2.plot(ttperiodmeanC3rep, pperiodsC3mean, '.-', color=colors[2], label='output day 3 (camera)')
     ax2.fill_between(ttperiodmeanC3rep, pperiodsC3mean-pperiodsC3std, pperiodsC3mean+pperiodsC3std, 
                     color=colors[2], alpha=0.2)
     
@@ -618,11 +625,11 @@ def show_period_cam123bestCut_with_bounds(ttperiodmeanC1, ttperiodmeanC2,
     # add plot of average with bounds
     ax3 = f3.add_subplot(122)
     # add input function simulator
-    plot_pattern_plt(*(tt1a,aa1a),label='input simulator A1') # (A1: A=1.0, T=1.2)')
+    plot_pattern_plt(*(tt1a,aa1a),label='input A1', ls='--') # (A1: A=1.0, T=1.2)')
     
     ttperiodmeanC123rep, pperiodsC123meanRep, pperiodsC123stdRep = repeatCamPeriod(ttperiodmeanC123,
                                     pperiodsC123mean,pperiodsC123std, mark=True)
-    ax3.plot(ttperiodmeanC123rep, pperiodsC123meanRep, '.-', color='k', label='output simulator mean (camera)')
+    ax3.plot(ttperiodmeanC123rep, pperiodsC123meanRep, '.-', color='k', label='output mean (camera)')
     ax3.fill_between(ttperiodmeanC123rep, pperiodsC123meanRep-pperiodsC123stdRep,     
                 pperiodsC123meanRep+pperiodsC123stdRep, color='k', alpha=0.2)
     
@@ -633,7 +640,7 @@ def show_period_cam123bestCut_with_bounds(ttperiodmeanC1, ttperiodmeanC2,
     ax3.set_xticks(major_ticks)
     
     if save:
-        f3.savefig(os.path.join(dirsave, 'simInputOutput.pdf'), papertype='a0', dpi=300)
+        f3.savefig(os.path.join(dirsave, 'simInputOutput.png'), papertype='a0', dpi=600)
          
     return pperiodsC123mean, pperiodsC123std, pperiodsC123meanRep, pperiodsC123stdRep, ttperiodmeanC123rep
 
