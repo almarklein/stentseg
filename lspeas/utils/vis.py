@@ -157,7 +157,7 @@ def showVolPhases(basedir, ptcode, ctcode, cropname, showVol='iso', isoTh=310,
     print('------------------------')
     print('Use keys 1, 2, 3, 4 and 5 for preset anatomic views')
     print('Use v for a default zoomed view')
-    print('Use z and x to show and hide axis')
+    print('Use x to show and hide axis')
     print('------------------------')
     
     return t
