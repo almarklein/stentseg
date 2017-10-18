@@ -2,10 +2,10 @@
 class _Select_Centerline_Points:
     def __init__(self,ptcode,ctcode,allcenterlines,basedir):
         """
-        Script to show the stent plus centerline model and select ponits on 
+        Script to show the stent plus centerline model and select points on 
         centerlines for motion analysis 
         """
-        import os
+        import os, time
         import pirt
         import visvis as vv
         import numpy as np
@@ -71,6 +71,7 @@ class _Select_Centerline_Points:
         vv.title('Model for LSPEAS %s  -  %s' % (ptcode[7:], ctcode))
         
         # Add clickable nodes
+        t0 = time.time()
         node_points = []
         for i, node in enumerate(sorted(model.nodes())):
             node_point = vv.solidSphere(translation = (node), scaling = (0.6,0.6,0.6))
@@ -80,6 +81,8 @@ class _Select_Centerline_Points:
             node_point.node = node
             node_point.nr = i
             node_points.append(node_point)
+        t1 = time.time()
+        print('Clickable nodes created, which took %1.2f min.' % ((t1-t0)/60))
         
         # list of correctly clicked nodes
         selected_nodes_sum = set()
@@ -216,6 +219,7 @@ class _Select_Centerline_Points:
                 # Store to EXCEL
                 storeOutputToExcel(storeOutput, exceldir)
                 vv.close(fig)
+                print('output stored to excel')
      
         selected_nodes = list()
         def select_node(event):
@@ -387,9 +391,9 @@ class _Select_Centerline_Points:
         def append_centerlines(allcenterlines):
             """ Merge seperated PointSet centerlines into one PointSet
             """
-            cl_merged = allcenterlines[0]
-            #for i in (1,2):
-            for i in range(1,len(allcenterlines)):
+            # cl_merged = allcenterlines[0]
+            cl_merged = PointSet(3)
+            for i in range(0,len(allcenterlines)):
                 for point in allcenterlines[i]:
                     cl_merged.append(point)
             return cl_merged
