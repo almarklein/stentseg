@@ -149,7 +149,7 @@ class ExcelAnalysis():
     def __init__(self):
         self.exceldir =  ExcelAnalysis.exceldir
         self.dirsaveIm = ExcelAnalysis.dirsaveIm
-        self.workbook_stent = 'LSPEAS_pulsatility_expansion_avgreg_subp_v15.4.xlsx'
+        self.workbook_stent = 'LSPEAS_pulsatility_expansion_avgreg_subp_v15.5.xlsx'
         self.workbook_renal = 'postop_measures_renal_ring.xlsx'
         self.workbook_variables = 'LSPEAS_Variables.xlsx'
         self.workbook_variables_presheet = 'preCTA_bone_align'
@@ -244,7 +244,7 @@ class ExcelAnalysis():
         
         patients = ['LSPEAS_001', 'LSPEAS_002',	'LSPEAS_003', 'LSPEAS_005',	
                     'LSPEAS_008', 'LSPEAS_009',	'LSPEAS_011', 'LSPEAS_015',	'LSPEAS_017',	
-                    'LSPEAS_018', 'LSPEAS_020', 'LSPEAS_021', 'LSPEAS_022', 'LSPEAS_019',
+                    'LSPEAS_018', 'LSPEAS_019', 'LSPEAS_020', 'LSPEAS_021', 'LSPEAS_022',
                     'LSPEAS_025']#, 'LSPEAS_023', 'LSPEAS_024', 'LSPEAS_004']
         codes = ['discharge', '1month', '6months', '12months', '24months']
         if ptcodes == 'anaconda':
@@ -594,7 +594,7 @@ class ExcelAnalysis():
             ax1.plot(xrange, np.asarray(maxs_rd)[:,0], ls='', marker=marker , color='w', 
                 markeredgecolor=subgroup_colors[0], markersize=markersize) 
         # plot data R2
-        ax1.plot(xrange, np.asarray(means_rd)[:,1], ls='-', marker='o', color=subgroup_colors[1], label='R2') 
+        ax1.plot(xrange, np.asarray(means_rd)[:,1], ls='--', marker='o', color=subgroup_colors[1], label='R2') 
         ax1.errorbar(xrange, np.asarray(means_rd)[:,1], 
             yerr = np.asarray(stds_rd)[:,1], fmt=None, ecolor=subgroup_colors[1], capsize=8)
         # ax1.fill_between(xrange, np.asarray(mins_rd)[:,1], np.asarray(maxs_rd)[:,1], color=subgroup_colors[1], alpha=0.2)
@@ -618,7 +618,7 @@ class ExcelAnalysis():
             ax2.plot(xrange, np.asarray(maxs_mm)[:,0], ls='', marker=marker , color='w', 
                 markeredgecolor=subgroup_colors[0], markersize=markersize) 
         # plot data R2
-        ax2.plot(xrange, np.asarray(means_mm)[:,1], ls='-', marker='o', color=subgroup_colors[1]) 
+        ax2.plot(xrange, np.asarray(means_mm)[:,1], ls='--', marker='o', color=subgroup_colors[1]) 
         ax2.errorbar(xrange, np.asarray(means_mm)[:,1], 
             yerr = np.asarray(stds_mm)[:,1], fmt=None, ecolor=subgroup_colors[1], capsize=8)
         # ax2.fill_between(xrange, np.asarray(mins_mm)[:,1], np.asarray(maxs_mm)[:,1], color=subgroup_colors[1], alpha=0.2)
@@ -634,7 +634,7 @@ class ExcelAnalysis():
         
         if saveFig:
             plt.savefig(os.path.join(self.dirsaveIm, 
-            'plot_means_deployment_mm.png'), papertype='a0', dpi=300)
+            'plot_means_deployment_mm.png'), papertype='a0', dpi=600)
         
     
     def plot_ring_deployment(self, patients=None, preop=False, ylim=[0, 30], ylim_mm=[20,33.5], saveFig=True):
@@ -804,7 +804,7 @@ class ExcelAnalysis():
         
         if saveFig:
             plt.savefig(os.path.join(self.dirsaveIm, 
-            'plot_ring_deployment.png'), papertype='a0', dpi=300)
+            'plot_ring_deployment.png'), papertype='a0', dpi=600)
         
    
     def box_ring_deployment(self, rows=[76,90] , ylim=[0, 42], saveFig=True):
@@ -1213,7 +1213,7 @@ class ExcelAnalysis():
         
         if saveFig:
             plt.savefig(os.path.join(self.dirsaveIm, 
-            'plot_pp_vv_distance_ratio.png'), papertype='a0', dpi=300)
+            'plot_pp_vv_distance_ratio.png'), papertype='a0', dpi=600)
        
     
         
@@ -1265,7 +1265,7 @@ if __name__ == '__main__':
     
     patients =['LSPEAS_001', 'LSPEAS_002',	'LSPEAS_003', 'LSPEAS_005',	
                 'LSPEAS_008', 'LSPEAS_009',	'LSPEAS_011', 'LSPEAS_015',	'LSPEAS_017',	
-                'LSPEAS_018', 'LSPEAS_020', 'LSPEAS_021', 'LSPEAS_022', 'LSPEAS_019',
+                'LSPEAS_018', 'LSPEAS_019', 'LSPEAS_020', 'LSPEAS_021', 'LSPEAS_022',
                 'LSPEAS_025']#, 'LSPEAS_004', 'LSPEAS_023']#, 'LSPEAS_024'] 
     
     # create class object for excel analysis
@@ -1274,5 +1274,5 @@ if __name__ == '__main__':
     # foo.plot_pp_vv_deployment(ring=12, saveFig=False)
     # foo.plot_ring_deployment(patients=patients, ylim=[72, 100], ylim_mm=[20,33.5], saveFig=True)
     # foo.change_in_rdc_D_12()
-    
+    # foo.plot_ring_deployment_lines(rowsrd=[211,225], rowsmm=[120,134], ylim=[72, 100], ylim_mm=[18, 34], subgroup_colors=['#D02D2E', 'blue'], saveFig=True)
     
