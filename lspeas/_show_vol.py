@@ -22,37 +22,10 @@ ctcode, nr = '24months', 2
 cropname = 'ring'
 
 ## Show 3D movie, by alternating the 10 volumes
+from lspeas.utils.vis import showVolPhases
 
-# Load volumes
-s = loadvol(basedir, ptcode, ctcode, cropname, 'phases')
-# vols = [s['vol%i'%(i*10)] for i in range(10)]
-vols = []
-for key in dir(s):
-    if key.startswith('vol'):
-        vols.append(s[key])
-
-# Start vis
-f = vv.figure(3); vv.clf()
-a = vv.gca()
-a.daspect = 1, 1, -1
-a.axis.axisColor = 1,1,1
-a.axis.visible = False
-a.bgcolor = 0,0,0
-vv.title('ECG-gated CT scan %s  -  %s' % (ptcode[7:], ctcode))
-
-# Setup data container
-container = vv.MotionDataContainer(a)
-for vol in vols:
-    t = vv.volshow2(vol, clim=(-550, 500)) # -750, 1000
-    # t = vv.volshow(vol, clim=(0, 5000), renderStyle = 'mip')
-    t.parent = container
-    # t.isoThreshold = 310               # iso or mip work well 
-    # t.colormap = {'r': [(0.0, 0.0), (0.17727272, 1.0)],
-    #             'g': [(0.0, 0.0), (0.27272728, 1.0)],
-    #             'b': [(0.0, 0.0), (0.34545454, 1.0)],
-    #             'a': [(0.0, 1.0), (1.0, 1.0)]}
-# c = vv.ClimEditor(vv.gcf())
-# c.position = (10, 50)
+showVol='mip'
+t = showVolPhases(basedir, ptcode, ctcode, cropname, showVol=showVol, isoTh=310, slider=True  )
 
 # foo = recordMovie(frameRate=10)
 
