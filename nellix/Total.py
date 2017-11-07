@@ -7,9 +7,9 @@ import os
 from stentseg.utils.datahandling import select_dir, loadmodel, loadvol
 
 
-ptcode = 'chevas_07'
+ptcode = 'chevas_05'
 ctcode = '12months'
-dicom_basedir = r'F:\Nellix_chevas\CT_SSDF\no 7\STD00001\10phases'
+dicom_basedir = r'F:\Nellix_chevas\CT_SSDF\no 6\STD00001\10phases'
 basedir = select_dir(r'F:\Nellix_chevas\CT_SSDF\SSDF')
 print(dicom_basedir)
 
@@ -47,25 +47,36 @@ from nellix._get_centerline import _Get_Centerline
 foo = _Get_Centerline(ptcode,ctcode,EndPoints,StartPoints,basedir) # MK: endpoints here is distal points!
 # loads prox_avgreg (reg) and prox_modelavgreg (segm)
 # saves centerline_modelavgreg and centerline_total_modelavgreg; also with _deforms as dynamic centerline
-# in centerline all centerlines but separate; in centerline_total merged in one graph
+# in centerline we have all centerlines but separate graphs; in centerline_total merged in one graph
 allcenterlines = foo.allcenterlines # list with PointSet per centerline
 print('centerline: done')
 
-## MOTION ANALYSIS CENTERLINES
 
+## IDENTIFY CENTERLINES FOR ANALYSIS
 from stentseg.utils.centerline import points_from_nodes_in_graph
 s = loadmodel(basedir, ptcode, ctcode, 'prox', modelname='centerline_modelavgreg_deforms')
 
 from nellix.identify_centerlines import identifyCenterlines
-a, s2 = identifyCenterlines(s, ptcode,ctcode,basedir)
+modelname='centerline_modelavgreg_deforms'
+a, s2 = identifyCenterlines(s, ptcode,ctcode,basedir,modelname,showVol='MIP')
 
+## MOTION ANALYSIS CENTERLINES
+import os
+from stentseg.utils.datahandling import select_dir, loadmodel, loadvol
 
+ptcode = 'chevas_06'
+ctcode = '12months'
+basedir = select_dir(r'F:\Nellix_chevas\CT_SSDF\SSDF')
+
+from nellix._do_analysis_centerline import _Do_Analysis_Centerline
+dAC = _Do_Analysis_Centerline(ptcode,ctcode,basedir) # loads centerline_modelavgreg_deforms_id
+dAC.chimney_angle_change()
 ##
 allcenterlines = []
 for key in dir(s):
         if key.startswith('model'):
-            model = points_from_nodes_in_graph(s[key])
-            allcenterlines.append(model)
+                model = points_from_nodes_in_graph(s[key])
+                allcenterlines.append(model)
 
 from nellix._select_centerline_points import _Select_Centerline_Points
 foo = _Select_Centerline_Points(ptcode, ctcode, allcenterlines, basedir)
@@ -73,6 +84,6 @@ foo = _Select_Centerline_Points(ptcode, ctcode, allcenterlines, basedir)
 
 ## SHOW CENTERLINE DYNAMIC
 from nellix._show_model import _Show_Model
-foo = _Show_Model(ptcode,ctcode,basedir, meshWithColors=True)
+foo = _Show_Model(ptcode,ctcode,basedir, meshWithColors=True,motion='sum',clim2=(0,4))
 print('chEVAS centerline is shown in motion')
 
