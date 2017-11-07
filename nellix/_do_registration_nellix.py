@@ -31,7 +31,8 @@ class _Do_Registration_Nellix:
                 print(key)
                 # create vol with zoom in z-direction
                 zscale = (s[key].sampling[0] / s[key].sampling[1]) # z / y
-                vol_zoom = scipy.ndimage.interpolation.zoom(s[key],[zscale,1,1],'float32')
+                # resample vol using spline interpolation, 3rd order polynomial
+                vol_zoom = scipy.ndimage.interpolation.zoom(s[key],[zscale,1,1],'float32') 
                 s[key].sampling = [s[key].sampling[1],s[key].sampling[1],s[key].sampling[2]]
                 
                 # aanpassingen voor scale en origin
