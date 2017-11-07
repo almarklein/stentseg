@@ -114,7 +114,6 @@ def AxesVis(axis):
 def RotateView(event, axis=None):
     """ Rotate view in axes given in list axis. Use a and d keys 
     If axis is not given, current axes is used
-    Also controls visibility of axis with z and x keys
     Can be used with f.eventKeyDown.Bind(lambda event: _utils_GUI.RotateView(event, [a1, a2]) )
     """
     if axis is None:
@@ -155,9 +154,7 @@ def RotateView(event, axis=None):
             plus1 = view['loc'][-1] - 5 # shift in z
             view['loc'] = (view['loc'][0],view['loc'][1],plus1)
         ax.SetView(view)
-    if event.text == 'x':
-        # axes visible or hide
-        AxesVis(axis)
+
 
 def node_points_callbacks(node_points, selected_nodes, pick=True, t0=None):
     """ Bind callback functions to node points
