@@ -1,6 +1,6 @@
 
 class _Show_Model:
-    def __init__(self,ptcode,ctcode,basedir,meshWithColors=False):
+    def __init__(self,ptcode,ctcode,basedir,meshWithColors=False, motion='amplitude', clim2=(0,2)):
         """
         Script to show the stent model. [ nellix]
         """
@@ -15,18 +15,20 @@ class _Show_Model:
         from stentseg.utils.visualization import show_ctvolume
         from stentseg.motion.vis import create_mesh_with_abs_displacement
         import copy
-        from stentseg.motion.dynamic import incorporate_motion_nodes, incorporate_motion_edges 
+        from stentseg.motion.dynamic import incorporate_motion_nodes, incorporate_motion_edges
+        from lspeas.ecgslider import runEcgSlider
+        from stentseg.utils import _utils_GUI 
 
         import numpy as np
         
         cropname = 'prox'
         # params
-        nr = 40
-        motion = 'amplitude'  # amplitude or sum
+        nr = 1
+        # motion = 'amplitude'  # amplitude or sum
         dimension = 'xyz'
         showVol = 'mip'  # MIP or ISO or 2D or None
         clim0 = (0,2000)
-        clim2 = (0,2)
+        # clim2 = (0,2)
         motionPlay = 9, 2   # each x ms, a step of x %
         
         s = loadvol(basedir, ptcode, ctcode, cropname, what = 'deforms')
@@ -88,21 +90,17 @@ class _Show_Model:
             f.position = 8.00, 30.00,  944.00, 1002.00
         else:
             f.position = 968.00, 30.00,  944.00, 1002.00
-        a = vv.cla()
+        a = vv.gca()
         a.axis.axisColor = 1,1,1
         a.axis.visible = False
         a.bgcolor = 0,0,0
         a.daspect = 1, 1, -1
-        t = vv.volshow(vol, clim=clim0, renderStyle=showVol)
+        t = vv.volshow(vol, clim=clim0, renderStyle=showVol, axes=a)
         vv.xlabel('x (mm)');vv.ylabel('y (mm)');vv.zlabel('z (mm)')
         if meshWithColors:
             vv.title('Model for ChEVAS %s  (colorbar \b{%s} of motion in mm in %s)' % (ptcode[7:], motion, dimension))
         else:
             vv.title('Model for ChEVAS %s' % (ptcode[7:]))
-        # m = vv.mesh(modelmesh)
-        # # m.faceColor = 'g'
-        # m.clim = 0, 5
-        # m.colormap = vv.CM_JET
         
         for i in modelmesh:
             # Create deformable mesh
@@ -120,7 +118,10 @@ class _Show_Model:
             # a.SetView(viewringcrop)
             dm.MotionPlay(motionPlay[0], motionPlay[1])  # (10, 0.2) = each 10 ms do a step of 20%
             dm.motionSplineType = 'B-spline'
-            dm.motionAmplitude = 1.0  # For a mesh we can (more) safely increase amplitude
+            dm.motionAmplitude = 0.5  # For a mesh we can (more) safely increase amplitude
+        
+        ## run ecgslider
+        # ecg = runEcgSlider(dm, f, a, motionPlay)
                 
         ## Turn on/off axis
         # vv.figure(1); a1 = vv.gca(); vv.figure(2); a2= vv.gca()
