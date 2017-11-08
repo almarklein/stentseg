@@ -68,13 +68,13 @@ class recordMovie:
                             r'D:\Profiles\koenradesma\Desktop')
         else:
             self.dirsave = dirsave
-        print('"recordMovie" active, use r, t, u, s, q to rec, stop, continue, save, clear')
+        print('"recordMovie" active, use r (rec), t (stop), y (continue), m (save), q (clear)')
         # Bind eventhandler record
         self.fig.eventKeyUp.Bind(self.record)
     
     def record(self, event): 
         """ keys to record, stop, continue save  clear r of figure
-                      r       t      u      s     q
+                      r       t      y      m     q
         """
         if event.text == 'r':
             self.r = vv.record(self.fig)
@@ -82,13 +82,13 @@ class recordMovie:
         if event.text == 't':
             self.r.Stop()
             print('stop recording')
-        if event.text == 'u':
+        if event.text == 'y':
             self.r.Continue()
             print('continue recording')
         if event.text == 'q':
             self.r.Clear()
             print('clear recording')
-        if event.text == 's': # save
+        if event.text == 'm': # save
             if self.filename is None:
                 now = datetime.datetime.now()
                 self.filename = now.strftime("%Y-%m-%d_%H.%M")+'_recorded'+'.'+self.fileformat
