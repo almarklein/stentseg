@@ -351,7 +351,16 @@ class _Select_Centerline_Points:
             print ([dist_cl])
             print ([point1, point2])
             
-            return {'point_to_pointMin': point_to_pointMin, 'point_to_pointQ1': point_to_pointQ1, 'point_to_pointMedian': point_to_pointMedian, 'point_to_pointQ3': point_to_pointQ3, 'point_to_pointMax': point_to_pointMax, 'point_to_pointP': point_to_pointP, 'Node1': [point1, point1Deforms], 'Node2': [point2, point2Deforms], 'distances': distances, 'dist_cl': dist_cl, 'cl_min_index': cl_min_index, 'cl_max_index': cl_max_index, 'cl_min': cl_min, 'cl_max': cl_max}
+            return {'point_to_pointMin': point_to_pointMin, 
+            'point_to_pointQ1': point_to_pointQ1, 
+            'point_to_pointMedian': point_to_pointMedian, 
+            'point_to_pointQ3': point_to_pointQ3, 
+            'point_to_pointMax': point_to_pointMax, 
+            'point_to_pointP': point_to_pointP, 
+            'Node1': [point1, point1Deforms], 
+            'Node2': [point2, point2Deforms], 'distances': distances, 
+            'dist_cl': dist_cl, 'cl_min_index': cl_min_index, 
+            'cl_max_index': cl_max_index, 'cl_min': cl_min, 'cl_max': cl_max}
             
         
         def line_line_angulation(point1, point1Deforms, point2, point2Deforms, point3, point3Deforms):
@@ -366,7 +375,8 @@ class _Select_Centerline_Points:
             # get angles
             angles = []
             for i in range(len(v1)):
-                angles.append(math.degrees(math.acos((np.dot(v1[i],v2[i]))/(np.linalg.norm(v1[i])*np.linalg.norm(v2[i])))))
+                angles.append(math.degrees(math.acos((np.dot(v1[i],v2[i]))/
+                (np.linalg.norm(v1[i])*np.linalg.norm(v2[i])))))
             angles = np.array(angles)
             
             # get all angle differences of all phases
@@ -379,13 +389,18 @@ class _Select_Centerline_Points:
             
             # get max angle differences
             point_angle_diff_max = angle_diff.max()
-            point_angle_diff_max = [point_angle_diff_max, [x*10 for x in (pos_combinations[list(angle_diff).index(point_angle_diff_max)])]]
+            point_angle_diff_max = [point_angle_diff_max, [x*10 for x in
+            (pos_combinations[list(angle_diff).index(point_angle_diff_max)])]]
             
             # get min angle differences
             point_angle_diff_min = angle_diff.min()
-            point_angle_diff_min = [point_angle_diff_min, [x*10 for x in (pos_combinations[list(angle_diff).index(point_angle_diff_min)])]]
+            point_angle_diff_min = [point_angle_diff_min, [x*10 for x in 
+            (pos_combinations[list(angle_diff).index(point_angle_diff_min)])]]
             
-            return {'point_angle_diff_min':point_angle_diff_min,'point_angle_diff_max': point_angle_diff_max, 'angles': angles, 'Node1': [point1, point1Deforms], 'Node2': [point2, point2Deforms], 'Node3': [point3, point1Deforms]}
+            return {'point_angle_diff_min':point_angle_diff_min,
+            'point_angle_diff_max': point_angle_diff_max, 'angles': angles, 
+            'Node1': [point1, point1Deforms], 'Node2': [point2, point2Deforms], 
+            'Node3': [point3, point1Deforms]}
             
         
         def append_centerlines(allcenterlines):
