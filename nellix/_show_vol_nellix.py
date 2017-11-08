@@ -6,23 +6,32 @@ import pirt
 import visvis as vv
 from stentseg.utils.datahandling import select_dir, loadvol
 from pirt.utils.deformvis import DeformableTexture3D
+import scipy
+from stentseg.utils import _utils_GUI
 
 # Select the ssdf basedir
-basedir = select_dir(r'F:\Nellix_chevas\CHEVAS_SSDF')
+basedir = select_dir(r'F:\Nellix_chevas\CT_SSDF\SSDF')
 
 # Select dataset to register
-ptcode = 'chevas_01'
+ptcode = 'chevas_08'
 ctcode, nr = '12months', 1
-cropname = 'stent'
+cropname = 'prox'
 
 ## Show 3D movie, by alternating the 10 volumes
 
 # Load volumes
-s = loadvol(basedir, ptcode, ctcode, cropname, '2phases')
+s = loadvol(basedir, ptcode, ctcode, cropname, 'phases')
 vols = []
 for key in dir(s):
     if key.startswith('vol'):
-        vols.append(s[key])
+        zscale = (s[key].sampling[0] / s[key].sampling[1]) # z / y
+        # resample vol using spline interpolation, 3rd order polynomial
+        vol_zoom = scipy.ndimage.interpolation.zoom(s[key],[zscale,1,1],'float32') 
+        s[key].sampling = [s[key].sampling[1],s[key].sampling[1],s[key].sampling[2]]
+        # aanpassingen voor scale en origin
+        vol_zoom_type = vv.Aarray(vol_zoom, s[key].sampling, s[key].origin)
+        vol = vol_zoom_type
+        vols.append(vol)
 
 # Start vis
 f = vv.figure(3); vv.clf()
@@ -38,12 +47,12 @@ container = vv.MotionDataContainer(a)
 for vol in vols:
     #     t = vv.volshow2(vol, clim=(-550, 500)) # -750, 1000
     t = vv.volshow(vol, clim=(0, 3000), renderStyle = 'mip')
-    t.isoThreshold = 300               # iso or mip work well 
+    t.isoThreshold = 350               # iso or mip work well 
     t.parent = container
-#     t.colormap = {'g': [(0.0, 0.0), (0.33636364, 1.0)],
-#     'b': [(0.0, 0.0), (0.49545455, 1.0)],
-#     'a': [(0.0, 1.0), (1.0, 1.0)],
-#     'r': [(0.0, 0.0), (0.22272727, 1.0)]}
+    # t.colormap = {'g': [(0.0, 0.0), (0.33636364, 1.0)],
+    # 'b': [(0.0, 0.0), (0.49545455, 1.0)],
+    # 'a': [(0.0, 1.0), (1.0, 1.0)],
+    # 'r': [(0.0, 0.0), (0.22272727, 1.0)]}
 
 
 
