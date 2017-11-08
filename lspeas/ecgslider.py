@@ -58,7 +58,7 @@ class ecgSlider:
             self.dm.MotionStop()
         if event.text == 'q':
             self.dm.MotionPlay(self.motionPlay[0], self.motionPlay[1])
-        if event.text == 's':
+        if event.text == 'e':
             # show hide slider
             showSlider = self.slider.visible
             if showSlider == False:
@@ -80,6 +80,7 @@ def runEcgSlider(dm, fig, ax, motionPlay=(10,0.5), **kwargs):
     """
     # init class ecgSlider
     ecg = ecgSlider(dm, fig, ax, motionPlay=motionPlay)
+    print("To control the ECG-slider use w (wait), q (play) and e (show/hide)")
     # Enter a mainloop
     while not ecg._finished:
         ecg.Run()
