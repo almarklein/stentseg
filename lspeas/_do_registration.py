@@ -56,7 +56,7 @@ for ptcode in ptcodes:
             # most important params
             reg.params.speed_factor = 1.0
             reg.params.scale_sampling = 16
-            reg.params.final_grid_sampling = 20
+            reg.params.final_grid_sampling = 20 # This parameter is usually best coupled to final_scale
             
             # Go!
             reg.register(verbose=1)
