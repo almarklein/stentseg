@@ -23,30 +23,30 @@ basedirMesh = select_dir(r'D:\Profiles\koenradesma\Dropbox\UTdrive\MedDataMimics
     r'C:\Users\Maaike\Dropbox\UTdrive\MedDataMimics\LSPEAS_Mimics')
 
 # Select dataset to register
-ptcode = 'LSPEAS_019'
-codes = ctcode1, ctcode2, ctcode3 = 'discharge', 'discharge', 'discharge'
+ptcode = 'LSPEAS_003'
+# codes = ctcode1, ctcode2, ctcode3 = 'discharge', 'discharge', 'discharge'
 # codes = ctcode1, ctcode2 = 'discharge', '24months'
 # codes = ctcode1 = '12months'
 # codes = ctcode1, ctcode2, ctcode3, ctcode4 = 'discharge', '1month', '6months', '12months'
-# codes = ctcode1, ctcode2, ctcode3, ctcode4, ctcode5 = 'discharge', '1month', '6months', '12months', '24months'
+codes = ctcode1, ctcode2, ctcode3, ctcode4, ctcode5 = 'discharge', '1month', '6months', '12months', '24months'
 cropname = 'ring'
 modelname = 'modelavgreg'
 cropvol = 'stent'
 
-drawModelLines = True  # True or False
+drawModelLines = False  # True or False
+meshDisplacement = True
 drawMesh = True
-meshDisplacement = False
 dimensions = 'xyz'
 showAxis = False
 showVol  = 'ISO'  # MIP or ISO or 2D or None
 removeStent = True
 showvol2D = False
-drawVessel = True
+drawVessel = False
 
 clim = (0,2500)
 clim2D = -200,500
-clim2 = (0,1.5)
-isoTh = 250
+clim2 = (0,2)
+isoTh = 250 # 250
 
 # view1 = 
 #  
@@ -172,6 +172,21 @@ f = vv.gcf()
 f.eventKeyDown.Bind(lambda event: _utils_GUI.RotateView(event, axes) )
 f.eventKeyDown.Bind(lambda event: _utils_GUI.ViewPresets(event, axes) )
 
+## option to adjust clim/isoth
+slider = True
+sliders = dict()
+if slider:
+    print('Use "s" to show/hide slider')
+    for i, ax in enumerate(axes):
+        if showVol=='MIP':
+            sliders['c'+str(i)] = vv.ClimEditor(ax)
+            sliders['c'+str(i)].position = (10, 50)
+            f.eventKeyDown.Bind(lambda event: _utils_GUI.ShowHideSlider(event, sliders['c'+str(i)]) )
+        if showVol=='ISO':
+            sliders['c'+str(i)] = _utils_GUI.IsoThEditor(ax)
+            sliders['c'+str(i)].position = (10, 50)
+            f.eventKeyDown.Bind(lambda event: _utils_GUI.ShowHideSlider(event, sliders['c'+str(i)]) )
+
 ## Set view
 # a1.SetView(view1)
 # a2.SetView(view2)
@@ -181,7 +196,7 @@ f.eventKeyDown.Bind(lambda event: _utils_GUI.ViewPresets(event, axes) )
 #a1.camera = a2.camera = a3.camera
 
 ## Save figure
-# vv.screenshot(r'C:\Users\Maaike\Desktop\019_vessel_D_top_perpend_vessel.jpg', vv.gcf(), sf=2)
+# vv.screenshot(r'C:\Users\Maaike\Desktop\003_vessel_D_24M_LR.jpg', vv.gcf(), sf=2)
 
 ## Set colorbar position
 # for cbar in cbars:
