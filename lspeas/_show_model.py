@@ -15,6 +15,7 @@ import numpy as np
 from stentseg.motion.displacement import _calculateAmplitude, _calculateSumMotion
 from stentseg.motion.displacement import calculateMeanAmplitude
 from ecgslider import runEcgSlider
+from stentseg.utils import _utils_GUI
 
 # Select the ssdf basedir
 basedir = select_dir(os.getenv('LSPEAS_BASEDIR', ''),
@@ -22,8 +23,8 @@ basedir = select_dir(os.getenv('LSPEAS_BASEDIR', ''),
                      r'F:\LSPEAS_ssdf_BACKUP',r'G:\LSPEAS_ssdf_BACKUP')
 
 # Select dataset to register
-ptcode = 'LSPEAS_002'
-ctcode, nr = '12months', 1
+ptcode = 'LSPEAS_003'
+ctcode, nr = 'discharge', 1
 # ptcode = 'QRM_FANTOOM_20160121'
 # ctcode, nr = 'ZA3-75-1.2', 1
 cropname = 'ring'
@@ -32,7 +33,7 @@ motion = 'amplitude'  # amplitude or sum
 dimension = 'xyz'
 showVol  = 'ISO'  # MIP or ISO or 2D or None
 clim0  = (-10,2500) 
-clim2 = (0,3)
+clim2 = (0,2)
 isoTh = 250
 motionPlay = 9, 1  # each x ms, a step of perc of T
 staticref =  'avgreg'# 'avg7020'
@@ -70,7 +71,7 @@ else:
 try:
     s2 = loadvol(basedir, ptcode, ctcode, 'full', staticref)
 except FileNotFoundError:
-    s2 = loadvol(basedir, ptcode, ctcode, 'ring', staticref)
+    s2 = loadvol(basedir, ptcode, ctcode, 'stent', staticref)
 vol = s2.vol
 
 
@@ -91,6 +92,7 @@ if meshWithColors:
     vv.title('Model for LSPEAS %s  -  %s  (colorbar \b{%s} of motion in mm in %s)' % (ptcode[7:], ctcode, motion, dimension))
 else:
     vv.title('Model for LSPEAS %s  -  %s ' % (ptcode[7:], ctcode))
+    
 # viewringcrop = {'azimuth': -166.8860353130016,
 #  'daspect': (1.0, 1.0, -1.0),
 #  'elevation': 8.783783783783782,
@@ -260,7 +262,13 @@ for node_point in node_points:
     node_point.eventEnter.Bind(pick_node)
     node_point.eventLeave.Bind(unpick_node)
 
-# run ecgslider
+# Bind rotate view
+f = vv.gcf()
+ax = vv.gca()
+f.eventKeyDown.Bind(lambda event: _utils_GUI.RotateView(event, [ax]) ) # crtl+L/R/up/down
+f.eventKeyDown.Bind(lambda event: _utils_GUI.ViewPresets(event, [ax]) )
+
+## run ecgslider
 ecg = runEcgSlider(dm, f, a, motionPlay)
 
 
@@ -268,9 +276,10 @@ ecg = runEcgSlider(dm, f, a, motionPlay)
 # to work with the new stent model.
 
 ## Turn on/off axis
-# vv.figure(1); a1 = vv.gca(); vv.figure(2); a2= vv.gca()
+# vv.figure(1); a1 = vv.gca()
+# vv.figure(2); a2= vv.gca()
 # 
-# switch = False
+# switch = True
 # 
 # a1.axis.visible = switch
 # a2.axis.visible = switch
