@@ -50,12 +50,14 @@ volTr = np.swapaxes(volTr, 1,2)
 if True: # crop xy
     volOr = volOr[:, 200:-200, 300:-150]
     volTr = volTr[:, 200:-200, 300:-150]
+    croprange = [[0,volOr.shape[0]], [200,-200], [300,-150]]
 if True: # clip intensities below -1000
     volOr[volOr<-1000] = 0
     volTr[volTr<-1000] = 0
 if False: # crop z
     volOr = volOr[2:-2]
     volTr = volTr[2:-2]
+    croprange[0] = [2,-2] 
 
 # create Aarray volume    
 volOr = vv.Aarray(volOr, sampling2, origin2)
@@ -222,6 +224,19 @@ volOrBack_d_z = deform_or_to_tr.get_field(0)
 volOrBack_d_y = deform_or_to_tr.get_field(1)
 volOrBack_d_x = deform_or_to_tr.get_field(2)
 
+# store displacement fields
+displacementOrToTr = mat.copy()
+del displacementOrToTr['DataDressed']
+displacementOrToTr['displacementOrToTr_z'] = volOrBack_d_z
+displacementOrToTr['displacementOrToTr_y'] = volOrBack_d_y
+displacementOrToTr['displacementOrToTr_x'] = volOrBack_d_x
+displacementOrToTr['croprange'] = croprange
+
+# save mat file displacement
+scipy.io.savemat(os.path.join(dirinsilico, 'displacementOrToTr_'+fileOr+'.mat'),displacementOrToTr)
+print('displacementOrToTr was stored to {}'.format(os.path.join(dirinsilico, fileOr+'dOrToTr'+'.mat')))
+
+# visualize
 vv.figure(4); vv.clf()
 a1 = vv.gca()
 t1 = vv.volshow(volOr)
