@@ -39,8 +39,8 @@ class VolViewer:
         self.f = vv.gcf()
             
         # Create slice in 2D texture
-        # self.t = vv.imshow(self.vol[self.slice,:,:],clim = [self.vol.min(), self.vol.max()],axes=self.a)
-        self.t = vv.imshow(self.vol[self.slice,:,:],axes=self.a)
+        # self.t = vv.imshow(self.vol[self.round_slice,:,:],clim = [self.vol.min(), self.vol.max()],axes=self.a)
+        self.t = vv.imshow(self.vol[self.round_slice,:,:],axes=self.a)
         
         # Bind
         self.a.eventScroll.Bind(self.on_scroll)
@@ -52,6 +52,10 @@ class VolViewer:
         self.a.bgcolor = [0,0,0]
         self.a.axis.visible = False
         self.a.showAxis = False
+    
+    @property
+    def round_slice(self):
+        return int(self.slice + 0.5)
     
     def on_scroll(self, event):
         self.slice += int(event.verticalSteps)
@@ -70,7 +74,7 @@ class VolViewer:
         return self._refpos
     
     def show(self):
-        self.t.SetData(self.vol[self.slice,:,:])
+        self.t.SetData(self.vol[self.round_slice,:,:])
         
     def GetCurrentSlice(self):
         ctslice = self.slice
