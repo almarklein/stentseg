@@ -202,8 +202,9 @@ for key in dir(s3):
     if key.startswith('deform'):
         deformkeys.append(key)
 deforms = [s3[key] for key in deformkeys] # list with deforms for n phases
+                                          # deforms[0] # list 3xAarray zyx
 
-# fields = deforms[0] # list 3xAarray zyx
+# Get deformfields to deform the volumes
 deformfield0 = pirt.DeformationFieldBackward(deforms[0])
 deformfield1 = pirt.DeformationFieldBackward(deforms[1])
 # from im 2 transform to im 1
@@ -220,25 +221,6 @@ volOrBack = deform_or_to_tr.apply_deformation(volOr)
 volOrBack_d_z = deform_or_to_tr.get_field(0)
 volOrBack_d_y = deform_or_to_tr.get_field(1)
 volOrBack_d_x = deform_or_to_tr.get_field(2)
-
-# todo: original vol --> overlay on transformed image (from avgreg to transformed orig vol)
-# vv.figure(3); vv.clf()
-# a1 = vv.subplot(131); t1 = vv.volshow(volOrBack)
-# a1.daspect = (1, 1, -1)
-# vv.title('vol original using deformation')
-# # vv.figure(3); vv.clf()
-# a2 = vv.subplot(132); t2 = vv.volshow(volOr)
-# a2.daspect = (1, 1, -1)
-# vv.title('volume original')
-# # vv.figure(3); vv.clf()
-# a3 = vv.subplot(133); t3 = vv.volshow2((volOr-volOrBack), clim=(-500,500))
-# a3.daspect = (1, 1, -1)
-# vv.title('difference')
-# 
-# a1.camera = a2.camera = a3.camera
-# t1.clim = t2.clim = 0, 2000
-# t3.clim = -500, 500
-# 
 
 vv.figure(4); vv.clf()
 a1 = vv.gca()
