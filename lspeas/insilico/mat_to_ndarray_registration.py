@@ -221,14 +221,6 @@ volOrBack_d_z = deform_or_to_tr.get_field(0)
 volOrBack_d_y = deform_or_to_tr.get_field(1)
 volOrBack_d_x = deform_or_to_tr.get_field(2)
 
-# volOrBack = deformfield.inverse().as_backward().apply_deformation(vol) # uses pirt deformation.py
-#todo: valueError sampling vs shape?
-#todo: how to go from avg to transformed?
-# volOrBack = deformfield.inverse().apply_deformation(vol)
-# volOrBack = deformfield.apply_deformation(vol)
-# volavgFor = deformfield.as_forward().apply_deformation(vol)
-# volavgOrBack = deformfield.inverse().as_backward().apply_deformation(volOr)
-
 # todo: original vol --> overlay on transformed image (from avgreg to transformed orig vol)
 # vv.figure(3); vv.clf()
 # a1 = vv.subplot(131); t1 = vv.volshow(volOrBack)
@@ -250,30 +242,30 @@ volOrBack_d_x = deform_or_to_tr.get_field(2)
 
 vv.figure(4); vv.clf()
 a1 = vv.gca()
-vv.volshow(volOr)
+t1 = vv.volshow(volOr)
 vv.title('original im 1 (Or)')
 vv.xlabel('x'), vv.ylabel('y'), vv.zlabel('z')
 a1.daspect = 1, 1, -1
 
 vv.figure(5); vv.clf()
 a2 = vv.gca()
-vv.volshow(volTrBack)
+t2 = vv.volshow(volTrBack)
 vv.title('image 2 deformed to im 1')
 vv.xlabel('x'), vv.ylabel('y'), vv.zlabel('z')
 
 vv.figure(6); vv.clf()
 a3 = vv.gca()
-vv.volshow(volOr-volTrBack)
+t3 = vv.volshow(volOr-volTrBack)
 vv.title('difference')
 vv.xlabel('x'), vv.ylabel('y'), vv.zlabel('z')
 
 vv.figure(7); vv.clf()
 a4 = vv.gca()
-vv.volshow(volTr)
+t4 = vv.volshow(volTr)
 vv.title('original im 2 (Tr)')
 vv.xlabel('x'), vv.ylabel('y'), vv.zlabel('z')
 
 a1.camera = a2.camera = a3.camera = a4.camera
-
+t1.clim = t2.clim = t3.clim = t4.clim = clim
 
 
