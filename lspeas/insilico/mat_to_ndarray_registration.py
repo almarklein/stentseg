@@ -48,16 +48,19 @@ volTr = np.swapaxes(volTr, 1,2)
 
 # 'Dressed' part gives errors due to intensities -2000 -->
 if True: # crop xy
-    volOr = volOr[:, 200:-200, 300:-150]
-    volTr = volTr[:, 200:-200, 300:-150]
-    croprange = [[0,volOr.shape[0]], [200,-200], [300,-150]]
+    ymin, ymax = 200, -200
+    xmin, xmax = 300, -150
+    croprange = [[0,volOr.shape[0]], [ymin,ymax], [xmin,xmax]] # zyx
+    croprangeMat = [[ymin+1,volOr.shape[1]+ymax],[xmin+1,volOr.shape[2]+xmax], [1,volOr.shape[0]]] # yxz
+    volOr = volOr[:, ymin:ymax, xmin:xmax]
+    volTr = volTr[:, ymin:ymax, xmin:xmax]
 if True: # clip intensities below -1000
     volOr[volOr<-1000] = 0
     volTr[volTr<-1000] = 0
 if False: # crop z
+    croprange[0] = [2,-2]
     volOr = volOr[2:-2]
     volTr = volTr[2:-2]
-    croprange[0] = [2,-2] 
 
 # create Aarray volume    
 volOr = vv.Aarray(volOr, sampling2, origin2)
@@ -230,11 +233,14 @@ del displacementOrToTr['DataDressed']
 displacementOrToTr['displacementOrToTr_z'] = volOrBack_d_z
 displacementOrToTr['displacementOrToTr_y'] = volOrBack_d_y
 displacementOrToTr['displacementOrToTr_x'] = volOrBack_d_x
-displacementOrToTr['croprange'] = croprange
+displacementOrToTr['croprange_zyx'] = croprange
+displacementOrToTr['croprangeMat_yxz'] = croprangeMat
 
 # save mat file displacement
-scipy.io.savemat(os.path.join(dirinsilico, 'displacementOrToTr_'+fileOr+'.mat'),displacementOrToTr)
-print('displacementOrToTr was stored to {}'.format(os.path.join(dirinsilico, fileOr+'dOrToTr'+'.mat')))
+if False:
+    storemat = os.path.join(dirsaveinsilico, ptcode, 'displacementOrToTr_'+fileOr+'.mat')
+    scipy.io.savemat(storemat,displacementOrToTr)
+    print('displacementOrToTr was stored to {}'.format(storemat))
 
 # visualize
 vv.figure(4); vv.clf()
