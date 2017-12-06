@@ -5,8 +5,7 @@ def imagePooper(reg, fname='test', checkSize=25):
     """
     ims = reg._ims.copy()
     im1, im2 = ims[0], ims[1]
-    im3 = reg.get_final_deform().apply_deformation(im1) # todo: this is incorrect for groupwise?
-        # reg.get_final_deform(0,1).apply_deformation(im1) # from i to j?
+    im3 = reg.get_final_deform(0,1).apply_deformation(im1) # transform from im1 to im2
     # Correct images  
     im1 -= im1.min()        
     im1 /= im1.max()
