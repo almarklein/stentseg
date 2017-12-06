@@ -6,11 +6,15 @@ conda install vispy
 
 """
 try:
-    from PyQt4 import QtCore, QtGui # PyQt5
+    from PyQt5 import QtCore, QtGui # PyQt5
+    from PyQt5.QtWidgets import QDialog as QDialog
+    from PyQt5.QtWidgets import *
 except ImportError:
     from PySide import QtCore, QtGui # PySide2
+    from PySide.QtGui import QDialog as QDialog
+    from PySide.QtGui import *
 
-class MyDialog(QtGui.QDialog):
+class MyDialog(QDialog): # QtGui.QDialog): 
     """ Pop-up dialog
     """
     
@@ -20,12 +24,12 @@ class MyDialog(QtGui.QDialog):
         self.resize(300, 100 )
         
         # Create widgets
-        self.edit = QtGui.QLineEdit(self)
-        self.button = QtGui.QPushButton('O.K.', self)
+        self.edit = QLineEdit(self)
+        self.button = QPushButton('O.K.', self)
         
         # Define interaction
         self.button.clicked.connect(self.close)
-        layout = QtGui.QVBoxLayout(self)
+        layout = QVBoxLayout(self)
 
         # Put widgets in layout
         self.setLayout(layout)
