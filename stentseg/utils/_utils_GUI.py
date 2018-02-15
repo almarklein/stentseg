@@ -154,6 +154,9 @@ def RotateView(event, axis=None):
             plus1 = view['loc'][-1] - 5 # shift in z
             view['loc'] = (view['loc'][0],view['loc'][1],plus1)
         ax.SetView(view)
+    if event.text == 'x':
+        # axes visible or hide
+        AxesVis(axis)
 
 
 def node_points_callbacks(node_points, selected_nodes, pick=True, t0=None):
