@@ -66,7 +66,7 @@ def plot_ampl_errors(ax1,profilesBxaxis,abs_errors_profiles,meanabserrorsprofile
     ax1.plot([0,xlim],[0,xlim/2],'k-.')
     
     #plot text x=y
-    ax1.text(0.78, 0.5, 'x=0.5*y',fontdict=font)
+    ax1.text(0.78, 0.5, 'x=0.5y',fontdict=font)
     ax1.text(0.39, 0.5, 'x=y', fontdict=font)
     
     ax1.plot(profilesBxaxis, meanabserrorsprofiles, linestyle='', marker='.', color='b') 
