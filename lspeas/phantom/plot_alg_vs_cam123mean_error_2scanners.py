@@ -31,8 +31,8 @@ from lspeas.analysis.utils_analysis import _initaxis
 # https://www.wakari.io/sharing/bundle/ijstokes/pyvis-1h?has_login=False
 # http://spartanideas.msu.edu/2014/06/28/how-to-make-beautiful-data-visualizations-in-python-with-matplotlib/
 
-exceldir = select_dir(r'C:\Users\Maaike\Dropbox\UTdrive\LSPEAS\Analysis\Validation robot',
-                      r'D:\Profiles\koenradesma\Dropbox\UTdrive\LSPEAS\Analysis\Validation robot')
+exceldir = select_dir(r'C:\Users\Maaike\surfdrive\UTdrive\LSPEAS\Analysis\Validation robot',
+                      r'D:\Profiles\koenradesma\surfdrive\UTdrive\LSPEAS\Analysis\Validation robot')
 workbook = 'Errors cam123ref_vs_alg Toshiba.xlsx'
 workbookF = 'Errors cam123ref_vs_alg Siemens.xlsx'
 dirsave =  select_dir(r'C:\Users\Maaike\Desktop','D:\Profiles\koenradesma\Desktop')
@@ -66,8 +66,8 @@ def plot_ampl_errors(ax1,profilesBxaxis,abs_errors_profiles,meanabserrorsprofile
     ax1.plot([0,xlim],[0,xlim/2],'k-.')
     
     #plot text x=y
-    ax1.text(0.78, 0.5, 'x=0.5y',fontdict=font)
-    ax1.text(0.39, 0.5, 'x=y', fontdict=font)
+    ax1.text(0.78, 0.5, 'y=0.5x',fontdict=font)
+    ax1.text(0.39, 0.5, 'y=x', fontdict=font)
     
     ax1.plot(profilesBxaxis, meanabserrorsprofiles, linestyle='', marker='.', color='b') 
     # ax1.plot(profilesBxaxis, maxabserrorprofiles, 'r--') # dotted line for min and max
