@@ -17,6 +17,10 @@ ctcode = 'discharge'
 cropname = 'ring' # just for fast reading vol for sampling
 what = 'phases' 
 
+savemat = True
+visualize = True
+reg2d = False
+
 # Load volumes
 oriPhase = '0'
 s = loadvol(basedir, ptcode, ctcode, cropname, what)
@@ -26,13 +30,16 @@ sampling2 = (1,1,1) # ground truth Bernard in voxels (with width_pixel=0.1!)
 origin2 = (0,0,0)
 
 # Load the mat files with original and deformed volumes
-dirinsilico = select_dir(r'D:\LSPEAS\LSPEAS_insilico_mat')
+dirinsilico = select_dir(r'D:\LSPEAS\LSPEAS_insilico_mat',
+                         r'F:\LSPEAS_insilico_mat')
 
 dirsaveinsilico = select_dir(r'D:\LSPEAS\LSPEAS_insilico_ssdf\reg1',
-                    r'F:\LSPEAS_ssdf_insilico\reg1')
+                    r'F:\LSPEAS_insilico_ssdf\reg1')
 
-fileOr = 'original_DataDressed_008_d0'
-fileTr = 'tr_DataDressed_008_d0_1_-2.00pi'
+fileOr = 'original_DataDressed_008_d0_166-186'
+fileTr = 'tr_DataDressed_008_d0_166-186_1_-3.00pi'
+# fileOr = 'original_DataDressed_008_d0_135-184'
+# fileTr = 'tr_DataDressed_008_d0_135-184_5_0.40'
 
 mat = scipy.io.loadmat(os.path.join(dirinsilico, ptcode, fileOr+'.mat'))
 mat2 = scipy.io.loadmat(os.path.join(dirinsilico, ptcode, fileTr+'.mat'))
@@ -54,7 +61,7 @@ if False: # crop xy
     volTr = volTr[:, ymin:ymax, xmin:xmax]
 else:
     croprange = False
-    croprangeMat = 'false'
+    croprangeMat = False
 if False: # crop z
     croprange[0] = [1,-2]
     volOr = volOr[1:-2]
@@ -69,7 +76,6 @@ volOr = vv.Aarray(volOr, sampling2, origin2) #todo: must be sampled with dicom s
 volTr = vv.Aarray(volTr, sampling2, origin2)
 vols = [volOr, volTr]
 
-reg2d = False
 if reg2d: # Get a slice for registration not the volume
     imOr = volOr[int(0.5*volOr.shape[0]),:,:] # pick a z slice in mid volume
     imTr = volTr[int(0.5*volOr.shape[0]),:,:]
@@ -77,7 +83,6 @@ if reg2d: # Get a slice for registration not the volume
     origin2 = origin2[1:]
     vols = [imOr, imTr]
 
-visualize = False
 if visualize:
     f = vv.figure(1); vv.clf()
     f.position = 0.00, 22.00,  1914.00, 1018.00
@@ -86,20 +91,23 @@ if visualize:
     vv.volshow(volOr,clim=clim)
     vv.xlabel('x'), vv.ylabel('y'), vv.zlabel('z')
     vv.title('Im1:Original')
+    a1.daspect = 1,1,-1
     
     a2 = vv.subplot(222)
     vv.volshow(volTr,clim=clim)
     vv.xlabel('x'), vv.ylabel('y'), vv.zlabel('z')
     vv.title('Im2:Original transformed')
+    a2.daspect = 1,1,-1
     
     a3 = vv.subplot(223)
-    a3.daspect = 1, 1, -1
     vv.volshow(volOr,clim=clim)
     vv.volshow(volTr,clim=clim)
     vv.xlabel('x'), vv.ylabel('y'), vv.zlabel('z')
     vv.title('Overlay')
+    a3.daspect = 1,1,-1
     
     a4 = vv.subplot(224)
+    a4.daspect = 1,1,-1
     
     c = vv.ClimEditor(vv.gcf())
     
@@ -193,7 +201,8 @@ if True:
 
 if visualize:
     #load avgreg
-    filename = fileTr+'_'+avg
+    avg = 'avgreg'
+    filename = '%s_%s.ssdf' % (fileTr, avg)
     savg = loadvol(dirsaveinsilico, ptcode, ctcode, None, 'avgreg', fname=filename) # sets savg.sampling and savg.origin
     vol = savg.vol
     # show
@@ -211,7 +220,7 @@ if visualize:
     vv.title('Averaged volume')
 
 # load deforms
-filename = fileTr+'_'+'deforms'
+filename = '%s_%s.ssdf' % (fileTr, 'deforms')
 s3 = loadvol(dirsaveinsilico, ptcode, ctcode, None, 'deforms', fname=filename) # sets s3.sampling and s3.origin
 deformkeys = []
 for key in dir(s3):
@@ -227,29 +236,29 @@ deformfield1 = pirt.DeformationFieldBackward(deforms[1])
 deform_tr_to_or = deformfield1.compose(deformfield0.inverse()).as_backward()
 volTrBack = deform_tr_to_or.apply_deformation(volTr) # uses pirt deformation.py
 # displacement
-volTrBack_d_z = deform_tr_to_or.get_field(0)
-volTrBack_d_y = deform_tr_to_or.get_field(1)
-volTrBack_d_x = deform_tr_to_or.get_field(2)
+fieldTrBack_d_z = deform_tr_to_or.get_field(0)
+fieldTrBack_d_y = deform_tr_to_or.get_field(1)
+fieldTrBack_d_x = deform_tr_to_or.get_field(2)
 # from im1 (ori) transform to im2 (transformed)
 deform_or_to_tr = deformfield0.compose(deformfield1.inverse()).as_backward()
 volOrBack = deform_or_to_tr.apply_deformation(volOr)
 # displacement
-volOrBack_d_z = deform_or_to_tr.get_field(0)
-volOrBack_d_y = deform_or_to_tr.get_field(1)
-volOrBack_d_x = deform_or_to_tr.get_field(2)
+fieldOrBack_d_z = deform_or_to_tr.get_field(0)
+fieldOrBack_d_y = deform_or_to_tr.get_field(1)
+fieldOrBack_d_x = deform_or_to_tr.get_field(2)
 
 # store displacement fields
 displacementOrToTr = mat2.copy()
 del displacementOrToTr['DataDressedInterpolated']
-displacementOrToTr['displacementOrToTr_z'] = volOrBack_d_z
-displacementOrToTr['displacementOrToTr_y'] = volOrBack_d_y
-displacementOrToTr['displacementOrToTr_x'] = volOrBack_d_x
+displacementOrToTr['displacementOrToTr_z'] = fieldOrBack_d_z
+displacementOrToTr['displacementOrToTr_y'] = fieldOrBack_d_y
+displacementOrToTr['displacementOrToTr_x'] = fieldOrBack_d_x
 displacementOrToTr['croprange_zyx'] = croprange
 displacementOrToTr['croprangeMat_yxz'] = croprangeMat
 
 # save mat file displacement
-if True:
-    storemat = os.path.join(dirsaveinsilico, ptcode, 'displacementOrToTr_'+fileOr+'.mat')
+if savemat:
+    storemat = os.path.join(dirsaveinsilico, ptcode, 'dispOrToTr_'+fileTr+'.mat')
     scipy.io.savemat(storemat,displacementOrToTr)
     print('displacementOrToTr was stored to {}'.format(storemat))
 
@@ -267,18 +276,21 @@ if visualize:
     t2 = vv.volshow(volTrBack)
     vv.title('im2 (tr) deformed to im1 (or)')
     vv.xlabel('x'), vv.ylabel('y'), vv.zlabel('z')
+    a2.daspect = 1, 1, -1
     
     vv.figure(6); vv.clf()
     a3 = vv.gca()
     t3 = vv.volshow(volOr-volTrBack)
     vv.title('difference im1 (or) and im1 by registration')
     vv.xlabel('x'), vv.ylabel('y'), vv.zlabel('z')
+    a3.daspect = 1, 1, -1
     
     vv.figure(7); vv.clf()
     a4 = vv.gca()
     t4 = vv.volshow(volTr)
     vv.title('original im2 (Tr)')
     vv.xlabel('x'), vv.ylabel('y'), vv.zlabel('z')
+    a4.daspect = 1, 1, -1
     
     a1.camera = a2.camera = a3.camera = a4.camera
     t1.clim = t2.clim = t3.clim = t4.clim = clim
