@@ -8,7 +8,7 @@ import os
 import visvis as vv
 from stentseg.utils.datahandling import select_dir, loadvol, loadmodel
 from pirt.utils.deformvis import DeformableTexture3D, DeformableMesh
-from stentseg.utils.visualization import show_ctvolume
+from stentseg.utils.visualization import show_ctvolume,DrawModelAxes
 from stentseg.stentdirect.stentgraph import create_mesh
 from stentseg.motion.vis import create_mesh_with_abs_displacement
 from get_anaconda_ringparts import get_model_struts, get_model_rings
@@ -16,29 +16,27 @@ from stentseg.motion.vis import get_graph_in_phase
 import pirt
 
 # Select the ssdf basedir
-basedir = select_dir(os.getenv('LSPEAS_BASEDIR', ''),
-                     r'D:\LSPEAS\LSPEAS_ssdf', 
+basedir = select_dir(r'D:\LSPEAS\LSPEAS_ssdf', 
                      r'F:\LSPEAS_ssdf_backup',r'G:\LSPEAS_ssdf_backup')
 
 # Select dataset to register
-ptcode = 'LSPEAS_002'
+ptcode = 'QRM_FANTOOM_20160121'
 # codes = ctcode1, ctcode2, ctcode3, ctcode4 = 'discharge', '1month', '6months', '12months'
 # codes = ctcode1, ctcode2, ctcode3 = 'discharge', '1month', '6months'
 # codes = ctcode1, ctcode2 = 'discharge', '1month'
-codes = ctcode1 = 'discharge'
+codes = ctcode1 = 'ZA3-75-1.2'
 cropname = 'ring'
 modelname = 'modelavgreg'
 
 showAxis = False  # True or False
-showVol  = 'ISO'  # MIP or ISO or 2D or None
+showVol  = 'MIP'  # MIP or ISO or 2D or None
 ringpart = None # R1=1 ; R2=2 ; None = all
+phases =  [9] # range(10) for all 10 phases; [3,9] for 30% and 90%
+meshWithColors = False
+showmodelavgreg = False # show also model in avgreg at mid cycle?
 
-# view1 = 
-#  
-# view2 = 
-#  
-# view3 = 
-
+# vol1 = loadvol(basedir, ptcode, ctcode1, cropname, 'phases').vol30
+# vol1 = loadvol(basedir, ptcode, ctcode1, cropname, 'phases').vol90
 
 # Load the stent model, create mesh, load CT image for reference
 # 1 model 
@@ -84,8 +82,8 @@ if len(codes) == 4:
 ## Visualize
 f = vv.figure(1); vv.clf()
 f.position = 0.00, 22.00,  1920.00, 1018.00
-color = 'rgbmcrywgb'
-clim0  = (0,3500)
+color = 'cgmrcgywmb'  # r op 30%, b op 90%
+clim0  = (0,2500)
 # clim0 = -550,500
 clim2 = (0,1.5)
 radius = 0.07
@@ -95,16 +93,24 @@ isoTh = 250
 # 1 model
 if codes==ctcode1:
     a = vv.gca()
-    show_ctvolume(vol1, model1, showVol=showVol, clim=clim0, isoTh=isoTh)
-    for phasenr in range(10):
+    if showmodelavgreg:
+        # show model and CT mid cycle
+        DrawModelAxes(vol1, model1, clim=clim0, showVol=showVol, climEditor=False, removeStent=False)
+    else:
+        show_ctvolume(vol1, showVol=showVol, clim=clim0, isoTh=isoTh)
+    for phasenr in phases:
         model_phase = get_graph_in_phase(model1, phasenr = phasenr)
-#         model_phase.Draw(mc=color[phasenr], mw = 10, lc=color[phasenr])
-#         model_phase.Draw(mc='', lw = 6, lc=color[phasenr])
-#         modelmesh1 = create_mesh(model_phase, radius = radius)
-#         m = vv.mesh(modelmesh1); m.faceColor = color[phasenr]
-        modelmesh1 = create_mesh_with_abs_displacement(model_phase, radius = radius, dim = dimensions)
-        m = vv.mesh(modelmesh1, colormap = vv.CM_JET, clim = clim2)
-    vv.colorbar()    
+        if meshWithColors:
+            modelmesh1 = create_mesh_with_abs_displacement(model_phase, radius = radius, dim = dimensions)
+            m = vv.mesh(modelmesh1, colormap = vv.CM_JET, clim = clim2)
+        else:
+            model_phase.Draw(mc=color[phasenr], mw = 10, lc=color[phasenr])
+    #         model_phase.Draw(mc='', lw = 6, lc=color[phasenr])
+    #         modelmesh1 = create_mesh(model_phase, radius = radius)
+    #         m = vv.mesh(modelmesh1); m.faceColor = color[phasenr]
+            
+    if meshWithColors:
+        vv.colorbar()    
     vv.xlabel('x (mm)');vv.ylabel('y (mm)');vv.zlabel('z (mm)')
     vv.title('Model for LSPEAS %s  -  %s' % (ptcode[7:], ctcode1))
     a.axis.axisColor= 1,1,1
@@ -243,4 +249,7 @@ if len(codes) == 4:
 ## Use same camera
 #a1.camera = a2.camera = a3.camera
 
+## Save figure
+if False:
+    vv.screenshot(r'D:\Profiles\koenradesma\Desktop\ZA3_phase90.jpg', vv.gcf(), sf=2)
 
