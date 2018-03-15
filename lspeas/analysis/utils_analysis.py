@@ -142,8 +142,8 @@ class ExcelAnalysis():
     """ Create graphs from excel data
     """
     
-    exceldir = select_dir(r'C:\Users\Maaike\Dropbox\UTdrive\LSPEAS\Analysis', 
-                    r'D:\Profiles\koenradesma\Dropbox\UTdrive\LSPEAS\Analysis')
+    exceldir = select_dir(r'C:\Users\Maaike\SURFdrive\UTdrive\LSPEAS\Analysis', 
+                    r'D:\Profiles\koenradesma\SURFdrive\UTdrive\LSPEAS\Analysis')
     dirsaveIm =  select_dir(r'C:\Users\Maaike\Desktop','D:\Profiles\koenradesma\Desktop')
     
     def __init__(self):
