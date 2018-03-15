@@ -42,6 +42,7 @@ for ptcode in ptcodes:
             # for vol in vols:
                 # see function in datahandling
             
+            #todo: normalize data!! comparable histograms, comparable mass image forces
             t0 = time.time()
             
             # Initialize registration object
