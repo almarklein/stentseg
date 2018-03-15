@@ -223,8 +223,9 @@ vv.legend('B5 (A=2.0, T=0.8, extra=0.7, 0.8, 0.05)')
 
 f.relativeFontSize = 1.2
 
-exceldir = select_dir(r'C:\Users\Maaike\Desktop',r'D:\Profiles\koenradesma\Desktop')
-vv.screenshot(os.path.join(exceldir, 'screenshot.png'), f, sf=3, bg=(1,1,1))
+if False:
+    exceldir = select_dir(r'C:\Users\Maaike\Desktop',r'D:\Profiles\koenradesma\Desktop')
+    vv.screenshot(os.path.join(exceldir, 'screenshot.png'), f, sf=3, bg=(1,1,1))
 
 ## Plot for paper proceedings, patternexample
 import matplotlib.pyplot as plt
@@ -255,5 +256,6 @@ ax1.set_xticks(major_ticks)
 
 plt.tight_layout() # so that labels are not cut off
 
-f1.savefig(os.path.join(dirsave, 'patternexampleproc.pdf'), papertype='a0', dpi=300)
+if False:
+    f1.savefig(os.path.join(dirsave, 'patternexampleproc.pdf'), papertype='a0', dpi=300)
 
