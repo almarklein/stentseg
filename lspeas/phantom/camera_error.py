@@ -287,9 +287,14 @@ def show_period_cam123bestCut_with_bounds(ttperiodmeanC1, ttperiodmeanC2,
     ttperiodmeanC3rep, pperiodsC3mean, pperiodsC3std = repeatCamPeriod(ttperiodmeanC3,
                                         pperiodsC3mean,pperiodsC3std)
     
+    # # modify repeated for manual lag shift (for revision fig 2 B5)
+    # ttperiodmeanC1rep = ttperiodmeanC1rep[:-1]
+    # pperiodsC1mean = pperiodsC1mean[1:]
+    # pperiodsC1std = pperiodsC1std[1:]
+    
     # add input function simulator; first run gauspatterns.py
     if tt1a:
-        plot_pattern_plt(*(tt1a,aa1a),label='input A1', ls='--', mark=False)
+        plot_pattern_plt(*(tt1a,aa1a),label='input B5', ls='--', mark=False)
     
     colors = ['#d7191c','#fdae61','#2c7bb6'] # http://colorbrewer2.org/#type=diverging&scheme=RdYlBu&n=5
     ax2.plot(ttperiodmeanC1rep, pperiodsC1mean, '.-', color=colors[0], label='output day 1 (camera)')
@@ -307,7 +312,7 @@ def show_period_cam123bestCut_with_bounds(ttperiodmeanC1, ttperiodmeanC2,
     _initaxis([ax2], legend='upper right', xlabel='time (s)', ylabel='position (mm)')
     ax2.set_ylim((0, ylim))
     # ax2.set_xlim(-0.1,max(ttperiodmeanC3rep)+0.1)
-    xlim = 2.1 # 1.5, 2.1, 1.1
+    xlim = 1.54 # 1.5, 2.1, 1.1; 1.54 for fig 2 paper revision
     major_ticks = np.arange(0, xlim, 0.2)  
     ax2.set_xlim(-0.02,xlim)
     ax2.set_xticks(major_ticks)
@@ -316,7 +321,7 @@ def show_period_cam123bestCut_with_bounds(ttperiodmeanC1, ttperiodmeanC2,
     ax3 = f3.add_subplot(122)
     # add input function simulator
     if tt1a:
-        plot_pattern_plt(*(tt1a,aa1a),label='input A1', ls='--') # (A1: A=1.0, T=1.2)')
+        plot_pattern_plt(*(tt1a,aa1a),label='input B5', ls='--') # (A1: A=1.0, T=1.2)')
     
     ttperiodmeanC123rep, pperiodsC123meanRep, pperiodsC123stdRep = repeatCamPeriod(ttperiodmeanC123,
                                     pperiodsC123mean,pperiodsC123std, mark=True)
@@ -340,18 +345,20 @@ if __name__ == '__main__':
     
     # preset dirs
     dirsave =  select_dir(r'C:\Users\Maaike\Desktop','D:\Profiles\koenradesma\Desktop')
-    exceldir = select_dir(r'C:\Users\Maaike\Dropbox\UTdrive\LSPEAS\Analysis\Validation robot', 
-                    r'D:\Profiles\koenradesma\Dropbox\UTdrive\LSPEAS\Analysis\Validation robot')
+    exceldir = select_dir(r'C:\Users\Maaike\surfdrive\UTdrive\LSPEAS\Analysis\Validation robot', 
+                    r'D:\Profiles\koenradesma\surfdrive\UTdrive\LSPEAS\Analysis\Validation robot')
     workbookCam1 = 'Grafieken camera matlab meting 21012016.xlsx' # 21/1/2016
     workbookCam2 = '20160215 GRAFIEKEN van camera systeem uit matlab in excel.xlsx' # 22/1/2016
     workbookCam3 = 'Grafieken camera matlab meting 25012016.xlsx' # 25/1/2016
     
-    sheetProfile = 'ZA1'
-    ylim = 1.5 # input + 0.45 marge legend
+    sheetProfile = 'ZB5'
+    ylim = 2.9 # input + 0.45 marge legend
     xlim = (-1.5,7)
-    colSt1 = 'D' # see workbookCams en Summery in Errors cam123ref_vs_alg Toshiba.xlsx
-    colSt2 = 'D'
-    colSt3 = 'D'
+    colSt1 = 'Q' # see workbookCams en Summery in Errors cam123ref_vs_alg Toshiba.xlsx
+    colSt2 = 'N'
+    colSt3 = 'AB'
+    ttinput = tt5 # or None to not plot (see gausspatterns which one)
+    aainput = aa5 # or None
     
     # read the cam signal with consecutive periods
     f1 = plt.figure(figsize=(18,11), num=1); plt.clf()
@@ -602,13 +609,13 @@ if __name__ == '__main__':
     
     # for each cam overlay periods best
     # cam 1, fit each period on ref
-    ttperiodsC1best, rmse_val_periodsC1, errors_best_periodsC1 = bestFitPeriods(
+    ttperiodsC1best, rmse_val_periodsC1, errors_best_periodsC1, i_bestsC1 = bestFitPeriods(
             ttperiodRef, pperiodRef, ttperiodsC1, pperiodsC1)
     # cam 2, fit each period on ref
-    ttperiodsC2best, rmse_val_periodsC2, errors_best_periodsC2 = bestFitPeriods(
+    ttperiodsC2best, rmse_val_periodsC2, errors_best_periodsC2, i_bestsC2 = bestFitPeriods(
             ttperiodRef, pperiodRef, ttperiodsC2, pperiodsC2)
     # cam 3, fit each period on ref
-    ttperiodsC3best, rmse_val_periodsC3, errors_best_periodsC3 = bestFitPeriods(
+    ttperiodsC3best, rmse_val_periodsC3, errors_best_periodsC3, i_bestsC3 = bestFitPeriods(
             ttperiodRef, pperiodRef, ttperiodsC3, pperiodsC3)
     
     
@@ -639,8 +646,10 @@ if __name__ == '__main__':
     
     ## plot average of each cam with bounds, start periods is best lag position from detected peak
     # plot bounds for bestCut periods
-    pperiodsC123bestCutMean, pperiodsC123bestCutStd, pperiodsC123bestCutMeanRep, pperiodsC123bestCutStdRep, ttperiodmeanC123rep = show_period_cam123bestCut_with_bounds(
+    pperiodsC123bestCutMean, pperiodsC123bestCutStd, pperiodsC123bestCutMeanRep, \
+    pperiodsC123bestCutStdRep, ttperiodmeanC123rep = \
+    show_period_cam123bestCut_with_bounds(
             ttperiodmeanC1, ttperiodmeanC2, 
             ttperiodmeanC3, ttperiodmeanC123, pperiodsC1bestCut, pperiodsC2bestCut, 
-            pperiodsC3bestCut, pperiodsC123bestCut, fignum=4)
+            pperiodsC3bestCut, pperiodsC123bestCut, tt1a=ttinput, aa1a=aainput, fignum=4)
 
