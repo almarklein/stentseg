@@ -110,17 +110,17 @@ def bestFitAlgOverCam(ttCamS, ppCamS, pzMean, pzall):
 
 # preset dirs
 dirsave =  select_dir(r'C:\Users\Maaike\Desktop','D:\Profiles\koenradesma\Desktop')
-exceldir = select_dir(r'C:\Users\Maaike\Dropbox\UTdrive\LSPEAS\Analysis\Validation robot', 
-                r'D:\Profiles\koenradesma\Dropbox\UTdrive\LSPEAS\Analysis\Validation robot')
+exceldir = select_dir(r'C:\Users\Maaike\surfdrive\UTdrive\LSPEAS\Analysis\Validation robot', 
+                r'D:\Profiles\koenradesma\surfdrive\UTdrive\LSPEAS\Analysis\Validation robot')
 workbookAlg = '20160210 DATA Siemens.xlsx'
 workbookAlgTosh = '20160624 DATA Toshiba.xlsx'
 
-sheetProfile = 'ZA6'
-profile = 'B0'
+sheetProfile = 'ZB1'
+profile = 'B1'
 saveFig = True
-saveErrorsExcel = True
-ylim = 0.65 # .65, 1.1, 1.7
-xlim = 2.1 # 1.5, 2.1, 1.1
+saveErrorsExcel = False
+ylim = 1.7 # .65, 1.1, 1.7
+xlim = 2.1 # 1.5, 2.1, 1.1; all 2.1s
 # ylim = (ppall[:,:,2]).max() + 0.3
 plotErrors = False 
 
