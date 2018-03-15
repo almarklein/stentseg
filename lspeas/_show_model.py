@@ -23,17 +23,17 @@ basedir = select_dir(os.getenv('LSPEAS_BASEDIR', ''),
                      r'F:\LSPEAS_ssdf_BACKUP',r'G:\LSPEAS_ssdf_BACKUP')
 
 # Select dataset to register
-ptcode = 'LSPEAS_003'
-ctcode, nr = 'discharge', 1
-# ptcode = 'QRM_FANTOOM_20160121'
-# ctcode, nr = 'ZA3-75-1.2', 1
+# ptcode = 'LSPEAS_003'
+# ctcode, nr = 'discharge', 1
+ptcode = 'QRM_FANTOOM_20160121'
+ctcode, nr = 'ZA3-75-1.2', 1
 cropname = 'ring'
 modelname = 'modelavgreg'
 motion = 'amplitude'  # amplitude or sum
-dimension = 'xyz'
-showVol  = 'ISO'  # MIP or ISO or 2D or None
+dimension = 'z'
+showVol  = 'MIP'  # MIP or ISO or 2D or None
 clim0  = (-10,2500) 
-clim2 = (0,2)
+clim2 = (0,1.5)
 isoTh = 250
 motionPlay = 9, 1  # each x ms, a step of perc of T
 staticref =  'avgreg'# 'avg7020'
@@ -69,9 +69,9 @@ else:
 
 # Load static CT image to add as reference
 try:
-    s2 = loadvol(basedir, ptcode, ctcode, 'full', staticref)
-except FileNotFoundError:
     s2 = loadvol(basedir, ptcode, ctcode, 'stent', staticref)
+except FileNotFoundError:
+    s2 = loadvol(basedir, ptcode, ctcode, 'ring', staticref)
 vol = s2.vol
 
 
@@ -93,13 +93,10 @@ if meshWithColors:
 else:
     vv.title('Model for LSPEAS %s  -  %s ' % (ptcode[7:], ctcode))
     
-# viewringcrop = {'azimuth': -166.8860353130016,
-#  'daspect': (1.0, 1.0, -1.0),
-#  'elevation': 8.783783783783782,
-#  'fov': 0.0,
-#  'loc': (113.99322808141005, 161.58640433480713, 73.92662200285992),
-#  'roll': 0.0,
-#  'zoom': 0.01066818643565108}
+# viewringcrop = {'daspect': (1.0, 1.0, -1.0), 'azimuth': 32.9516129032258, 
+# 'elevation': 14.162658990412158, 'roll': 0.0, 
+# 'loc': (166.79323747325407, 162.4692971514962, 52.28745470591859), 
+# 'fov': 0.0, 'zoom': 0.026156241036960133}
 # m = vv.mesh(modelmesh)
 # # m.faceColor = 'g'
 # m.clim = 0, 5
@@ -109,7 +106,7 @@ else:
 pointsDeforms = []
 node_points = []
 for i, node in enumerate(sorted(model.nodes())):
-    node_point = vv.solidSphere(translation = (node), scaling = (1.1,1.1,1.1))
+    node_point = vv.solidSphere(translation = (node), scaling = (0.8,0.8,0.8))
     node_point.faceColor = 'b'
     node_point.visible = False
     node_point.node = node
