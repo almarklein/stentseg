@@ -19,16 +19,16 @@ from lspeas.utils.vis import showModelsStatic
 basedir = select_dir(os.getenv('LSPEAS_BASEDIR', ''),
                      r'D:\LSPEAS\LSPEAS_ssdf', r'F:\LSPEAS_ssdf_backup')
                      
-basedirMesh = select_dir(r'D:\Profiles\koenradesma\Dropbox\UTdrive\MedDataMimics\LSPEAS_Mimics',
-    r'C:\Users\Maaike\Dropbox\UTdrive\MedDataMimics\LSPEAS_Mimics')
+basedirMesh = select_dir(r'D:\Profiles\koenradesma\SURFdrive\UTdrive\MedDataMimics\LSPEAS_Mimics',
+    r'C:\Users\Maaike\SURFdrive\UTdrive\MedDataMimics\LSPEAS_Mimics')
 
 # Select dataset to register
-ptcode = 'LSPEAS_003'
-# codes = ctcode1, ctcode2, ctcode3 = 'discharge', 'discharge', 'discharge'
+ptcode = 'LSPEAS_022'
+codes = ctcode1, ctcode2, ctcode3 = 'discharge', '12months', '12months'
 # codes = ctcode1, ctcode2 = 'discharge', '24months'
 # codes = ctcode1 = '12months'
 # codes = ctcode1, ctcode2, ctcode3, ctcode4 = 'discharge', '1month', '6months', '12months'
-codes = ctcode1, ctcode2, ctcode3, ctcode4, ctcode5 = 'discharge', '1month', '6months', '12months', '24months'
+# codes = ctcode1, ctcode2, ctcode3, ctcode4, ctcode5 = 'discharge', '1month', '6months', '12months', '24months'
 cropname = 'ring'
 modelname = 'modelavgreg'
 cropvol = 'stent'
@@ -181,11 +181,12 @@ if slider:
         if showVol=='MIP':
             sliders['c'+str(i)] = vv.ClimEditor(ax)
             sliders['c'+str(i)].position = (10, 50)
-            f.eventKeyDown.Bind(lambda event: _utils_GUI.ShowHideSlider(event, sliders['c'+str(i)]) )
+            f.eventKeyDown.Bind(lambda event: _utils_GUI.ShowHideSlider(event, sliders) )
         if showVol=='ISO':
             sliders['c'+str(i)] = _utils_GUI.IsoThEditor(ax)
             sliders['c'+str(i)].position = (10, 50)
-            f.eventKeyDown.Bind(lambda event: _utils_GUI.ShowHideSlider(event, sliders['c'+str(i)]) )
+            f.eventKeyDown.Bind(lambda event: _utils_GUI.ShowHideSlider(event, sliders) )
+            # manual sliders[c0].visible = False
 
 ## Set view
 # a1.SetView(view1)

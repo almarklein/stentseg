@@ -94,11 +94,19 @@ def ShowHideSlider(event, c):
     """ View/hide the slider (clim/isoth editor)
     """
     if event.text == 's':
-        switch = c.visible
-        if switch == True:
-            c.visible = False
+        if isinstance(c, dict): # with c object from multiple axes
+            for key in c:
+                switch = c[key].visible
+                if switch == True:
+                    c[key].visible = False
+                else:
+                    c[key].visible = True
         else:
-            c.visible = True
+            switch = c.visible
+            if switch == True:
+                c.visible = False
+            else:
+                c.visible = True
 
 def AxesVis(axis):
     """ Axis input list with axes
