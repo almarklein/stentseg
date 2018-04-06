@@ -43,6 +43,7 @@ def interactiveCenterlineID(s,ptcode,ctcode,basedir,cropname,modelname,
     from stentseg.stentdirect.stentgraph import create_mesh
     # from nellix._select_centerline_points import _Select_Centerline_Points
     import copy
+    import numpy as np
     
     print("Move mouse over centerlines and press ENTER to identify")
     print("Give either NelL, NelR, ChL, ChR, SMA")
@@ -60,6 +61,16 @@ def interactiveCenterlineID(s,ptcode,ctcode,basedir,cropname,modelname,
             # Store
             meshes.append(bm)
     
+    ppallcenterlines = []
+    ppendsall = []
+    for key2 in s:
+        if key2.startswith('ppC'): # 'ppCenterline1'  2 ..
+            ppallcenterlines.append(s[key2])
+            ppendsall.append(np.array((s[key2][0,:], s[key2][-1,:])) ) # first and last point cll
+            # now remove from ssdf
+            del s2[key2]
+    ppallcenterlines = np.asarray(ppallcenterlines)
+    
     centerlines = [None]*len(clusters)
     # Define callback functions
     def meshEnterEvent(event):
@@ -76,8 +87,22 @@ def interactiveCenterlineID(s,ptcode,ctcode,basedir,cropname,modelname,
                 m.faceColor = 'y'
                 dialog_output = get_index_name()
                 name = dialog_output
+                model = clusters[m.index]
+                # get pp corresponding to model
+                ends = []
+                for n in sorted(model.nodes()):
+                    if model.degree(n) == 1:
+                        ends.append(n)
+                if len(ends) > 2:
+                    raise RuntimeError('Centerline has more than 2 nodes with 1 neighbour')
+                ends = np.asarray(ends, dtype='float32')
+                # add selected cll to s2
                 if name in ['NelL', 'NelR', 'ChL', 'ChR', 'SMA']:
-                    s2['model'+name] = clusters[m.index]
+                    s2['model'+name] = model
+                    for i, ppend in enumerate(ppendsall): # pp for each centerline
+                        if ends[0] in ppend: # should not matter which end
+                            print('jaaa')
+                            s2['ppCenterline'+name] = ppallcenterlines[i]
                     m.hitTest = False
                 else:
                     print("Name entered not known, give either NelL, NelR, ChL, ChR, SMA")
