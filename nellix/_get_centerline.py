@@ -24,6 +24,8 @@ class _Get_Centerline:
         what_vol = 'avgreg'
         m = loadmodel(basedir, ptcode, ctcode, cropname, what)
         s = loadvol(basedir, ptcode, ctcode, cropname, what_vol)
+        s.vol.sampling = [s.sampling[1], s.sampling[1], s.sampling[2]]
+        s.sampling = s.vol.sampling
         
         start1 = StartPoints.copy()
         ends = EndPoints.copy()
@@ -40,26 +42,33 @@ class _Get_Centerline:
             # Find main centerline
             # regsteps = distance of centerline points from where the start/end 
             # point have no affect on centerline finding
-            centerline1 = find_centerline(ppp, start1[j], ends[j], step= 0.5, 
-                                          substep=0.25, ndist=40, regfactor=0.9, 
-                                          regsteps=0.5, verbose=False)
-                                          # reg 0.9 for smoother   
+            # centerline1 = find_centerline(ppp, start1[j], ends[j], step= 0.5, 
+            #                               substep=0.25, ndist=40, regfactor=0.9, 
+            #                               regsteps=0.5, verbose=False)
+            #                               # reg 0.9 for smoother; Mirthe
+            centerline1 = find_centerline(ppp, start1[j], ends[j], step= 1, 
+                                          ndist=20, regfactor=0.5, 
+                                          regsteps=1, verbose=False)
+                                          # reg 0.9 for smoother 
             print('Centerline calculation completed')
             # do not use first 2 points, as they are influenced by user selected points
             pp = centerline1[2:-2]
             # smooth the cut centerline
-            pp = smooth_centerline(pp, n=3)
+            pp = smooth_centerline(pp, n=20) # Mirthe used 4
             # pp = centerline1
           
-            allcenterlines.append(pp)
-            self.allcenterlines = allcenterlines
+            allcenterlines.append(pp) # list with PointSet per centerline
+            self.allcenterlines = allcenterlines 
             
             for i, p in enumerate(pp[:-1]):
                 p_as_tuple = tuple(p.flat)
                 p1_as_tuple = tuple(pp[i+1].flat)
                 # nodes.add_node(p_as_tuple)
-                nodes.add_edge(p_as_tuple, p1_as_tuple, path = [np.asarray(p), np.asarray(pp[i+1]) ]  )
-                nodes_total.add_edge(p_as_tuple, p1_as_tuple, path = [np.asarray(p), np.asarray(pp[i+1]) ]  )
+                path = PointSet(3, dtype=np.float32)
+                for p in [p_as_tuple, p1_as_tuple]:
+                    path.append(p)
+                nodes.add_edge(p_as_tuple, p1_as_tuple, path = path  )
+                nodes_total.add_edge(p_as_tuple, p1_as_tuple, path = path  )
                 
             if j == stentnr-1 or not ends[j] == start1[j+1]:
                 centerlines.append(nodes)
@@ -82,6 +91,11 @@ class _Get_Centerline:
         s2.stentType = 'nellix'
         s2.StartPoints = StartPoints
         s2.EndPoints = EndPoints
+        # keep centerlines as pp also [Maaike]
+        for k in range(len(allcenterlines)):
+            suffix = str(k)
+            pp = allcenterlines[k]
+            s2['ppCenterline' + suffix] = pp
         
         s3 = copy.deepcopy(s2)
         s3['model'] = nodes_total.pack()
@@ -138,7 +152,7 @@ class _Get_Centerline:
             vv.plot(allcenterlines[j], ms='.', ls='', mw=10, mc='y')
         clim = (0,2000)
         # vv.volshow(s.vol, clim=clim, renderStyle = 'mip')           
-        t = show_ctvolume(s.vol, axis=None, showVol='MIP', clim =(0,2500), isoTh=250, 
+        t = show_ctvolume(s.vol, axis=a2, showVol='MIP', clim =(0,2500), isoTh=250, 
                         removeStent=False, climEditor=True)
         a2.axis.visible = False
         
@@ -180,12 +194,14 @@ class _Get_Centerline:
         for key in dir(s2):
                 if key.startswith('model'):
                     incorporate_motion_nodes(s2[key], deforms, s.origin)
+                    incorporate_motion_edges(s2[key], deforms, s.origin)
                     model = s2[key]
                     s2[key] = model.pack()
         # Combine ...
         for key in dir(s3):
                 if key.startswith('model'):
                     incorporate_motion_nodes(s3[key], deforms, s.origin)
+                    incorporate_motion_edges(s3[key], deforms, s.origin)
                     model = s3[key]
                     s3[key] = model.pack()
                     
