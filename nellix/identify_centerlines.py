@@ -9,13 +9,13 @@ def get_index_name():
     try:
         from PyQt5 import QtCore, QtGui # PyQt5; conda install pyqt
         from PyQt5.QtWidgets import QApplication
+        app = QApplication([])
     except ImportError:
         from PySide import QtCore, QtGui # PySide2
         from PySide.QtGui import QApplication
     from stentseg.apps.ui_dialog import MyDialog
     
     # Gui for input name
-    app = QApplication([])
     m = MyDialog()
     m.show()
     m.exec_()
