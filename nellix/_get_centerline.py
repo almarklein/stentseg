@@ -51,8 +51,8 @@ class _Get_Centerline:
                                           regsteps=1, verbose=False)
                                           # reg 0.9 for smoother 
             print('Centerline calculation completed')
-            # do not use first 2 points, as they are influenced by user selected points
-            pp = centerline1[2:-2]
+            # do not use first point, as they are influenced by user selected points
+            pp = centerline1[1:-1]
             # smooth the cut centerline
             pp = smooth_centerline(pp, n=20) # Mirthe used 4
             # pp = centerline1
@@ -92,6 +92,7 @@ class _Get_Centerline:
         s2.StartPoints = StartPoints
         s2.EndPoints = EndPoints
         # keep centerlines as pp also [Maaike]
+        s2.ppallCenterlines = allcenterlines
         for k in range(len(allcenterlines)):
             suffix = str(k)
             pp = allcenterlines[k]
