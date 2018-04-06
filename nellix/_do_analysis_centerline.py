@@ -6,7 +6,7 @@ from stentseg.utils.centerline import points_from_nodes_in_graph
 from stentseg.utils.datahandling import select_dir, loadvol, loadmodel
 from stentseg.utils.picker import pick3d
 from stentseg.utils.visualization import DrawModelAxes, show_ctvolume
-from stentseg.utils import PointSet
+from stentseg.utils import PointSet, _utils_GUI, visualization
 import visvis as vv
 import numpy as np
 import copy
@@ -18,7 +18,6 @@ class _Do_Analysis_Centerline:
         """
         Init motion analysis on centerlines 
         """
-
         self.s = loadmodel(basedir, ptcode, ctcode, 'prox', modelname='centerline_modelavgreg_deforms_id')
         s = loadvol(basedir, ptcode, ctcode, 'prox', what='avgreg')
         # set sampling for cases where this was not stored correctly
@@ -41,6 +40,8 @@ class _Do_Analysis_Centerline:
                 self.s[key].Draw(mc='b', mw = 5, lc='b', alpha = 0.5)
         vv.title('Model for ChEvas %s  -  %s' % (ptcode[7:], ctcode))
         
+        f.eventKeyDown.Bind(lambda event: _utils_GUI.RotateView(event, [a1,a2,a3]) )
+        
         # Initialize output variables to store analysis
         self.storeOutput = list()
         self.output_cl = list()
@@ -59,6 +60,12 @@ class _Do_Analysis_Centerline:
         node_point.node = node
         # node_point.nr = i
         self.node_points.append(node_point)
+    
+    def motion_points(self, lenSegment=5, dim='xyz'):
+        """ given a centerline, compute motion of points in centerline segment
+        dim: x,y,z,xyz 
+        """
+        
     
     def distance_points(self):
         """ distances cardiac cycle between 2 points
@@ -81,11 +88,11 @@ class _Do_Analysis_Centerline:
                 outSMA = self.centerline_angle_change(key,nodesSMA, 'Ang_SMA')
     
     def centerline_angle_change(self, key, nodesCh, name_output):
-        """ nodesCh is a list of sorted nodes
+        """ Calculate the angle change of the given centerline
+        nodesCh is a list of sorted (centerline) nodes 
         """
         modelnodes = nodesCh
-        # n1 = modelnodes[0]
-        # n3 = modelnodes[-1] #todo: check if this gives indead the first and last
+        # n1 = modelnodes[0] # does not work: sorted nodes is not same order as pp centerline
         ends = []
         for n in modelnodes:
             if self.s[key].degree(n) == 1:
@@ -95,13 +102,13 @@ class _Do_Analysis_Centerline:
         n1 = ends[0]
         n3 = ends[1]
         
-        self.createNodePoint(n1)
+        self.createNodePoint(n1, color='b')
         self.createNodePoint(n3)
         
         # find midpoint that makes greatest angle
         # todo: find midpoint that has greatest angle change or calc angle per node as in stentgraph _detect_corners
         angle = 0 # straigth
-        for i, n2 in enumerate(modelnodes[15:-15]): # omit first 5 nodes (2.5 mm)
+        for i, n2 in enumerate(modelnodes[10:-10]): # omit first 5 nodes (check stepsize cll)
             # calculate vectors          
             vec1 = PointSet(np.column_stack(n1))-PointSet(np.column_stack(n2))
             vec2 = PointSet(np.column_stack(n2))-PointSet(np.column_stack(n3))
@@ -117,8 +124,7 @@ class _Do_Analysis_Centerline:
         print(midnode)
         self.createNodePoint(midnode, color='m')
             
-        # get index of nodes which are in fixed order
-        nindex = [0, 0, 0] # not applicable so set 0, but leave for reuse of output code
+        nindex = [0, 0, 0] # not applicable so set 0, but leave for reuse of old output code
         # get deforms of nodes
         model = self.s[key]
         n1Deforms = model.node[n1]['deforms']
