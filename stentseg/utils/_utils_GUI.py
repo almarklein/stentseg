@@ -92,6 +92,8 @@ def ViewPresets(event, axis=None):
 
 def ShowHideSlider(event, c):
     """ View/hide the slider (clim/isoth editor)
+    c: single clim object or dict with multiple
+    print('Use "s" to show/hide slider')
     """
     if event.text == 's':
         if isinstance(c, dict): # with c object from multiple axes
