@@ -101,7 +101,7 @@ def interactiveCenterlineID(s,ptcode,ctcode,basedir,cropname,modelname,
                     s2['model'+name] = model
                     for i, ppend in enumerate(ppendsall): # pp for each centerline
                         if ends[0] in ppend: # should not matter which end
-                            print('jaaa')
+                            print('ppCenterline was added to s2')
                             s2['ppCenterline'+name] = ppallcenterlines[i]
                     m.hitTest = False
                 else:
