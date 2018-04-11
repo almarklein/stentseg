@@ -60,15 +60,16 @@ class _Get_Centerline:
             allcenterlines.append(pp) # list with PointSet per centerline
             self.allcenterlines = allcenterlines 
             
-            for i, p in enumerate(pp[:-1]):
+            for i, p in enumerate(pp):
                 p_as_tuple = tuple(p.flat)
-                p1_as_tuple = tuple(pp[i+1].flat)
-                # nodes.add_node(p_as_tuple)
-                path = PointSet(3, dtype=np.float32)
-                for p in [p_as_tuple, p1_as_tuple]:
-                    path.append(p)
-                nodes.add_edge(p_as_tuple, p1_as_tuple, path = path  )
-                nodes_total.add_edge(p_as_tuple, p1_as_tuple, path = path  )
+                # p1_as_tuple = tuple(pp[i+1].flat)
+                nodes.add_node(p_as_tuple)
+                nodes_total.add_node(p_as_tuple)
+            # path = PointSet(3, dtype=np.float32)
+            pstart = tuple(pp[0].flat)
+            pend = tuple(pp[-1].flat)
+            nodes.add_edge(pstart, pend, path = pp  )
+            nodes_total.add_edge(pstart, pend, path = pp  )
                 
             if j == stentnr-1 or not ends[j] == start1[j+1]:
                 centerlines.append(nodes)
