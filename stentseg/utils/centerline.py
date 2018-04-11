@@ -14,30 +14,34 @@ import visvis as vv
 from stentseg.utils import PointSet
 
 
-def dist_over_centerline(cl, cl_point1, cl_point2, type='euclidian'):
-    """ Calculate distance over centerline from centerline p1 to centerline p2
+def dist_over_centerline(cl, cl_point1=None, cl_point2=None, type='euclidian'):
+    """ Calculate distance over centerline from centerline p1 to centerline p2,
+    or entire centerline if points are not given.
     Euclidian distance or Z-distance.
     """
     import numpy as np
     
     if isinstance(cl, PointSet):
         cl = np.asarray(cl)
-    indpoint1 = np.where( np.all(cl == cl_point1, axis=-1) )[0] # -1 counts from last to the first axis
-    indpoint2 = np.where( np.all(cl == cl_point2, axis=-1) )[0] # renal point
-    if indpoint1 == indpoint2:
-        print('Points on centerline are at same level, distance is zero')
-        dist = 0
-        return dist
-    clpart = cl[ min(indpoint1, indpoint2):max(indpoint1, indpoint2)+1]
-    # clpart = cl[min(indpoint1[0], indpoint2[0]):max(indpoint1[0], indpoint2[0])+1] # mirthe; punt wordt onthouden?
-    vectors = np.vstack([clpart[i+1]-clpart[i] for i in range(len(clpart)-1)])
+    if not cl_point1 is None:
+        if isinstance(cl_point1, PointSet):
+            cl_point1 = np.asarray(cl_point1)
+            cl_point2 = np.asarray(cl_point2)
+        indpoint1 = np.where( np.all(cl == cl_point1, axis=-1) )[0] # -1 counts from last to the first axis
+        indpoint2 = np.where( np.all(cl == cl_point2, axis=-1) )[0] 
+        if indpoint1 == indpoint2:
+            print('Points on centerline are at same level, distance is zero')
+            dist = 0
+            return dist
+        clpart = cl[ min(indpoint1, indpoint2):max(indpoint1, indpoint2)+1]
+    else:
+        clpart = cl
+    vectors = np.vstack([clpart[i]-clpart[i+1] for i in range(len(clpart)-1)])
     if type == 'euclidian':
         d = (vectors[:,0]**2 + vectors[:,1]**2 + vectors[:,2]**2)**0.5  # 3Dvector length in mm
     elif type == 'z':
         d = abs(vectors[:,2])  # x,y,z ; 1Dvector length in mm
     dist = d.sum()
-    if indpoint2 > indpoint1: # stent point proximal to renal on centerline: positive
-        dist*=-1
     
     return dist
 
