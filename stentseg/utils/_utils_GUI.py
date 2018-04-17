@@ -311,7 +311,7 @@ def snap_picked_point_to_graph(graph, vol, label, nodesOnly=False):
     dist = 10000.0
     if nodesOnly == True: # no edges, get node closest to picked point
         for n in sorted(graph.nodes()):
-            vec = np.asarray(n) - coord
+            vec = np.asarray(n) - np.asarray(coord)
             d = (vec[0]**2 + vec[1]**2 + vec[2]**2)**0.5
             dist = min(dist, d)
             if dist == d:
@@ -320,7 +320,7 @@ def snap_picked_point_to_graph(graph, vol, label, nodesOnly=False):
         
     for n1, n2 in sorted(graph.edges()):
         path = graph.edge[n1][n2]['path']
-        vectors = path - coord
+        vectors = path - np.asarray(coord)
         dists = (vectors[:,0]**2 + vectors[:,1]**2 + vectors[:,2]**2)**0.5
         dist = min(dist, min(dists))
         if dist == min(dists):
