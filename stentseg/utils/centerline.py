@@ -82,16 +82,31 @@ def smooth_centerline(pp, n=2):
     return pp
 
 
-def pp_to_graph(pp):
-    """ PointSet to graph with points connected with edges.
+def pp_to_graph(pp, type='oneEdge'):
+    """ PointSet to graph with points connected with edges or as one edge.
     Returns graph. Can be used for centerline output.
     """
     from stentseg.stentdirect import stentgraph
     graph = stentgraph.StentGraph()
-    for i, p in enumerate(pp[:-1]):
-        n1 = tuple(p.flat)
-        n2 = tuple(pp[i+1].flat)
-        graph.add_edge(n1,n2, path=[np.asarray(p), np.asarray(pp[i+1])])
+    if type=='oneEdge':
+        # add single nodes
+        for p in pp:
+            p_as_tuple = tuple(p.flat)
+            graph.add_node(p_as_tuple)
+        # add one path of pp
+        pstart = p_as_tuple
+        pend = tuple(pp[-1].flat)
+        graph.add_edge(pstart, pend, path = pp  )
+    else:
+        for i, p in enumerate(pp[:-1]):
+            n1 = tuple(p.flat)
+            n2 = tuple(pp[i+1].flat)
+            # create path between nodes as PointSet
+            path = PointSet(3, dtype=np.float32)
+            for p in [n1, n2]:
+                path.append(p)
+            graph.add_edge(n1,n2, path= path)
+            
     return graph
 
 
