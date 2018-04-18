@@ -99,11 +99,6 @@ class _Select_Centerline_Points:
         
         # Initialize output variable to store pulsatility analysis
         storeOutput = list()
-        output_cl = list()
-        output_clmin_index = list()
-        output_clmin = list()
-        output_clmax = list()
-        output_clmax_index = list()
         
         
         def on_key(event): 
@@ -285,7 +280,7 @@ class _Select_Centerline_Points:
             # add % change to pulsatility
             point_to_pointP = [point_to_pointP, (point_to_pointP/point_to_pointMin[0])*100 ]
             
-            
+            # find index of point on cll and calculate length change cll ???
             if isinstance(cl, PointSet):
                 cl = np.asarray(cl).reshape((len(cl),3))
                 
