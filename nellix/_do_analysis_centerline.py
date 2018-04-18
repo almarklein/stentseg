@@ -43,21 +43,14 @@ class _Do_Analysis_Centerline:
         self.a.axis.visible = False
         self.a.bgcolor = 0,0,0
         self.a.daspect = 1, 1, -1
-        t = show_ctvolume(vol, showVol=showVol, clim=clim, removeStent=False, **kwargs)
+        t = show_ctvolume(vol, showVol=showVol, clim=clim, removeStent=False, climEditor=True, **kwargs)
         self.label = pick3d(self.a, vol)
-        if showVol=='ISO':
-            c = _utils_GUI.IsoThEditor(self.a)
-        else:
-            c = vv.ClimEditor(self.a)
-        c.position = (10, 50)
         vv.xlabel('x (mm)');vv.ylabel('y (mm)');vv.zlabel('z (mm)')
         for key in self.s:
             if key.startswith('model'):
                 self.s[key].Draw(mc='b', mw = 5, lc='b', alpha = 0.5)
         vv.title('Model for ChEvas %s  -  %s' % (ptcode[7:], 'follow-up')) # ctcode not correct
         
-        f.eventKeyDown.Bind(lambda event: _utils_GUI.ShowHideSlider(event, c) )
-        print('Use "s" to show/hide slider')
         f.eventKeyDown.Bind(lambda event: _utils_GUI.RotateView(event, [self.a]) )
         f.eventKeyDown.Bind(lambda event: _utils_GUI.ViewPresets(event, [self.a]) )
         self.fig = f

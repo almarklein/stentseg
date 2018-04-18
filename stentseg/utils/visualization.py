@@ -5,6 +5,7 @@
 import visvis as vv
 from stentseg.utils.picker import pick3d
 from stentseg.stentdirect.stentgraph import create_mesh
+from stentseg.utils import _utils_GUI
 
 
 def remove_stent_from_volume(vol, graph, stripSize=5):
@@ -51,8 +52,18 @@ def show_ctvolume(vol, graph=None, axis=None, showVol='MIP', clim =(0,2500), iso
         t = vv.volshow2(vol); t.clim = clim
     # bind ClimEditor to figure
     if climEditor:
-        c = vv.ClimEditor(vv.gcf())
+        if showVol=='ISO':
+            c = _utils_GUI.IsoThEditor(vv.gcf())
+        else:
+            c = vv.ClimEditor(vv.gcf())
         c.position = (10, 50)
+        # bind for show hide
+        fig = vv.gcf()
+        fig.eventKeyDown.Bind(lambda event: _utils_GUI.ShowHideSlider(event, c) )
+        print('****')
+        print('Use "s" to show/hide slider')
+        print('****')
+    
     return t
 
 
