@@ -14,9 +14,6 @@ class _Do_Registration_Nellix:
         import scipy
         from scipy import ndimage
         
-        # Select the ssdf basedir
-        #basedir = select_dir(r'D:\LSPEAS\Nellix_chevas\CHEVAS_SSDF')
-              
         # Select dataset to register
         cropname = 'prox'
         what = 'phases'
@@ -85,7 +82,7 @@ class _Do_Registration_Nellix:
             phase = phases[i][3:]
             s2['deform%s'%phase] = fields
         s2.sampling = s2['deform%s'%phase][0].sampling  # Sampling of deform is different!
-        s2.originDeforms = s2.deform0[0].origin  # But origin is zero
+        s2.originDeforms = s2['deform%s'%phase][0].origin  # But origin is zero
         s2.params = reg.params
         
         # Save
