@@ -16,18 +16,13 @@ class _Do_Segmentation:
         from stentseg.stentdirect.stentgraph import create_mesh
         from stentseg.stentdirect import stentgraph, StentDirect, getDefaultParams, AnacondaDirect, EndurantDirect, NellixDirect
         from stentseg.utils.picker import pick3d, label2worldcoordinates, label2volindices
-        # from stentseg.apps.graph_manualprune import interactiveClusterRemovalGraph
         import scipy
         from scipy import ndimage
         import copy
 
-        # Select the ssdf basedir
-        #basedir = r'C:\Users\User\Desktop\Nellix_chevas\CHEVAS_SSDF' 
-        
-        
         # Select dataset to register
         cropname = 'prox'
-        phase = 10
+        # phase = 10
         #dataset = 'avgreg'
         #what = str(phase) + dataset # avgreg
         what = 'avgreg'
@@ -47,17 +42,8 @@ class _Do_Segmentation:
         
         p = getDefaultParams(stentType)
         p.seed_threshold = [600]     # step 1 [lower th] or [lower th, higher th]
-        p.mcp_speedFactor = 100           # step 2, costToCtValue; lower less cost for lower HU; higher more cost for lower HU
-        p.mcp_maxCoverageFronts = 0.004    # step 2, base.py; replaces mcp_evolutionThreshold
-        p.graph_weakThreshold = 200             # step 3, stentgraph.prune_very_weak
-        p.graph_expectedNumberOfEdges = 2       # step 3, stentgraph.prune_weak
-        p.graph_trimLength =  0                 # step 3, stentgraph.prune_tails
-        p.graph_minimumClusterSize = 3         # step 3, stentgraph.prune_clusters
-        p.graph_strongThreshold = 1800          # step 3, stentgraph.prune_weak and stentgraph.prune_redundant
-        p.graph_angleVector = 5                 # step 3, corner detect
-        p.graph_angleTh = 45                  # step 3, corner detect
         # p.seedSampleRate = 7                  # step 1, nellix
-        p.whatphase = phase                 # step 1, select the mask algorithm depending on phase 
+        p.whatphase = what                
         
         ## Perform segmentation
         # Instantiate stentdirect segmenter object
@@ -71,7 +57,7 @@ class _Do_Segmentation:
         else:
                 sd = StentDirect(vol, p) 
         
-        # Perform the three steps of stentDirect
+        # Perform step 1 for seeds
         sd.Step1()
         
         ## Visualize
@@ -139,11 +125,9 @@ class _Do_Segmentation:
         s2.what = what
         s2.params = p
         s2.stentType = stentType
-        # Store model
+        # Store model (not also volume)
         s2.model = model.pack()
-        s2.vol = vol_org
-        # s2.sampling_interp = s.sampling
-        s2.vol_interp = vol
+        
         
         # Save
         filename = '%s_%s_%s_%s.ssdf' % (ptcode, ctcode, cropname, 'model'+ what)
