@@ -8,7 +8,8 @@ Inputs: dicom_basedir, patient code, ctcode, basedir for ssdf, stenttype,
 import imageio
 import visvis as vv
 from visvis import ssdf
-from visvis.utils import cropper
+from visvis.utils import cropper 
+from stentseg.apps.crop import crop3d # use local version while error with range floats
 import os
 import sys
 import numpy as np
@@ -172,11 +173,12 @@ def savecropvols(vols, basedir, ptcode, ctcode, cropname, stenttype, sampling=No
     print('Loading... be patient')
     fig = vv.figure()
     fig.title = 'Cropping for "%s"' % cropname
-    vol_crop = cropper.crop3d(vol0, fig)
+    #vol_crop = cropper.crop3d(vol0, fig)
+    vol_crop = crop3d(vol0, fig) # use local while error with cropper
     fig.Destroy()
     
     if vol_crop.shape == vol0.shape:
-        raise RuntimeError('User did not crop')
+        print('User did not crop')
     
     # Calculate crop range from origin
     rz = int(vol_crop.origin[0] / vol_crop.sampling[0] + 0.5)
