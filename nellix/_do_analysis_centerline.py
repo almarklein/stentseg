@@ -123,13 +123,13 @@ class _Do_Analysis_Centerline:
                 key1 = key[12:]
                 ppNelR = s['ppCenterlineNelR']
                 key2 = 'NelR'
-                self.centerlines_prox_distance_change(key1, key2, ppChR, ppNelR, 'Dist_ChR_NelR',color='y')
+                self.centerlines_prox_distance_change(key1, key2, ppChR, ppNelR, 'Dist_RRA_NelR',color='y')
             if key.startswith('ppCenterlineChL'):
                 ppChL = s[key]
                 key1 = key[12:]
                 ppNelL = s['ppCenterlineNelL']
                 key2 = 'NelL'
-                self.centerlines_prox_distance_change(key1, key2, ppChL, ppNelL, 'Dist_ChL_NelL',color='c')
+                self.centerlines_prox_distance_change(key1, key2, ppChL, ppNelL, 'Dist_LRA_NelL',color='c')
             if key.startswith('ppCenterlineNelL'):
                 ppNelL = s[key]
                 key1 = key[12:]
@@ -193,13 +193,13 @@ class _Do_Analysis_Centerline:
             if key.startswith('ppCenterlineChR'):
                 ppChR = s[key]
                 key1 = key[12:]
-                self.centerline_angle_change(key1, ppChR, 'Ang_ChR')
-                self.centerline_tortuosity_change(key1, ppChR, 'Tort_ChR')
+                self.centerline_angle_change(key1, ppChR, 'Ang_RRA')
+                self.centerline_tortuosity_change(key1, ppChR, 'Tort_RRA')
             if key.startswith('ppCenterlineChL'):
                 ppChL = s[key]
                 key1 = key[12:]
-                self.centerline_angle_change(key1, ppChL, 'Ang_ChL')
-                self.centerline_tortuosity_change(key1, ppChL, 'Tort_ChL')
+                self.centerline_angle_change(key1, ppChL, 'Ang_LRA')
+                self.centerline_tortuosity_change(key1, ppChL, 'Tort_LRA')
             if key.startswith('ppCenterlineSMA'):
                 ppSMA = s[key]
                 key1 = key[12:]
