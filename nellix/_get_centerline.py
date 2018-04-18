@@ -38,6 +38,7 @@ class _Get_Centerline:
         nodes_total = stentgraph.StentGraph()
         for j in range(stentnr):
             if j == 0 or not start1[j] == ends[j-1]:
+                # if first stent or when stent does not continue with next start-end points
                 nodes = stentgraph.StentGraph()
             # Find main centerline
             # regsteps = distance of centerline points from where the start/end 
@@ -71,8 +72,11 @@ class _Get_Centerline:
             nodes.add_edge(pstart, pend, path = pp  )
             nodes_total.add_edge(pstart, pend, path = pp  )
                 
+            # if last stent or stent does not continue with next start-endpoint
             if j == stentnr-1 or not ends[j] == start1[j+1]:
                 centerlines.append(nodes)
+                # add final centerline edge
+                #todo
         
         
         ## Store segmentation to disk
