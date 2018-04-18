@@ -1,7 +1,7 @@
 
 class Nellix2ssdf:
             
-    def __init__(self,dicom_basedir,ptcode,basedir):
+    def __init__(self,dicom_basedir,ptcode,ctcode,basedir):
             
         import imageio
         #import easygui
@@ -15,7 +15,7 @@ class Nellix2ssdf:
         print('DICOM Path = ', dicom_basedir)
         
          
-        ctcode = '12months'  # 'pre', 'post_x', '12months'
+        #ctcode = '12months'  # 'pre', 'post_x', '12months'
         stenttype = 'nellix'      
         
         ## Select base directory to SAVE SSDF
@@ -72,12 +72,13 @@ class Nellix2ssdf:
         # Deze zoekt alle mappen en dat zijn er dus 10 maar niet in de goede volgorde
         vols2 = [vol2 for vol2 in imageio.get_reader(dicom_basedir, 'DICOM', 'V')] 
         
-        vols = [None] * 10
+        vols = [None] * len(vols2)
         for i, vol in enumerate(vols2):
         #    print(vol.meta.sampling)
             print(vol.meta.SeriesDescription)
-            phase = int(vol.meta.SeriesDescription[:1]) #todo: fix order of phases
-            vols[phase] = vol #vols--> vol om goede data erin te krijgen want anders heb je alleen maar nullen
+            phase = int(vol.meta.SeriesDescription[:1]) 
+            # use phase to fix order of phases
+            vols[phase] = vol
             #vols[phase].meta.ImagePositionPatient = (0.0,0.0,0.0)
             
         for i,vol in enumerate(vols): #wat ik heb veranderd is i, en enumerate()
