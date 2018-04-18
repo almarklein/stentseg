@@ -1,80 +1,91 @@
-""" Use cropper tool from visvis to crop data.
+""" Use modified cropper tool from visvis to crop data.
+Bypass and error in crop3d
 """
-
-# ARGS
-fname_in = r'C:\Users\Maaike\Documents\UT MA3\LSPEAS_data\DICOM\LSPEAS_003\LSPEAS_003_Discharge\1.2.392.200036.9116.2.6.1.48.1214833767.1398645614.547701'
-fname_out = r'C:\Users\Maaike\Documents\UT MA3\LSPEAS_data\ssdf\LSPEAS_003\LSPEAS_003_discharge.ssdf'
-
 
 import imageio
 import visvis as vv
 from visvis.utils import cropper
+from visvis.utils.cropper import Cropper3D
 from visvis import ssdf
+import time
 
-# Read data
-vols = imageio.mvolread(fname_in, 'DICOM')
-vol1 = vols[2]  # 1 to 4
+def crop3d(vol, fig=None):
+    """ crop3d(vol, fig=None)
+    Manually crop a volume. In the given figure (or a new figure if None),
+    three axes are created that display the transversal, sagittal and
+    coronal MIPs (maximum intensity projection) of the volume. The user
+    can then use the mouse to select a 3D range to crop the data to.
+    """
+    vv.use()
+    
+    # Create figure?
+    if fig is None:
+        fig = vv.figure()
+        figCleanup = True
+    else:
+        fig.Clear()
+        figCleanup = False
+    
+    # Create three axes and a wibject to attach text labels to
+    a1 = vv.subplot(221)
+    a2 = vv.subplot(222)
+    a3 = vv.subplot(223)
+    a4 = vv.Wibject(fig)
+    a4.position = 0.5, 0.5, 0.5, 0.5
+    
+    # Set settings
+    for a in [a1, a2, a3]:
+        a.showAxis = False
+    
+    # Create cropper3D instance
+    cropper3d = Cropper3D(vol, a1, a3, a2, a4)
+    
+    # Enter a mainloop
+    while not cropper3d._finished:
+        vv.processEvents()
+        time.sleep(0.01)
+    
+    # Clean up figure (close if we opened it)
+    fig.Clear()
+    fig.DrawNow()
+    if figCleanup:
+        fig.Destroy()
+    
+    # Obtain ranges
+    rx = cropper3d._range_transversal._rangex
+    ry = cropper3d._range_transversal._rangey
+    rz = cropper3d._range_coronal._rangey
+    
+    # Perform crop
+    # make sure we have int not float
+    rzmin, rzmax = int(rz.min), int(rz.max)
+    rymin, rymax = int(ry.min), int(ry.max)
+    rxmin, rxmax = int(rx.min), int(rx.max)
+    vol2 = vol[rzmin:rzmax, rymin:rymax, rxmin:rxmax]
+    # vol2 = vol[rz.min:rz.max, ry.min:ry.max, rx.min:rx.max]
+    
+    # Done
+    return vol2
 
-# Crop
-vol2 = cropper.crop3d(vol1)
-
-# Export
-s = ssdf.new()
-s.vol = vol2
-s.sampling = 1.0, vol1.meta.sampling[1], vol1.meta.sampling[2]
-ssdf.save(fname_out, s)
 
 
+if False:
+    # Read data
+    vols2 = [vol2 for vol2 in imageio.get_reader(dicom_dir, 'DICOM', 'V')] 
+    vol1 = vols[0] 
+    
+    # Crop
+    vol2 = crop3d(vol1)
+    
+    # Vis
+    fig = vv.figure(); vv.clf()
+    a1 = vv.subplot(111)
+    a1.daspect = 1, 1, -1
+    t1 = vv.volshow(vol2, clim=(0, 2500), renderStyle='mip') # iso or mip
+    # t1 = vv.volshow2(vol2, clim=(-500, 500))
+    vv.xlabel('x'), vv.ylabel('y'), vv.zlabel('z')
+    
 
 
-## Crop from ssdf volume using the cropper
 
-# ARGS
-fname_out = r'C:\Users\Maaike\Documents\UT MA3\LSPEAS_data\ssdf\LSPEAS_003\LSPEAS_003_discharge_0_cropring.ssdf'
-
-# Crop
-vol1 = vol  # load volume data as vol when vol not yet in workspace
-vol2 = cropper.crop3d(vol1)
-
-# Export
-s = ssdf.new()
-s.vol = vol2
-s.sampling = vol.sampling
-ssdf.save(fname_out, s)
-
-
-## Crop from ssdf volume by preset cropsize
-
-# ARGS
-fname_out = r'C:\Users\Maaike\Documents\UT MA3\LSPEAS_data\ssdf\LSPEAS_003\LSPEAS_003_discharge_90_cropring.ssdf'
-
-# Crop
-vol1 = vol
-vol2 = vol1[35:104,57:216,85:240] # zyx
-
-# Export and overwrite
-s = ssdf.new()
-s.vol = vol2
-s.sampling = vol1.sampling
-ssdf.save(fname_out, s)
-
-
-## Load ssdf as vol
-BASEDIR = r'C:\Users\Maaike\Documents\UT MA3\LSPEAS_data\ssdf\LSPEAS_003\\'
-
-# Load volume data, use Aarray class for anisotropic volumes
-s = ssdf.load(BASEDIR+'LSPEAS_003_discharge_90.ssdf') 
-vol = vv.Aarray(s.vol, s.sampling)
-#vol.meta = s.meta
-
-
-## Visualize
-fig = vv.figure(1); vv.clf()
-fig.position = 0, 22, 1366, 706
-#fig.position = -1413.00, -2.00,  1366.00, 706.00
-t = vv.volshow(vol2)
-t.clim = 0, 2500
-vv.xlabel('x')
-vv.ylabel('y')
-vv.zlabel('z')
 
