@@ -7,7 +7,7 @@ import visvis as vv
 import os
 import scipy.io
 
-from stentseg.utils import PointSet
+from stentseg.utils import PointSet, _utils_GUI
 from stentseg.utils.centerline import find_centerline, points_from_mesh, smooth_centerline, pp_to_graph
 from stentseg.utils.datahandling import select_dir, loadvol, loadmodel, loadmodel_location
 from stentseg.utils.visualization import show_ctvolume
@@ -26,8 +26,8 @@ basedirstl = select_dir(r'D:\Profiles\koenradesma\SURFdrive\UTdrive\LSPEAS\Analy
 basedirstl2 = r'D:\Profiles\koenradesma\SURFdrive\UTdrive\MedDataMimics\LSPEAS_Mimics\Tests'
 
 # Select dataset
-ptcode = 'LSPEAS_008'
-ctcode = '12months'
+ptcode = 'LSPEAS_022'
+ctcode = '1month'
 cropname = 'stent'
 
 showAxis = False  # True or False
@@ -45,9 +45,15 @@ if TEST == 1:
     s2 = loadmodel_location(targetdir, ptcode, ctcode, cropname)
     pp = points_from_nodes_in_graph(s2.model)
     
-    start1 = (170.8, 158.0, 177.4) # x,y,z - distal point
-    end1 = (154.9, 125.7, 86.6)
-    
+    # start1 = (170.8, 158.0, 177.4) # x,y,z - distal point
+    # end1 = (154.9, 125.7, 86.6)
+    # 022 - 1m
+    start1 = (109.4, 76.849998, 67.100006) 
+    end1 = (108.1, 107.3, 190.3)
+    # mid1 = (88.936852, 80.889778, 181.28984)
+    # 021 - 6m
+    # start1 = (130.60001, 89.050003, 74.699997) 
+    # end1 = (57.150002, 118.75, 173.45)
     
 elif TEST == 2:
     fname = os.path.join(basedirstl2, ptcode, 'LSPEAS_004_D_stent-l-th500.stl')
@@ -58,7 +64,28 @@ elif TEST == 2:
     end1 = (112.98, 100.08, 62.03)
 
 # Get centerline
-centerline1 = find_centerline(pp, start1, end1, 1, ndist=20, regfactor=0.2, regsteps=10, verbose=False)
+params = ssdf.new()
+params.step = 1
+params.ndist = 20
+params.regfacor = 0.5
+params.regsteps = 1
+
+# Check if mid1 was given and if so use it to grow centerline
+try: # grow towards mid1 from both start and end and combine
+    centerline1a = find_centerline(pp, start1, mid1, params.step, ndist=params.ndist, 
+                    regfactor=params.regfacor, regsteps=params.regsteps, verbose=False)
+    centerline1 = find_centerline(pp, end1, mid1, params.step, ndist=params.ndist, 
+                    regfactor=params.regfacor, regsteps=params.regsteps, verbose=False)
+    for i in range(len(centerline1a)-1):
+        centerline1.append(centerline1a[-i-2]) # start adding from -2
+except NameError:
+    # centerline1 = find_centerline(pp, start1, end1, 1, ndist=20, regfactor=0.2, regsteps=10, verbose=False)
+    centerline1 = find_centerline(pp, start1, end1, params.step, ndist=params.ndist, 
+                    regfactor=params.regfacor, regsteps=params.regsteps, verbose=False)
+
+# do not use first point, as they are influenced by user selected points
+centerline1 = centerline1[1:-1]
+# smooth centerline
 centerline2 = smooth_centerline(centerline1, 20)
 
 centerline_nodes = pp_to_graph(centerline2)
@@ -79,12 +106,22 @@ show_ctvolume(s.vol, None, showVol=showVol, clim=clim0, isoTh=isoTh, removeStent
 label = pick3d(vv.gca(), s.vol)
 vv.plot(PointSet(list(start1)), ms='.', ls='', mc='g', mw=18) # start1
 vv.plot(PointSet(list(end1)), ms='.', ls='', mc='m', mw=16)
-centerline_nodes.Draw(mc='y', mw=8, lc='y', lw=2)
+cll = vv.plot(centerline2, ms='o', lc='y', mw=8, mc='y')
+# centerline_nodes.Draw(mc='y', mw=8, lc='y', lw=2)
 a2.axis.visible = showAxis
 a2.daspect = 1,1,-1
 
 a1.camera = a2.camera
 
+## When centerline creation failes get midpoint from returned centerline
+if False:
+    # shift + R click to select point in volume
+    out = _utils_GUI.snap_picked_point_to_graph(centerline_nodes, s.vol, label, nodesOnly=False)
+    mid1 = out[0] # coord, path, index
+    view = a2.GetView()
+    point = vv.plot(mid1[0], mid1[1], mid1[2], mc= 'r', ms = 'o', mw= 10, alpha=0.5, axes=a2)
+    a2.SetView(view)
+    
 ## save ssdf and .mat file centerline
 if True:
     storemat = os.path.join(targetdir, ptcode+'_'+ctcode+'_'+cropname+'_'+'centerline.mat')
@@ -112,6 +149,7 @@ if True:
     # Store model
     s2.startpoint = start1
     s2.endpoint = end1
+    s2.params = params
     s2.centerline = centerline2
     s2.model = model.pack()
     # get filename
