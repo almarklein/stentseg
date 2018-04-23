@@ -326,9 +326,32 @@ def snap_picked_point_to_graph(graph, vol, label, nodesOnly=False):
         if dist == min(dists):
             i = np.where(dists==dist)
             point = path[i]
-            edge = n1, n2
-    return tuple(point.flat), edge, np.asarray(i)
+            edgenodes = n1, n2
+    
+    return tuple(point.flat), edgenodes, np.asarray(i)
 
+def Event_pick_graph_point(graph, vol, label, nodesOnly=False, axes=None, vis=True):
+    """ As snap_picked_point_to_graph but bound to axes with key control
+    Use p key to get picked point
+    """
+    if axes is None:
+        axes = vv.gca()
+    point = dict()
+    # Define callback function
+    @axes.eventKeyDown.Bind
+    def pointPicked(event):
+        if event.text == 'p':
+            point['point'] = snap_picked_point_to_graph(graph, vol, label, nodesOnly=nodesOnly)
+            p = point['point']
+            print('picked cll point:{}'.format(p))
+            if vis:
+                view = axes.GetView()
+                vv.plot(p[0], p[1], p[2], mc= 'r', ms = 'o', mw= 10, alpha=0.5, axes=axes)
+                axes.SetView(view)
+            return True  # prevent default mouse action
+    
+    return point
+            
 
 def interactiveClusterRemoval(graph, radius=0.7, axVis=False, 
         faceColor=(0.5,1.0,0.3), selectColor=(1.0,0.3, 0.3) ):
