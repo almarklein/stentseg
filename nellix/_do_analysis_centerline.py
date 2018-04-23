@@ -105,24 +105,24 @@ class _Do_Analysis_Centerline:
     def distance_change_nelnel_nelCh(self):
         """ Distances cardiac cycle between the proximal points for:
         Nellix to Nellix stent (NelL to NelR)
-        Nellix left (NelL) to Chimney left (ChL)
-        Nellix right (NelR) to Chimney right (ChR)
+        Nellix left (NelL) to Chimney left (LRA)
+        Nellix right (NelR) to Chimney right (RRA)
         Stores output in centerlines_prox_distance_change()
         """
         s = self.s # ssdf with centerline pointsets pp identified
         for key in s:
-            if key.startswith('ppCenterlineChR'):
-                ppChR = s[key]
+            if key.startswith('ppCenterlineRRA'):
+                ppRRA = s[key]
                 key1 = key[12:]
                 ppNelR = s['ppCenterlineNelR']
                 key2 = 'NelR'
-                self.centerlines_prox_distance_change(key1, key2, ppChR, ppNelR, 'Dist_RRA_NelR',color='y')
-            if key.startswith('ppCenterlineChL'):
-                ppChL = s[key]
+                self.centerlines_prox_distance_change(key1, key2, ppRRA, ppNelR, 'Dist_RRA_NelR',color='y')
+            if key.startswith('ppCenterlineLRA'):
+                ppLRA = s[key]
                 key1 = key[12:]
                 ppNelL = s['ppCenterlineNelL']
                 key2 = 'NelL'
-                self.centerlines_prox_distance_change(key1, key2, ppChL, ppNelL, 'Dist_LRA_NelL',color='c')
+                self.centerlines_prox_distance_change(key1, key2, ppLRA, ppNelL, 'Dist_LRA_NelL',color='c')
             if key.startswith('ppCenterlineNelL'):
                 ppNelL = s[key]
                 key1 = key[12:]
@@ -183,16 +183,16 @@ class _Do_Analysis_Centerline:
         """
         s = self.s # ssdf with centerline pointsets pp identified
         for key in s:
-            if key.startswith('ppCenterlineChR'):
-                ppChR = s[key]
+            if key.startswith('ppCenterlineRRA'):
+                ppRRA = s[key]
                 key1 = key[12:]
-                self.centerline_angle_change(key1, ppChR, 'Ang_RRA')
-                self.centerline_tortuosity_change(key1, ppChR, 'Tort_RRA')
-            if key.startswith('ppCenterlineChL'):
-                ppChL = s[key]
+                self.centerline_angle_change(key1, ppRRA, 'Ang_RRA')
+                self.centerline_tortuosity_change(key1, ppRRA, 'Tort_RRA')
+            if key.startswith('ppCenterlineLRA'):
+                ppLRA = s[key]
                 key1 = key[12:]
-                self.centerline_angle_change(key1, ppChL, 'Ang_LRA')
-                self.centerline_tortuosity_change(key1, ppChL, 'Tort_LRA')
+                self.centerline_angle_change(key1, ppLRA, 'Ang_LRA')
+                self.centerline_tortuosity_change(key1, ppLRA, 'Tort_LRA')
             if key.startswith('ppCenterlineSMA'):
                 ppSMA = s[key]
                 key1 = key[12:]
