@@ -1,4 +1,5 @@
 """ Show the volume in a dynamic way.
+Maaike Koenrades (C) 2016
 """
 
 import os
@@ -10,12 +11,15 @@ import scipy
 from stentseg.utils import _utils_GUI
 
 # Select the ssdf basedir
-basedir = select_dir(r'F:\Nellix_chevas\CT_SSDF\SSDF')
+basedir = select_dir(r'E:\Nellix_chevas\CT_SSDF\SSDF')
+basedir = select_dir(r'E:\Nellix_chevas\CT_SSDF\SSDF_automated')
 
 # Select dataset to register
-ptcode = 'chevas_08'
+ptcode = 'chevas_04'
 ctcode, nr = '12months', 1
 cropname = 'prox'
+
+s0 = loadvol(basedir, ptcode, ctcode, cropname, 'avgreg')
 
 ## Show 3D movie, by alternating the 10 volumes
 
@@ -54,6 +58,8 @@ for vol in vols:
     # 'a': [(0.0, 1.0), (1.0, 1.0)],
     # 'r': [(0.0, 0.0), (0.22272727, 1.0)]}
 
+f.eventKeyDown.Bind(lambda event: _utils_GUI.RotateView(event, [a]) )
+f.eventKeyDown.Bind(lambda event: _utils_GUI.ViewPresets(event, [a]) )
 
 
 ## Show 3D movie, by showing one volume that is moved by motion fields
