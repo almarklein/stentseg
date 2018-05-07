@@ -105,8 +105,8 @@ class _Do_Analysis_Centerline:
     def distance_change_nelnel_nelCh(self):
         """ Distances cardiac cycle between the proximal points for:
         Nellix to Nellix stent (NelL to NelR)
-        Nellix left (NelL) to Chimney left (LRA)
-        Nellix right (NelR) to Chimney right (RRA)
+        Chimney left (LRA) to closest Nellix
+        Chimney right (RRA) to closest Nellix
         Stores output in centerlines_prox_distance_change()
         """
         s = self.s # ssdf with centerline pointsets pp identified
@@ -236,7 +236,7 @@ class _Do_Analysis_Centerline:
         output = calculate_tortuosity_change(ppCh, ppChDeforms)
         
         # add chimney tort mid cardiac cycle
-        output['tortMidCycle'] = calculate_tortuosity(ppCh) # in avgreg
+        output['tortMidCycle'] = calculate_tortuosity(ppCh)[0] # in avgreg
         
         # Store output with name
         output['Name'] = name_output
@@ -247,59 +247,91 @@ class _Do_Analysis_Centerline:
         """ Calculate the angle change of the given centerline
         ppCh is a PointSet of the CLL, which is in correct order 
         """
-        pends = np.array([ppCh[0], ppCh[-1]])  # pp centerline is in order of centerline points
-        pends = pends[pends[:,-1].argsort() ] # sort with z, ascending
-        proxp = pends[0]   # smallest z; origin is prox
-        distp = pends[-1] 
         
-        a1 = self.a
-        mw =18
-        point1 = plot_points(proxp, mc='b', mw=mw, ax=a1)
-        self.points_plotted.append(point1)
-        point2 = plot_points(distp, mc='g', mw=mw, ax=a1)
-        self.points_plotted.append(point2)
-        # self.createNodePoint(tuple(proxp), color='b')
-        # self.createNodePoint(tuple(distp))
+        # Find midpoint that makes greatest angle = clinically relevant for kink/fracture
         
-        # find midpoint that makes greatest angle = clinically relevant for kink/fracture
-        # todo: find midpoint that has greatest angle change? but maybe not likely nor relevant angle
-        # todo: or calc angle per node as in stentgraph _detect_corners?
+        # # Calculate greatest angle along ccl with begin and end of centerline 
+        # # get prox and dist point for ppCh
+        # point1, point3 = get_prox_dist_points_cll(ppCh)
+        # 
+        # angle = 180 # straigth
+        # nNodesToSkip = 5
+        # for i, n2 in enumerate(ppCh[nNodesToSkip:-nNodesToSkip]): # omit first x nodes (check stepsize cll)
+        #     # calculate vectors  
+        #     vec1, vec2 = PointSet(3), PointSet(3)        
+        #     vec1.append(point1-n2)
+        #     vec2.append(point3-n2)
+        #     # calc angle
+        #     phi = abs(vec1.angle(vec2))
+        #     anglenew = phi*180.0/np.pi # direction vector in degrees
+        #     print('Angle for points along cll= {}'.format(anglenew) )
+        #     if anglenew < angle:
+        #         midnode = [copy.copy(n2), copy.copy(i+nNodesToSkip)]
+        #     angle = min(angle, anglenew)
+        # 
+        # n0 = midnode[0]
+        # plot_points(n0, mc='r', mw=17, ms='^', ax=self.a)
+        # 
+        
+        
+        # Calculate greatest angle along cll with fixed arms
         angle = 180 # straigth
-        # todo: need to correct for left or right oriented, 180 or 0 = straight ?
-        nNodesToSkip = 5
-        for i, n2 in enumerate(ppCh[nNodesToSkip:-nNodesToSkip]): # omit first x nodes (check stepsize cll)
-            # calculate vectors  
-            vec1, vec2 = PointSet(3), PointSet(3)        
-            vec1.append(proxp-n2)
-            vec2.append(distp-n2)
-            # calc angle
-            phi = abs(vec1.angle(vec2))
-            anglenew = phi*180.0/np.pi # direction vector in degrees
+        for i, n2 in enumerate(ppCh):
+            n1, n3, anglenew = get_angle_at_fixed_arms(ppCh, n2, armlength=15)
+            if anglenew is None:
+                continue
             print('Angle for points along cll= {}'.format(anglenew) )
             if anglenew < angle:
-                # print(anglenew)
-                midnode = [copy.copy(n2), copy.copy(i+nNodesToSkip)]
+                midnode = [copy.copy(n2), copy.copy(i)]
+                point1 = copy.copy(n1)
+                point3 = copy.copy(n3)
             angle = min(angle, anglenew)
+        
+        # check if anglenew was found, cll could be too short for armlength
+        if angle == 180:
+            for i, n2 in enumerate(ppCh):
+                n1, n3, anglenew = get_angle_at_fixed_arms(ppCh, n2, armlength=7)
+                if anglenew is None:
+                    continue
+                print('Angle for points along cll= {}'.format(anglenew) )
+                if anglenew < angle:
+                    midnode = [copy.copy(n2), copy.copy(i)]
+                    point1 = copy.copy(n1)
+                    point3 = copy.copy(n3)
+                angle = min(angle, anglenew)
+        
+        # show points at which angle was calculated
+        a1 = self.a
+        mw =18
+        if False: # False=do not show arm points
+            plot_point1 = plot_points(point1, mc='b', mw=mw, ax=a1)
+            self.points_plotted.append(plot_point1)
+            plot_point3 = plot_points(point3, mc='g', mw=mw, ax=a1)
+            self.points_plotted.append(plot_point3)
+            # self.createNodePoint(tuple(point1), color='b')
+            # self.createNodePoint(tuple(point3))
             
         # show midnode
         print('Detected midnode: location {} and angle {}'.format(midnode, angle))
         n2 = midnode[0]
-        point3 = plot_points(n2, mc='m', mw=mw, ax=a1)
-        self.points_plotted.append(point3)
+        plot_point2 = plot_points(n2, mc='m', mw=mw, ax=a1)
+        self.points_plotted.append(plot_point2)
         # self.createNodePoint(tuple(n2), color='m')
-            
-        # nindex =  [0, 0, 0] # not applicable so set 0, but leave for reuse of old output code
+        
+        # Calc angle change cycle
+        # use the endpoints: get prox and dist point for ppCh
+        point1, point3 = get_prox_dist_points_cll(ppCh)
         # get deforms of nodes during cardiac cycle
         model = self.s['model'+key] # skip 'ppCenterline' in key
-        n1Deforms = model.node[tuple(proxp)]['deforms']
+        n1Deforms = model.node[tuple(point1)]['deforms']
         n2Deforms = model.node[tuple(n2)]['deforms']
-        n3Deforms = model.node[tuple(distp)]['deforms']
+        n3Deforms = model.node[tuple(point3)]['deforms']
         # get angulation
-        output = line_line_angulation(proxp, 
-                            n1Deforms, n2, n2Deforms, distp, n3Deforms)
+        output = line_line_angulation(point1, 
+                            n1Deforms, n2, n2Deforms, point3, n3Deforms)
         
         # add chimney angle mid cardiac cycle
-        output['angleMidCycle'] = angle
+        output['angleMidCycle'] = output['angles_meanstd'][0]
         
         # Store output with name
         output['Name'] = name_output
@@ -441,12 +473,62 @@ class _Do_Analysis_Centerline:
                 
                 worksheet.write('A7', 'Tortuosity at each phase in cardiac cycle',bold)
                 worksheet.write_row('B7', list(out['tort_phases']) )
+                
+                worksheet.write('A8', 'Straigth distance between ends at each phase in cardiac cycle',bold)
+                worksheet.write_row('B8', list(out['straigth_dists']) )
+                
+                worksheet.write('A9', 'CLL length at each phase in cardiac cycle',bold)
+                worksheet.write_row('B9', list(out['cll_dists']) )
 
         
         workbook.close()
 
 
-
+def get_angle_at_fixed_arms(ppCll, p, armlength=15):
+    """ Get angle at fixed arms length from point p.
+    Arms length 15 mm is standard in angle tool in 3Mensio
+    """
+    index_p = np.where(np.all(ppCll == p, axis=-1))[0][0]
+    npoints = len(ppCll)
+    # find first point while looking at points before p
+    for i in range(npoints):
+        j = index_p - i
+        if j < 0:
+            # reached end of cll, we can't calculate angle for point p
+            return None, None, None
+        p1 = ppCll[j]
+        # calculate vector  
+        vec1 = PointSet(3)        
+        vec1.append(p1-p)
+        # get dist (length of vector)
+        dist1 = vec1.norm() # or np.linalg.norm(v)
+        if dist1 >= armlength:
+            #print(i,j, dist1)
+            break # break loop point found
+            
+    # find second point while looking at points after p
+    for i in range(npoints):
+        j = index_p + i
+        if j == npoints:
+            # reached end of cll, we can't calculate angle for point p
+            return None, None, None
+        p3 = ppCll[j]
+        # calculate vector  
+        vec3 = PointSet(3)        
+        vec3.append(p3-p)
+        # get dists
+        dist3 = vec3.norm()
+        if dist3 >= armlength:
+            #print(i,j, dist3)
+            break # break loop point found
+    
+    # calc angle
+    phi = abs(vec1.angle(vec3))
+    angle = phi*180.0/np.pi # direction vector in degrees
+    
+    #print (p1, p3, angle)
+    return p1, p3, angle
+        
 
 def plot_points(pp, mc='g', ms='o', mw=8, alpha=0.5, ls='', ax=None, **kwargs):
     """ Plot a point or set of points in current axis and restore current view 
@@ -557,11 +639,11 @@ def calculate_tortuosity(ppCll):
     CllEnds = PointSet(3, dtype='float32')
     CllEnds.append(ppCll[0])
     CllEnds.append(ppCll[-1])
-    distCllEnds = CllEnds[0].distance(CllEnds[-1])
+    distCllEnds = CllEnds[0].distance(CllEnds[-1]) # straight line
     ppCllLength = dist_over_centerline(ppCll, type='euclidian')
     tortuosity = ppCllLength/distCllEnds
     
-    return tortuosity
+    return tortuosity, distCllEnds, ppCllLength
     
 
 def calculate_tortuosity_change(ppCll, ppCllDeforms):
@@ -573,9 +655,14 @@ def calculate_tortuosity_change(ppCll, ppCllDeforms):
         posCllCycle[i] = ppCll[i] + ppDeform
     # calc tortuosity and change
     tortuosityPhases = []
+    distCllEndsPhases = []
+    ppCllLengthPhases = []
     for phasenr in range(ppCllDeforms.shape[1]):
         ppCll_phase = posCllCycle[:,phasenr,:]
-        tortuosityPhases.append(calculate_tortuosity(ppCll_phase))
+        tortuosity, distCllEnds, ppCllLength = calculate_tortuosity(ppCll_phase)
+        tortuosityPhases.append(tortuosity)
+        distCllEndsPhases.append(distCllEnds)
+        ppCllLengthPhases.append(ppCllLength) 
     meanTortCycle = [np.mean(tortuosityPhases), np.std(tortuosityPhases)] 
     minmaxTortCycle = [np.min(tortuosityPhases), np.max(tortuosityPhases)]
     # get diff between phases
@@ -595,7 +682,9 @@ def calculate_tortuosity_change(ppCll, ppCllDeforms):
     'tort_meanstd': meanTortCycle,
     'tort_minmax': minmaxTortCycle, 
     'tort_phases': tortuosityPhases,
-    'tort_diff_max': diff_max  }
+    'tort_diff_max': diff_max,
+    'straigth_dists': distCllEndsPhases,
+    'cll_dists': ppCllLengthPhases   }
     
     return output
 
