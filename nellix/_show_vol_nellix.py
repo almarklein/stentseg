@@ -15,7 +15,7 @@ basedir = select_dir(r'E:\Nellix_chevas\CT_SSDF\SSDF')
 basedir = select_dir(r'E:\Nellix_chevas\CT_SSDF\SSDF_automated')
 
 # Select dataset to register
-ptcode = 'chevas_04'
+ptcode = 'chevas_01'
 ctcode, nr = '12months', 1
 cropname = 'prox'
 
@@ -42,7 +42,7 @@ f = vv.figure(3); vv.clf()
 a = vv.gca()
 a.daspect = 1, 1, -1
 a.axis.axisColor = 1,1,1
-a.axis.visible = False
+a.axis.visible = True
 a.bgcolor = 0,0,0
 vv.title('ECG-gated CT scan Nellix %s  -  %s' % (ptcode[7:], ctcode))
 
