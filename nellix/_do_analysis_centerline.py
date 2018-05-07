@@ -111,39 +111,64 @@ class _Do_Analysis_Centerline:
         """
         s = self.s # ssdf with centerline pointsets pp identified
         for key in s:
+            ppNelR = s['ppCenterlineNelR']
+            ppNelL = s['ppCenterlineNelL']
             if key.startswith('ppCenterlineRRA'):
                 ppRRA = s[key]
                 key1 = key[12:]
-                ppNelR = s['ppCenterlineNelR']
-                key2 = 'NelR'
-                self.centerlines_prox_distance_change(key1, key2, ppRRA, ppNelR, 'Dist_RRA_NelR',color='y')
+                ppNel, key2 = self.get_nellix_closest_to_chimney(ppRRA, ppNelR, ppNelL)
+                # ppNelR = s['ppCenterlineNelR']
+                # key2 = 'NelR'
+                self.centerlines_prox_distance_change(key1, key2, ppRRA, ppNel, 'Dist_{}_{}'.format(key1,key2),color='y')
             if key.startswith('ppCenterlineLRA'):
                 ppLRA = s[key]
                 key1 = key[12:]
-                ppNelL = s['ppCenterlineNelL']
-                key2 = 'NelL'
-                self.centerlines_prox_distance_change(key1, key2, ppLRA, ppNelL, 'Dist_LRA_NelL',color='c')
+                ppNel, key2 = self.get_nellix_closest_to_chimney(ppLRA, ppNelR, ppNelL)
+                # ppNelL = s['ppCenterlineNelL']
+                # key2 = 'NelL'
+                self.centerlines_prox_distance_change(key1, key2, ppLRA, ppNel, 'Dist_{}_{}'.format(key1,key2),color='c')
+            if key.startswith('ppCenterlineSMA'):
+                ppSMA = s[key]
+                key1 = key[12:]
+                ppNel, key2 = self.get_nellix_closest_to_chimney(ppSMA, ppNelR, ppNelL)
+                self.centerlines_prox_distance_change(key1, key2, ppSMA, ppNel, 'Dist_{}_{}'.format(key1,key2),color='m')
             if key.startswith('ppCenterlineNelL'):
                 ppNelL = s[key]
                 key1 = key[12:]
                 ppNelR = s['ppCenterlineNelR']
                 key2 = 'NelR'
-                self.centerlines_prox_distance_change(key1, key2, ppNelL, ppNelR, 'Dist_NelL_NelR', 
+                self.centerlines_prox_distance_change(key1, key2, ppNelL, ppNelR, 'Dist_{}_{}'.format(key1,key2), 
                                                       mw=17,color='r',marker='^',alpha=0.7)
                 
+    def get_nellix_closest_to_chimney(self, ppCh, ppNelR, ppNelL):
+        """ Return pp of nellix closest to chimney, proximal points
+        """
+        proxpCh    = get_prox_dist_points_cll(ppCh)[0] # [0] for prox point
+        proxpNelR  = get_prox_dist_points_cll(ppNelR)[0]
+        proxpNelL  = get_prox_dist_points_cll(ppNelL)[0]
+        
+        v = proxpCh - proxpNelR
+        distNelR = (v[0]**2 + v[1]**2 + v[2]**2)**0.5 
+        v = proxpCh - proxpNelL
+        distNelL = (v[0]**2 + v[1]**2 + v[2]**2)**0.5 
+        
+        if distNelR < distNelL:
+            return ppNelR, 'NelR'
+        
+        else:
+            return ppNelL, 'NelL'
+        
+    
     def centerlines_prox_distance_change(self, key1, key2, ppCll1, ppCll2, name_output,color,mw=15,marker='o',**kwargs):
         """ Calculate distances during the cardiac cycle between proximal point 
         of two given centerlines
         """
         # Get prox point for ppCll1
-        pends1 = np.array([ppCll1[0], ppCll1[-1]])  # pp centerline is in order of centerline points
-        pends1 = pends1[pends1[:,-1].argsort() ] # sort with z, ascending
-        proxp1 = pends1[0]   # smallest z; origin is prox
-        #distp1 = pends1[-1] 
+        out = get_prox_dist_points_cll(ppCll1)
+        proxp1 = out[0]
         # Get prox point for ppCll2
-        pends2 = np.array([ppCll2[0], ppCll2[-1]])  # pp centerline is in order of centerline points
-        pends2 = pends2[pends2[:,-1].argsort() ] # sort with z, ascending
-        proxp2 = pends2[0]   # smallest z; origin is prox
+        out2 = get_prox_dist_points_cll(ppCll2)
+        proxp2 = out2[0]
         
         # get deforms of these prox points
         model1 = self.s['model'+key1] # skip 'ppCenterline' in key
@@ -167,7 +192,7 @@ class _Do_Analysis_Centerline:
         # get distance change during cycle for these prox points
         output = point_to_point_distance_change(proxp1, proxp1Deforms, proxp2, proxp2Deforms)
         
-        # add chimney tort mid cardiac cycle
+        # add chimney to nel distance mid cardiac cycle
         v = proxp1 - proxp2
         distanceMidCycle = (v[0]**2 + v[1]**2 + v[2]**2)**0.5 
         output['distMidCycle'] = distanceMidCycle # in avgreg
@@ -228,7 +253,7 @@ class _Do_Analysis_Centerline:
         distp = pends[-1] 
         
         a1 = self.a
-        mw =16
+        mw =18
         point1 = plot_points(proxp, mc='b', mw=mw, ax=a1)
         self.points_plotted.append(point1)
         point2 = plot_points(distp, mc='g', mw=mw, ax=a1)
@@ -331,7 +356,7 @@ class _Do_Analysis_Centerline:
                 worksheet.write('A6', 'Positions of points in segment at mid cardiac cycle (x,y,z per point) [avgreg]',bold)
                 worksheet.write_row('B6', [str(tuple(x)) for x in out['ppSegment']] ) # npoints x 3
                 
-                worksheet.write('A7', 'Deforms of points in segment at each phase in cardiac cycle',bold)
+                worksheet.write('A7', 'Deforms of points in segment at each phase in cardiac cycle [rows=points; columns=phases',bold)
                 row = 6 # 6 = row 7 in excel
                 for pDeforms in out['ppDeformsSegment']: # npoints x phases x 3
                     worksheet.write_row(row, 1, [str(tuple(x)) for x in pDeforms] )
@@ -603,5 +628,12 @@ def calculate_motion_points(ppCll, ppCllDeforms, lenSegment, dim='xyz'):
     return output
 
 
-
+def get_prox_dist_points_cll(ppCll1):
+    # Get prox point for ppCll1
+    pends1 = np.array([ppCll1[0], ppCll1[-1]])  # pp centerline is in order of centerline points
+    pends1 = pends1[pends1[:,-1].argsort() ] # sort with z, ascending
+    proxp1 = pends1[0]   # smallest z; origin is prox
+    distp1 = pends1[-1]
+    
+    return proxp1, distp1
 
