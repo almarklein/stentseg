@@ -104,14 +104,16 @@ def loadmesh(basedirMesh,ptcode,meshname, invertZ=True):
     return mesh
 
 
-def loadvol(basedir, ptcode, ctcode, cropname, what='phases', fname=None):
+def loadvol(basedir, ptcode, ctcode=None, cropname=None, what='phases', fname=None):
     """ Load volume data. An ssdf struct is returned. The volumes
     are made into Aarray's with their sampling and origin set.
     """
     if fname is None:
         fname = '%s_%s_%s_%s.ssdf' % (ptcode, ctcode, cropname, what)
-
-    s = ssdf.load(os.path.join(basedir, ptcode, fname))
+    try:
+        s = ssdf.load(os.path.join(basedir, ptcode, fname))
+    except FileNotFoundError:
+        s = ssdf.load(os.path.join(basedir, fname))
     for key in dir(s):
         if key.startswith('vol'):
             s[key] = vv.Aarray(s[key], s.sampling, s.origin)
