@@ -171,14 +171,14 @@ def get_mask_with_stent_likely_positions(data, th):
             seeds.append(seed)
             
             # Set, and suppress stent points at direct neighbours
-            mask[z-1:z+2, y-1:y+2, x-1:x+2] = 1
+            #mask[z-1:z+2, y-1:y+2, x-1:x+2] = 1 # do not suppress neighbours to have more points for centerline
             mask[z,y,x] = 2
             values.append(data[z,y,x])
     
     print()
-    print('Seed ctvalues: {}'.format(sorted(values)))
+    # print('Seed ctvalues: {}'.format(sorted(values)))
     print('-------')
-    print('Seeds removed by criterium 4: {}'.format(cnt))
+    # print('Seeds removed by criterium 4: {}'.format(cnt))
     
     return mask
 
