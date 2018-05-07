@@ -174,7 +174,9 @@ def find_centerline(pp, start, ends, step, *,
         i += 1
         measure = _distance_measure(pp, pos, ndist)
         
-        if i > n_estimate * 2 or measure > 250: # * 4:
+        #if i > n_estimate * 2 or measure > 250: # * 4:
+        if i > n_estimate * 2 or measure > 60: # return sooner
+            print('i={} and n_estimate={}; measure={}'.format(i,n_estimate,measure))
             print('We seem to be lost. Centerline is returned')
             return centerline
             # raise RuntimeError('We seem to be lost')
