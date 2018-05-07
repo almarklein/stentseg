@@ -450,7 +450,7 @@ class IsoThEditor(BaseMapableEditor):
         self._mapables = []
         
         # Create slider widget
-        self._slider = RangeSlider(self, fullRange=(0,500))
+        self._slider = RangeSlider(self, fullRange=(0,1000))
         self._slider.range = 0, 310 # init
         self._slider.position = 15,5,-30,-30 # 80 = 55+25
         self._slider.showTicks = True
