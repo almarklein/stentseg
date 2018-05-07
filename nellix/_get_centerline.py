@@ -11,17 +11,19 @@ class _Get_Centerline:
         import os
         import copy
         
-        from stentseg.utils import PointSet
+        from stentseg.utils import PointSet, _utils_GUI
         from stentseg.utils.centerline import (find_centerline, 
         points_from_nodes_in_graph, points_from_mesh, smooth_centerline)
         from stentseg.utils.datahandling import loadmodel, loadvol
         from stentseg.utils.visualization import show_ctvolume
-
+        from stentseg.utils.picker import pick3d
+        
         stentnr = len(StartPoints)
         
         cropname = 'prox'
         what = 'modelavgreg'
         what_vol = 'avgreg'
+        vismids = True
         m = loadmodel(basedir, ptcode, ctcode, cropname, what)
         s = loadvol(basedir, ptcode, ctcode, cropname, what_vol)
         s.vol.sampling = [s.sampling[1], s.sampling[1], s.sampling[2]]
@@ -33,51 +35,66 @@ class _Get_Centerline:
         from stentseg.stentdirect import stentgraph
         ppp = points_from_nodes_in_graph(m.model)
         
-        allcenterlines = []
-        centerlines = []
+        allcenterlines = [] # for pp
+        allcenterlines_nosmooth = [] # for pp
+        centerlines = [] # for stentgraph
         nodes_total = stentgraph.StentGraph()
         for j in range(stentnr):
             if j == 0 or not start1[j] == ends[j-1]:
-                # if first stent or when stent does not continue with next start-end points
+                # if first stent or when stent did not continue with this start point
                 nodes = stentgraph.StentGraph()
-            # Find main centerline
-            # regsteps = distance of centerline points from where the start/end 
-            # point have no affect on centerline finding
-            # centerline1 = find_centerline(ppp, start1[j], ends[j], step= 0.5, 
-            #                               substep=0.25, ndist=40, regfactor=0.9, 
-            #                               regsteps=0.5, verbose=False)
-            #                               # reg 0.9 for smoother; Mirthe
-            centerline1 = find_centerline(ppp, start1[j], ends[j], step= 1, 
-                                          ndist=20, regfactor=0.5, 
-                                          regsteps=1, verbose=False)
-                                          # reg 0.9 for smoother 
-            print('Centerline calculation completed')
-            # do not use first point, as they are influenced by user selected points
-            pp = centerline1[1:-1]
-            # smooth the cut centerline
-            pp = smooth_centerline(pp, n=20) # Mirthe used 4
-            # pp = centerline1
-          
-            allcenterlines.append(pp) # list with PointSet per centerline
-            self.allcenterlines = allcenterlines 
+                centerline = PointSet(3) # empty
             
-            for i, p in enumerate(pp):
-                p_as_tuple = tuple(p.flat)
-                # p1_as_tuple = tuple(pp[i+1].flat)
-                nodes.add_node(p_as_tuple)
-                nodes_total.add_node(p_as_tuple)
-            # path = PointSet(3, dtype=np.float32)
-            pstart = tuple(pp[0].flat)
-            pend = tuple(pp[-1].flat)
-            nodes.add_edge(pstart, pend, path = pp  )
-            nodes_total.add_edge(pstart, pend, path = pp  )
+            # Find main centerline
+            # if j > 3: # for stent with midpoints
+            #     centerline1 = find_centerline(ppp, start1[j], ends[j], step= 1, 
+            #     ndist=10, regfactor=0.5, regsteps=10, verbose=False)
+            
+            #else:
+            centerline1 = find_centerline(ppp, start1[j], ends[j], step= 1, 
+                ndist=10, regfactor=0.5, regsteps=1, verbose=False)
+                                        # centerline1 is a PointSet
                 
+
+            print('Centerline calculation completed')
+            
+            # ========= Maaike =======
+            smoothfactor = 15  # Mirthe used 2 or 4
+            
+            # check if cll continued here from last end point
+            if not j == 0 and start1[j] == ends[j-1]:
+                # yes we continued
+                ppart = centerline1[:-1] # cut last but do not cut first point as this is midpoint
+            else:
+                # do not use first points, as they are influenced by user selected points
+                ppart = centerline1[1:-1]
+            
+            for p in ppart:
+                centerline.append(p)
+            
             # if last stent or stent does not continue with next start-endpoint
             if j == stentnr-1 or not ends[j] == start1[j+1]:
+                # store non-smoothed for vis
+                allcenterlines_nosmooth.append(centerline)
+                pp = smooth_centerline(centerline, n=smoothfactor)
+                # add pp to list
+                allcenterlines.append(pp) # list with PointSet per centerline
+                self.allcenterlines = allcenterlines 
+            
+                # add pp as nodes    
+                for i, p in enumerate(pp):
+                    p_as_tuple = tuple(p.flat)
+                    nodes.add_node(p_as_tuple)
+                    nodes_total.add_node(p_as_tuple)
+            
+                pstart = tuple(pp[0].flat)
+                pend = tuple(pp[-1].flat)
+                nodes.add_edge(pstart, pend, path = pp  )
+                nodes_total.add_edge(pstart, pend, path = pp  )
+                # add final centerline nodes model to list
                 centerlines.append(nodes)
-                # add final centerline edge
-                #todo
-        
+                
+            # ========= Maaike =======
         
         ## Store segmentation to disk
          
@@ -92,7 +109,8 @@ class _Get_Centerline:
                     suffix = key[4:]
                     s2['meta'+suffix] = m['meta'+suffix]
         s2.what = what
-        s2.params = s.params
+        s2.params = s.params #reg
+        s2.paramsseeds = m.params
         s2.stentType = 'nellix'
         s2.StartPoints = StartPoints
         s2.EndPoints = EndPoints
@@ -123,8 +141,8 @@ class _Get_Centerline:
         print('saved to disk as {}.'.format(filename) )
         
         # remove intermediate centerline points
-        start1 = tuple(map(tuple, start1)) # added MK for when stored as array
-        ends = tuple(map(tuple, ends)) # "
+        # start1 = map(tuple, start1) 
+        # ends = map(tuple, ends)
         startpoints_clean = copy.deepcopy(start1)
         endpoints_clean = copy.deepcopy(ends)
         duplicates = list(set(start1) & set(ends))
@@ -133,7 +151,7 @@ class _Get_Centerline:
             endpoints_clean.remove(duplicates[i])
         
         #Visualize
-        vv.figure(10); vv.clf()
+        f = vv.figure(10); vv.clf()
         a1 = vv.subplot(121)
         a1.daspect = 1, 1, -1
        
@@ -141,38 +159,59 @@ class _Get_Centerline:
         for j in range(len(startpoints_clean)):
             vv.plot(PointSet(list(startpoints_clean[j])), ms='.', ls='', mc='g', mw=20) # startpoint green
             vv.plot(PointSet(list(endpoints_clean[j])),  ms='.', ls='', mc='r', mw=20) # endpoint red
-        for j in range(stentnr):
+        for j in range(len(allcenterlines)):
             vv.plot(allcenterlines[j], ms='.', ls='', mw=10, mc='y')        
         vv.title('Centerlines and seed points')
         vv.xlabel('x (mm)');vv.ylabel('y (mm)');vv.zlabel('z (mm)')
-        
+        # for j in range(len(allcenterlines_nosmooth)):
+        #     vv.plot(allcenterlines_nosmooth[j], ms='o', ls='', mw=10, mc='c', alpha=0.6)
         
         a2 = vv.subplot(122)
         a2.daspect = 1, 1, -1
         
         vv.plot(ppp, ms='.', ls='', alpha=0.6, mw=2)
-        for j in range(len(startpoints_clean)):
-            vv.plot(PointSet(list(startpoints_clean[j])), ms='.', ls='', mc='g', mw=20) # startpoint green
-            vv.plot(PointSet(list(endpoints_clean[j])),  ms='.', ls='', mc='r', mw=20) # endpoint red
-        for j in range(stentnr):
-            vv.plot(allcenterlines[j], ms='.', ls='', mw=10, mc='y')
-        clim = (0,2000)
         # vv.volshow(s.vol, clim=clim, renderStyle = 'mip')           
-        t = show_ctvolume(s.vol, axis=a2, showVol='MIP', clim =(0,2500), isoTh=250, 
+        t = show_ctvolume(s.vol, axis=a2, showVol='ISO', clim =(0,2500), isoTh=250, 
                         removeStent=False, climEditor=True)
+        label = pick3d(vv.gca(), s.vol)
+        for j in range(len(startpoints_clean)):
+            vv.plot(PointSet(list(startpoints_clean[j])), ms='.', ls='', mc='g', 
+                    mw=20, alpha=0.6) # startpoint green
+            vv.plot(PointSet(list(endpoints_clean[j])),  ms='.', ls='', mc='r', 
+                    mw=20, alpha=0.6) # endpoint red
+        for j in range(len(allcenterlines)):
+            vv.plot(allcenterlines[j], ms='o', ls='', mw=10, mc='y', alpha=0.6)
+        
+        # show midpoints (e.g. duplicates)
+        if vismids:
+            for p in duplicates:
+                vv.plot(p[0], p[1], p[2], mc= 'm', ms = 'o', mw= 10, alpha=0.6)
+        
         a2.axis.visible = False
         
         vv.title('Centerlines and seed points')
         
         a1.camera = a2.camera
         
+        f.eventKeyDown.Bind(lambda event: _utils_GUI.RotateView( event, [a1,a2]) )
+        f.eventKeyDown.Bind(lambda event: _utils_GUI.ViewPresets(event, [a1,a2]) )
+        
+        # Pick node for midpoint to redo get_centerline
+        self.pickedCLLpoint = _utils_GUI.Event_pick_graph_point(nodes_total, s.vol, label, nodesOnly=True) # x,y,z
+        # use key p to select point
         
         #===============================================================================
-        # vv.figure()
-        # vv.gca().daspect = 1,1,-1
-        # t = vv.volshow(vol, clim=(-500, 1500))
-        # nodes.Draw(mc='b', mw = 6, lc = 'g',lw=3)       # draw seeded nodes
-        # vv.xlabel('x (mm)');vv.ylabel('y (mm)');vv.zlabel('z (mm)')    
+        vv.figure(11)
+        vv.gca().daspect = 1,1,-1
+        t = show_ctvolume(s.vol, showVol='ISO', clim =(0,2500), isoTh=250, 
+                        removeStent=False, climEditor=True)
+        label2 = pick3d(vv.gca(), s.vol)
+        for j in range(len(startpoints_clean)):
+            vv.plot(PointSet(list(startpoints_clean[j])), ms='.', ls='', mc='g', 
+                    mw=20, alpha=0.6) # startpoint green
+            vv.plot(PointSet(list(endpoints_clean[j])),  ms='.', ls='', mc='r', 
+                    mw=20, alpha=0.6) # endpoint red
+        vv.xlabel('x (mm)');vv.ylabel('y (mm)');vv.zlabel('z (mm)')    
         #===============================================================================
                  
         ## Make model dynamic (and store/overwrite to disk) 
