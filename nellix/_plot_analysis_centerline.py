@@ -18,17 +18,18 @@ class ExcelAnalysisNellix():
     """ Create graphs from excel data
     """
     
-    exceldir = select_dir(r'F:\Nellix_chevas\CT_SSDF\SSDF')
+    # exceldir = select_dir(r'F:\Nellix_chevas\CT_SSDF\SSDF')
+    exceldir = r'E:\Nellix_chevas\CT_SSDF\SSDF_automated'
     dirsaveIm =  select_dir(r'C:\Users\Maaike\Desktop','D:\Profiles\koenradesma\Desktop')
     
     def __init__(self):
         self.exceldir =  ExcelAnalysisNellix.exceldir
         self.dirsaveIm = ExcelAnalysisNellix.dirsaveIm
-        self.folder_analysis = 'Mirthe2'
-        self.workbook_analysis = 'storeOutput.xlsx'
+        self.workbook_analysis = 'ChevasStoreOutput'
         self.patients =['chevas_01', 'chevas_02',	'chevas_03', 'chevas_04',	
-                        'chevas_05', 'chevas_06',	'chevas_07', 'chevas_08']
-                        #'chevas_09', 'chevas_10', 'chevas_11']
+                        'chevas_05', 'chevas_06',	'chevas_07', 'chevas_08',
+                        'chevas_09', 'chevas_10', 'chevas_11'
+                        ]
     
         self.distsAll = [] # distances between all stents that were analyzed
         self.distsRelAll = [] # relative from avgreg distance
@@ -36,14 +37,11 @@ class ExcelAnalysisNellix():
         self.angsRelAll = []
         self.tortsAll = []
         self.tortsRelAll = []
-        self.colors = itertools.cycle(['#a6cee3','#1f78b4','#b2df8a','#33a02c',
-        '#fb9a99','#e31a1c','#fdbf6f','#ff7f00','#cab2d6','#6a3d9a','#ffff99','#b15928'])
-        self.markers = itertools.cycle(['o', '^', 's'])
-        self.lstyles = itertools.cycle(['-', '--'])
+        self.lstyles = itertools.cycle(['-'])#, '--'])
         self.fontsize1 = 14
         self.fontsize2 = 15
         
-    def plot_distances_between_points(self, patients=None, analysis='NelNel', rows=[9,10,11], 
+    def plot_distances_between_points(self, patients=None, analysis='NelNel', rows=[9,5], 
                 ylim=[0, 32], ylimRel=[-0.5,0.5], saveFig=False):
         """
         Plot relative distance change with respect to distance at avgreg and 
@@ -51,7 +49,7 @@ class ExcelAnalysisNellix():
         Rows is row as in excel sheet; analysis='NelNel' or 'ChimNel'
         """
         # init figure
-        f1 = plt.figure(num=3, figsize=(11.6, 4.62)) # 11.6, 4.6
+        self.f1 = plt.figure(figsize=(11.6, 5.8)) # 11.6, 4.62
         xlabels = ['0', '10', '20', '30', '40', '50', '60', '70','80','90']
         xrange = range(1,1+len(xlabels)) # not start from x=0 to play with margin xlim
         fontsize1 = self.fontsize1
@@ -78,37 +76,47 @@ class ExcelAnalysisNellix():
         # plot init
         lw = 1
         # ls = '-'
-        marker = 'o'
+        # marker = 'o'
         alpha = 0.9
+        
+        colors = create_iter_colors()
+        markers = create_iter_markers()
         
         if patients == None:
             patients = self.patients
         
         for patient in patients:
-            # read workbooks and sheets
-            workbook_stent = os.path.join(self.exceldir,patient,self.folder_analysis, self.workbook_analysis)
+            # read workbook
+            workbook_stent = os.path.join(self.exceldir,patient, self.workbook_analysis+patient[7:]+'.xlsx')
+            # read sheet
             wb = openpyxl.load_workbook(workbook_stent, data_only=True)
             sheetnames = wb.get_sheet_names()
             for sheetname in sheetnames:
-                if sheetname.startswith(analysis):
-                    sheet = wb.get_sheet_by_name(sheetname)
+                sheet = None
+                if analysis == 'ChimNel':
+                    if (sheetname.startswith('Dist_RRA') or
+                            sheetname.startswith('Dist_LRA') or
+                            sheetname.startswith('Dist_SMA')):
+                        sheet = wb.get_sheet_by_name(sheetname)  
+                        shortname = sheetname[5:-1] # e.g. 'RRA_Nel' 
+                elif analysis == 'NelNel':
+                    if sheetname.startswith('Dist_Nel'):
+                        sheet = wb.get_sheet_by_name(sheetname)
+                        shortname = 'NelNel'
+                if not sheet is None:        
                     dists, distsRel = readDistancesBetweenPoints(sheet,rows=rows,colStart=1)
                     self.distsAll.append(dists)
                     self.distsRelAll.append(distsRel)
-                    if sheetname.startswith('Chim'):
-                        shortname = sheetname[4:]
-                    else:
-                        shortname = sheetname
-                    color1 = next(self.colors)
-                    # marker = next(self.markers)
+                    color1 = next(colors)
+                    marker = next(markers)
                     ls = next(self.lstyles)
                     # plot
                     ax1.plot(xrange, dists, ls=ls, lw=lw, marker=marker, color=color1, 
-                            label='%s:%s' % (patient[-2:],shortname), alpha=alpha)
+                            label='%s:%s' % (patient[7:],shortname), alpha=alpha)
                     ax2.plot(xrange, distsRel, ls=ls, lw=lw, marker=marker, color=color1, 
-                            label='%s:%s' % (patient[-2:],shortname), alpha=alpha)
+                            label='%s:%s' % (patient[7:],shortname), alpha=alpha)
                 
-        ax2.legend(loc='center right', fontsize=10, numpoints=2, title='Analysis:')
+        ax2.legend(loc='upper right', fontsize=10, numpoints=2, title='Analysis:')
         _initaxis([ax1,ax2])
         
         if saveFig:
@@ -116,12 +124,12 @@ class ExcelAnalysisNellix():
             'plot_distances_between_points_{}.png'.format(analysis)), papertype='a0', dpi=600)
 
 
-    def plot_angles_chimney(self, patients=None, analysis='Ang', rows=[4,5,6,7,8], 
-                ylim=[0, 45], ylimRel=[-2,2], saveFig=False):
+    def plot_angles_chimney(self, patients=None, analysis='Ang', rows=[7,10,6], 
+                ylim=[0, 47], ylimRel=[-2,2], saveFig=False):
         """ Plot Angulation or Tortuosity. analysis='Ang' or 'Tort'
         """
         # init figure
-        f1 = plt.figure(num=3, figsize=(11.6, 4.62)) # 11.6, 4.6
+        self.f2 = plt.figure(figsize=(11.6, 5.8)) # 11.6, 4.62
         xlabels = ['0', '10', '20', '30', '40', '50', '60', '70','80','90']
         xrange = range(1,1+len(xlabels)) # not start from x=0 to play with margin xlim
         fontsize1 = self.fontsize1
@@ -154,43 +162,46 @@ class ExcelAnalysisNellix():
         # plot init
         lw = 1
         # ls = '-'
-        marker = 'o'
+        # marker = 'o'
         alpha = 0.9
+        
+        colors = create_iter_colors()
+        markers = create_iter_markers()
         
         if patients == None:
             patients = self.patients
         
         for patient in patients:
             # read workbooks and sheets
-            workbook_stent = os.path.join(self.exceldir,patient,self.folder_analysis, self.workbook_analysis)
+            workbook_stent = os.path.join(self.exceldir,patient, self.workbook_analysis+patient[7:]+'.xlsx')
             wb = openpyxl.load_workbook(workbook_stent, data_only=True)
             sheetnames = wb.get_sheet_names()
             for sheetname in sheetnames:
                 if sheetname.startswith(analysis):
                     sheet = wb.get_sheet_by_name(sheetname)
                     if analysis=='Ang':
-                        angs, angsRel = readAnglesChimney(sheet, rows=rows,colStart=1)
+                        angs, angsRel = readAnglesChimney(sheet, rows=rows,colStart=1, analysis=analysis)
                         self.angsAll.append(angs)
                         self.angsRelAll.append(angsRel)
                         y = angs
                         yrel = angsRel
                     elif analysis=='Tort': 
-                        torts, tortsRel = readAnglesChimney(sheet, rows=rows,colStart=1)#todo
+                        torts, tortsRel = readAnglesChimney(sheet, rows=rows,colStart=1, analysis=analysis)
                         self.tortsAll.append(torts)
                         self.tortsRelAll.append(tortsRel)
                         y = torts
                         yrel = tortsRel
                     shortname = sheetname[-3:] # LRA or RRA or SMA
-                    color1 = next(self.colors)
-                    # marker = next(self.markers)
+                    color1 = next(colors)
+                    marker = next(markers)
                     ls = next(self.lstyles)
                     # plot
                     ax1.plot(xrange, y, ls=ls, lw=lw, marker=marker, color=color1, 
-                            label='%s:%s' % (patient[-2:],shortname), alpha=alpha)
+                            label='%s:%s' % (patient[7:],shortname), alpha=alpha)
                     ax2.plot(xrange, yrel, ls=ls, lw=lw, marker=marker, color=color1, 
-                            label='%s:%s' % (patient[-2:],shortname), alpha=alpha)
+                            label='%s:%s' % (patient[7:],shortname), alpha=alpha)
                 
-        ax2.legend(loc='center right', fontsize=10, numpoints=2, title='Analysis:')
+        ax2.legend(loc='upper right', fontsize=10, numpoints=2, title='Analysis:')
         _initaxis([ax1,ax2])
         
         if saveFig:
@@ -199,41 +210,30 @@ class ExcelAnalysisNellix():
         
         
 
-def readDistancesBetweenPoints(sheet,rows=[9,10,11],colStart=1):
+def readDistancesBetweenPoints(sheet,rows=[9,5],colStart=1, nphases=10):
     """ read distances over cardiac cycle in excel
     """
     # read distances
     rowStart1 = rows[0]-1
     rowStart2 = rows[1]-1
-    rowStart3 = rows[2]-1
-    # colStart = 1 # B
-    dists = sheet.rows[rowStart1][colStart:colStart+10] # B to K, 10 phases 
+    dists = sheet.rows[rowStart1][colStart:colStart+nphases] # B to K, 10 phases 
     dists = [obj.value for obj in dists]
     dists = np.asarray(dists)
-    obj = sheet.rows[rowStart2][colStart] # avgreg position
-    n1 = obj.value.split(',')
-    n1 = float(n1[0]), float(n1[1]), float(n1[2]) # x,y,z
-    obj2 = sheet.rows[rowStart3][colStart] # avgreg position
-    n2 = obj2.value.split(',')
-    n2 = float(n2[0]), float(n2[1]), float(n2[2]) # x,y,z
-    # calc distance at mid heart cycle
-    vector = PointSet(np.column_stack(n1))-PointSet(np.column_stack(n2))
-    avgdist = vector.norm()
+    obj = sheet.rows[rowStart2][colStart] # avgreg distance
+    avgdist = obj.value # get distance at mid heart cycle
     # relative distances from avgreg
     distsRel = dists - avgdist
     
     return dists, distsRel
 
 
-def readAnglesChimney(sheet,rows=[4,5,6,7,8],colStart=1):
+def readAnglesChimney(sheet,rows=[7,10,6],colStart=1, analysis='Ang'):
     """ read angles over cardiac cycle in excel
     """
     # read distances
     rowStart1 = rows[0]-1 # dif
     rowStart2 = rows[1]-1 # angles
-    rowStart3 = rows[2]-1 # n1
-    rowStart4 = rows[3]-1 # n2
-    rowStart5 = rows[4]-1 # n3
+    rowStart3 = rows[2]-1 # ang mid cycle
     
     # colStart = 1 # B
     maxAngleDif = sheet.rows[rowStart1][colStart:colStart+3] # B to D 
@@ -241,39 +241,79 @@ def readAnglesChimney(sheet,rows=[4,5,6,7,8],colStart=1):
     phaseAngleMin = maxAngleDif[1]
     phaseAngleMax = maxAngleDif[2]
     maxAngleDif = maxAngleDif[0]
-    # angles
+    # angles / tort
     angs = sheet.rows[rowStart2][colStart:colStart+10] # B to K, 10 phases 
-    angs = [180-obj.value for obj in angs] # 70 is scherpere hoek dan 40
-    angs = np.asarray(angs)
-    # position of the 3 nodes
-    obj = sheet.rows[rowStart3][colStart] # avgreg position
-    n1 = obj.value.split(',')
-    n1 = float(n1[0]), float(n1[1]), float(n1[2]) # x,y,z
-    obj2 = sheet.rows[rowStart4][colStart] # avgreg position
-    n2 = obj2.value.split(',')
-    n2 = float(n2[0]), float(n2[1]), float(n2[2]) # x,y,z
-    obj3 = sheet.rows[rowStart5][colStart] # avgreg position
-    n3 = obj3.value.split(',')
-    n3 = float(n3[0]), float(n3[1]), float(n3[2]) # x,y,z
-    # calc angle at mid heart cycle
-    vector1 = PointSet(np.column_stack(n1))-PointSet(np.column_stack(n2))
-    vector2 = PointSet(np.column_stack(n2))-PointSet(np.column_stack(n3))
-    phi = vector1.angle(vector2)
-    avgang = phi[0]*180.0/np.pi # radialen to degrees; pi rad = 180 degrees
-    # relative angles from avgreg angle
-    angsRel = angs - avgang # is bijv. 10 graden voor bijna recht
+    if analysis == 'Ang':
+        angs = [180-obj.value for obj in angs] # so that 0 is straight: 70 is scherpere hoek dan 40
+        angs = np.asarray(angs)
+        # get angle mid cycle
+        obj = sheet.rows[rowStart3][colStart]
+        avgang = 180-obj.value
+    elif analysis == 'Tort':
+        angs = [obj.value for obj in angs] 
+        angs = np.asarray(angs)
+        # get tort mid cycle
+        obj = sheet.rows[rowStart3][colStart]
+        avgang = obj.value
+    
+    # relative angles from avgreg angle (or tort)
+    angsRel = angs - avgang # change with respect to mid cycle angle
     
     return angs, angsRel
+
+def create_iter_colors():
+    colors = itertools.cycle([  
+                                '#a6cee3', # 1
+                                '#fb9a99', # 2 
+                                '#33a02c', # 3
+                                '#fdbf6f', # 4 
+                                '#1f78b4', # 5
+                                '#e31a1c', # 6
+                                '#b2df8a', # 7 
+                                '#cab2d6', # 8 
+                                '#ff7f00', # 9
+                                '#6a3d9a', # 10
+                                '#ffff99', # 11
+                                '#b15928'])# 12
+    
+    # colors =  itertools.cycle([
+    #                             '#d73027', # 1
+    #                             '#fc8d59',
+    #                             '#fee090',
+    #                             '#91bfdb',
+    #                             '#4575b4' # 5
+    #                             ])
+    
+    return colors
+    
+def create_iter_markers():
+    markers = itertools.cycle([
+                                'o', 'o', 'o', 'o',
+                                '^', '^', '^', '^',
+                                's', 's', 's', 's',
+                                'd', 'd', 'd', 'd'  ])
+    # markers = itertools.cycle([
+    #                             'o', 'o', 'o',
+    #                             '^', '^', '^',
+    #                             's', 's', 's'  ])
+    #markers = itertools.cycle('o', '^', 's','d'])
+    
+    return markers
+
 
 if __name__ == '__main__':
     
     foo = ExcelAnalysisNellix()
     
-    # foo.colors = itertools.cycle(['#a6cee3','#1f78b4','#b2df8a','#33a02c',
-    #     '#fb9a99','#e31a1c','#fdbf6f','#ff7f00','#cab2d6','#6a3d9a','#ffff99','#b15928'])
-    foo.colors = itertools.cycle(['#6a3d9a']) # set colors if plotting selection of pts
+    patients=['chevas_09', 'chevas_09_thin']
+    # patients = None # None = all in self.patients
     
-    # foo.plot_distances_between_points(patients=['chevas_07'],analysis='NelNel', ylim=[8,17], saveFig=True)
-    foo.plot_distances_between_points(patients=['chevas_07'],analysis='ChimNel', ylim=[5,40], saveFig=True)
-    # foo.plot_angles_chimney(patients=['chevas_02'],analysis='Ang', rows=[4,5,6,7,8], 
-    #     ylim=[0, 45], ylimRel=[-2,2], saveFig=True)
+    # Distances
+    foo.plot_distances_between_points(patients=patients,analysis='NelNel', ylim=[8,17], saveFig=True) 
+    foo.plot_distances_between_points(patients=patients,analysis='ChimNel', ylim=[5,40], saveFig=True)
+    
+    # Angles
+    foo.plot_angles_chimney(patients=patients,analysis='Ang', rows=[7,10,6], ylim=[0, 47], ylimRel=[-2,2], saveFig=True)
+    
+    # Tortuosity
+    foo.plot_angles_chimney(patients=patients,analysis='Tort', rows=[4,7,3], ylim=[0.99, 1.11], ylimRel=[-0.01,0.01], saveFig=True)
