@@ -43,7 +43,7 @@ class _Do_Analysis_Centerline:
         self.a.axis.visible = False
         self.a.bgcolor = 0,0,0
         self.a.daspect = 1, 1, -1
-        t = show_ctvolume(vol, showVol=showVol, clim=clim, removeStent=False, climEditor=True, **kwargs)
+        t = show_ctvolume(vol, showVol=showVol, clim=clim, removeStent=False, climEditor=True, isoTh=300, **kwargs)
         self.label = pick3d(self.a, vol)
         vv.xlabel('x (mm)');vv.ylabel('y (mm)');vv.zlabel('z (mm)')
         for key in self.s:
@@ -84,15 +84,15 @@ class _Do_Analysis_Centerline:
         for key in s:
             if key.startswith('ppCenterline'): # each branch or Nel
                 ppCll = s[key]
-                name_output = 'Motion_'+key[12:]
+                name_output = 'Motion_'+key[12:]+'prox'
                 model = s['model'+key[12:]] # skip 'ppCenterline' in key
                 assert model.number_of_edges() == 1 # a centerline is one edge
                 edge = model.edges()[0]
                 ppCllDeforms = model.edge[edge[0]][edge[1]]['pathdeforms']
                 ppCllDeforms = np.asarray(ppCllDeforms) # npoints x nphases x 3
                 #ppCll == model.edge[edge[0]][edge[1]]['path']
-                output = calculate_motion_points(ppCll, ppCllDeforms, lenSegment,dim=dim)
-                output['Type'] = 'motion_centerlines_segments' # n1index is old code
+                output = calculate_motion_points(ppCll, ppCllDeforms, lenSegment,dim=dim, part='prox')
+                output['Type'] = 'motion_centerlines_segments'
                 # Store output with name
                 output['Name'] = name_output
                 self.storeOutput.append(output)
@@ -101,6 +101,21 @@ class _Do_Analysis_Centerline:
                 a1 = self.a
                 point = plot_points(pp, mc='g', ax=a1)
                 self.points_plotted.append(point)
+                
+                # for chimneys also get distal segment motion
+                if not key.startswith('ppCenterlineNel'):
+                    name_output = 'Motion_'+key[12:]+'dist'
+                    output = calculate_motion_points(ppCll, ppCllDeforms, lenSegment,dim=dim, part='dist')
+                    output['Type'] = 'motion_centerlines_segments'
+                    # Store output with name
+                    output['Name'] = name_output
+                    self.storeOutput.append(output)
+                    # visualize segment analyzed in avgreg
+                    pp = output['ppSegment'] # [positions nodes avgreg]
+                    a1 = self.a
+                    point = plot_points(pp, mc='y', ax=a1)
+                    self.points_plotted.append(point)
+                    
     
     def distance_change_nelnel_nelCh(self):
         """ Distances cardiac cycle between the proximal points for:
@@ -131,7 +146,8 @@ class _Do_Analysis_Centerline:
                 ppSMA = s[key]
                 key1 = key[12:]
                 ppNel, key2 = self.get_nellix_closest_to_chimney(ppSMA, ppNelR, ppNelL)
-                self.centerlines_prox_distance_change(key1, key2, ppSMA, ppNel, 'Dist_{}_{}'.format(key1,key2),color='m')
+                self.centerlines_prox_distance_change(key1, key2, ppSMA, ppNel, 'Dist_{}_{}'.format(key1,key2),
+                                                      mw=17,color='m',marker='v',alpha=0.7)
             if key.startswith('ppCenterlineNelL'):
                 ppNelL = s[key]
                 key1 = key[12:]
@@ -346,7 +362,7 @@ class _Do_Analysis_Centerline:
         """
         exceldir = self.exceldirOutput
         # https://pypi.python.org/pypi/XlsxWriter
-        workbook = xlsxwriter.Workbook(os.path.join(exceldir,'ChevasStoreOutput.xlsx'))
+        workbook = xlsxwriter.Workbook(os.path.join(exceldir,'ChevasStoreOutput{}.xlsx'.format(self.ptcode[7:])))
         worksheet = workbook.add_worksheet('General')
         # set column width
         worksheet.set_column('A:A', 35)
@@ -368,13 +384,13 @@ class _Do_Analysis_Centerline:
         storeOutput = self.storeOutput 
         for out in storeOutput: # each analysis that was appended to storeOutput
             worksheet = workbook.add_worksheet(out['Name'])
-            worksheet.set_column('A:A', 66)
-            worksheet.set_column('B:B', 25)
+            worksheet.set_column('A:A', 82)
+            worksheet.set_column('B:C', 24)
             worksheet.write('A1', 'Name:', bold)
             worksheet.write('B1', out['Name'], bold)
             if out['Type'] == 'motion_centerlines_segments':
                 worksheet.write('A2', 'Type:', bold)
-                worksheet.write('B2', 'Motion of proximal segment of nodes on 1 centerline',bold)
+                worksheet.write('B2', 'Motion of segment of nodes on 1 centerline',bold)
                 
                 worksheet.write('A3', 'Length of centerline segment (#nodes)',bold)
                 worksheet.write('B3', out['lengthSegment'])
@@ -382,17 +398,19 @@ class _Do_Analysis_Centerline:
                 worksheet.write('A4', 'Mean segment amplitude (mean_std_min_max)',bold)
                 worksheet.write_row('B4', out['mean_segment_amplitude_mean_std_min_max']) # tuple 4 el
                 
-                worksheet.write('A5', 'Segment mean postions at each phase in cardiac cycle (x,y,z per phase)',bold)
+                worksheet.write('A5', 'Segment mean position (CoM) at each phase in cardiac cycle (x,y,z per phase)',bold)
                 worksheet.write_row('B5', [str(tuple(x)) for x in out['meanSegmentPosCycle']] ) # nphases x 3
                 
                 worksheet.write('A6', 'Positions of points in segment at mid cardiac cycle (x,y,z per point) [avgreg]',bold)
                 worksheet.write_row('B6', [str(tuple(x)) for x in out['ppSegment']] ) # npoints x 3
                 
-                worksheet.write('A7', 'Deforms of points in segment at each phase in cardiac cycle [rows=points; columns=phases',bold)
+                worksheet.write('A7', 'Relative displacement of points in segment at each phase in cardiac cycle [rows=phases; columns=points; x,y,z]',bold)
                 row = 6 # 6 = row 7 in excel
+                col = 1
                 for pDeforms in out['ppDeformsSegment']: # npoints x phases x 3
-                    worksheet.write_row(row, 1, [str(tuple(x)) for x in pDeforms] )
-                    row += 1
+                    worksheet.write_column(row, col, [str(tuple(x)) for x in pDeforms] )
+                    #row += 1
+                    col += 1
             
             elif out['Type'] == 'centerlines_prox_distance_change':
                 worksheet.write('A2', 'Type:', bold)
@@ -689,18 +707,27 @@ def calculate_tortuosity_change(ppCll, ppCllDeforms):
     return output
 
 
-def calculate_motion_points(ppCll, ppCllDeforms, lenSegment, dim='xyz'):
+def calculate_motion_points(ppCll, ppCllDeforms, lenSegment, dim='xyz', part='prox'):
     """ Mean motion pattern of segment of points on Cll and mean amplitude
     of motion. Proximal segment is analyzed.
     ppCll is centerline path (points)
+    part = 'prox' or 'dist'
     """
     pends = np.array([ppCll[0], ppCll[-1]])  # pp centerline is in order of centerline points
-    if pends[0,-1] > pends[1,-1]: # start was distal
-        pp = ppCll[-1*lenSegment:] # last points=prox segment
-        ppDeforms = ppCllDeforms[-1*lenSegment:]
-    else: # first points=prox segment
-        pp = ppCll[:lenSegment]
-        ppDeforms = ppCllDeforms[:lenSegment]
+    if pends[0,-1] > pends[1,-1]: # check z, start was distal
+        if part == 'prox':
+            pp = ppCll[-1*lenSegment:] # last points=prox segment
+            ppDeforms = ppCllDeforms[-1*lenSegment:]
+        elif part =='dist':
+            pp = ppCll[:lenSegment]
+            ppDeforms = ppCllDeforms[:lenSegment] 
+    else: # first point=prox
+        if part == 'prox':
+            pp = ppCll[:lenSegment]
+            ppDeforms = ppCllDeforms[:lenSegment]
+        elif part == 'dist':
+            pp = ppCll[-1*lenSegment:] # last points=dist segment
+            ppDeforms = ppCllDeforms[-1*lenSegment:]
     # get positions of points in segment during cycle
     posCycleSegment = np.zeros_like(ppDeforms)
     for i, ppDeform in enumerate(ppDeforms): # for each point
