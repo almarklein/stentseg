@@ -395,17 +395,29 @@ class _Do_Analysis_Centerline:
                 worksheet.write('A3', 'Length of centerline segment (#nodes)',bold)
                 worksheet.write('B3', out['lengthSegment'])
                 
-                worksheet.write('A4', 'Mean segment amplitude (mean_std_min_max)',bold)
-                worksheet.write_row('B4', out['mean_segment_amplitude_mean_std_min_max']) # tuple 4 el
+                worksheet.write('A4', 'XYZ: segment mean displacement amplitude (vector magnitude) (mean_std_min_max)',bold)
+                worksheet.write_row('B4', out['mean_segment_amplitudexyz_mean_std_min_max']) # tuple 4 el
                 
-                worksheet.write('A5', 'Segment mean position (CoM) at each phase in cardiac cycle (x,y,z per phase)',bold)
-                worksheet.write_row('B5', [str(tuple(x)) for x in out['meanSegmentPosCycle']] ) # nphases x 3
+                worksheet.write('A5', 'X: segment mean displacement amplitude (vector magnitude) (mean_std_min_max)',bold)
+                worksheet.write_row('B5', out['mean_segment_amplitudex_mean_std_min_max']) # tuple 4 el
                 
-                worksheet.write('A6', 'Positions of points in segment at mid cardiac cycle (x,y,z per point) [avgreg]',bold)
-                worksheet.write_row('B6', [str(tuple(x)) for x in out['ppSegment']] ) # npoints x 3
+                worksheet.write('A6', 'Y: segment mean displacement amplitude (vector magnitude) (mean_std_min_max)',bold)
+                worksheet.write_row('B6', out['mean_segment_amplitudey_mean_std_min_max']) # tuple 4 el
                 
-                worksheet.write('A7', 'Relative displacement of points in segment at each phase in cardiac cycle [rows=phases; columns=points; x,y,z]',bold)
-                row = 6 # 6 = row 7 in excel
+                worksheet.write('A7', 'Z: segment mean displacement amplitude (vector magnitude) (mean_std_min_max)',bold)
+                worksheet.write_row('B7', out['mean_segment_amplitudez_mean_std_min_max']) # tuple 4 el
+                
+                worksheet.write('A8', 'Segment mean position (CoM) at each phase in cardiac cycle (x,y,z per phase)',bold)
+                worksheet.write_row('B8', [str(tuple(x)) for x in out['meanSegmentPosCycle']] ) # nphases x 3
+                
+                worksheet.write('A9', 'Segment mean position (CoM) at mid cardiac cycle (x,y,z) [avgreg]',bold)
+                worksheet.write('B9', str(tuple(out['meanPosAvgSegment']))  ) # 1 x 3
+                
+                worksheet.write('A11', 'Positions of points in segment at mid cardiac cycle (x,y,z per point) [avgreg]',bold)
+                worksheet.write_row('B11', [str(tuple(x)) for x in out['ppSegment']] ) # npoints x 3
+                
+                worksheet.write('A12', 'Relative displacement of points in segment at each phase in cardiac cycle [rows=phases; columns=points; x,y,z]',bold)
+                row = 11 # 11 = row 12 in excel
                 col = 1
                 for pDeforms in out['ppDeformsSegment']: # npoints x phases x 3
                     worksheet.write_column(row, col, [str(tuple(x)) for x in pDeforms] )
@@ -728,16 +740,29 @@ def calculate_motion_points(ppCll, ppCllDeforms, lenSegment, dim='xyz', part='pr
         elif part == 'dist':
             pp = ppCll[-1*lenSegment:] # last points=dist segment
             ppDeforms = ppCllDeforms[-1*lenSegment:]
+    
+    # get CoM of segment at avgreg
+    meanPosAvgSegment = np.mean(pp, axis = 0)
+    
     # get positions of points in segment during cycle
     posCycleSegment = np.zeros_like(ppDeforms)
     for i, ppDeform in enumerate(ppDeforms): # for each point
         posCycleSegment[i] = pp[i] + ppDeform
     meanPosCycleSegment = np.mean(posCycleSegment, axis=0) # nphases x 3
-    motionOut = calculateMeanAmplitude(pp,ppDeforms, dim=dim) # mean, std, min, max
+    
+    motionOutxyz = calculateMeanAmplitude(pp,ppDeforms, dim='xyz') # mean, std, min, max
+    motionOutx = calculateMeanAmplitude(pp,ppDeforms, dim='x')
+    motionOuty = calculateMeanAmplitude(pp,ppDeforms, dim='y')
+    motionOutz = calculateMeanAmplitude(pp,ppDeforms, dim='z')
+    
     # store in dict
-    output = {'mean_segment_amplitude_mean_std_min_max': motionOut,
+    output = {'mean_segment_amplitudexyz_mean_std_min_max': motionOutxyz,
+                'mean_segment_amplitudex_mean_std_min_max': motionOutx,
+                'mean_segment_amplitudey_mean_std_min_max': motionOuty,
+                'mean_segment_amplitudez_mean_std_min_max': motionOutz,
                 'lengthSegment': lenSegment, 
                 'meanSegmentPosCycle': meanPosCycleSegment,
+                'meanPosAvgSegment': meanPosAvgSegment,
                 'ppSegment': pp, # [positions nodes avgreg]
                 'ppDeformsSegment': ppDeforms # [deforms nodes avgreg]
                 }
