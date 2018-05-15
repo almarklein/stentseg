@@ -54,7 +54,7 @@ def _calculateSumMotion(pointpositions, dim = 'x'):
     return dsum
 
 
-def calculateMeanAmplitude(points,pointsDeforms, dim = 'x'):
+def calculateMeanAmplitude(points,pointsDeforms, dim = 'xyz', type='mean'):
     """ Calculate the mean amplitude of motion for a set of points (e.g. nodes 
     of model) during a cardiac cycle
     """
@@ -73,7 +73,10 @@ def calculateMeanAmplitude(points,pointsDeforms, dim = 'x'):
             meanAmplitude.append(dmax_y)
         elif dim=='x':
             meanAmplitude.append(dmax_x)
-    return np.mean(meanAmplitude), np.std(meanAmplitude), min(meanAmplitude), max(meanAmplitude)
+    if type == 'values':
+        return np.mean(meanAmplitude), np.std(meanAmplitude), min(meanAmplitude), max(meanAmplitude), meanAmplitude
+    if type == 'mean':
+        return np.mean(meanAmplitude), np.std(meanAmplitude), min(meanAmplitude), max(meanAmplitude)
 
     
     
