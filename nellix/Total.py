@@ -7,7 +7,7 @@ import os
 from stentseg.utils.datahandling import select_dir, loadmodel, loadvol
 
 
-ptcode = 'chevas_06'
+ptcode = 'chevas_01'
 ctcode = '12months' # is not the true follow-up time but use for all
 # dicom_basedir = r'E:\Nellix_chevas\CT_SSDF\no 1\STD00001\10phases'
 # print(dicom_basedir)
@@ -81,18 +81,30 @@ if True:
         from stentseg.utils.datahandling import select_dir, loadmodel, loadvol
         from stentseg.utils.picker import pick3d
         
-        # ptcode = 'chevas_05'
-        # ctcode = '12months'
-        # basedir = select_dir(r'D:\Profiles\koenradesma\SURFdrive\Nellix_chevas_data_for_testing',
-        #                      r'C:\Users\Maaike\SURFdrive\Nellix_chevas_data_for_testing')
+        ptcodes = [
+                'chevas_01',
+                'chevas_02',
+                'chevas_03',
+                'chevas_04',
+                'chevas_05',
+                'chevas_06',
+                'chevas_07',
+                'chevas_08',
+                'chevas_09',
+                'chevas_10',
+                'chevas_11',
+                'chevas_09_thin'
+                                ]
+        ctcode = '12months'
+        basedir = select_dir(r'E:\Nellix_chevas\CT_SSDF\SSDF_automated')
         
-        
-        from nellix._do_analysis_centerline import _Do_Analysis_Centerline
-        AC = _Do_Analysis_Centerline(ptcode,ctcode,basedir,showVol='ISO') # loads centerline_modelavgreg_deforms_id
-        AC.chimneys_angle_change()
-        AC.motion_centerlines_segments(lenSegment=10, dim='xyz')
-        AC.distance_change_nelnel_nelCh()
-        AC.storeOutputToExcel()
+        for ptcode in ptcodes:
+                from nellix._do_analysis_centerline import _Do_Analysis_Centerline
+                AC = _Do_Analysis_Centerline(ptcode,ctcode,basedir,showVol='ISO') # loads centerline_modelavgreg_deforms_id
+                AC.chimneys_angle_change()
+                AC.motion_centerlines_segments(lenSegment=10)
+                AC.distance_change_nelnel_nelCh()
+                AC.storeOutputToExcel()
 
 ## [OLD CODE] MOTION ANALYSIS CENTERLINES - CLICK NODES
 if False:
