@@ -106,17 +106,18 @@ def showVesselMesh(vesselstl, ax=None, **kwargs):
     return v
 
 
-def showVolPhases(basedir, ptcode, ctcode, cropname, showVol='iso', isoTh=310,
-            slider=False, clim=(0,3000), clim2D=(-550, 500)):
-    """ showVol= mip or iso or 2D;
+def showVolPhases(basedir, vols=None, ptcode=None, ctcode=None, cropname=None, showVol='iso', isoTh=310,
+            slider=False, clim=(0,3000), clim2D=(-550, 500), fname=None):
+    """ showVol= mip or iso or 2D; Provide either vols or location
     """
-    # Load volumes
-    s = loadvol(basedir, ptcode, ctcode, cropname, 'phases')
-    vols = []
-    for key in dir(s):
-        if key.startswith('vol'):
-            vols.append(s[key])
-    
+    if vols is None:
+        # Load volumes
+        s = loadvol(basedir, ptcode, ctcode, cropname, 'phases', fname=fname)
+        vols = []
+        for key in dir(s):
+            if key.startswith('vol'):
+                vols.append(s[key])
+        
     # Start vis
     f = vv.figure(1); vv.clf()
     f.position = 9.00, 38.00,  942.00, 985.00
@@ -125,7 +126,10 @@ def showVolPhases(basedir, ptcode, ctcode, cropname, showVol='iso', isoTh=310,
     a.axis.axisColor = 1,1,1
     a.axis.visible = False
     a.bgcolor = 0,0,0
-    vv.title('ECG-gated CT scan %s  -  %s' % (ptcode[7:], ctcode))
+    if not ptcode is None and ctcode is None:
+        vv.title('ECG-gated CT scan %s  -  %s' % (ptcode[7:], ctcode))
+    else:
+        vv.title('ECG-gated CT scan ')
     
     # Setup data container
     container = vv.MotionDataContainer(a)

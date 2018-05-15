@@ -16,8 +16,8 @@ basedir = select_dir(os.getenv('LSPEAS_BASEDIR', ''),
 #                      r'E:\LSPEASF_ssdf_backup\LSPEASF_C_01')
 
 # Select dataset to register
-ptcode = 'LSPEAS_020'
-# ctcode, nr = 'ZProfA3', 1
+ptcode = 'LSPEAS_003'
+# ctcode, nr = 'ZA6-75-0', 1
 ctcode, nr = '24months', 2
 cropname = 'ring'
 
@@ -25,7 +25,7 @@ cropname = 'ring'
 from lspeas.utils.vis import showVolPhases
 
 showVol='mip'
-t = showVolPhases(basedir, ptcode, ctcode, cropname, showVol=showVol, isoTh=310, slider=True  )
+t = showVolPhases(basedir, None, ptcode, ctcode, cropname, showVol=showVol, isoTh=310, slider=True  )
 
 # foo = recordMovie(frameRate=10)
 
