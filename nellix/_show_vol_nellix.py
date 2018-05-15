@@ -15,7 +15,7 @@ basedir = select_dir(r'E:\Nellix_chevas\CT_SSDF\SSDF')
 basedir = select_dir(r'E:\Nellix_chevas\CT_SSDF\SSDF_automated')
 
 # Select dataset to register
-ptcode = 'chevas_01'
+ptcode = 'chevas_09'
 ctcode, nr = '12months', 1
 cropname = 'prox'
 
@@ -48,15 +48,17 @@ vv.title('ECG-gated CT scan Nellix %s  -  %s' % (ptcode[7:], ctcode))
 
 # Setup data container
 container = vv.MotionDataContainer(a)
+showVol = 'iso'
 for vol in vols:
     #     t = vv.volshow2(vol, clim=(-550, 500)) # -750, 1000
-    t = vv.volshow(vol, clim=(0, 3000), renderStyle = 'mip')
-    t.isoThreshold = 350               # iso or mip work well 
+    t = vv.volshow(vol, clim=(0, 2500), renderStyle = showVol)
+    t.isoThreshold = 600               # iso or mip work well 
     t.parent = container
-    # t.colormap = {'g': [(0.0, 0.0), (0.33636364, 1.0)],
-    # 'b': [(0.0, 0.0), (0.49545455, 1.0)],
-    # 'a': [(0.0, 1.0), (1.0, 1.0)],
-    # 'r': [(0.0, 0.0), (0.22272727, 1.0)]}
+    if showVol == 'iso':
+        t.colormap = {'g': [(0.0, 0.0), (0.33636364, 1.0)],
+        'b': [(0.0, 0.0), (0.49545455, 1.0)],
+        'a': [(0.0, 1.0), (1.0, 1.0)],
+        'r': [(0.0, 0.0), (0.22272727, 1.0)]}
 
 f.eventKeyDown.Bind(lambda event: _utils_GUI.RotateView(event, [a]) )
 f.eventKeyDown.Bind(lambda event: _utils_GUI.ViewPresets(event, [a]) )
