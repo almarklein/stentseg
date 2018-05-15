@@ -27,8 +27,8 @@ dirsave = select_dir(r'D:\Profiles\koenradesma\SURFdrive\UTdrive\LSPEAS\Analysis
                      r'C:\Users\Maaike\SURFdrive\UTdrive\LSPEAS\Analysis\Leg angulation')
 
 # Select dataset to register
-ptcode = 'LSPEAS_008'
-ctcode = '12months'
+ptcode = 'LSPEAS_021'
+ctcode = '6months'
 cropname = 'stent'
 what = 'avgreg' # avgreg
 normalize = True
@@ -60,7 +60,7 @@ label1 = DrawModelAxes(vol, graph=None, ax=a0, clim=clim, showVol=showVol, climE
 stentType = 'nellix'  # use nellix to pick seeds above seed threshold
 
 p = getDefaultParams(stentType)
-p.seed_threshold = [300]        # step 1 [lower th] or [lower th, higher th]
+p.seed_threshold = [600]        # step 1 [lower th] or [lower th, higher th]
 
 ## Perform segmentation
 
@@ -75,6 +75,10 @@ if normalize:
 
 # Perform the first step of stentDirect but as threshold, not local max
 sd.Step1()
+
+# # other option, threshold (maybe also skeletonize) and create mesh
+# threshold = 300
+# binaryVolTh = (vol > threshold).astype(int)
 
 ## Vis seeds
 
