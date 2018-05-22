@@ -55,64 +55,108 @@ def _initaxis(axis, legend=None, xlabel=None, ylabel=None, labelsize=16,
     plt.tight_layout() # so that labels are not cut off
 
 
-def readRingExcel(sheet, ctcode, ring='R1'):
+def readRingExcel(sheet, ctcode, ring='R1', motion=False, nphases=10):
     """ To read peak and valley locations, R1 or R2, up to 24M
     """
     
+    def read_deforms(sheet,row,col,nphases):
+        """ read x y z * nphases from given cell (row,col)
+        """ 
+        R1_ant_vectors_obj = [sheet.rows[row+i][col:col+3] for i in range(nphases) ] # deforms/displacement
+        R1_ant_vectors = []
+        for el in R1_ant_vectors_obj:
+            values = [obj.value for obj in el]
+            R1_ant_vectors.append(values)
+        R1_ant_vectors = np.asarray(R1_ant_vectors) 
+        return R1_ant_vectors
+    
+    rowStart = [16,29,53,66]
     if ring == 'R1':
         colsStart = [1,5,9,13,17]
     elif ring == 'R2':
         colsStart = [21,25,29,33,37]
     if ctcode == 'discharge':
-        R1_ant = sheet.rows[16][colsStart[0]:colsStart[0]+3]
+        R1_ant = sheet.rows[rowStart[0]][colsStart[0]:colsStart[0]+3]
         R1_ant = [obj.value for obj in R1_ant]
-        R1_post = sheet.rows[29][colsStart[0]:colsStart[0]+3]
+        R1_post = sheet.rows[rowStart[1]][colsStart[0]:colsStart[0]+3]
         R1_post = [obj.value for obj in R1_post] 
-        R1_left = sheet.rows[53][colsStart[0]:colsStart[0]+3]
+        R1_left = sheet.rows[rowStart[2]][colsStart[0]:colsStart[0]+3]
         R1_left = [obj.value for obj in R1_left]
-        R1_right = sheet.rows[66][colsStart[0]:colsStart[0]+3]
+        R1_right = sheet.rows[rowStart[3]][colsStart[0]:colsStart[0]+3]
         R1_right = [obj.value for obj in R1_right]
+        if motion:
+            R1_ant_vectors = read_deforms(sheet,rowStart[0]+1,colsStart[0],nphases)
+            R1_post_vectors = read_deforms(sheet,rowStart[1]+1,colsStart[0],nphases)
+            R1_left_vectors = read_deforms(sheet,rowStart[2]+1,colsStart[0],nphases)
+            R1_right_vectors = read_deforms(sheet,rowStart[3]+1,colsStart[0],nphases)
     elif ctcode == '1month':
-        R1_ant = sheet.rows[16][colsStart[1]:colsStart[1]+3]
+        R1_ant = sheet.rows[rowStart[0]][colsStart[1]:colsStart[1]+3]
         R1_ant = [obj.value for obj in R1_ant]
-        R1_post = sheet.rows[29][colsStart[1]:colsStart[1]+3]
+        R1_post = sheet.rows[rowStart[1]][colsStart[1]:colsStart[1]+3]
         R1_post = [obj.value for obj in R1_post] 
-        R1_left = sheet.rows[53][colsStart[1]:colsStart[1]+3]
+        R1_left = sheet.rows[rowStart[2]][colsStart[1]:colsStart[1]+3]
         R1_left = [obj.value for obj in R1_left]
-        R1_right = sheet.rows[66][colsStart[1]:colsStart[1]+3]
+        R1_right = sheet.rows[rowStart[3]][colsStart[1]:colsStart[1]+3]
         R1_right = [obj.value for obj in R1_right]
+        if motion:
+            R1_ant_vectors = read_deforms(sheet,rowStart[0]+1,colsStart[1],nphases)
+            R1_post_vectors = read_deforms(sheet,rowStart[1]+1,colsStart[1],nphases)
+            R1_left_vectors = read_deforms(sheet,rowStart[2]+1,colsStart[1],nphases)
+            R1_right_vectors = read_deforms(sheet,rowStart[3]+1,colsStart[1],nphases)
     elif ctcode == '6months':
-        R1_ant = sheet.rows[16][colsStart[2]:colsStart[2]+3]
+        R1_ant = sheet.rows[rowStart[0]][colsStart[2]:colsStart[2]+3]
         R1_ant = [obj.value for obj in R1_ant]
-        R1_post = sheet.rows[29][colsStart[2]:colsStart[2]+3]
+        R1_post = sheet.rows[rowStart[1]][colsStart[2]:colsStart[2]+3]
         R1_post = [obj.value for obj in R1_post] 
-        R1_left = sheet.rows[53][colsStart[2]:colsStart[2]+3]
+        R1_left = sheet.rows[rowStart[2]][colsStart[2]:colsStart[2]+3]
         R1_left = [obj.value for obj in R1_left]
-        R1_right = sheet.rows[66][colsStart[2]:colsStart[2]+3]
+        R1_right = sheet.rows[rowStart[3]][colsStart[2]:colsStart[2]+3]
         R1_right = [obj.value for obj in R1_right]
+        if motion:
+            R1_ant_vectors = read_deforms(sheet,rowStart[0]+1,colsStart[2],nphases)
+            R1_post_vectors = read_deforms(sheet,rowStart[1]+1,colsStart[2],nphases)
+            R1_left_vectors = read_deforms(sheet,rowStart[2]+1,colsStart[2],nphases)
+            R1_right_vectors = read_deforms(sheet,rowStart[3]+1,colsStart[2],nphases)
     elif ctcode == '12months':
-        R1_ant = sheet.rows[16][colsStart[3]:colsStart[3]+3]
+        R1_ant = sheet.rows[rowStart[0]][colsStart[3]:colsStart[3]+3]
         R1_ant = [obj.value for obj in R1_ant]
-        R1_post = sheet.rows[29][colsStart[3]:colsStart[3]+3]
+        R1_post = sheet.rows[rowStart[1]][colsStart[3]:colsStart[3]+3]
         R1_post = [obj.value for obj in R1_post] 
-        R1_left = sheet.rows[53][colsStart[3]:colsStart[3]+3]
+        R1_left = sheet.rows[rowStart[2]][colsStart[3]:colsStart[3]+3]
         R1_left = [obj.value for obj in R1_left]
-        R1_right = sheet.rows[66][colsStart[3]:colsStart[3]+3]
+        R1_right = sheet.rows[rowStart[3]][colsStart[3]:colsStart[3]+3]
         R1_right = [obj.value for obj in R1_right]
+        if motion:
+            R1_ant_vectors = read_deforms(sheet,rowStart[0]+1,colsStart[3],nphases)
+            R1_post_vectors = read_deforms(sheet,rowStart[1]+1,colsStart[3],nphases)
+            R1_left_vectors = read_deforms(sheet,rowStart[2]+1,colsStart[3],nphases)
+            R1_right_vectors = read_deforms(sheet,rowStart[3]+1,colsStart[3],nphases)
     elif ctcode == '24months':
-        R1_ant = sheet.rows[16][colsStart[4]:colsStart[4]+3]
+        R1_ant = sheet.rows[rowStart[0]][colsStart[4]:colsStart[4]+3]
         R1_ant = [obj.value for obj in R1_ant]
-        R1_post = sheet.rows[29][colsStart[4]:colsStart[4]+3]
+        R1_post = sheet.rows[rowStart[1]][colsStart[4]:colsStart[4]+3]
         R1_post = [obj.value for obj in R1_post] 
-        R1_left = sheet.rows[53][colsStart[4]:colsStart[4]+3]
+        R1_left = sheet.rows[rowStart[2]][colsStart[4]:colsStart[4]+3]
         R1_left = [obj.value for obj in R1_left]
-        R1_right = sheet.rows[66][colsStart[4]:colsStart[4]+3]
+        R1_right = sheet.rows[rowStart[3]][colsStart[4]:colsStart[4]+3]
         R1_right = [obj.value for obj in R1_right]
+        if motion:
+            R1_ant_vectors = read_deforms(sheet,rowStart[0]+1,colsStart[4],nphases)
+            R1_post_vectors = read_deforms(sheet,rowStart[1]+1,colsStart[4],nphases)
+            R1_left_vectors = read_deforms(sheet,rowStart[2]+1,colsStart[4],nphases)
+            R1_right_vectors = read_deforms(sheet,rowStart[3]+1,colsStart[4],nphases)
     else:
         print('ctcode not known')
         ValueError
-        
-    return R1_ant, R1_post, R1_left, R1_right
+    
+    #todo: check if indeed ant post left right by coordinates 
+    if motion:
+        return  (np.asarray(R1_ant), R1_ant_vectors,
+                np.asarray(R1_post), R1_post_vectors, 
+                np.asarray(R1_left), R1_left_vectors,
+                np.asarray(R1_right), R1_right_vectors)
+    else:
+        return np.asarray(R1_ant), np.asarray(R1_post), np.asarray(R1_left), np.asarray(R1_right)
 
 
 def grouped_boxplot_2subgroups(data, group_names=['A', 'B', 'C'], 
@@ -272,14 +316,14 @@ class ExcelAnalysis():
                 # read data from sheet
                 R_ant, R_post, R_left, R_right = readRingExcel(sheet, ctcode, ring='R2')
                 # check which is left and right (origin is right anterior)
-                if not None in (R_left or R_right): # datapoint is missing
+                try:
                     if R_left[0] > R_right[0]: # x from right to left
                         R_LR = [R_left, R_right]
                     elif R_left[0] == R_right[0]:
                         print("Error for {} {}, ring position in x is the same for left and right".format(ptcode, ctcode)) 
                     else:
                         R_LR = [R_right, R_left]
-                else:
+                except TypeError: # datapoint is missing
                     R_LR = [R_left, R_right]
                     print("Left or right was None. Can not check L or R for {} {}".format(ptcode, ctcode))
                 # write positions
