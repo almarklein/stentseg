@@ -1,5 +1,6 @@
-""" Functionality for stent analysis LSPEAS
-Author: Maaike Koenrades
+""" Functionality for stent analysis LSPEAS: utils for plots
+Class ExcelAnalysis with functions to plot changes over time
+Author: M.A. Koenrades
 """
 
 from stentseg.utils import PointSet
@@ -52,6 +53,66 @@ def _initaxis(axis, legend=None, xlabel=None, ylabel=None, labelsize=16,
         for label in (ax.get_xticklabels() + ax.get_yticklabels()):
             label.set_fontsize(axsize)
     plt.tight_layout() # so that labels are not cut off
+
+
+def readRingExcel(sheet, ctcode, ring='R1'):
+    """ To read peak and valley locations, R1 or R2, up to 24M
+    """
+    
+    if ring == 'R1':
+        colsStart = [1,5,9,13,17]
+    elif ring == 'R2':
+        colsStart = [21,25,29,33,37]
+    if ctcode == 'discharge':
+        R1_ant = sheet.rows[16][colsStart[0]:colsStart[0]+3]
+        R1_ant = [obj.value for obj in R1_ant]
+        R1_post = sheet.rows[29][colsStart[0]:colsStart[0]+3]
+        R1_post = [obj.value for obj in R1_post] 
+        R1_left = sheet.rows[53][colsStart[0]:colsStart[0]+3]
+        R1_left = [obj.value for obj in R1_left]
+        R1_right = sheet.rows[66][colsStart[0]:colsStart[0]+3]
+        R1_right = [obj.value for obj in R1_right]
+    elif ctcode == '1month':
+        R1_ant = sheet.rows[16][colsStart[1]:colsStart[1]+3]
+        R1_ant = [obj.value for obj in R1_ant]
+        R1_post = sheet.rows[29][colsStart[1]:colsStart[1]+3]
+        R1_post = [obj.value for obj in R1_post] 
+        R1_left = sheet.rows[53][colsStart[1]:colsStart[1]+3]
+        R1_left = [obj.value for obj in R1_left]
+        R1_right = sheet.rows[66][colsStart[1]:colsStart[1]+3]
+        R1_right = [obj.value for obj in R1_right]
+    elif ctcode == '6months':
+        R1_ant = sheet.rows[16][colsStart[2]:colsStart[2]+3]
+        R1_ant = [obj.value for obj in R1_ant]
+        R1_post = sheet.rows[29][colsStart[2]:colsStart[2]+3]
+        R1_post = [obj.value for obj in R1_post] 
+        R1_left = sheet.rows[53][colsStart[2]:colsStart[2]+3]
+        R1_left = [obj.value for obj in R1_left]
+        R1_right = sheet.rows[66][colsStart[2]:colsStart[2]+3]
+        R1_right = [obj.value for obj in R1_right]
+    elif ctcode == '12months':
+        R1_ant = sheet.rows[16][colsStart[3]:colsStart[3]+3]
+        R1_ant = [obj.value for obj in R1_ant]
+        R1_post = sheet.rows[29][colsStart[3]:colsStart[3]+3]
+        R1_post = [obj.value for obj in R1_post] 
+        R1_left = sheet.rows[53][colsStart[3]:colsStart[3]+3]
+        R1_left = [obj.value for obj in R1_left]
+        R1_right = sheet.rows[66][colsStart[3]:colsStart[3]+3]
+        R1_right = [obj.value for obj in R1_right]
+    elif ctcode == '24months':
+        R1_ant = sheet.rows[16][colsStart[4]:colsStart[4]+3]
+        R1_ant = [obj.value for obj in R1_ant]
+        R1_post = sheet.rows[29][colsStart[4]:colsStart[4]+3]
+        R1_post = [obj.value for obj in R1_post] 
+        R1_left = sheet.rows[53][colsStart[4]:colsStart[4]+3]
+        R1_left = [obj.value for obj in R1_left]
+        R1_right = sheet.rows[66][colsStart[4]:colsStart[4]+3]
+        R1_right = [obj.value for obj in R1_right]
+    else:
+        print('ctcode not known')
+        ValueError
+        
+    return R1_ant, R1_post, R1_left, R1_right
 
 
 def grouped_boxplot_2subgroups(data, group_names=['A', 'B', 'C'], 
@@ -138,6 +199,7 @@ def grouped_boxplot_2subgroups(data, group_names=['A', 'B', 'C'],
     show()
 
 
+
 class ExcelAnalysis():
     """ Create graphs from excel data
     """
@@ -149,82 +211,29 @@ class ExcelAnalysis():
     def __init__(self):
         self.exceldir =  ExcelAnalysis.exceldir
         self.dirsaveIm = ExcelAnalysis.dirsaveIm
-        self.workbook_stent = 'LSPEAS_pulsatility_expansion_avgreg_subp_v15.5.xlsx'
-        self.workbook_renal = 'postop_measures_renal_ring.xlsx'
+        self.workbook_stent = 'LSPEAS_pulsatility_expansion_avgreg_subp_v15.6.xlsx'
+        self.workbook_renal = 'Peak valley displacement\\postop_measures_renal_ring.xlsx'
         self.workbook_variables = 'LSPEAS_Variables.xlsx'
         self.workbook_variables_presheet = 'preCTA_bone_align'
         self.sheet_valley = 'valley locations'
-        self.patients =['LSPEAS_001', 'LSPEAS_002',	'LSPEAS_003', 'LSPEAS_005',	
-                        'LSPEAS_008', 'LSPEAS_009',	'LSPEAS_011', 'LSPEAS_015',	'LSPEAS_017',	
-                        'LSPEAS_018', 'LSPEAS_020', 'LSPEAS_021', 'LSPEAS_022', 'LSPEAS_019',
-                        'LSPEAS_025', 'LSPEAS_023', 'LSPEAS_024', 'LSPEAS_004']   
-
-
-    def readRingExcel(self, ptcode, ctcode, ring='R1'):
-        """ To read peak and valley locations, R1 or R2, up to 24M
-        """
-        
-        exceldir = self.exceldir
-        workbook = self.workbook_stent
-        sheet = 'Output_'+ ptcode[-3:]
-        
-        wb = openpyxl.load_workbook(os.path.join(exceldir, workbook), data_only=True)
-        sheet = wb.get_sheet_by_name(sheet)
-        
-        if ring == 'R1':
-            colsStart = [1,5,9,13,17]
-        elif ring == 'R2':
-            colsStart = [21,25,29,33,37]
-        if ctcode == 'discharge':
-            R1_ant = sheet.rows[16][colsStart[0]:colsStart[0]+3]
-            R1_ant = [obj.value for obj in R1_ant]
-            R1_post = sheet.rows[29][colsStart[0]:colsStart[0]+3]
-            R1_post = [obj.value for obj in R1_post] 
-            R1_left = sheet.rows[53][colsStart[0]:colsStart[0]+3]
-            R1_left = [obj.value for obj in R1_left]
-            R1_right = sheet.rows[66][colsStart[0]:colsStart[0]+3]
-            R1_right = [obj.value for obj in R1_right]
-        elif ctcode == '1month':
-            R1_ant = sheet.rows[16][colsStart[1]:colsStart[1]+3]
-            R1_ant = [obj.value for obj in R1_ant]
-            R1_post = sheet.rows[29][colsStart[1]:colsStart[1]+3]
-            R1_post = [obj.value for obj in R1_post] 
-            R1_left = sheet.rows[53][colsStart[1]:colsStart[1]+3]
-            R1_left = [obj.value for obj in R1_left]
-            R1_right = sheet.rows[66][colsStart[1]:colsStart[1]+3]
-            R1_right = [obj.value for obj in R1_right]
-        elif ctcode == '6months':
-            R1_ant = sheet.rows[16][colsStart[2]:colsStart[2]+3]
-            R1_ant = [obj.value for obj in R1_ant]
-            R1_post = sheet.rows[29][colsStart[2]:colsStart[2]+3]
-            R1_post = [obj.value for obj in R1_post] 
-            R1_left = sheet.rows[53][colsStart[2]:colsStart[2]+3]
-            R1_left = [obj.value for obj in R1_left]
-            R1_right = sheet.rows[66][colsStart[2]:colsStart[2]+3]
-            R1_right = [obj.value for obj in R1_right]
-        elif ctcode == '12months':
-            R1_ant = sheet.rows[16][colsStart[3]:colsStart[3]+3]
-            R1_ant = [obj.value for obj in R1_ant]
-            R1_post = sheet.rows[29][colsStart[3]:colsStart[3]+3]
-            R1_post = [obj.value for obj in R1_post] 
-            R1_left = sheet.rows[53][colsStart[3]:colsStart[3]+3]
-            R1_left = [obj.value for obj in R1_left]
-            R1_right = sheet.rows[66][colsStart[3]:colsStart[3]+3]
-            R1_right = [obj.value for obj in R1_right]
-        elif ctcode == '24months':
-            R1_ant = sheet.rows[16][colsStart[4]:colsStart[4]+3]
-            R1_ant = [obj.value for obj in R1_ant]
-            R1_post = sheet.rows[29][colsStart[4]:colsStart[4]+3]
-            R1_post = [obj.value for obj in R1_post] 
-            R1_left = sheet.rows[53][colsStart[4]:colsStart[4]+3]
-            R1_left = [obj.value for obj in R1_left]
-            R1_right = sheet.rows[66][colsStart[4]:colsStart[4]+3]
-            R1_right = [obj.value for obj in R1_right]
-        else:
-            print('ctcode not known')
-            ValueError
-            
-        return R1_ant, R1_post, R1_left, R1_right
+        self.patients =['LSPEAS_001', 
+                        'LSPEAS_002',	
+                        'LSPEAS_003', 
+                        'LSPEAS_005',	
+                        'LSPEAS_008', 
+                        'LSPEAS_009',	
+                        'LSPEAS_011', 
+                        'LSPEAS_015',	
+                        'LSPEAS_017',	
+                        'LSPEAS_018', 
+                        'LSPEAS_020', 
+                        'LSPEAS_021', 
+                        'LSPEAS_022', 
+                        'LSPEAS_019',
+                        'LSPEAS_025', 
+                        'LSPEAS_023', 
+                        'LSPEAS_024', 
+                        'LSPEAS_004']   
 
 
     def writeRingPatientsExcel(self, ptcodes='anaconda', ctcodes='all'):
@@ -256,7 +265,12 @@ class ExcelAnalysis():
         for ctcode in ctcodes:
             col = colStart[ctcodes.index(ctcode)]
             for ptcode in ptcodes:
-                R_ant, R_post, R_left, R_right = self.readRingExcel(ptcode, ctcode, ring='R2')
+                # get sheet excel
+                sheetname = 'Output_'+ ptcode[-3:]
+                wb = openpyxl.load_workbook(os.path.join(exceldir, workbook_stent), data_only=True)
+                sheet = wb.get_sheet_by_name(sheetname)
+                # read data from sheet
+                R_ant, R_post, R_left, R_right = readRingExcel(sheet, ctcode, ring='R2')
                 # check which is left and right (origin is right anterior)
                 if not None in (R_left or R_right): # datapoint is missing
                     if R_left[0] > R_right[0]: # x from right to left
@@ -267,12 +281,13 @@ class ExcelAnalysis():
                         R_LR = [R_right, R_left]
                 else:
                     R_LR = [R_left, R_right]
-                    print("None was encountered in ring position for {} {}".format(ptcode, ctcode))
+                    print("Left or right was None. Can not check L or R for {} {}".format(ptcode, ctcode))
                 # write positions
                 for i, position in enumerate(R_LR):
                     row = rowStart[i] + patients.index(ptcode)
                     for j, coordinate in enumerate(position):
                         sheet_to_write.cell(row=row, column=col+j).value = coordinate
+                
         wb.save(os.path.join(exceldir, workbook_renal))
         print('worksheet "%s" overwritten in workbook "%s"' % (sheetwrite,workbook_renal) )
     
