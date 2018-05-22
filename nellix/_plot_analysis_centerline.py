@@ -26,9 +26,17 @@ class ExcelAnalysisNellix():
         self.exceldir =  ExcelAnalysisNellix.exceldir
         self.dirsaveIm = ExcelAnalysisNellix.dirsaveIm
         self.workbook_analysis = 'ChevasStoreOutput'
-        self.patients =['chevas_01', 'chevas_02',	'chevas_03', 'chevas_04',	
-                        'chevas_05', 'chevas_06',	'chevas_07', 'chevas_08',
-                        'chevas_09', 'chevas_10', 'chevas_11'
+        self.patients =['chevas_01', 
+                        'chevas_02',	
+                        'chevas_03', 
+                        'chevas_04',	
+                        'chevas_05', 
+                        'chevas_06',	
+                        'chevas_07', 
+                        'chevas_08',
+                        'chevas_09', 
+                        'chevas_10', 
+                        'chevas_11'
                         ]
     
         self.distsAll = [] # distances between all stents that were analyzed
