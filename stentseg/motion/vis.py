@@ -231,7 +231,8 @@ def get_graph_in_phase(graph, phasenr):
             pointposition = point + pathDeforms[i][phasenr]
             path_phase.append(pointposition) # points on path, one phase
         n1_phase, n2_phase = tuple(path_phase[0]), tuple(path_phase[-1]) # position of nodes
-        model_phase.add_edge(n1_phase, n2_phase, path = np.asarray(path_phase), pathdeforms = np.asarray(pathDeforms))
+        model_phase.add_edge(n1_phase, n2_phase, path = np.asarray(path_phase), 
+                            pathdeforms = np.asarray(pathDeforms))
     return model_phase
     
     
