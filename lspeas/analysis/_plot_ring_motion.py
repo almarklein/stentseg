@@ -139,7 +139,8 @@ class ExcelMotionAnalysis():
             ctnames.append(ctname)
             color1 = next(colors)
             color3d = next(colors3d)
-            marker = next(markers)
+            #marker = next(markers)
+            ls = next(lstyles)
             out = readRingExcel(sheet, patient,ctcode, ring=ring, motion=True, nphases=10) # ant post left right
             #todo: built in check in readRingExcel for ant post
             for a in analysis:
@@ -160,7 +161,7 @@ class ExcelMotionAnalysis():
                 vec_rel_displ_magn = np.linalg.norm(pdisplacement, axis=1) # vector magnitude for each phase
                 
                 # plot
-                ls = next(lstyles)
+                marker = next(markers)
                 for i, text in enumerate(['x', 'y', 'z', '3D']): # x,y,z and magnitude
                     if i == 0:
                         ax1.plot(xrange, pdisplacement[:,i], ls=ls, lw=lw, marker=marker, color=color1, 
@@ -283,6 +284,9 @@ def create_iter_markers(type=1):
     
     
     if type == 3:
+        markers = itertools.cycle(['o', '^'])
+    
+    if type == 4:
         markers = itertools.cycle(['o', '^', 's','d'])
     
     return markers
