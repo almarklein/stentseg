@@ -5,7 +5,8 @@
 import visvis as vv
 from stentseg.utils.picker import pick3d
 from stentseg.stentdirect.stentgraph import create_mesh
-from stentseg.utils import _utils_GUI
+from stentseg.utils import _utils_GUI, PointSet
+import numpy as np
 
 
 def remove_stent_from_volume(vol, graph, stripSize=5):
@@ -107,3 +108,22 @@ def DrawModelAxes(vol, graph=None, ax=None, axVis=False, meshColor=None, getLabe
         return
 
 
+def plot_points(pp, mc='g', ms='o', mw=8, alpha=0.5, ls='', ax=None, **kwargs):
+    """ Plot a point or set of points in current axis and restore current view 
+    alpha 0.9 = solid; 0.1 transparant
+    """
+    if ax is None:
+        ax = vv.gca()
+    # check if pp is 1 point and not a PointSet
+    if not isinstance(pp, PointSet):
+        pp = np.asarray(pp)
+        if pp.ndim == 1:
+            p = PointSet(3)
+            p.append(pp)
+            pp = p
+    # get view and plot
+    view = ax.GetView()
+    point = vv.plot(PointSet(pp), mc=mc, ms=ms, mw=mw, ls=ls, alpha=alpha, axes=ax, **kwargs)
+    ax.SetView(view)
+    
+    return point
