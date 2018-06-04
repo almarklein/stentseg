@@ -12,7 +12,7 @@ import matplotlib as mpl
 import numpy as np 
 import itertools
 from matplotlib import gridspec
-
+import copy
 
 def point_in_pointcloud_closest_to_p(pp, point):
     """ Find point in PointSet which is closest to a point
@@ -55,7 +55,7 @@ def _initaxis(axis, legend=None, xlabel=None, ylabel=None, labelsize=16,
     plt.tight_layout() # so that labels are not cut off
 
 
-def readRingExcel(sheet, ctcode, ring='R1', motion=False, nphases=10):
+def readRingExcel(sheet, ptcode, ctcode, ring='R1', motion=False, nphases=10):
     """ To read peak and valley locations, R1 or R2, up to 24M
     """
     
@@ -69,6 +69,32 @@ def readRingExcel(sheet, ctcode, ring='R1', motion=False, nphases=10):
             R1_ant_vectors.append(values)
         R1_ant_vectors = np.asarray(R1_ant_vectors) 
         return R1_ant_vectors
+    
+    def check_left_right_ant_post(R_left, R_right, R_left_vectors, R_right_vectors, 
+                                R_ant, R_post, R_ant_vectors, R_post_vectors,
+                                ptcode, ctcode):
+        """ When origin is right anterior proximal
+        """
+        # check which is left and right (origin is right anterior)
+        try:
+            if R_left[0] > R_right[0]: # x from right to left
+                pass
+            elif R_left[0] == R_right[0]:
+                print("Error for {} {}, ring position in x is the same left and right".format(ptcode, ctcode)) 
+            else:
+                R_copy = copy.deepcopy(R_right)
+                R_right = copy.deepcopy(R_left)
+                R_left = R_copy
+                R_copy_v = copy.deepcopy(R_right_vectors)
+                R_right_vectors = copy.deepcopy(R_left_vectors)
+                R_left_vectors = R_copy_v
+                print("Left and right were incorrect in excel and swapped for {} {}".format(ptcode, ctcode))
+        except TypeError: # datapoint is missing
+            print("Left or right was None. Can not check L or R for {} {}".format(ptcode, ctcode))
+        
+        #todo: ant post check
+        
+        return R_right, R_left, R_left_vectors, R_right_vectors, R_ant, R_post, R_ant_vectors, R_post_vectors
     
     rowStart = [16,29,53,66]
     if ring == 'R1':
@@ -149,7 +175,12 @@ def readRingExcel(sheet, ctcode, ring='R1', motion=False, nphases=10):
         print('ctcode not known')
         ValueError
     
-    #todo: check if indeed ant post left right by coordinates 
+    #check if indeed ant post left right by coordinates
+    R1_right, R1_left, R1_left_vectors, R1_right_vectors, R1_ant, R1_post, R1_ant_vectors, R1_post_vectors = (
+        check_left_right_ant_post(R1_left, R1_right, R1_left_vectors, R1_right_vectors, 
+                                    R1_ant, R1_post, R1_ant_vectors, R1_post_vectors,
+                                    ptcode, ctcode) )
+    
     if motion:
         return  (np.asarray(R1_ant), R1_ant_vectors,
                 np.asarray(R1_post), R1_post_vectors, 
