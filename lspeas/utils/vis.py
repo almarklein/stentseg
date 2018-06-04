@@ -8,7 +8,35 @@ from stentseg.utils.visualization import show_ctvolume
 import numpy as np
 from stentseg.utils.centerline import points_from_mesh
 from stentseg.utils import _utils_GUI
-from stentseg.utils.datahandling import select_dir, loadvol
+from stentseg.utils.datahandling import select_dir, loadvol, loadmodel
+
+def showModel3d(basedir,ptcode, ctcode, cropname='ring', showVol='MIP',showmodel=True,**kwargs):
+    """ show model and vol in 3d by mip iso or 2D
+    """
+    s = loadmodel(basedir, ptcode, ctcode, cropname, modelname='modelavgreg')
+    vol = loadvol(basedir, ptcode, ctcode, cropname, what='avgreg').vol
+    ptcode = ptcode
+    ctcode = ctcode
+    # figure
+    f = vv.figure(); vv.clf()
+    f.position = 0.00, 22.00,  1920.00, 1018.00
+    a = vv.gca()
+    a.axis.axisColor = 1,1,1
+    a.axis.visible = False
+    a.bgcolor = 0,0,0
+    a.daspect = 1, 1, -1
+    t = show_ctvolume(vol, axis=a, showVol=showVol, removeStent=False, 
+                        climEditor=True, **kwargs)
+    label = pick3d(a, vol)
+    vv.xlabel('x (mm)');vv.ylabel('y (mm)');vv.zlabel('z (mm)')
+    if showmodel:
+        s.model.Draw(mc='b', mw = 5, lc='g', alpha = 0.5)
+    vv.title('Model for LSPEAS %s  -  %s' % (ptcode[8:], ctcode))
+    
+    f.eventKeyDown.Bind(lambda event: _utils_GUI.RotateView(event, [a]) )
+    f.eventKeyDown.Bind(lambda event: _utils_GUI.ViewPresets(event, [a]) )
+    
+    return f, a, label
 
 def showModelsStatic(ptcode,codes, vols, ss, mm, vs, showVol, clim, isoTh, clim2, 
     clim2D, drawMesh=True, meshDisplacement=True, drawModelLines=True, 
