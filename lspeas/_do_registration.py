@@ -76,7 +76,7 @@ for ptcode in ptcodes:
             for i in range(N):
                 phase = i*10
                 s2['meta%i'%phase] = s['meta%i'%phase]
-            s2.origin = s.origin
+            s2.origin = s.origin #todo: is used in loadvol when deforms are loaded. Correct or deform origin?
             s2.stenttype = s.stenttype
             s2.croprange = s.croprange
             # Obtain deform fields
