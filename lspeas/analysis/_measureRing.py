@@ -13,9 +13,8 @@ from stentseg.stentdirect.stentgraph import create_mesh
 from stentseg.motion.vis import get_graph_in_phase
 from stentseg.stentdirect import stentgraph
 import numpy as np
-
-sys.path.insert(0, os.path.abspath('..'))
-from get_anaconda_ringparts import get_model_struts,get_model_rings,add_nodes_edge_to_newmodel 
+#sys.path.insert(0, os.path.abspath('..'))
+from lspeas.utils.get_anaconda_ringparts import get_model_struts,get_model_rings,add_nodes_edge_to_newmodel 
 
 
 def on_key(event):

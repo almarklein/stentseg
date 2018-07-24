@@ -15,7 +15,7 @@ from lspeas.utils.utils_graphs_pointsets import point_in_pointcloud_closest_to_p
 #import utils_analysis
 #from utils_analysis import ExcelAnalysis
 #import get_anaconda_ringparts
-from lspeas.get_anaconda_ringparts import _get_model_hooks,get_midpoints_peaksvalleys,identify_peaks_valleys
+from lspeas.utils.get_anaconda_ringparts import _get_model_hooks,get_midpoints_peaksvalleys,identify_peaks_valleys
 
 #todo: from outline to script:
 
