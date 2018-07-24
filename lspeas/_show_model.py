@@ -14,7 +14,7 @@ import pirt
 import numpy as np
 from stentseg.motion.displacement import _calculateAmplitude, _calculateSumMotion
 from stentseg.motion.displacement import calculateMeanAmplitude
-from ecgslider import runEcgSlider
+from lspeas.utils.ecgslider import runEcgSlider
 from stentseg.utils import _utils_GUI
 
 # Select the ssdf basedir
