@@ -8,18 +8,14 @@ import pirt.reg # Python Image Registration Toolkit
 from stentseg.utils.datahandling import select_dir, loadvol, loadmodel
 
 # Select the ssdf basedir for original data
-basedir = select_dir(r'D:\LSPEAS\LSPEAS_ssdf',
-                     r'F:\LSPEAS_ssdf_backup')
+# basedir = select_dir(r'D:\LSPEAS\LSPEAS_ssdf',
+#                      r'F:\LSPEAS_ssdf_backup')
 
-# Select original dataset for sampling
+# Set original dataset for sampling
 ptcode = 'LSPEAS_001'
 ctcode = '1month'
 cropname = 'ring' # just for fast reading vol for sampling
 what = 'phases' 
-
-savemat = True
-visualize = True
-reg2d = False
 
 # Load volumes
 oriPhase = '50'
@@ -27,18 +23,42 @@ oriPhase = '50'
 sampling = (0.5, 0.383, 0.383) #s['vol'+oriPhase].sampling # z,y,x
 origin = [0, 34.087, 71.238] #s.origin
 sampling2 = (1,1,1) # ground truth sampling from Matlab (width_pixel=1)
-#todo: sample vol with dicom sampling for truthfull registration?
+#todo: sample vol with dicom sampling for realistic registration?
 origin2 = (0,0,0)
 
-# Load the mat files with original and deformed volumes
-dirinsilico = select_dir(r'D:\LSPEAS\LSPEAS_insilico_mat',
-                         r'F:\LSPEAS_insilico_mat')
+# ======================================================
+savemat = True
+visualize = True
+reg2d = False
 
-dirsaveinsilico = select_dir(r'D:\LSPEAS\LSPEAS_insilico_ssdf\reg1',
-                    r'F:\LSPEAS_insilico_ssdf\reg1')
+# Load the mat files with original and deformed volumes
+dirinsilico = select_dir(
+        #r'D:\LSPEAS\LSPEAS_insilico_mat',
+        r'F:\LSPEAS_insilico_mat',
+        r'E:\LSPEAS_insilico_mat',
+        r'/Users/geurtsbj/ownCloud/research/articles/maaike/in.silico.validation/LSPEAS_insilico_mat')
+
+dirsaveinsilico = select_dir(
+        #r'D:\LSPEAS\LSPEAS_insilico_ssdf\reg1',
+        r'F:\LSPEAS_insilico_ssdf\reg1',
+        r'E:\LSPEAS_insilico_ssdf\reg1',
+        r'/Users/geurtsbj/ownCloud/research/articles/maaike/in.silico.validation/LSPEAS_insilico_ssdf/reg1')
 
 fileOr = 'original_DataDressed_001_d50_1-146'
-fileTrs = ['tr_DataDressed_001_d50_1-146_1_3.00pi_t0pi_p0.5pi']
+fileTrs = [ 'tr_DataDressed_001_d50_1-146_1_-0.50pi_t0pi_p0.5pi',
+            'tr_DataDressed_001_d50_1-146_1_-1.00pi_t0pi_p0.5pi',
+            'tr_DataDressed_001_d50_1-146_1_-2.00pi_t0pi_p0.5pi',
+            'tr_DataDressed_001_d50_1-146_1_-3.00pi_t0pi_p0.5pi',
+            'tr_DataDressed_001_d50_1-146_1_-0.25pi_t0pi_p0.5pi',
+            'tr_DataDressed_001_d50_1-146_1_-0.10pi_t0pi_p0.5pi',
+            'tr_DataDressed_001_d50_1-146_1_0.00pi_t0pi_p0.5pi',
+            'tr_DataDressed_001_d50_1-146_1_0.10pi_t0pi_p0.5pi',
+            'tr_DataDressed_001_d50_1-146_1_0.25pi_t0pi_p0.5pi',
+            'tr_DataDressed_001_d50_1-146_1_0.50pi_t0pi_p0.5pi',
+            'tr_DataDressed_001_d50_1-146_1_1.00pi_t0pi_p0.5pi',
+            'tr_DataDressed_001_d50_1-146_1_2.00pi_t0pi_p0.5pi'
+            ]
+# ======================================================
 
 for fileTr in fileTrs:
     mat = scipy.io.loadmat(os.path.join(dirinsilico, ptcode, fileOr+'.mat'))
@@ -51,21 +71,27 @@ for fileTr in fileTrs:
     volOr = np.swapaxes(volOr, 1,2) # from z,x,y to z,y,x
     volTr = np.swapaxes(volTr, 1,2)
     
-    # 'Dressed' part gives errors due to extreme negative intensities (-2000) -->
+    # to use only part of the volume enable crop and set range
     if False: # crop xy
+        # ======================
         ymin, ymax = 200, -200
         xmin, xmax = 300, -150
+        # ======================
         croprange = [[0,volOr.shape[0]], [ymin,ymax], [xmin,xmax]] # zyx
         croprangeMat = [[ymin+1,volOr.shape[1]+ymax],[xmin+1,volOr.shape[2]+xmax], [1,volOr.shape[0]]] # yxz
         volOr = volOr[:, ymin:ymax, xmin:xmax]
         volTr = volTr[:, ymin:ymax, xmin:xmax]
     elif False: # crop z
+        # ======================
         croprange[0] = [1,-2]
+        croprangeMat[2] = [2, volOr.shape[0]-2]
+        # ======================
         volOr = volOr[1:-2]
         volTr = volTr[1:-2]
     else:
         croprange = False
         croprangeMat = False
+    # 'Dressed' part gives errors due to extreme negative intensities (-2000) -->
     # clip intensities below -1000 for registration, --> set to -200 (HU between fat-lung)
     if True: 
         volOr[volOr<-1000] = -200
@@ -94,16 +120,16 @@ for fileTr in fileTrs:
         a1.daspect = 1,1,-1
         
         a2 = vv.subplot(222)
-        vv.volshow(volTr,clim=clim)
-        vv.xlabel('x'), vv.ylabel('y'), vv.zlabel('z')
-        vv.title('Im2:Original transformed')
-        a2.daspect = 1,1,-1
-        
-        a3 = vv.subplot(223)
         vv.volshow(volOr,clim=clim)
         vv.volshow(volTr,clim=clim)
         vv.xlabel('x'), vv.ylabel('y'), vv.zlabel('z')
         vv.title('Overlay')
+        a2.daspect = 1,1,-1
+        
+        a3 = vv.subplot(223)
+        vv.volshow(volTr,clim=clim)
+        vv.xlabel('x'), vv.ylabel('y'), vv.zlabel('z')
+        vv.title('Im2:Original transformed')
         a3.daspect = 1,1,-1
         
         a4 = vv.subplot(224)
@@ -120,6 +146,7 @@ for fileTr in fileTrs:
         
         # Initialize registration object
         reg = pirt.reg.GravityRegistration(*vols)
+        # ======================
         # Set params
         reg.params.mass_transforms = 2  # 2;2nd order (Laplacian) triggers more at lines
         reg.params.deform_wise = 'groupwise' # groupwise!
@@ -133,6 +160,7 @@ for fileTr in fileTrs:
         reg.params.final_grid_sampling = 20 #20; grid sampling ch9/10: 5-15-30/20 
                                             #This parameter is usually best coupled to final_scale
         
+        # ======================
         # Go!
         reg.register(verbose=1)
         
@@ -211,11 +239,10 @@ for fileTr in fileTrs:
         #f.position = 968.00, 30.00,  944.00, 1002.00
         #a = vv.subplot(111)
         #a.daspect = 1, 1, -1
-        a4.MakeCurrent()
         if reg2d:
-            t = vv.imshow(vol, clim=clim)
+            t = vv.imshow(vol, clim=clim, axes=a4)
         else:
-            t = vv.volshow(vol, clim=clim, renderStyle='mip')
+            t = vv.volshow(vol, clim=clim, renderStyle='mip', axes=a4)
             #t.isoThreshold = 600
         vv.xlabel('x'), vv.ylabel('y'), vv.zlabel('z')
         vv.title('Averaged volume')
@@ -251,12 +278,14 @@ for fileTr in fileTrs:
     
     # store displacement fields
     displacementOrToTr = mat2.copy()
-    del displacementOrToTr['DataDressedInterpolated']
+    del displacementOrToTr['DataDressedInterpolated'] # remove Image data
     displacementOrToTr['displacementOrToTr_z'] = fieldOrBack_d_z
     displacementOrToTr['displacementOrToTr_y'] = fieldOrBack_d_y
     displacementOrToTr['displacementOrToTr_x'] = fieldOrBack_d_x
     displacementOrToTr['croprange_zyx'] = croprange
     displacementOrToTr['croprangeMat_yxz'] = croprangeMat
+    displacementOrToTr['samplingOriginal'] = sampling
+    displacementOrToTr['originOriginal'] = origin
     
     # save mat file displacement
     if savemat:
@@ -267,34 +296,34 @@ for fileTr in fileTrs:
     # visualize
     if visualize:
         vv.figure(4); vv.clf()
-        a1 = vv.gca()
+        a1b = vv.subplot(111)
         t1 = vv.volshow(volOr)
         vv.title('original im 1 (Or)')
         vv.xlabel('x'), vv.ylabel('y'), vv.zlabel('z')
-        a1.daspect = 1, 1, -1
+        a1b.daspect = 1, 1, -1
         
         vv.figure(5); vv.clf()
-        a2 = vv.gca()
+        a2b = vv.subplot(111)
         t2 = vv.volshow(volTrBack)
         vv.title('im2 (tr) deformed to im1 (or)')
         vv.xlabel('x'), vv.ylabel('y'), vv.zlabel('z')
-        a2.daspect = 1, 1, -1
+        a2b.daspect = 1, 1, -1
         
         vv.figure(6); vv.clf()
-        a3 = vv.gca()
-        t3 = vv.volshow(volOr-volTrBack)
-        vv.title('difference im1 (or) and im1 by registration')
-        vv.xlabel('x'), vv.ylabel('y'), vv.zlabel('z')
-        a3.daspect = 1, 1, -1
-        
-        vv.figure(7); vv.clf()
-        a4 = vv.gca()
-        t4 = vv.volshow(volTr)
+        a3b = vv.subplot(111)
+        t3 = vv.volshow(volTr)
         vv.title('original im2 (Tr)')
         vv.xlabel('x'), vv.ylabel('y'), vv.zlabel('z')
-        a4.daspect = 1, 1, -1
+        a3b.daspect = 1, 1, -1
         
-        a1.camera = a2.camera = a3.camera = a4.camera
+        vv.figure(7); vv.clf()
+        a4b = vv.subplot(111)
+        t4 = vv.volshow(volOr-volTrBack)
+        vv.title('difference im1 (or) and im1 by registration')
+        vv.xlabel('x'), vv.ylabel('y'), vv.zlabel('z')
+        a4b.daspect = 1, 1, -1
+        
+        a1b.camera = a2b.camera = a3b.camera = a4b.camera
         t1.clim = t2.clim = t3.clim = t4.clim = clim
     
 
