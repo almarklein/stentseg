@@ -1,5 +1,6 @@
 """ Functionality for stent analysis LSPEAS: utils for plots
-Class ExcelAnalysis with functions to plot changes over time
+Class ExcelAnalysis with functions to plot changes over time (e.g. expansion,
+asymmetry)
 Author: M.A. Koenrades
 """
 
@@ -13,19 +14,20 @@ import numpy as np
 import itertools
 from matplotlib import gridspec
 import copy
+import string
 
-def point_in_pointcloud_closest_to_p(pp, point):
-    """ Find point in PointSet which is closest to a point
-    Returns a PointSet with point found in PointSet and point 
+def cols2num(cols):
+    """ convert column in excel to number for python.
+    Input = ['B','K']; output = 1, 10
     """
-    vecs = pp-point
-    dists_to_pp = ( (vecs[:,0]**2 + vecs[:,1]**2 + vecs[:,2]**2)**0.5 ).reshape(-1,1)
-    pp_index =  list(dists_to_pp).index(dists_to_pp.min() ) # index on path
-    pp_point = pp[pp_index]
-    p_in_pp_and_point = PointSet(3, dtype='float32')
-    [p_in_pp_and_point.append(*p) for p in (pp_point, point)]
-    
-    return p_in_pp_and_point
+    nums = []
+    for col in cols:
+        num = 0
+        for c in col:
+            if c in string.ascii_letters:
+                num = num * 26 + (ord(c.upper()) - ord('A')) + 1
+                nums.append(num-1)
+    return nums
 
 
 def _initaxis(axis, legend=None, xlabel=None, ylabel=None, labelsize=16, 
@@ -1361,8 +1363,7 @@ if __name__ == '__main__':
     # create class object for excel analysis
     foo = ExcelAnalysis() # excel locations initialized in class
     # foo.plot_pp_vv_distance_ratio(patients=patients, ylim=[0.6,1.5], saveFig=True)
-    # foo.plot_pp_vv_deployment(ring=12, saveFig=False)
+    # foo.plot_pp_vv_deployment(ring=12, saveFig=False) # multipanel
     # foo.plot_ring_deployment(patients=patients, ylim=[72, 100], ylim_mm=[20,33.5], saveFig=True)
-    # foo.change_in_rdc_D_12()
     # foo.plot_ring_deployment_lines(rowsrd=[211,225], rowsmm=[120,134], ylim=[72, 100], ylim_mm=[18, 34], subgroup_colors=['#D02D2E', 'blue'], saveFig=True)
     
