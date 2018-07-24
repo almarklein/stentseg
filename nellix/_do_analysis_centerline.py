@@ -6,7 +6,7 @@ import sys, os
 from stentseg.utils.centerline import points_from_nodes_in_graph, dist_over_centerline
 from stentseg.utils.datahandling import select_dir, loadvol, loadmodel
 from stentseg.utils.picker import pick3d
-from stentseg.utils.visualization import DrawModelAxes, show_ctvolume
+from stentseg.utils.visualization import DrawModelAxes, show_ctvolume, plot_points
 from stentseg.utils import PointSet, _utils_GUI, visualization
 import visvis as vv
 import numpy as np
@@ -43,7 +43,8 @@ class _Do_Analysis_Centerline:
         self.a.axis.visible = False
         self.a.bgcolor = 0,0,0
         self.a.daspect = 1, 1, -1
-        t = show_ctvolume(vol, showVol=showVol, clim=clim, removeStent=False, climEditor=True, isoTh=300, **kwargs)
+        t = show_ctvolume(vol, showVol=showVol, clim=clim, removeStent=False, 
+                        climEditor=True, isoTh=300, **kwargs)
         self.label = pick3d(self.a, vol)
         vv.xlabel('x (mm)');vv.ylabel('y (mm)');vv.zlabel('z (mm)')
         for key in self.s:
@@ -559,26 +560,6 @@ def get_angle_at_fixed_arms(ppCll, p, armlength=15):
     #print (p1, p3, angle)
     return p1, p3, angle
         
-
-def plot_points(pp, mc='g', ms='o', mw=8, alpha=0.5, ls='', ax=None, **kwargs):
-    """ Plot a point or set of points in current axis and restore current view 
-    alpha 0.9 = solid; 0.1 transparant
-    """
-    if ax is None:
-        ax = vv.gca()
-    # check if pp is 1 point and not a PointSet
-    if not isinstance(pp, PointSet):
-        pp = np.asarray(pp)
-        if pp.ndim == 1:
-            p = PointSet(3)
-            p.append(pp)
-            pp = p
-    # get view and plot
-    view = ax.GetView()
-    point = vv.plot(PointSet(pp), mc=mc, ms=ms, mw=mw, ls=ls, alpha=alpha, axes=ax, **kwargs)
-    ax.SetView(view)
-    
-    return point
 
 def point_to_point_distance_change(point1,point1Deforms,point2, point2Deforms):
     """ Calculate distance change between 2 points during cardiac cycle
