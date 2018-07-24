@@ -8,7 +8,7 @@ from stentseg.utils.datahandling import select_dir, loadvol, loadmodel
 from stentseg.utils.visualization import show_ctvolume
 from stentseg.stentdirect import stentgraph
 
-TEST = 12
+TEST = 14
 
 if TEST == 1:
     import imageio
@@ -35,7 +35,7 @@ elif TEST > 10:
     # Select the ssdf basedir
     basedir = select_dir(r'D:\LSPEAS\LSPEAS_ssdf',
                         r'F:\LSPEAS_ssdf_backup', r'G:\LSPEAS_ssdf_backup')
-    basedirstl = r'D:\Profiles\koenradesma\Dropbox\UTdrive\MedDataMimics\LSPEAS_Mimics\Tests'
+    basedirstl = r'D:\Profiles\koenradesma\SURFdrive\UTdrive\MedDataMimics\LSPEAS_Mimics\Tests'
     
     ptcode = 'LSPEAS_003'
     ctcode = '12months'
