@@ -10,7 +10,7 @@ from stentseg.utils import _utils_GUI, PointSet
 from stentseg.utils.picker import pick3d
 from stentseg.utils.centerline import find_centerline, points_from_mesh, smooth_centerline, dist_over_centerline
 from lspeas.analysis.utils_analysis import ExcelAnalysis
-from lspeas.utils.utils_graphs_pointsets import point_in_pointcloud_closest_to_p
+from stentseg.utils.utils_graphs_pointsets import point_in_pointcloud_closest_to_p
 #sys.path.insert(0, os.path.abspath('..')) # parent, 2 folders further in pythonPath
 #import utils_analysis
 #from utils_analysis import ExcelAnalysis
