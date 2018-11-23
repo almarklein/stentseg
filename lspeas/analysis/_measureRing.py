@@ -145,7 +145,7 @@ def _fit3D(model):
 
 def vis3Dfit(fitted, vol, model, ptcode, ctcode, showAxis, **kwargs):
     """Visualize ellipse fit in 3D with CT volume in current axis
-    input: _fit3D output
+    input: fitted = _fit3D output = (pp3, plane, pp3_2, e3)
     """
     from stentseg.utils import fitting
     import numpy as np
@@ -175,9 +175,9 @@ def vis3Dfit(fitted, vol, model, ptcode, ctcode, showAxis, **kwargs):
     #     vv.legend('3D points', 'Projected points', 'Circle fit', 'Ellipse fit', 'Plane fit')
     vv.legend('3D points', 'Projected points', 'Ellipse fit', 'Plane fit')
 
-def vis2Dfit(fitted):
+def vis2Dfit(fitted, ptcode, ctcode, showAxis):
     """Visualize ellipse fit in 2D in current axis
-    input: _fit3D output
+    input: fitted = _fit3D output = (pp3, plane, pp3_2, e3)
     """
     from stentseg.utils import fitting
     import numpy as np
@@ -206,7 +206,7 @@ def vis2Dfit(fitted):
     vv.legend('3D points projected to plane', 'Ellipse fit on projected points')
 
 def ellipse2excel(exceldir, analysisID, e3top=None, e3bot=None):
-    """ Create/overwrite excel and store ellipse output
+    """ Create/overwrite storeOutput excel and store ellipse output
     Input:  exceldir string file location
             analysisID string for in excel
             e3top tuple with 5 elements x0, y0, res1, res2, phi (optional)
@@ -261,7 +261,7 @@ def ellipse2excel(exceldir, analysisID, e3top=None, e3bot=None):
         worksheet.write_row(rowstart, columnstart+2, [(res2*2+res1*2)/2])
         worksheet.write_row(rowstart, columnstart+3, [phi])
         worksheet.write_row(rowstart, columnstart+4, [area])
-        
+    
     workbook.close()
     print('--- stored to excel: {}-- {}'.format(exceldir, analysisID) )
     return
