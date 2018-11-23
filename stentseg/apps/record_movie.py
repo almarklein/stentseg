@@ -36,14 +36,13 @@ import visvis as vv
 import datetime
 from stentseg.utils.datahandling import select_dir
 
-#todo: which framerate to use for save? default uses 10 fps but then faster than real-world
-
 class recordMovie:
     """ Record a figure
     """
     def __init__(self, fig=None, filename=None, dirsave=None, fileformat='avi',
                  frameRate=None):
         """ fig or axes can be given. gif swf or avi possible
+        framerate to save depends on graphics card pc. default is 10fps, if faster than real world, use 5-7fps
         """
         # import os
         # import imageio
