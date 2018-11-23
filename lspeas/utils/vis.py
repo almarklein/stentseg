@@ -134,7 +134,8 @@ def showVesselMesh(vesselstl, ax=None, **kwargs):
     return v
 
 
-def showVolPhases(basedir, vols=None, ptcode=None, ctcode=None, cropname=None, showVol='iso', isoTh=310,
+def showVolPhases(basedir, vols=None, ptcode=None, ctcode=None, cropname=None, 
+    showVol='iso', mipIsocolor=False, isoTh=310,
             slider=False, clim=(0,3000), clim2D=(-550, 500), fname=None):
     """ showVol= mip or iso or 2D; Provide either vols or location
     """
@@ -170,6 +171,11 @@ def showVolPhases(basedir, vols=None, ptcode=None, ctcode=None, cropname=None, s
             t.parent = container
             if showVol == 'iso':
                 t.isoThreshold = isoTh    # iso or mip work well 
+                t.colormap = {'r': [(0.0, 0.0), (0.17727272, 1.0)],
+                            'g': [(0.0, 0.0), (0.27272728, 1.0)],
+                            'b': [(0.0, 0.0), (0.34545454, 1.0)],
+                            'a': [(0.0, 1.0), (1.0, 1.0)]}
+            if mipIsocolor:
                 t.colormap = {'r': [(0.0, 0.0), (0.17727272, 1.0)],
                             'g': [(0.0, 0.0), (0.27272728, 1.0)],
                             'b': [(0.0, 0.0), (0.34545454, 1.0)],
