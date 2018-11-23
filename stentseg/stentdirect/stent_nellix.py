@@ -95,7 +95,7 @@ def get_stent_likely_positions(data, th):
     return pp
 
 
-def get_mask_with_stent_likely_positions(data, th):
+def get_mask_with_stent_likely_positions(data, th, verbose=False):
     """ Get a mask image where the positions that are likely to be
     on the stent, subject to three criteria:
       * intensity above given threshold
@@ -156,7 +156,8 @@ def get_mask_with_stent_likely_positions(data, th):
             # Criterium 1B: voxel must be below upper seed th, if given
             if len(th) ==2:
                 if val > th[1]:
-                    print('Seed removed by higher th: ',(z,y,x),'ctvalue=', val)
+                    if verbose:
+                        print('Seed removed by higher th: ',(z,y,x),'ctvalue=', val)
                     continue
             
             # # Criterium 4: seed must be at least 5 voxels away from other seeds
