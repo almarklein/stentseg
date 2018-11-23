@@ -57,7 +57,7 @@ def _initaxis(axis, legend=None, xlabel=None, ylabel=None, labelsize=16,
     plt.tight_layout() # so that labels are not cut off
 
 
-def readRingExcel(sheet, ptcode, ctcode, ring='R1', motion=False, nphases=10):
+def readRingExcel(sheet, ptcode, ctcode, ring='R1', motion=False, nphases=10, locationcheck=True):
     """ To read peak and valley locations, R1 or R2, up to 24M
     """
     
@@ -177,11 +177,12 @@ def readRingExcel(sheet, ptcode, ctcode, ring='R1', motion=False, nphases=10):
         print('ctcode not known')
         ValueError
     
-    #check if indeed ant post left right by coordinates
-    R1_right, R1_left, R1_left_vectors, R1_right_vectors, R1_ant, R1_post, R1_ant_vectors, R1_post_vectors = (
-        check_left_right_ant_post(R1_left, R1_right, R1_left_vectors, R1_right_vectors, 
-                                    R1_ant, R1_post, R1_ant_vectors, R1_post_vectors,
-                                    ptcode, ctcode) )
+    if locationcheck:
+        #check if indeed ant post left right by coordinates
+        R1_right, R1_left, R1_left_vectors, R1_right_vectors, R1_ant, R1_post, R1_ant_vectors, R1_post_vectors = (
+            check_left_right_ant_post(R1_left, R1_right, R1_left_vectors, R1_right_vectors, 
+                                        R1_ant, R1_post, R1_ant_vectors, R1_post_vectors,
+                                        ptcode, ctcode) )
     
     if motion:
         return  (np.asarray(R1_ant), R1_ant_vectors,
@@ -857,7 +858,7 @@ class ExcelAnalysis():
             R2 = [el if not isinstance(el, str) else None for el in R2]
             R1mm = [el if not isinstance(el, str) else None for el in R1mm]
             R2mm = [el if not isinstance(el, str) else None for el in R2mm]
-            # get deployment% (in excel percentage is used)
+            # get deployment% not residual (in excel percentage is used as data format)
             R1 = [100*(1-el) if not el is None else None for el in R1]
             R2 = [100*(1-el) if not el is None else None for el in R2]
             
@@ -1358,7 +1359,8 @@ if __name__ == '__main__':
     patients =['LSPEAS_001', 'LSPEAS_002',	'LSPEAS_003', 'LSPEAS_005',	
                 'LSPEAS_008', 'LSPEAS_009',	'LSPEAS_011', 'LSPEAS_015',	'LSPEAS_017',	
                 'LSPEAS_018', 'LSPEAS_019', 'LSPEAS_020', 'LSPEAS_021', 'LSPEAS_022',
-                'LSPEAS_025']#, 'LSPEAS_004', 'LSPEAS_023']#, 'LSPEAS_024'] 
+                'LSPEAS_025']#, 'LSPEAS_004', 'LSPEAS_023']#, 'LSPEAS_024']
+                # is the order of reading sheets and colors in plot 
     
     # create class object for excel analysis
     foo = ExcelAnalysis() # excel locations initialized in class
