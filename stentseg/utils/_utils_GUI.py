@@ -377,6 +377,9 @@ def interactiveClusterRemoval(graph, radius=0.7, axVis=False,
     # Build meshes 
     meshes = []
     for cluster in clusters:
+        # skip single nodes as these cannot be converted with create_mesh
+        if len(cluster)==1:
+            continue
         g = graph.copy()
         for c in clusters:
             if not c == cluster: 
