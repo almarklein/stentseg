@@ -16,18 +16,19 @@ basedir = select_dir(os.getenv('LSPEAS_BASEDIR', ''),
 #                      r'E:\LSPEASF_ssdf_backup\LSPEASF_C_01')
 
 # Select dataset to register
-ptcode = 'LSPEAS_003'
+ptcode = 'LSPEAS_004'
 # ctcode, nr = 'ZA6-75-0', 1
-ctcode, nr = '24months', 2
+ctcode, nr = 'discharge', 2
 cropname = 'ring'
 
 ## Show 3D movie, by alternating the 10 volumes
 from lspeas.utils.vis import showVolPhases
 
 showVol='mip'
-t = showVolPhases(basedir, None, ptcode, ctcode, cropname, showVol=showVol, isoTh=310, slider=True  )
+t = showVolPhases(basedir, None, ptcode, ctcode, cropname, showVol=showVol, 
+        mipIsocolor=False, isoTh=310, clim=(60,3000), slider=True  )
 
-# foo = recordMovie(frameRate=10)
+foo = recordMovie(frameRate=6)
 
 ## Show 3D movie, by showing one volume that is moved by motion fields
 
