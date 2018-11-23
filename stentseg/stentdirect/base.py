@@ -90,10 +90,15 @@ class StentDirect:
             nodes.draw(**kwargs)            
             a.SetLimits()
     
-    def Step0(self, limit):
+    def Step0(self, limit=3071, type='soft'):
         """ normalize volume-- from pirt _soft_limit1()
         """
-        data = normalize_soft_limit(self._vol, limit)
+        if type=='soft':
+            data = normalize_soft_limit(self._vol, limit)
+        if type=='cutoff':
+            data = self._vol.copy()
+            volmask = self._vol[:,:,:] > limit
+            data[volmask] = limit
         self._vol = data
 
     
