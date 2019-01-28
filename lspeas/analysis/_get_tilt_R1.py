@@ -20,10 +20,11 @@ import numpy as np
 import matplotlib.pyplot as plt
 import itertools
 from matplotlib import gridspec
+from lspeas.utils import normality_shapiro
 
 exceldir = select_dir(r'C:\Users\Maaike\SURFdrive\UTdrive\LSPEAS\Analysis', 
                 r'D:\Profiles\koenradesma\SURFdrive\UTdrive\LSPEAS\Analysis')
-workbook_stent = 'LSPEAS_pulsatility_expansion_avgreg_subp_v15.6.xlsx'
+workbook_stent = 'LSPEAS_pulsatility_expansion_avgreg_subp_v2.0.xlsx'
 workbook_renal_cll = 'Peak valley displacement\\dist_peaks_valleys_cll.xlsx' # data with distances over CLL
 workbook_variables = 'LSPEAS_Variables.xlsx'
 dirsaveIm =  select_dir(r'C:\Users\Maaike\Desktop','D:\Profiles\koenradesma\Desktop')
@@ -165,6 +166,9 @@ def patient_order(type=23):
                 
     if type == 23: # from 2 to 3
         neworder = [IDorder_renal.index(el) for el in IDorder_plot]
+    
+    elif type == 32:
+        neworder = [IDorder_plot.index(el) for el in IDorder_renal]
                     
     return neworder
         
@@ -190,19 +194,21 @@ def plot_tilt_lines(exceldir, workbook_stent, workbook_renal_cll, obs='obsMK',
         tiltValleys_all.append(tiltValleys)
     
     # init figure
-    f1 = plt.figure(num=1, figsize=(11.6, 5)) # 11.6,4.6
+    f1 = plt.figure(num=1, figsize=(11.7, 5)) # 11.6,4.6 or 5
     xlabels = ['D', '1M', '6M', '12M', '24M']
     xrange = range(1,1+len(xlabels)) # not start from x=0 to play with margin xlim
     
     # init axis
-    gs = gridspec.GridSpec(1, 2, width_ratios=[1, (6.4/5.2)]) 
+    gs = gridspec.GridSpec(1, 2, width_ratios=[1, 1.3]) # 6.4/5.2
     ax1 = plt.subplot(gs[0])
-    plt.xticks(xrange, xlabels, fontsize = 14)
+    plt.xticks(xrange, xlabels)
     ax2 = plt.subplot(gs[1])
-    plt.xticks(xrange, xlabels, fontsize = 14)
+    plt.xticks(xrange, xlabels)
     
-    ax1.set_ylabel('Tilt peaks ($^\circ$)', fontsize=15)
-    ax2.set_ylabel('Tilt valleys ($^\circ$)', fontsize=15)
+    # Set the font name and size for axis tick labels
+    fontName = "Arial" # most similar to Helvetica (not available), which Matlab uses
+    ax1.set_ylabel('Tilt peaks ($^\circ$)', fontsize=15, fontname=fontName)
+    ax2.set_ylabel('Tilt valleys ($^\circ$)', fontsize=15, fontname=fontName)
     ax1.set_ylim(ylim)
     ax2.set_ylim(ylim)
     ax1.set_yticks(np.arange(0,ylim[1], 5)) # steps of 5
@@ -218,6 +224,7 @@ def plot_tilt_lines(exceldir, workbook_stent, workbook_renal_cll, obs='obsMK',
     lw = 1
     alpha = 1
     ls = '-'
+    ls2 = '--'
     
     IDlegend =['01', '02','03', '05', '08', '09','11','15','17',	
                 '18', '19', '20', '21', '22', '25']
@@ -225,11 +232,14 @@ def plot_tilt_lines(exceldir, workbook_stent, workbook_renal_cll, obs='obsMK',
                         30.5, 28, 34]
     
     # to array
-    tiltPeaks_all = np.stack(tiltPeaks_all, axis=1) # 15x(5x1) array
+    tiltPeaks_all = np.stack(tiltPeaks_all, axis=1) # 15x(5x1) array # np.stack from 1.10.0
     tiltValleys_all = np.stack(tiltValleys_all, axis=1)
     
     tiltPeaks_mean = np.nanmean(tiltPeaks_all, axis=0)
     tiltValleys_mean = np.nanmean(tiltValleys_all, axis=0)
+    
+    tiltPeaks_median = np.nanmedian(tiltPeaks_all, axis=0)
+    tiltValleys_median = np.nanmedian(tiltValleys_all, axis=0)
     
     # plot per patient the data of all CT scans
     for i, tiltPeak in enumerate(tiltPeaks_all):
@@ -255,41 +265,105 @@ def plot_tilt_lines(exceldir, workbook_stent, workbook_renal_cll, obs='obsMK',
         
         # plot tilt
         ax1.plot(xrange, tiltPeaks_all[i], ls=ls, lw=lw, marker=marker, color=color, 
-        label='%s: %s' % (patient[-2:], olb), alpha=alpha)
+        label='%s:%s' % (patient[-2:], olb), alpha=alpha)
         ax2.plot(xrange, tiltValleys_all[i], ls=ls, lw=lw, marker=marker, color=color, 
-        label='%s: %s' % (patient[-2:], olb), alpha=alpha)
+        label='%s:%s' % (patient[-2:], olb), alpha=alpha)
     # plot mean (median?)
-    ax1.plot(xrange, tiltPeaks_mean, ls=ls, lw=1.8, marker='p', color='k', 
-    label='Mean', alpha=alpha)
-    ax2.plot(xrange, tiltValleys_mean, ls=ls, lw=1.8, marker='p', color='k', 
-    label='Mean', alpha=alpha)
+    ax1.plot(xrange, tiltPeaks_median, ls=ls2, lw=2, marker='p', color='k', 
+    label='Median', alpha=alpha)
+    ax2.plot(xrange, tiltValleys_median, ls=ls2, lw=2, marker='p', color='k', 
+    label='Median', alpha=alpha)
     
-    ax2.legend(loc='upper right', fontsize=9, numpoints=1, title='Patients')
-    _initaxis([ax1, ax2])
+    # Set the font name and for axis tick labels
+    for tick in ax1.get_xticklabels():
+        tick.set_fontname(fontName)
+    for tick in ax2.get_xticklabels():
+        tick.set_fontname(fontName)
+    for tick in ax1.get_yticklabels():
+        tick.set_fontname(fontName)
+    for tick in ax2.get_yticklabels():
+        tick.set_fontname(fontName)
+    
+    ax2.legend(loc='upper right', fontsize=10, numpoints=1)
+    _initaxis([ax1, ax2], axsize=14) # sets also xtick ytick fontsize
     
     if saveFig:
         plt.savefig(os.path.join(dirsaveIm, 
-        'plot_pp_vv_tilt.png'), papertype='a0', dpi=300)
+        'plot_pp_vv_tilt.png'), papertype='a0', dpi=600)
     
     return f1, tiltPeaks_all, tiltValleys_all
 
 
 if __name__ == '__main__':
     
+    obs = 'obsMK'
+    
     if False:
         ctcode = '24M'
         # data ring
         PPVVdistances = read_distance_peaks_and_valleys(exceldir, workbook_stent)
         # data centerline renal
-        VR, PA, VL, PP = read_dist_to_renal(exceldir, workbook_renal_cll, ctcode, obs='obsMK')
+        VR, PA, VL, PP = read_dist_to_renal(exceldir, workbook_renal_cll, ctcode, obs=obs)
         # tilt calculation
         tiltPeaks, tiltValleys = tilt_peaks_valleys_centerline(PPVVdistances, 
             ctcode, VR, PA, VL, PP) # in chronologic order of pt id to plot
     
     # plot tilt all CT's
     f1, tiltPeaks_all, tiltValleys_all = plot_tilt_lines(exceldir, workbook_stent, 
-                    workbook_renal_cll, obs='obsMK', 
+                    workbook_renal_cll, obs=obs, 
                     ctcodes=['D', '1M', '6M', '12M', '24M'], 
                     ylim=[-0.3,46], saveFig=True)
+    
+    #normality check
+    # normality_check(tiltPeaks_all[:,0,:]) # per ctcode
+    
+    # Get median
+    if False:
+        # pt 21 separate
+        tiltPeaks_all[12,:,:] = np.nan
+        tiltValleys_all[12,:,:] = np.nan
+    # peaks
+    mediantiltp = np.nanmedian(tiltPeaks_all, axis=0)
+    q1p = np.nanpercentile(tiltPeaks_all, 25, axis=0)
+    q3p = np.nanpercentile(tiltPeaks_all, 75, axis=0)
+    mintiltp = np.nanmin(tiltPeaks_all, axis=0)
+    maxtiltp = np.nanmax(tiltPeaks_all, axis=0)
+    # valleys
+    mediantiltv = np.nanmedian(tiltValleys_all, axis=0)
+    q1v = np.nanpercentile(tiltValleys_all, 25, axis=0)
+    q3v = np.nanpercentile(tiltValleys_all, 75, axis=0)
+    mintiltv = np.nanmin(tiltValleys_all, axis=0)
+    maxtiltv = np.nanmax(tiltValleys_all, axis=0)
+    # for paper from spss; different values for quartiles
+    
+    # get change from discharge
+    tiltPeaks_all_change = [tiltpeaks - tiltpeaks[0] for tiltpeaks in tiltPeaks_all]
+    tiltValleys_all_change = [tiltvalleys - tiltvalleys[0] for tiltvalleys in tiltValleys_all]
+    
+    # save to mat var to copy to spss
+    import scipy.io
+    if True:
+        # order as renal distance sheet order
+        tiltPeaks_all = [tiltPeaks_all[i] for i in patient_order(type=32)]
+        tiltValleys_all = [tiltValleys_all[i] for i in patient_order(type=32)]
+        tiltPeaks_all_change = [tiltPeaks_all_change[i] for i in patient_order(type=32)]
+        tiltValleys_all_change = [tiltValleys_all_change[i] for i in patient_order(type=32)]
         
+        storemat = os.path.join(dirsaveIm, 'tilt_peaks_valleys_from_python.mat')
+        storevar = dict()
+        storevar['tiltPeaks_all'] = tiltPeaks_all
+        storevar['tiltValleys_all'] = tiltValleys_all
+        storevar['tiltPeaks_all_change'] = tiltPeaks_all_change
+        storevar['tiltValleys_all_change'] = tiltValleys_all_change
+        
+        storevar['workbook_renal_cll'] = workbook_renal_cll
+        storevar['obs'] = obs
+        storevar['workbook_stent'] = workbook_stent
+        scipy.io.savemat(storemat,storevar)
+        print('')
+        print('centerline2 was stored as.mat to {}'.format(storemat))
+        print('')
+        
+    
+    
     
