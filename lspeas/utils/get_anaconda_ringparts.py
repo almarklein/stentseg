@@ -191,3 +191,78 @@ def identify_peaks_valleys(midpoints_peaks_valleys, model, vol, vis=True):
     
     return R1_left,R2_left,R1_right,R2_right,R1_ant,R2_ant,R1_post,R2_post
 
+def save_model_in_ssdf(s, newmodel, basedir, ptcode, ctcode, cropname, modelname, what='avgreg'):
+    """ save model by replacing the model in the provided ssdf
+    e.g. modelname = 'model_R1'
+    e.g. save_model_in_ssdf(s, model_R1, basedir, ptcode, ctcode, cropname, 'modelR1')
+    """
+    # replace model
+    s.model = newmodel.pack()
+    # Save
+    filename = '%s_%s_%s_%s.ssdf' % (ptcode, ctcode, cropname, modelname+what)
+    ssdf.save(os.path.join(basedir, ptcode, filename), s)
+    print('saved to disk in {} as {}.'.format(basedir, filename) )
+
+if __name__ == '__main__':
+    import os
+    import visvis as vv
+    from stentseg.utils.datahandling import select_dir, loadvol, loadmodel
+    import numpy as np
+    from stentseg.utils import PointSet
+    from stentseg.stentdirect import stentgraph
+    from stentseg.stentdirect.stentgraph import create_mesh
+    from stentseg.utils.visualization import show_ctvolume
+    from visvis import ssdf
+    
+    # Select the ssdf basedir
+    basedir = select_dir(os.getenv('LSPEAS_BASEDIR', ''),
+                        r'D:\LSPEAS\LSPEAS_ssdf', r'F:\LSPEAS_ssdf_backup')
+    
+    # Select dataset to register
+    ptcode = 'LSPEAS_002'
+    ctcode = 'discharge'
+    cropname = 'ring'
+    modelname = 'modelavgreg'
+    
+    # Load the stent model and mesh
+    s = loadmodel(basedir, ptcode, ctcode, cropname, modelname)
+    model = s.model
+    model2 = model.copy()
+    
+    # Load static CT image to add as reference
+    s2 = loadvol(basedir, ptcode, ctcode, cropname, 'avgreg')
+    vol = s2.vol
+    
+    f = vv.figure(1); vv.clf()
+    a = vv.subplot(1,2,1)
+    a.axis.axisColor = 1,1,1
+    a.axis.visible = False
+    a.bgcolor = 0,0,0
+    a.daspect = 1, 1, -1
+    t = vv.volshow(vol, clim=(0, 2500), renderStyle='mip')
+    # model.Draw(mc='b', mw = 10, lc='g')
+    vv.xlabel('x (mm)');vv.ylabel('y (mm)');vv.zlabel('z (mm)')
+    vv.title('Model for LSPEAS %s  -  %s' % (ptcode[7:], ctcode))
+    
+    # get hooks and struts
+    model_struts, model_hooks, model_R1R2, model_h_s, model_noHooks = get_model_struts(model, nstruts=8)
+    # model_hooks.Draw(mc='r', mw = 10, lc='r')
+    model_noHooks.Draw(mc='b', mw = 10, lc='b')
+    # model_struts.Draw(mc='m', mw = 10, lc='m')
+    
+    a2 = vv.subplot(1,2,2)
+    a2.axis.axisColor = 1,1,1
+    a2.axis.visible = False
+    a2.bgcolor = 0,0,0
+    a2.daspect = 1, 1, -1
+    t2 = vv.volshow(vol, clim=(0, 2500), renderStyle='mip')
+    vv.xlabel('x (mm)');vv.ylabel('y (mm)');vv.zlabel('z (mm)')
+    vv.title('Model for LSPEAS %s  -  %s' % (ptcode[7:], ctcode))
+    
+    # gets rings separate
+    model_R1, model_R2 = get_model_rings(model_R1R2)
+    model_R1.Draw(mc='y', mw = 10, lc='y')
+    model_R2.Draw(mc='c', mw = 10, lc='c')
+    
+    
+    
