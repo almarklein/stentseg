@@ -1,48 +1,43 @@
 """ Store segmentation result to ssdf
 
 """
-
-
-## Store segmentation to disk
+from lspeas.utils.storesegmentation import save_segmentation, add_segmentation_ssdf
 
 # Get graph model
 model = sd._nodes3
 seeds = sd._nodes1
 
-# Build struct
-s2 = vv.ssdf.new()
-# We do not need croprange, but keep for reference
-s2.sampling = s.sampling
-s2.origin = s.origin
-s2.stenttype = s.stenttype
-s2.croprange = s.croprange
-for key in dir(s):
-        if key.startswith('meta'):
-            suffix = key[4:]
-            s2['meta'+suffix] = s['meta'+suffix]
-s2.what = what
-s2.params = p
-s2.stentType = stentType
-# Store model
-s2.model = model.pack()
-s2.seeds = seeds.pack()
-#s2.mesh = ssdf.new()
+## Store segmentation to disk
 
-# Save
-filename = '%s_%s_%s_%s.ssdf' % (ptcode, ctcode, cropname, 'model'+what)
-ssdf.save(os.path.join(basedir, ptcode, filename), s2)
-print('saved to disk in {} as {}.'.format(basedir, filename) )
+save_segmentation(basedir, ptcode, ctcode, cropname, seeds, model, s, 
+                      stentType=stentType, what=what, params=p)
 
 
-## Make model dynamic (and store/overwrite to disk)
+
+## To add to existing ssdf as seperate graph in ssdf
+graphname =  'spine' # 'branch_sma_dist'
+params = p
+add_segmentation_ssdf(basedir, ptcode, ctcode, cropname, seeds, model,  
+                        graphname, modelname='modelavgreg', 
+                        stentType=stentType, params=params)
+
+
+                        
+## To add to existing graph in saved ssdf (merge with existing model)
+add_segmentation_graph(basedir, ptcode, ctcode, cropname, seeds, model, 
+                       graphname='', modelname='modelavgreg')
+
+
+
+## Make model dynamic (load and store/overwrite to disk)
 
 import pirt
 from stentseg.motion.dynamic import incorporate_motion_nodes, incorporate_motion_edges 
 from visvis import ssdf 
 
+#todo: create function in save_segmentation
 # Load deforms
 s = loadvol(basedir, ptcode, ctcode, cropname, 'deforms')
-# deforms = [s['deform%i'%(i*10)] for i in range(10)]
 deformkeys = []
 for key in dir(s):
     if key.startswith('deform'):
@@ -53,15 +48,22 @@ paramsreg = s.params
 
 # Load model
 s = loadmodel(basedir, ptcode, ctcode, cropname, 'model'+what)
-model = s.model
-
-# Combine ...
-incorporate_motion_nodes(model, deforms, s.origin) # adds deforms PointSets
-incorporate_motion_edges(model, deforms, s.origin) # adds deforms PointSets
-
+for key in dir(s):
+    if key.startswith('model'):
+        model = s[key]
+    
+        # Combine ...
+        incorporate_motion_nodes(model, deforms, s.origin) # adds deforms PointSets
+        incorporate_motion_edges(model, deforms, s.origin) # adds deforms PointSets
+    
+        s[key] = model.pack()
+    
+    # also pack seeds before save
+    if key.startswith('seeds'):
+        s[key] = s[key].pack()
+        
 # Save back
 filename = '%s_%s_%s_%s.ssdf' % (ptcode, ctcode, cropname, 'model'+what)
-s.model = model.pack()
 s.paramsreg = paramsreg
 ssdf.save(os.path.join(basedir, ptcode, filename), s)
 print('saved dynamic to disk in {} as {}.'.format(basedir, filename) )
