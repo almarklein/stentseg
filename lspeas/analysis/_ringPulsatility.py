@@ -30,8 +30,8 @@ exceldir = select_dir(r'C:\Users\Maaike\Desktop',
             r'D:\Profiles\koenradesma\Desktop')
 
 # Select dataset to register
-ptcode = 'LSPEAS_004'
-ctcode = '12months'
+ptcode = 'LSPEAS_023'
+ctcode = '24months'
 cropname = 'ring'
 modelname = 'modelavgreg'
 
@@ -292,12 +292,6 @@ def on_key(event):
         storeOutputToExcel(storeOutput,exceldir)
         for node_point in node_points:
             node_point.visible = False # show that store is ready
-    if event.text == 'z':
-        # axes not visible
-        _utils_GUI.AxesVis([a])
-    if event.text == 'x':
-        # exes visible
-        _utils_GUI.AxesVis([a], axVis=True)
 
 
 def get_midpoint_deforms_edge(model, n1, n2):
@@ -468,10 +462,11 @@ def storeOutputToExcel(storeOutput, exceldir):
 # Bind event handlers
 fig.eventKeyDown.Bind(on_key)
 _utils_GUI.node_points_callbacks(node_points, selected_nodes, t0=t0) # bind callback functions to node points
+fig.eventKeyDown.Bind(lambda event: _utils_GUI.ViewPresets(event) )
 
 # Print user instructions
 print('')
 print('n = add node to click from graph point closest to [picked point]')
 print('Enter = get distance between selected nodes and/or midpoints')
 print('Esc = finish analysis, STORE TO EXCEL desktop')
-print('z/x = axis invisible/visible')
+print('x = axis invisible/visible')
