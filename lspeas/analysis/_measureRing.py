@@ -427,11 +427,11 @@ if __name__ == '__main__':
         vis3Dfit(fittedR1R2,vol,model,ptcode,ctcode,showAxis,showVol=showVol, clim=clim0, isoTh=isoTh)
         a1.camera = a2.camera = a3.camera
         a1b = vv.subplot(2,3,4)
-        vis2Dfit(fittedR1)
+        vis2Dfit(fittedR1,ptcode, ctcode, showAxis)
         a2b = vv.subplot(2,3,5)
-        vis2Dfit(fittedR2)
+        vis2Dfit(fittedR2,ptcode, ctcode, showAxis)
         a3b = vv.subplot(2,3,6)
-        vis2Dfit(fittedR1R2)    
+        vis2Dfit(fittedR1R2,ptcode, ctcode, showAxis)    
         # cyclic change
         A_R1 = calculateAreaChange(R1, 'R1')
         A_R2 = calculateAreaChange(R2, 'R2')
