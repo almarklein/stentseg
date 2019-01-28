@@ -1,5 +1,5 @@
 """ Use modified cropper tool from visvis to crop data.
-Bypass and error in crop3d
+Bypass and error in cropper.crop3d
 """
 
 import imageio
@@ -68,23 +68,15 @@ def crop3d(vol, fig=None):
     return vol2
 
 
+def cropvol(vol, fig=None):
+    """ run crop3d and check if volume was cropped
+    """
+    vol2 = crop3d(vol, fig) # use local while error with cropper.crop3d
+    # check crop shape
+    if vol2.shape == vol.shape:
+        print('User did not crop')
+    return vol2
 
-if False:
-    # Read data
-    vols2 = [vol2 for vol2 in imageio.get_reader(dicom_dir, 'DICOM', 'V')] 
-    vol1 = vols[0] 
-    
-    # Crop
-    vol2 = crop3d(vol1)
-    
-    # Vis
-    fig = vv.figure(); vv.clf()
-    a1 = vv.subplot(111)
-    a1.daspect = 1, 1, -1
-    t1 = vv.volshow(vol2, clim=(0, 2500), renderStyle='mip') # iso or mip
-    # t1 = vv.volshow2(vol2, clim=(-500, 500))
-    vv.xlabel('x'), vv.ylabel('y'), vv.zlabel('z')
-    
 
 
 
