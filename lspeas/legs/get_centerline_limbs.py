@@ -26,8 +26,8 @@ basedirstl = select_dir(r'D:\Profiles\koenradesma\SURFdrive\UTdrive\LSPEAS\Analy
 basedirstl2 = r'D:\Profiles\koenradesma\SURFdrive\UTdrive\MedDataMimics\LSPEAS_Mimics\Tests'
 
 # Select dataset
-ptcode = 'LSPEAS_022'
-ctcode = '1month'
+ptcode = 'LSPEAS_008'
+ctcode = '12months'
 cropname = 'stent'
 
 showAxis = False  # True or False
@@ -45,11 +45,11 @@ if TEST == 1:
     s2 = loadmodel_location(targetdir, ptcode, ctcode, cropname)
     pp = points_from_nodes_in_graph(s2.model)
     
-    # start1 = (170.8, 158.0, 177.4) # x,y,z - distal point
-    # end1 = (154.9, 125.7, 86.6)
+    start1 = (170.8, 158, 177.4) # x,y,z - distal point
+    end1 = (154.9, 125.7, 86.6)
     # 022 - 1m
-    start1 = (109.4, 76.849998, 67.100006) 
-    end1 = (108.1, 107.3, 190.3)
+    # start1 = (109.4, 76.849998, 67.100006) 
+    # end1 = (108.1, 107.3, 190.3)
     # mid1 = (88.936852, 80.889778, 181.28984)
     # 021 - 6m
     # start1 = (130.60001, 89.050003, 74.699997) 
@@ -97,7 +97,7 @@ vv.plot(pp, ms='.', ls='', alpha=0.2, mw = 7) # stent seed points
 vv.plot(PointSet(list(start1)), ms='.', ls='', mc='g', mw=18) # start1
 vv.plot(PointSet(list(end1)), ms='.', ls='', mc='m', mw=16)
 vv.plot(centerline1, ms='.', ls='', mw=8, mc='c')
-vv.plot(centerline2, ms='.', ls='', mw=8, mc='y')
+vv.plot(centerline2, ms='.', ls='', mw=8, mc='y') # smoothed
 a1.axis.visible = showAxis
 a1.daspect = 1,1,-1
 
