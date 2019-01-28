@@ -1,6 +1,6 @@
-""" Script to do the obtain the centerline of a ring and store the result.
+""" Script to analyze distances between segmented rings
 
-Jaimy Simmering Graduation Technical Medicine
+Jaimy Simmering Graduation Project Technical Medicine 2018
 """
 
 import os
