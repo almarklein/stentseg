@@ -44,3 +44,20 @@ class MyDialog(QDialog): # QtGui.QDialog):
 # m.show()
 # m.exec_()
 # nr_of_stents = int(m.edit.text())
+
+def get_index_name():
+    try:
+        from PyQt5 import QtCore, QtGui # PyQt5; conda install pyqt
+        from PyQt5.QtWidgets import QApplication
+        app = QApplication([])
+    except ImportError:
+        from PySide import QtCore, QtGui # PySide2
+        from PySide.QtGui import QApplication
+    from stentseg.apps.ui_dialog import MyDialog
+    
+    # Gui for input name
+    m = MyDialog()
+    m.show()
+    m.exec_()
+    dialog_output = m.edit.text()
+    return dialog_output  
