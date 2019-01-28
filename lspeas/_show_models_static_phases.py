@@ -11,7 +11,7 @@ from pirt.utils.deformvis import DeformableTexture3D, DeformableMesh
 from stentseg.utils.visualization import show_ctvolume,DrawModelAxes
 from stentseg.stentdirect.stentgraph import create_mesh
 from stentseg.motion.vis import create_mesh_with_abs_displacement
-from get_anaconda_ringparts import get_model_struts, get_model_rings
+from lspeas.utils.get_anaconda_ringparts import get_model_struts, get_model_rings
 from stentseg.motion.vis import get_graph_in_phase
 import pirt
 
@@ -20,18 +20,18 @@ basedir = select_dir(r'D:\LSPEAS\LSPEAS_ssdf',
                      r'F:\LSPEAS_ssdf_backup',r'G:\LSPEAS_ssdf_backup')
 
 # Select dataset to register
-ptcode = 'QRM_FANTOOM_20160121'
+ptcode = 'LSPEAS_002'
 # codes = ctcode1, ctcode2, ctcode3, ctcode4 = 'discharge', '1month', '6months', '12months'
 # codes = ctcode1, ctcode2, ctcode3 = 'discharge', '1month', '6months'
 # codes = ctcode1, ctcode2 = 'discharge', '1month'
-codes = ctcode1 = 'ZA3-75-1.2'
+codes = ctcode1 = 'discharge'
 cropname = 'ring'
-modelname = 'modelavgreg'
+modelname = 'modelR1avgreg'
 
 showAxis = False  # True or False
 showVol  = 'MIP'  # MIP or ISO or 2D or None
 ringpart = None # R1=1 ; R2=2 ; None = all
-phases =  [9] # range(10) for all 10 phases; [3,9] for 30% and 90%
+phases =  range(10) # range(10) for all 10 phases; [3,9] for 30% and 90%
 meshWithColors = False
 showmodelavgreg = False # show also model in avgreg at mid cycle?
 
