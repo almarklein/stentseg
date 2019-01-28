@@ -53,9 +53,20 @@ alpha = 0.8
 #             label = DrawModelAxes(sd._nodes1, vol, a1, clim=clim, showVol=showVol) # lc, mc
 #             a1.SetView(view)
 
-def ViewPresets(event, axis=None):
+def AxesVis(axes):
+    """ Axis input list with axes
+    show or hide axes
+    """
+    switch = axes[0].axis.visible
+    for ax in axes:
+        if switch == True:
+            ax.axis.visible = False
+        else:
+            ax.axis.visible = True
+
+def ViewPresets(event, axis=None, keyboard=['1', '2', '3', '4', '5']):
     """ View presets for anatomic views: anterior, posterior, left, right, top,
-    bottom. 1, 2.. keys
+    bottom. 1, 2.. keys or provide keyboard keys
     Can be used with f.eventKeyDown.Bind(lambda event: _utils_GUI.ViewPresets(event, [a1, a2]) )
     """
     if axis is None:
@@ -65,24 +76,24 @@ def ViewPresets(event, axis=None):
         view = ax.GetView()
         view['roll'] = 0
         # sagital LR
-        if event.text == '1':
+        if event.text == keyboard[0]:
             view['azimuth'] = 90
             view['elevation'] = 0
         # posterior
-        elif event.text == '2':
+        elif event.text == keyboard[1]:
             view['azimuth'] = 0
             view['elevation'] = 0
         # sagital RL
-        elif event.text == '3':
+        elif event.text == keyboard[2]:
             view['azimuth'] = -90
             view['elevation'] = 0
-        elif event.text == '4':
+        elif event.text == keyboard[3]:
             view['azimuth'] = -180
             view['elevation'] = 90
-        elif event.text == '5':
+        elif event.text == keyboard[4]:
             view['azimuth'] = 0
             view['elevation'] = -90
-        elif event.text == 'v':
+        elif event.text == 'z':
             view['zoom'] = 0.0198
         ax.SetView(view)
     if event.text == 'x':
@@ -110,18 +121,8 @@ def ShowHideSlider(event, c):
             else:
                 c.visible = True
 
-def AxesVis(axis):
-    """ Axis input list with axes
-    show or hide axes
-    """
-    switch = axis[0].axis.visible
-    for ax in axis:
-        if switch == True:
-            ax.axis.visible = False
-        else:
-            ax.axis.visible = True
 
-def RotateView(event, axis=None):
+def RotateView(event, axis=None, axishandling=True):
     """ Rotate view in axes given in list axis. Use a and d keys 
     If axis is not given, current axes is used
     Can be used with f.eventKeyDown.Bind(lambda event: _utils_GUI.RotateView(event, [a1, a2]) )
@@ -164,9 +165,10 @@ def RotateView(event, axis=None):
             plus1 = view['loc'][-1] - 5 # shift in z
             view['loc'] = (view['loc'][0],view['loc'][1],plus1)
         ax.SetView(view)
-    if event.text == 'x':
-        # axes visible or hide
-        AxesVis(axis)
+    if axishandling:
+        if event.text == 'x':
+            # axes visible or hide
+            AxesVis(axis)
 
 
 def node_points_callbacks(node_points, selected_nodes, pick=True, t0=None):
@@ -197,12 +199,12 @@ def pick_node(event, t0):
 def unpick_node(event, t0):
     t0.text = '\b{Node nr|location}: '
 
-def remove_nodes_by_selected_point(graph, vol, axes, label, clim, dim=1, **kwargs):
+def remove_nodes_by_selected_point(graph, vol, axes, label, clim, location='posterior', **kwargs):
     """ removes nodes and edges in graph. Graph is separated by coord of selected point
-    use y (dim=1) to remove graph in spine
+    use location to define what to remove, e.g. posterior to remove nodes in spine
     Input : graph, axes, label of selected point, 
             dimension how to separate graph
-    Output: sd._nodes1,2,3  are modified and visualized in current view
+    Output: graph is modified locally and visualized in current view
     """
     from stentseg.utils.picker import pick3d, label2worldcoordinates
     from stentseg.utils.visualization import DrawModelAxes
@@ -211,9 +213,27 @@ def remove_nodes_by_selected_point(graph, vol, axes, label, clim, dim=1, **kwarg
         print('No nodes removed, graph is NoneType')
         return
     coord1 = np.asarray(label2worldcoordinates(label), dtype=np.float32) # x,y,z
-    seeds = np.asarray(sorted(graph.nodes(), key=lambda x: x[dim])) # sort y
-    falseindices = np.where(seeds[:,1]>coord1[1]) # indices with values higher than coord y
-    falseseeds = seeds[min(falseindices[0]):]
+    if location == 'posterior':
+        seeds = np.asarray(sorted(graph.nodes(), key=lambda x: x[1])) # sort dim small to large
+        falseindices = np.where(seeds[:,1]>coord1[1]) # tuple wih array of indices with values higher than coord y = 1
+    if location == 'anterior':
+        seeds = np.asarray(sorted(graph.nodes(), key=lambda x: x[1])) 
+        falseindices = np.where(seeds[:,1]<coord1[1])
+    elif location == 'proximal':
+        seeds = np.asarray(sorted(graph.nodes(), key=lambda x: x[2]))
+        falseindices = np.where(seeds[:,2]<coord1[2]) # dim z = 2; origin proximal
+    elif location == 'distal':
+        seeds = np.asarray(sorted(graph.nodes(), key=lambda x: x[2]))
+        falseindices = np.where(seeds[:,2]>coord1[2]) # dim z = 2
+    elif location == 'left':
+        seeds = np.asarray(sorted(graph.nodes(), key=lambda x: x[0]))
+        falseindices = np.where(seeds[:,0]>coord1[0])
+    elif location == 'right':
+        seeds = np.asarray(sorted(graph.nodes(), key=lambda x: x[0]))
+        falseindices = np.where(seeds[:,0]<coord1[0])
+    # get seeds for removal by indices
+    falseseeds = seeds[falseindices[0]]    
+    # remove from graph
     graph.remove_nodes_from(tuple(map(tuple, falseseeds)) ) # use map to convert to tuples
     view = axes.GetView()
     axes.Clear()
