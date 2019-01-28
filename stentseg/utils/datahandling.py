@@ -104,7 +104,7 @@ def loadmesh(basedirMesh,ptcode,meshname, invertZ=True):
     return mesh
 
 
-def loadvol(basedir, ptcode, ctcode=None, cropname=None, what='phases', fname=None):
+def loadvol(basedir, ptcode=None, ctcode=None, cropname=None, what='phases', fname=None):
     """ Load volume data. An ssdf struct is returned. The volumes
     are made into Aarray's with their sampling and origin set.
     """
@@ -136,6 +136,12 @@ def loadmodel(basedir, ptcode, ctcode, cropname, modelname='modelavgreg'):
             model = stentgraph.StentGraph()
             model.unpack(s[key])
             s[key] = model
+        # also unpack seeds if exist 
+        #(mind that also seeds need to be packed before save is possible again)
+        if key.startswith('seeds'):
+            seeds = stentgraph.StentGraph()
+            seeds.unpack(s[key])
+            s[key] = seeds
     return s
 
 def loadmodel_location(basedir, ptcode, ctcode, cropname, modelname='stentseedsavgreg'):
