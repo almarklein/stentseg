@@ -6,9 +6,9 @@ from stentseg.stentdirect.stentgraph import create_mesh
 
 ## Rerun step 3 without removing nodes
 
-sd.Step3(cleanNodes=False) # False when using GUI with restore: clean nodes and smooth after correct/restore
 # p.graph_minimumClusterSize = 1
 # sd._params = p
+sd.Step3(cleanNodes=False) # False when using GUI with restore: clean nodes and smooth after correct/restore
 
 ## Visualize with GUI
 
@@ -167,7 +167,9 @@ def on_key(event):
         stentgraph.smooth_paths(sd._nodes3, 1)
         view = a3.GetView()
         a3.Clear()
-        DrawModelAxes(vol, sd._nodes3, a3, meshColor='g', clim=clim, showVol=showVol, lc='w', mw=8, lw=0.2, climEditor=False)
+        DrawModelAxes(vol, sd._nodes3, a3, clim=clim, showVol=showVol, mw=8, lw=0.2, climEditor=False)
+        node_points = _utils_GUI.interactive_node_points(sd._nodes3, scale=0.6)
+        _utils_GUI.node_points_callbacks(node_points, selected_nodes, pick=False)
         a3.SetView(view)
     if event.text == 'e':
         # smooth selected edge
@@ -199,7 +201,7 @@ node_points = _utils_GUI.interactive_node_points(sd._nodes3, scale=0.6)
 selected_nodes = list()
 # Bind event handlers
 fig.eventKeyDown.Bind(on_key)
-fig.eventKeyDown.Bind(lambda event: _utils_GUI.RotateView(event, [a2,a3]) )
+fig.eventKeyDown.Bind(lambda event: _utils_GUI.ViewPresets(event, [a2,a3], keyboard=['6', '7', '8', '9', '0'] ) )
 _utils_GUI.node_points_callbacks(node_points, selected_nodes, pick=False)
 print('')
 print('UP/DOWN = show/hide nodes')
@@ -207,7 +209,7 @@ print('ENTER   = restore edge [select 2 nodes]')
 print('DELETE  = remove edge [select 2 ndoes] or pop node [select 1 node]')
 print('ALT     = clean nodes: crossings, pop, corner, tails, clusters<3')
 print('ESCAPE  = FINISH: refine, smooth')
-print('z/x/a/d = axis invisible/visible/rotate')
+print('x and a/d = axis invisible/visible and rotate')
 print('q       = activate "interactiveClusterRemoval"')
 print('s       = additional smooth')
 print('e       = smooth selected edge')
