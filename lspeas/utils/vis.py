@@ -10,7 +10,8 @@ from stentseg.utils.centerline import points_from_mesh
 from stentseg.utils import _utils_GUI
 from stentseg.utils.datahandling import select_dir, loadvol, loadmodel
 
-def showModel3d(basedir,ptcode, ctcode, cropname='ring', showVol='MIP',showmodel=True,**kwargs):
+def showModel3d(basedir,ptcode, ctcode, cropname='ring', showVol='MIP',
+    showmodel=True, graphname='model', **kwargs):
     """ show model and vol in 3d by mip iso or 2D
     """
     s = loadmodel(basedir, ptcode, ctcode, cropname, modelname='modelavgreg')
@@ -30,13 +31,19 @@ def showModel3d(basedir,ptcode, ctcode, cropname='ring', showVol='MIP',showmodel
     label = pick3d(a, vol)
     vv.xlabel('x (mm)');vv.ylabel('y (mm)');vv.zlabel('z (mm)')
     if showmodel:
-        s.model.Draw(mc='b', mw = 5, lc='g', alpha = 0.5)
+        if graphname == 'all':
+            for key in dir(s):
+                if key.startswith('model'):
+                    s[key].Draw(mc='b', mw = 5, lc='g', alpha = 0.5)
+        else:
+            s[graphname].Draw(mc='b', mw = 5, lc='g', alpha = 0.5)
+            
     vv.title('Model for LSPEAS %s  -  %s' % (ptcode[8:], ctcode))
     
-    f.eventKeyDown.Bind(lambda event: _utils_GUI.RotateView(event, [a]) )
+    # f.eventKeyDown.Bind(lambda event: _utils_GUI.RotateView(event, [a]), axishandling=False)
     f.eventKeyDown.Bind(lambda event: _utils_GUI.ViewPresets(event, [a]) )
     
-    return f, a, label
+    return f, a, label, s
 
 def showModelsStatic(ptcode,codes, vols, ss, mm, vs, showVol, clim, isoTh, clim2, 
     clim2D, drawMesh=True, meshDisplacement=True, drawModelLines=True, 
@@ -55,7 +62,10 @@ def showModelsStatic(ptcode,codes, vols, ss, mm, vs, showVol, clim, isoTh, clim2
     else:
         lc = 'g'
     # create subplots
-    if codes == (codes[0],codes[1]):
+    if isinstance(codes, str): # if 1 ctcode, otherwise tuple of strings
+        a1 = vv.subplot(111)
+        axes = [a1]
+    elif codes == (codes[0],codes[1]):
         a1 = vv.subplot(121)
         a2 = vv.subplot(122)
         axes = [a1,a2]
@@ -101,7 +111,12 @@ def showModelsStatic(ptcode,codes, vols, ss, mm, vs, showVol, clim, isoTh, clim2
                 cb = vv.colorbar(ax)
                 cbars.append(cb)
             elif meshColor is not None:
-                m.faceColor = meshColor #'g'
+                if len(meshColor) == 1:
+                    m.faceColor = meshColor[0] # (0,1,0,1)
+                else:
+                    m.faceColor = meshColor[i]
+            else:
+                m.faceColor = 'g'
     if drawVessel:
         for i, ax in enumerate(axes):
             v = showVesselMesh(vs[i], ax)
@@ -130,7 +145,7 @@ def showVesselMesh(vesselstl, ax=None, **kwargs):
     # ppvessel = points_from_mesh(vesselstl, invertZ = False) # removes duplicates
     # vv.plot(ppvessel, ms='.', ls='', mc= 'r', alpha=0.2, mw = 7, axes = ax)
     v = vv.mesh(vesselstl, axes=ax)
-    v.faceColor = (1,0,0,0.6)
+    v.faceColor = (1,0,0,0.4) # alpha 0.6
     return v
 
 
