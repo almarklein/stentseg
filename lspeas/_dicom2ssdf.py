@@ -10,32 +10,6 @@ import imageio
 from stentseg.utils.datahandling import select_dir, loadvol
 from stentseg.utils.datahandling import savecropvols, saveaveraged, cropaveraged
 
-
-# Select base directory for LOADING DICOM data
-
-# The stentseg datahandling module is agnostic about where the DICOM data is
-dicom_basedir = select_dir(r'E:\LSPEAS_data\ECGgatedCT',
-                            'D:\LSPEAS\LSPEAS_data_BACKUP\ECGgatedCT')
-# dicom_basedir = select_dir(r'D:\LSPEAS_F\CT_dicom')
-
-# Select the ssdf basedir for SAVING
-basedir = select_dir(os.getenv('LSPEAS_BASEDIR', ''),
-                     r'D:\LSPEAS\LSPEAS_ssdf',
-                     r'F:\LSPEAS_ssdf_toPC')
-# basedir = select_dir(r'D:\LSPEAS_F\LSPEASF_ssdf')
-
-# Params Step A, B, C
-ctcode = '24months'  # 'pre', 'discharge', '1month', '6months', '12months', x_Profx_Water_
-ptcode = 'LSPEAS_024'  # LSPEAS_00x or FANTOOM_xxx or LSPEASF_C_01
-stenttype = 'excluder'         # 'anaconda 'or 'endurant' or 'excluder'
-dicomStructure = 'imaFolder' # 'dcmFolders' or 'imaFolder' or 'imaFolders' or 'imaFEVAR' - different output data structure
-
-# Params Step B, C (to save)
-cropnames = ['ring', 'stent']    # save crops of stent and/or ring
-# cropnames = ['ringFOV128'] 
-# C: start and end phase in cardiac cycle to average (50,90=5 phases;70,20=6)
-phases = 70, 20 # 60,10    70,20
-
 # todo: use imageio.mvolread instead when fixed
 def readdcm(dirname):
     """ Function to read volumes while imageio suffers from "too may
@@ -72,6 +46,32 @@ def readdcm(dirname):
         print(vol.meta.SeriesDescription)
     
     return vols  
+
+
+# Select base directory for LOADING DICOM data
+
+# The stentseg datahandling module is agnostic about where the DICOM data is
+dicom_basedir = select_dir(r'F:\LSPEAS_data\ECGgatedCT',
+                            'D:\LSPEAS\LSPEAS_data_BACKUP\ECGgatedCT')
+# dicom_basedir = select_dir(r'D:\LSPEAS_F\CT_dicom')
+
+# Select the ssdf basedir for SAVING
+basedir = select_dir(os.getenv('LSPEAS_BASEDIR', ''),
+                     r'D:\LSPEAS\LSPEAS_ssdf',
+                     r'F:\LSPEAS_ssdf_toPC')
+# basedir = select_dir(r'D:\LSPEAS_F\LSPEASF_ssdf')
+
+# Params Step A, B, C
+ctcode = '6months'  # 'pre', 'discharge', '1month', '6months', '12months', x_Profx_Water_
+ptcode = 'LSPEAS_001'  # LSPEAS_00x or FANTOOM_xxx or LSPEASF_C_01
+stenttype = 'anaconda'         # 'anaconda 'or 'endurant' or 'excluder'
+dicomStructure = 'dcmFolders' # 'dcmFolders' or 'imaFolder' or 'imaFolders' or 'imaFEVAR' - different output data structure
+
+# Params Step B, C (to save)
+cropnames = ['ring', 'stent']    # save crops of stent and/or ring
+# cropnames = ['ringFOV128'] 
+# C: start and end phase in cardiac cycle to average (50,90=5 phases;70,20=6)
+phases = 70, 20 # 60,10    70,20
 
 
 ## Perform the steps A,B,C
@@ -143,6 +143,8 @@ if dicomStructure == 'imaFEVAR':
         print(vol.meta.sampling)
         assert vol.shape == volsphases[0].shape
         assert vol.meta.SeriesTime == volsphases[0].meta.SeriesTime
+    for i, vol in enumerate(volsphases):
+        print(vol.meta.SeriesDescription)
 
 ## Step B: Crop and Save SSDF
 for cropname in cropnames:
