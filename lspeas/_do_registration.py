@@ -85,7 +85,8 @@ for ptcode in ptcodes:
                 fields = [field for field in reg.get_deform(i).as_backward()]
                 s2['deform%i'%phase] = fields
             s2.sampling = s2.deform0[0].sampling  # Sampling of deform is different!
-            # s2.origin = s2.deform0[0].origin  # But origin is zero
+            #s2.origin = s2.deform0[0].origin  # But origin is zero
+            s2.originDeforms = s2.deform0[0].origin  # But origin is zero
             s2.params = reg.params
             
             # Save
