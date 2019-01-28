@@ -106,6 +106,8 @@ def getDefaultParams(stentType=''):
         params.graph_expectedNumberOfEdges = 2
     elif stentType == 'nellix':
         params.graph_expectedNumberOfEdges = 2
+    elif stentType == 'branch':
+        params.graph_expectedNumberOfEdges = 2
     elif stentType:
         raise ValueError('Unknown stent type %s' % stentType)
 
@@ -122,6 +124,8 @@ def initStentDirect(stentType, vol, p):
     elif stentType == 'endurant':
             sd = EndurantDirect(vol, p)
     elif stentType == 'nellix':
+            sd = NellixDirect(vol, p)
+    elif stentType == 'branch':
             sd = NellixDirect(vol, p)
     else:
             sd = StentDirect(vol, p)
