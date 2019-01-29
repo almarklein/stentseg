@@ -13,11 +13,10 @@ from stentseg.utils.datahandling import select_dir, loadvol, loadmodel
 def showModel3d(basedir,ptcode, ctcode, cropname='ring', showVol='MIP',
     showmodel=True, graphname='model', **kwargs):
     """ show model and vol in 3d by mip iso or 2D
+    graphname 'all' draws all graph models stored in s, if multiple
     """
     s = loadmodel(basedir, ptcode, ctcode, cropname, modelname='modelavgreg')
     vol = loadvol(basedir, ptcode, ctcode, cropname, what='avgreg').vol
-    ptcode = ptcode
-    ctcode = ctcode
     # figure
     f = vv.figure(); vv.clf()
     f.position = 0.00, 22.00,  1920.00, 1018.00
@@ -40,7 +39,7 @@ def showModel3d(basedir,ptcode, ctcode, cropname='ring', showVol='MIP',
             
     vv.title('Model for LSPEAS %s  -  %s' % (ptcode[8:], ctcode))
     
-    # f.eventKeyDown.Bind(lambda event: _utils_GUI.RotateView(event, [a]), axishandling=False)
+    # f.eventKeyDown.Bind(lambda event: _utils_GUI.RotateView(event, [a], axishandling=False ))
     f.eventKeyDown.Bind(lambda event: _utils_GUI.ViewPresets(event, [a]) )
     
     return f, a, label, s
@@ -134,7 +133,7 @@ def showModelsStatic(ptcode,codes, vols, ss, mm, vs, showVol, clim, isoTh, clim2
     return axes, cbars
 
 
-def showVesselMesh(vesselstl, ax=None, **kwargs):
+def showVesselMesh(vesselstl, ax=None, vesselMeshColor=(1,0,0,0.4), **kwargs):
     """ plot pointcloud of mesh in ax
     """
     if ax is None:
@@ -145,14 +144,15 @@ def showVesselMesh(vesselstl, ax=None, **kwargs):
     # ppvessel = points_from_mesh(vesselstl, invertZ = False) # removes duplicates
     # vv.plot(ppvessel, ms='.', ls='', mc= 'r', alpha=0.2, mw = 7, axes = ax)
     v = vv.mesh(vesselstl, axes=ax)
-    v.faceColor = (1,0,0,0.4) # alpha 0.6
+    v.faceColor = vesselMeshColor # (1,0,0,0.4) or alpha 0.6
     return v
 
 
 def showVolPhases(basedir, vols=None, ptcode=None, ctcode=None, cropname=None, 
     showVol='iso', mipIsocolor=False, isoTh=310,
             slider=False, clim=(0,3000), clim2D=(-550, 500), fname=None):
-    """ showVol= mip or iso or 2D; Provide either vols or location
+    """ Show vol phases in motion container
+    showVol= mip or iso or 2D; Provide either vols or location
     """
     if vols is None:
         # Load volumes
