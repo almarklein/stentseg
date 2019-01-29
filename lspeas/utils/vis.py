@@ -46,7 +46,8 @@ def showModel3d(basedir,ptcode, ctcode, cropname='ring', showVol='MIP',
 
 def showModelsStatic(ptcode,codes, vols, ss, mm, vs, showVol, clim, isoTh, clim2, 
     clim2D, drawMesh=True, meshDisplacement=True, drawModelLines=True, 
-    showvol2D=False, showAxis=False, drawVessel=False, meshColor=None, **kwargs):
+    showvol2D=False, showAxis=False, drawVessel=False, vesselType=1,
+    meshColor=None, **kwargs):
     """ show one to four models in multipanel figure. 
     Input: arrays of codes, vols, ssdfs; params from show_models_static
     Output: axes, colorbars 
@@ -118,7 +119,7 @@ def showModelsStatic(ptcode,codes, vols, ss, mm, vs, showVol, clim, isoTh, clim2
                 m.faceColor = 'g'
     if drawVessel:
         for i, ax in enumerate(axes):
-            v = showVesselMesh(vs[i], ax)
+            v = showVesselMesh(vs[i], ax, type=vesselType)
     for ax in axes:
         ax.axis.axisColor = 1,1,1
         ax.bgcolor = 25/255,25/255,112/255 # midnightblue
@@ -130,22 +131,32 @@ def showModelsStatic(ptcode,codes, vols, ss, mm, vs, showVol, clim, isoTh, clim2
         p1 = cbar.position
         cbar.position = (p1[0], 20, p1[2], 0.98) # x,y,w,h
     
+    # bind rotate view and view presets [1,2,3,4,5]
+    f = vv.gcf()
+    f.eventKeyDown.Bind(lambda event: _utils_GUI.RotateView(event,axes,axishandling=False) )
+    f.eventKeyDown.Bind(lambda event: _utils_GUI.ViewPresets(event,axes) )
+    
     return axes, cbars
 
 
-def showVesselMesh(vesselstl, ax=None, vesselMeshColor=(1,0,0,0.4), **kwargs):
+def showVesselMesh(vesselstl, ax=None, vesselMeshColor=(1,0,0,0.4),
+    type = 1, **kwargs):
     """ plot pointcloud of mesh in ax
+    type = 1 use vv.mesh; type = 2 use vv.plot
     """
     if ax is None:
         ax = vv.gca()
     if vesselstl is None:
         return
-    # # get pointset from STL 
-    # ppvessel = points_from_mesh(vesselstl, invertZ = False) # removes duplicates
-    # vv.plot(ppvessel, ms='.', ls='', mc= 'r', alpha=0.2, mw = 7, axes = ax)
-    v = vv.mesh(vesselstl, axes=ax)
-    v.faceColor = vesselMeshColor # (1,0,0,0.4) or alpha 0.6
-    return v
+    if type == 1:
+        vessel = vv.mesh(vesselstl, axes=ax, **kwargs)
+        vessel.faceColor = vesselMeshColor # (1,0,0,0.4) or alpha 0.6
+        return vessel
+    elif type == 2:
+        # get PointSet from STL 
+        ppvessel = points_from_mesh(vesselstl, invertZ = False) # removes duplicates
+        vv.plot(ppvessel, ms='.', ls='', mc= 'r', alpha=0.2, mw = 7, axes = ax)
+        return ppvessel
 
 
 def showVolPhases(basedir, vols=None, ptcode=None, ctcode=None, cropname=None, 
