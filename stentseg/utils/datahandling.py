@@ -92,11 +92,20 @@ def renamedcm(dicom_basedir, ptcode, ctcode):
                 i +=1
 
 
-def loadmesh(basedirMesh,ptcode,meshname, invertZ=True):
+def loadmesh(basedirMesh, ptcode=None, meshname=None, invertZ=True, fname=None):
     """ Load Mesh object, flip z and return Mesh
     meshname includes ctcode
     """
-    mesh = vv.meshRead(os.path.join(basedirMesh, ptcode, meshname)) 
+    if fname is None:
+        try:
+            mesh = vv.meshRead(os.path.join(basedirMesh, ptcode, meshname))
+        except FileNotFoundError:
+            mesh = vv.meshRead(os.path.join(basedirMesh, meshname))
+    else:
+        try:
+            mesh = vv.meshRead(os.path.join(basedirMesh, ptcode, fname))
+        except FileNotFoundError:
+            mesh = vv.meshRead(os.path.join(basedirMesh, fname))
     if invertZ == True:
         # z is negative, must be flipped to match dicom orientation CT data
         for vertice in mesh._vertices:
