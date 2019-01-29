@@ -36,10 +36,11 @@ cropvol = 'stent'
 
 drawModelLines = False  # True or False
 drawMesh, meshDisplacement = True, False
+meshColor = [(1,1,0,1), (0,128/255,1,1)]
 removeStent = True
 dimensions = 'xyz'
 showAxis = False
-showVol  = 'ISO'  # MIP or ISO or 2D or None
+showVol  = 'MIP'  # MIP or ISO or 2D or None
 showvol2D = False
 drawVessel = True
 
@@ -164,27 +165,14 @@ if len(codes) == 5:
 ## Visualize multipanel
 axes, cbars = showModelsStatic(ptcode, codes, vols, ss, mm, vs, showVol, clim, 
         isoTh, clim2, clim2D, drawMesh, meshDisplacement, drawModelLines, 
-        showvol2D, showAxis, drawVessel, climEditor=False, removeStent=removeStent,
-        meshColor=[(1,1,0,1), (0,128/255,1,1)]) #meshColor=[(0,1,0,1)])
+        showvol2D, showAxis, drawVessel, climEditor=True, removeStent=removeStent,
+        meshColor=meshColor) #meshColor=[(0,1,0,1)])
 
 # bind rotate view
 f = vv.gcf()
 f.eventKeyDown.Bind(lambda event: _utils_GUI.RotateView(event,axes,axishandling=False) )
 f.eventKeyDown.Bind(lambda event: _utils_GUI.ViewPresets(event,axes) )
 
-## option to adjust clim/isoth
-slider = True
-sliders = dict()
-if slider:
-    print('Use "s" to show/hide slider')
-    for i, ax in enumerate(axes):
-        if showVol=='ISO':
-            sliders['c'+str(i)] = _utils_GUI.IsoThEditor(ax)
-        else:
-            sliders['c'+str(i)] = vv.ClimEditor(ax)
-        sliders['c'+str(i)].position = (10, 50)
-    # bind to axis
-    f.eventKeyDown.Bind(lambda event: _utils_GUI.ShowHideSlider(event, sliders) )
 
 ## Set view
 # a1.SetView(view1)
