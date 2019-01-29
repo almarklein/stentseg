@@ -54,9 +54,9 @@ def show_ctvolume(vol, graph=None, axis=None, showVol='MIP', clim =(0,2500), iso
     # bind ClimEditor to figure
     if climEditor:
         if showVol=='ISO':
-            c = _utils_GUI.IsoThEditor(vv.gcf())
+            c = _utils_GUI.IsoThEditor(axis)
         else:
-            c = vv.ClimEditor(vv.gcf())
+            c = vv.ClimEditor(axis)
         c.position = (10, 50)
         # bind for show hide
         fig = vv.gcf()
