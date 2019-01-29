@@ -11,7 +11,6 @@ from stentseg.utils.visualization import show_ctvolume
 from stentseg.stentdirect.stentgraph import create_mesh
 from stentseg.motion.vis import create_mesh_with_abs_displacement
 import numpy as np
-from stentseg.utils import _utils_GUI
 from stentseg.utils.picker import pick3d
 from lspeas.utils.vis import showModelsStatic
 
@@ -167,11 +166,6 @@ axes, cbars = showModelsStatic(ptcode, codes, vols, ss, mm, vs, showVol, clim,
         isoTh, clim2, clim2D, drawMesh, meshDisplacement, drawModelLines, 
         showvol2D, showAxis, drawVessel, climEditor=True, removeStent=removeStent,
         meshColor=meshColor) #meshColor=[(0,1,0,1)])
-
-# bind rotate view
-f = vv.gcf()
-f.eventKeyDown.Bind(lambda event: _utils_GUI.RotateView(event,axes,axishandling=False) )
-f.eventKeyDown.Bind(lambda event: _utils_GUI.ViewPresets(event,axes) )
 
 
 ## Set view
