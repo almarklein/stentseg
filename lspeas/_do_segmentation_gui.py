@@ -136,7 +136,8 @@ def on_key(event):
         # visualize result
         view = a3.GetView()
         a3.Clear()
-        DrawModelAxes(vol, sd._nodes3, a3, clim=clim, showVol=showVol, mw=8, lw=0.2, climEditor=False)
+        DrawModelAxes(vol, sd._nodes3, a3, clim=clim, showVol=showVol, mw=8, 
+                        lw=0.2, climEditor=False)
         node_points = _utils_GUI.interactive_node_points(sd._nodes3, scale=0.6)
         _utils_GUI.node_points_callbacks(node_points, selected_nodes, pick=False)
         a3.SetView(view)
@@ -149,7 +150,10 @@ def on_key(event):
         # Create mesh and visualize
         view = a3.GetView()
         a3.Clear()
-        DrawModelAxes(vol, sd._nodes3, a3, meshColor='g', clim=clim, showVol=showVol, lc='w', mw=8, lw=0.2, climEditor=False)
+        DrawModelAxes(vol, sd._nodes3, a3, meshColor='g', clim=clim, 
+                    showVol=showVol, lc='w', mw=8, lw=0.2, climEditor=False)
+        node_points = _utils_GUI.interactive_node_points(sd._nodes3, scale=0.6)
+        _utils_GUI.node_points_callbacks(node_points, selected_nodes, pick=False)
         a3.SetView(view)
         print('----DO NOT FORGET TO SAVE THE MODEL TO DISK; RUN _SAVE_SEGMENTATION----')
     if event.text == 'r':
