@@ -57,13 +57,20 @@ def load_excel_centerline(basedirCenterline, vol, ptcode, ctcode, filename=None)
 
 
 # Select the ssdf basedir
-basedir = select_dir(os.getenv('LSPEAS_BASEDIR', ''),
-                     r'D:\LSPEAS\LSPEAS_ssdf', r'F:\LSPEAS_ssdf_backup')
+basedir = select_dir(
+    os.getenv('LSPEAS_BASEDIR', ''),
+    r'D:\LSPEAS\LSPEAS_ssdf',
+    r'F:\LSPEAS_ssdf_backup')
                      
-basedirMesh = select_dir(r'D:\Profiles\koenradesma\SURFdrive\UTdrive\MedDataMimics\LSPEAS_Mimics',
-    r'C:\Users\Maaike\SURFdrive\UTdrive\MedDataMimics\LSPEAS_Mimics')
+basedirMesh = select_dir(
+    r'D:\Profiles\koenradesma\SURFdrive\UTdrive\MedDataMimics\LSPEAS_Mimics',
+    r'C:\Users\Maaike\SURFdrive\UTdrive\MedDataMimics\LSPEAS_Mimics',
+    r"C:\stack\data\lspeas\vaatwand")
 
-basedirCenterline = select_dir(r'D:\Profiles\koenradesma\SURFdrive\UTdrive\LSPEAS_centerlines_terarecon')
+basedirCenterline = select_dir(
+    r"C:\stack\data\lspeas\vaatwand",
+    r'D:\Profiles\koenradesma\SURFdrive\UTdrive\LSPEAS_centerlines_terarecon',
+    r"C:\stack\data\lspeas\vaatwand")
 
 # Select dataset to register
 ptcode = 'LSPEAS_003'
