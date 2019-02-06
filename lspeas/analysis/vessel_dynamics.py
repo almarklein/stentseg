@@ -13,6 +13,8 @@ from lspeas.utils.vis import showModelsStatic
 import visvis as vv
 from stentseg.utils.centerline import points_from_mesh
 
+assert openpyxl.__version__ < "2.4", "Do pip install openpyxl==2.3.5"
+
 
 #todo: move function to lspeas utils?
 def load_excel_centerline(basedirCenterline, vol, ptcode, ctcode, filename=None):

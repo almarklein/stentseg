@@ -21,6 +21,8 @@ from visvis import ssdf
 from stentseg.utils.new_pointset import PointSet
 from stentseg.utils import gaussfun
 
+assert nx.__version__ < "2", "This code need NetworkX v1. Use pip install networkx==1.11"
+
 # todo: what if we sort by CT value?
 SORTBY = 'cost'
 
@@ -106,14 +108,14 @@ class StentGraph(nx.Graph):
             node, attr = node_info
             node = node if not isinstance(node, list) else tuple(node)
             attr = attr if isinstance(attr, dict) else attr.__dict__
-            self.add_node(node, attr)
+            self.add_node(node, **attr)
         for edge_info in s.edges:
             #node1, node2, attr = edge_info['node1'], edge_info['node2'], node_info['attr'].__dict__
             node1, node2, attr = edge_info
             node1 = node1 if not isinstance(node1, list) else tuple(node1)
             node2 = node2 if not isinstance(node2, list) else tuple(node2)
             attr = attr if isinstance(attr, dict) else attr.__dict__
-            self.add_edge(node1, node2, attr)
+            self.add_edge(node1, node2, **attr)
 
 
 

@@ -181,7 +181,7 @@ def on_key(event):
         select1 = selected_nodes[0].node
         select2 = selected_nodes[1].node
         edge_info = sd._nodes3.edge[select1][select2]
-        edgegraph.add_edge(select1, select2,edge_info)
+        edgegraph.add_edge(select1, select2, **edge_info)
         stentgraph.smooth_paths(edgegraph, 2)
         sd._nodes3.edge[select1][select2]['path'] = edgegraph.edge[select1][select2]['path']
         selected_nodes[1].faceColor = 'b'
