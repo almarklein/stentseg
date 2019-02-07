@@ -141,6 +141,7 @@ vv.plot(centerline, ms='.', ls='', mw=8, mc='b', alpha=0.5)
 # Initialize 2D view
 axes2 = vv.Axes(vv.gcf())
 axes2.position = 0.7, 200, 0.25, 0.5
+axes2.daspectAuto = False
 axes2.camera = '2d'
 axes2.axis.axisColor = 'w'
 
