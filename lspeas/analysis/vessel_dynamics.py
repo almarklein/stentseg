@@ -127,7 +127,7 @@ centerline = PointSet(np.column_stack(
 axes1, cbars = showModelsStatic(ptcode, ctcode1, [vol1], [s1], [modelmesh1], 
               [vessel1], showVol, clim, isoTh, clim2, clim2D, drawRingMesh, 
               ringMeshDisplacement, drawModelLines, showvol2D, showAxis, 
-              drawVessel, vesselType=2,
+              drawVessel, vesselType=1,
               climEditor=True, removeStent=removeStent, meshColor=meshColor)
 axes1 = axes1[0]
 
@@ -136,7 +136,7 @@ tex3d = axes1.wobjects[1]
 tex3d.visible = False
 
 # Show the centerline
-vv.plot(centerline, ms='.', ls='', mw=8, mc='b')
+vv.plot(centerline, ms='.', ls='', mw=8, mc='b', alpha=0.5)
 
 # Initialize 2D view
 axes2 = vv.Axes(vv.gcf())
@@ -146,6 +146,7 @@ axes2.axis.axisColor = 'w'
 
 # Initialize label and sliders
 label = vv.Label(axes2)
+label.bgcolor = "w"
 slider_ref = vv.Slider(axes2, fullRange=(1, len(centerline)-2), value=10)
 slider_ves = vv.Slider(axes2, fullRange=(1, len(centerline)-2), value=10)
 label.position = 10, 10, -20, 25
