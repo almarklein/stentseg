@@ -260,7 +260,7 @@ def project_to_plane(pp, plane):
     # movement is such that they are now on the closest point to the
     # plane.
     pp3 = pp.copy()
-    pp3[:,0] = pp[:,0] - b * common
+    pp3[:,0] = pp[:,0] - a * common
     pp3[:,1] = pp[:,1] - b * common
     pp3[:,2] = pp[:,2] - c * common
     
