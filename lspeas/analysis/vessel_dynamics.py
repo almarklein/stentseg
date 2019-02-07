@@ -12,6 +12,8 @@ from stentseg.motion.vis import create_mesh_with_abs_displacement
 from lspeas.utils.vis import showModelsStatic
 import visvis as vv
 from stentseg.utils.centerline import points_from_mesh
+from stentseg.utils import PointSet, fitting
+
 
 assert openpyxl.__version__ < "2.4", "Do pip install openpyxl==2.3.5"
 
@@ -95,6 +97,8 @@ clim2 = (0,2)
 isoTh = 180 # 250
 
 
+## Load data
+
 # Load CT image data for reference
 s1 = loadmodel(basedir, ptcode, ctcode1, cropname, modelname)
 vol1 = loadvol(basedir, ptcode, ctcode1, cropvol, 'avgreg').vol
@@ -113,21 +117,165 @@ vessel1 = loadmesh(basedirMesh,ptcode[-3:],filename) #inverts Z
 ppvessel = points_from_mesh(vessel1, invertZ=False) # removes duplicates
 
 # Load vessel centerline (excel terarecon)
-centerlineX, centerlineY, centerlineZ = load_excel_centerline(basedirCenterline, 
-                                        vol1, ptcode, ctcode1, filename=None)
+centerline = PointSet(np.column_stack(
+    load_excel_centerline(basedirCenterline, vol1, ptcode, ctcode1, filename=None)))
+
+
+## Setup visualization
 
 # Show ctvolume, vessel mesh, ring model
-axes, cbars = showModelsStatic(ptcode, ctcode1, [vol1], [s1], [modelmesh1], 
+axes1, cbars = showModelsStatic(ptcode, ctcode1, [vol1], [s1], [modelmesh1], 
               [vessel1], showVol, clim, isoTh, clim2, clim2D, drawRingMesh, 
               ringMeshDisplacement, drawModelLines, showvol2D, showAxis, 
               drawVessel, vesselType=2,
               climEditor=True, removeStent=removeStent, meshColor=meshColor)
+axes1 = axes1[0]
+
+# Show or hide the volume (showing is nice, but also slows things down)
+tex3d = axes1.wobjects[1]
+tex3d.visible = False
 
 # Show the centerline
-vv.plot(centerlineX, centerlineY, centerlineZ, ms='.', ls='', mw=8, mc='b')
+vv.plot(centerline, ms='.', ls='', mw=8, mc='b')
+
+# Initialize 2D view
+axes2 = vv.Axes(vv.gcf())
+axes2.position = 0.7, 200, 0.25, 0.5
+axes2.camera = '2d'
+axes2.axis.axisColor = 'w'
+
+# Initialize label and sliders
+label = vv.Label(axes2)
+slider_ref = vv.Slider(axes2, fullRange=(1, len(centerline)-2), value=10)
+slider_ves = vv.Slider(axes2, fullRange=(1, len(centerline)-2), value=10)
+label.position = 10, 10, -20, 25
+slider_ref.position = 10, -70, -20, 25
+slider_ves.position = 10, -40, -20, 25
+
+# Initialize line objects for showing the plane orthogonal to centerline
+slider_ref.line_plane = vv.plot([], [], [], axes=axes1, ls='-', lw=3, lc='w', alpha = 0.9)
+slider_ves.line_plane = vv.plot([], [], [], axes=axes1, ls='-', lw=3, lc='y', alpha = 0.9)
+# Initialize line objects for showing selected points close to that plane
+slider_ref.line_3d = vv.plot([], [], [], axes=axes1, ms='.', ls='', mw=8, mc='w', alpha = 0.9)
+slider_ves.line_3d = vv.plot([], [], [], axes=axes1, ms='.', ls='', mw=8, mc='y', alpha = 0.9)
+
+# Initialize line objects for showing selected points and ellipse in 2D
+line_2d = vv.plot([], [], axes=axes2,  ms='.', ls='', mw=8, mc='y')
+line_ellipse = vv.plot([], [], axes=axes2,  ms='', ls='-', lw=2, mc='c')
 
 
+## Functions to update visualization and do measurements
 
+
+def get_plane_points_from_centerline_index(i):
+    """ Get a set of points that lie on the plane orthogonal to the centerline
+    at the given index. The points are such that they can be drawn as a line
+    for visualization purposes. The plane equation cna be done witha fit.
+    """
+    
+    # Break given index into integer and fraction piece
+    index = int(i + 0.5)
+    t = i - index
+    
+    # Sample three points of interest
+    pa, pb, pc = centerline[index - 1], centerline[index], centerline[index + 1]
+    
+    # Get the subpixel 3D position on the centerline
+    if t < 0:
+        p = -t * pa + (1 + t) * pb
+    else:
+        p = t * pc + (1 - t) * pb
+    
+    # Get the (subpixel-sampled) vector along the centerline
+    veca = (pb - pa).normalize()
+    vecb = (pc - pb).normalize()
+    vec1 = (0.5 - t) * veca + (0.5 + t) * vecb
+    
+    # Get two orthogonal vectors that define the plane that is orthogonal
+    # to the above vector. We can use an arbitrary vector to get the first,
+    # but there is a tiiiiiny chance that it is equal to vec1 so that the
+    # normal collapese.
+    vec2 = vec1.cross([0, 1, 0])
+    if vec2.norm() == 0:
+        vec2 = vec1.cross((1, 0, 0))
+    vec3 = vec1.cross(vec2)
+    
+    # Sample some point on the plane and get the plane's equation
+    pp = PointSet(3)
+    radius = 6
+    pp.append(p)
+    for t in np.linspace(0, 2 * np.pi, 12):
+        pp.append(p + np.sin(t) * radius * vec2 + np.cos(t) * radius * vec3)
+    return pp
+
+
+def get_vessel_points_from_plane_points(pp):
+    """ Select points from the vessel points that are very close to the plane
+    defined by the given plane points. Returns a 2D and a 3D point set.
+    """
+    abcd = fitting.fit_plane(pp)
+    
+    # Get 2d and 3d coordinates of points that lie (almost) on the plane
+    pp2 = fitting.project_to_plane(ppvessel, abcd)
+    pp3 = fitting.project_from_plane(pp2, abcd)
+    selection = (ppvessel - pp3).norm() < 0.5  # <==== HOW CLOSE (IN MM) A POINT MUST BE FROM THE PLANE 
+    
+    return pp2[selection], ppvessel[selection]
+
+
+def take_measurements():
+    slider = slider_ves
+    pp = get_plane_points_from_centerline_index(slider.value)
+    pp2, pp3 = get_vessel_points_from_plane_points(pp)
+    
+    # Early exit?
+    if len(pp2) == 0:
+        label.text = " no points"
+        line_2d.SetPoints(pp2)
+        line_ellipse.SetPoints(pp2)
+        return
+    
+    # Get ellipse and its area
+    ellipse = fitting.fit_ellipse(pp2)
+    area = fitting.area(ellipse) / 100
+    a1 = 0 # todo: more measurements?
+    
+    # Show measurements in text
+    label.text = "Area: {:0.1f} cm^2, small axis: {:0.1f}".format(area, a1)
+    
+    # Update line objects
+    line_2d.SetPoints(pp2)
+    line_ellipse.SetPoints(fitting.sample_ellipse(ellipse))
+    axes2.SetLimits(margin=0.12)
+
+
+def on_sliding(e):
+    """ When the slider is moved, update the centerline position indicator.
+    """
+    slider = e.owner
+    pp = get_plane_points_from_centerline_index(slider.value)
+    slider.line_plane.SetPoints(pp)
+
+
+def on_sliding_done(e):
+    """ When the slider is released, update the whole thing.
+    """
+    slider = e.owner
+    pp = get_plane_points_from_centerline_index(slider.value)
+    pp2, pp3 = get_vessel_points_from_plane_points(pp)
+    slider.line_plane.SetPoints(pp)
+    slider.line_3d.SetPoints(pp3)
+    take_measurements()
+
+
+# Connect!
+slider_ref.eventSliding.Bind(on_sliding)
+slider_ves.eventSliding.Bind(on_sliding)
+slider_ref.eventSliderChanged.Bind(on_sliding_done)
+slider_ves.eventSliderChanged.Bind(on_sliding_done)
+
+
+#todo: sample positions ON the mesh, i.e. sub-vertex
 #todo: create class/workflow to obtain radius change minor/major axis, asymmetry, 
 #todo: and area at used selected levels and volume change 
 
