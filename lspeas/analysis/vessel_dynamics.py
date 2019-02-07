@@ -223,6 +223,25 @@ def get_vessel_points_from_plane_points(pp):
     return pp2[selection], ppvessel[selection]
 
 
+def get_distance_along_centerline():
+    i1 = slider_ref.value
+    i2 = slider_ves.value
+    
+    index1 = int(np.ceil(i1))
+    index2 = int(np.floor(i2))
+    t1 = i1 - index1  # -1 < t1 <= 0
+    t2 = i2 - index2  # 0 <= t2 < 1
+    
+    dist = 0
+    dist += -t1 * (centerline[index1] - centerline[index1 - 1]).norm()
+    dist += +t2 * (centerline[index2] - centerline[index2 + 1]).norm()
+    
+    for index in range(index1, index2):
+        dist += (centerline[index + 1] - centerline[index]).norm()
+    
+    return float(dist)
+
+
 def take_measurements():
     slider = slider_ves
     pp = get_plane_points_from_centerline_index(slider.value)
@@ -240,8 +259,10 @@ def take_measurements():
     area = fitting.area(ellipse) / 100
     a1 = 0 # todo: more measurements?
     
+    dist = get_distance_along_centerline()
+    
     # Show measurements in text
-    label.text = "Area: {:0.1f} cm^2, small axis: {:0.1f}".format(area, a1)
+    label.text = "Area: {:0.2f} cm^2, distance: {:0.1f} mm".format(area, dist)
     
     # Update line objects
     line_2d.SetPoints(pp2)
