@@ -5,7 +5,7 @@ radius change - area change - volume change
 
 import openpyxl
 from stentseg.utils.datahandling import select_dir, loadvol, loadmodel, loadmesh
-import sys, os
+import sys, os, time
 import numpy as np
 from stentseg.stentdirect.stentgraph import create_mesh
 from stentseg.motion.vis import create_mesh_with_abs_displacement
@@ -111,10 +111,11 @@ if drawRingMesh:
         modelmesh1 = create_mesh_with_abs_displacement(s1.model, radius = 0.7, dim=dimensions)
 
 # Load vesselmesh (mimics)
+# We make sure that it is a mesh without faces, which makes our sampling easier
 filename = '{}_{}_neck.stl'.format(ptcode,ctcode1)
 vessel1 = loadmesh(basedirMesh,ptcode[-3:],filename) #inverts Z
-# get PointSet from vessel mesh 
-ppvessel = points_from_mesh(vessel1, invertZ=False) # removes duplicates
+vv.processing.unwindFaces(vessel1)
+ppvessel = PointSet(vessel1._vertices)  # Yes, this has duplicates, but thats ok
 
 # Load vessel centerline (excel terarecon)
 centerline = PointSet(np.column_stack(
@@ -220,9 +221,34 @@ def get_vessel_points_from_plane_points(pp):
     # Get 2d and 3d coordinates of points that lie (almost) on the plane
     pp2 = fitting.project_to_plane(ppvessel, abcd)
     pp3 = fitting.project_from_plane(pp2, abcd)
-    selection = (ppvessel - pp3).norm() < 0.5  # <==== HOW CLOSE (IN MM) A POINT MUST BE FROM THE PLANE 
+    above_below = np.sign(ppvessel[:, 2] - pp3[:, 2])  # Note: we're only looking in z-axis
+    distances = (ppvessel - pp3).norm()
     
-    return pp2[selection], ppvessel[selection]
+    # Select points to consider. This is just to reduce the search space somewhat.
+    selection = np.where(distances < 5)[0]
+    
+    # We assume that each tree points in ppvessel makes up a triangle (face)
+    # We make sure of that when we load the mesh.
+    # Select first index of each face (every 3 vertices is 1 face), and remove duplicates
+    selection_faces = set(3 * (selection // 3))
+    
+    # Now iterate over the faces (triangles), and check each edge. If the two
+    # points are on different sides of the plane, then we interpolate on the
+    # edge to get the exact spot where the edge intersects the plane.
+    t0 = time.time()
+    sampled_pp3 = PointSet(3)
+    visited_edges = set()
+    for fi in selection_faces:  # for each face index
+        for edge in [(fi + 0, fi + 1), (fi + 0, fi + 1), (fi + 0, fi + 1)]:
+            if above_below[edge[0]] * above_below[edge[1]] < 0:
+                if edge not in visited_edges:
+                    visited_edges.add(edge)
+                    d1, d2 = distances[edge[0]], distances[edge[1]]
+                    w1, w2 = d2 / (d1 + d2), d1 / (d1 + d2)
+                    p = w1 * ppvessel[edge[0]] + w2 * ppvessel[edge[1]]
+                    sampled_pp3.append(p)
+    
+    return fitting.project_to_plane(sampled_pp3, abcd), sampled_pp3
 
 
 def get_distance_along_centerline():
@@ -298,7 +324,6 @@ slider_ref.eventSliderChanged.Bind(on_sliding_done)
 slider_ves.eventSliderChanged.Bind(on_sliding_done)
 
 
-#todo: sample positions ON the mesh, i.e. sub-vertex
 #todo: create class/workflow to obtain radius change minor/major axis, asymmetry, 
 #todo: and area at used selected levels and volume change 
 
