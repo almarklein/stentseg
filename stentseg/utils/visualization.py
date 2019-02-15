@@ -23,13 +23,13 @@ def remove_stent_from_volume(vol, graph, stripSize=5):
         stripSize2 = stripSize // 2 # floor division
         for point in path:
             z,y,x = vol2.point_to_index(point)
-            vol2[z-stripSize:z+stripSize2+1, y-stripSize:y+stripSize+1, x-stripSize:x+stripSize+1] = 0
-            # remove less in distal direction -> stripSize2
+            vol2[z-stripSize2:z+stripSize2+1, y-stripSize:y+stripSize+1, x-stripSize:x+stripSize+1] = 0
+            # remove less in z direction to not remove 3rd ring/calcifications -> stripSize2
     return vol2
 
 
 def show_ctvolume(vol, graph=None, axis=None, showVol='MIP', clim =(0,2500), isoTh=250, 
-                  removeStent=True, climEditor=False):
+                  removeStent=True, climEditor=False, stripSize=6):
     """ Different ways to visualize the CT volume as reference
     For '2D' clim (-550,500) often good range
     """
@@ -46,7 +46,7 @@ def show_ctvolume(vol, graph=None, axis=None, showVol='MIP', clim =(0,2500), iso
         t = vv.volshow(vol, clim=clim, renderStyle='mip')
     elif showVol == 'ISO':
         if removeStent == True:
-            vol = remove_stent_from_volume(vol, graph, stripSize=6) # rings are removed for vis.
+            vol = remove_stent_from_volume(vol, graph, stripSize=stripSize) # rings are removed for vis.
         t = vv.volshow(vol,clim=clim, renderStyle='iso')
         t.isoThreshold = isoTh; t.colormap = colormap
     elif showVol == '2D':
