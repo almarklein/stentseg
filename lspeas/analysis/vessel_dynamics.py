@@ -164,7 +164,8 @@ slider_ves.line_3d = vv.plot([], [], [], axes=axes1, ms='.', ls='', mw=8, mc='y'
 
 # Initialize line objects for showing selected points and ellipse in 2D
 line_2d = vv.plot([], [], axes=axes2,  ms='.', ls='', mw=8, mc='y')
-line_ellipse = vv.plot([], [], axes=axes2,  ms='', ls='-', lw=2, mc='c')
+line_ellipse1 = vv.plot([], [], axes=axes2,  ms='', ls='-', lw=2, lc='b')
+line_ellipse2 = vv.plot([], [], axes=axes2,  ms='', ls='+', lw=2, lc='b')
 
 
 ## Functions to update visualization and do measurements
@@ -279,13 +280,20 @@ def take_measurements():
     if len(pp2) == 0:
         label.text = " no points"
         line_2d.SetPoints(pp2)
-        line_ellipse.SetPoints(pp2)
+        line_ellipse1.SetPoints(pp2)
+        line_ellipse2.SetPoints(pp2)
         return
     
     # Get ellipse and its area
     ellipse = fitting.fit_ellipse(pp2)
+    p0 = PointSet([ellipse[0], ellipse[1]])
     area = fitting.area(ellipse) / 100
-    a1 = 0 # todo: more measurements?
+    ellipse_points = fitting.sample_ellipse(ellipse, 4)
+    major_minor = PointSet(2)
+    major_minor.append(p0); major_minor.append(ellipse_points[0])  # major axis
+    major_minor.append(p0); major_minor.append(ellipse_points[2])  # other major
+    major_minor.append(p0); major_minor.append(ellipse_points[1])  # minor axis
+    major_minor.append(p0); major_minor.append(ellipse_points[3])  # other minor
     
     dist = get_distance_along_centerline()
     
@@ -294,7 +302,9 @@ def take_measurements():
     
     # Update line objects
     line_2d.SetPoints(pp2)
-    line_ellipse.SetPoints(fitting.sample_ellipse(ellipse))
+    line_ellipse1.SetPoints(fitting.sample_ellipse(ellipse))
+    line_ellipse2.SetPoints(major_minor)
+    
     axes2.SetLimits(margin=0.12)
 
 

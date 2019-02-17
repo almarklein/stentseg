@@ -130,6 +130,17 @@ def fit_ellipse(pp):
     # Calculate direction vector
     phi = 0.5*np.arctan(2*b/(a-c))
     
+    # Ensure that first radius is the largers
+    if res1 < res2:
+        res2, res1 = res1, res2
+        phi += 0.5 * np.pi
+    
+    # Ensure that phi is between 0 and pi
+    while phi < 0:
+        phi += np.pi
+    while phi > np.pi:
+        phi -= np.pi
+    
     return x0, y0, res1, res2, phi
 
 
@@ -159,7 +170,6 @@ def sample_circle(c, N=32):
     x, y, r = c
     
     # Sample N points, but add one to close the loop
-    d = 2*np.pi / N
     a = np.linspace(0,2*np.pi, N+1)
     
     # Prepare array
@@ -176,7 +186,7 @@ def sample_circle(c, N=32):
 def sample_ellipse(e, N=32):
     """ Sample points on a ellipse e
     
-    Returns a 2D PointSet with N points
+    Returns a 2D PointSet with N+1 points
     """
     
     assert len(e) == 5
@@ -185,15 +195,14 @@ def sample_ellipse(e, N=32):
     x, y, r1, r2, phi = e
     
     # Sample N points, but add one to close the loop
-    d = 2*np.pi / N
-    a = np.linspace(0,2*np.pi, N+1)
+    a = np.linspace(0, 2*np.pi, N+1)
     
     # Prepare array
     pp = np.empty((len(a), 2), dtype=np.float32)
     
     # Apply polar coordinates
     pp[:,0] = x + r1 * np.cos(a) * np.cos(phi) - r2 * np.sin(a) * np.sin(phi)
-    pp[:,1] = y + r2 * np.cos(a) * np.sin(phi) + r2 * np.sin(a) * np.cos(phi)
+    pp[:,1] = y + r1 * np.cos(a) * np.sin(phi) + r2 * np.sin(a) * np.cos(phi)
     
     # Return as a pointset
     return PointSet(pp)
