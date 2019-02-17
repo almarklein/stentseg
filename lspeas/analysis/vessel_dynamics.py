@@ -13,7 +13,7 @@ from lspeas.utils.vis import showModelsStatic
 import visvis as vv
 from stentseg.utils.centerline import points_from_mesh
 from stentseg.utils import PointSet, fitting
-
+import pirt
 
 assert openpyxl.__version__ < "2.4", "Do pip install openpyxl==2.3.5"
 
@@ -99,32 +99,46 @@ isoTh = 180 # 250
 
 ## Load data
 
-# Load CT image data for reference
-s1 = loadmodel(basedir, ptcode, ctcode1, cropname, modelname)
-vol1 = loadvol(basedir, ptcode, ctcode1, cropvol, 'avgreg').vol
-
-# Load ring model
-if drawRingMesh:
-    if not ringMeshDisplacement:
-        modelmesh1 = create_mesh(s1.model, 0.7)  # Param is thickness
-    else:
-        modelmesh1 = create_mesh_with_abs_displacement(s1.model, radius = 0.7, dim=dimensions)
+# Load CT image data for reference, and deform data to measure motion
+try:
+    # If we run this script without restart, we can re-use volume and deforms
+    vol1
+    deforms
+except NameError:
+    vol1 = loadvol(basedir, ptcode, ctcode1, cropvol, 'avgreg').vol
+    s_deforms = loadvol(basedir, ptcode, ctcode1, cropvol, 'deforms')
+    deforms = [s_deforms[key] for key in dir(s_deforms) if key.startswith('deform')]
+    deforms = [pirt.DeformationFieldBackward(*fields) for fields in deforms]
 
 # Load vesselmesh (mimics)
 # We make sure that it is a mesh without faces, which makes our sampling easier
-filename = '{}_{}_neck.stl'.format(ptcode,ctcode1)
-vessel1 = loadmesh(basedirMesh,ptcode[-3:],filename) #inverts Z
-vv.processing.unwindFaces(vessel1)
-ppvessel = PointSet(vessel1._vertices)  # Yes, this has duplicates, but thats ok
+try:
+    ppvessel
+except NameError:
+    filename = '{}_{}_neck.stl'.format(ptcode,ctcode1)
+    vessel1 = loadmesh(basedirMesh,ptcode[-3:],filename) #inverts Z
+    vv.processing.unwindFaces(vessel1)
+    ppvessel = PointSet(vessel1._vertices)  # Yes, this has duplicates, but thats ok
 
-# Load vessel centerline (excel terarecon)
+# Load ring model
+try:
+    modelmesh1
+except NameError:
+    s1 = loadmodel(basedir, ptcode, ctcode1, cropname, modelname)
+    if drawRingMesh:
+        if not ringMeshDisplacement:
+            modelmesh1 = create_mesh(s1.model, 0.7)  # Param is thickness
+        else:
+            modelmesh1 = create_mesh_with_abs_displacement(s1.model, radius = 0.7, dim=dimensions)
+
+# Load vessel centerline (excel terarecon) (is very fast)
 centerline = PointSet(np.column_stack(
     load_excel_centerline(basedirCenterline, vol1, ptcode, ctcode1, filename=None)))
 
 
 ## Setup visualization
 
-# Show ctvolume, vessel mesh, ring model
+# Show ctvolume, vessel mesh, ring model - this uses figure 1 and clears it
 axes1, cbars = showModelsStatic(ptcode, ctcode1, [vol1], [s1], [modelmesh1], 
               [vessel1], showVol, clim, isoTh, clim2, clim2D, drawRingMesh, 
               ringMeshDisplacement, drawModelLines, showvol2D, showAxis, 
@@ -146,12 +160,14 @@ axes2.daspectAuto = False
 axes2.camera = '2d'
 axes2.axis.axisColor = 'w'
 
-# Initialize label and sliders
-label = vv.Label(axes2)
+# Create label to show measurements
+label = vv.Label(axes1)
 label.bgcolor = "w"
+label.position = 0, 0, 1, 25
+
+# Initialize sliders
 slider_ref = vv.Slider(axes2, fullRange=(1, len(centerline)-2), value=10)
 slider_ves = vv.Slider(axes2, fullRange=(1, len(centerline)-2), value=10)
-label.position = 10, 10, -20, 25
 slider_ref.position = 10, -70, -20, 25
 slider_ves.position = 10, -40, -20, 25
 
@@ -271,23 +287,64 @@ def get_distance_along_centerline():
     return float(dist)
 
 
+def triangle_area(p1, p2, p3):
+    # Use Heron's formula to calculate a triangle's area
+    # https://www.mathsisfun.com/geometry/herons-formula.html
+    a = p1.distance(p2)
+    b = p2.distance(p3)
+    c = p3.distance(p1)
+    s = (a + b + c) / 2
+    return (s * (s - a) * (s - b) * (s - c)) ** 0.5
+
+
 def take_measurements():
+    """ This gets called when the slider is releases. We take measurements and
+    update the corresponding texts and visualizations.
+    """
     slider = slider_ves
     pp = get_plane_points_from_centerline_index(slider.value)
     pp2, pp3 = get_vessel_points_from_plane_points(pp)
+    plane = pp2.plane
+    
+    # Collect measurements in a dict. That way we can process it in one step at the end
+    measurements = {}
     
     # Early exit?
     if len(pp2) == 0:
-        label.text = " no points"
+        label.text = ""
         line_2d.SetPoints(pp2)
         line_ellipse1.SetPoints(pp2)
         line_ellipse2.SetPoints(pp2)
         return
     
-    # Get ellipse and its area
+    # Get ellipse, and sample it so we can calculate its area in different phases
     ellipse = fitting.fit_ellipse(pp2)
     p0 = PointSet([ellipse[0], ellipse[1]])
-    area = fitting.area(ellipse) / 100
+    ellipse_points2 = fitting.sample_ellipse(ellipse, 256)  # results in N + 1 points
+    ellipse_points3 = fitting.project_from_plane(ellipse_points2, plane)
+    area = 0
+    for i in range(len(ellipse_points2)-1):
+        area += triangle_area(p0, ellipse_points2[i], ellipse_points2[i + 1])
+    measurements["reference area"] = "{:0.2f} cm^2".format(float(area / 100))
+    # Do a quick check to be sure that this triangle-approximation is close enough
+    assert abs(area - fitting.area(ellipse)) < 2, "area mismatch"  # mm2  typically ~ 0.1 mm2
+    
+    # Measure ellipse area changes
+    areas = []
+    for phase in range(len(deforms)):
+        deform = deforms[phase]
+        dx = deform.get_field_in_points(ellipse_points3, 0)
+        dy = deform.get_field_in_points(ellipse_points3, 1)
+        dz = deform.get_field_in_points(ellipse_points3, 2)
+        ellipse_points3_deformed = ellipse_points3 + PointSet(np.stack([dx, dy, dz], 1))
+        ellipse_points2_deformed = fitting.project_to_plane(ellipse_points3_deformed, plane)
+        area = 0
+        for i in range(len(ellipse_points2_deformed)-1):
+            area += triangle_area(p0, ellipse_points2_deformed[i], ellipse_points2_deformed[i + 1])
+        areas.append(float(area))
+    measurements["min-max area"] = "{:0.2f} - {:0.2f} cm^2".format(min(areas) / 100, max(areas) / 100)
+    
+    # Get allipse axis
     ellipse_points = fitting.sample_ellipse(ellipse, 4)
     major_minor = PointSet(2)
     major_minor.append(p0); major_minor.append(ellipse_points[0])  # major axis
@@ -295,17 +352,22 @@ def take_measurements():
     major_minor.append(p0); major_minor.append(ellipse_points[1])  # minor axis
     major_minor.append(p0); major_minor.append(ellipse_points[3])  # other minor
     
-    dist = get_distance_along_centerline()
-    
-    # Show measurements in text
-    label.text = "Area: {:0.2f} cm^2, distance: {:0.1f} mm".format(area, dist)
+    # More measurements
+    measurements["distance"] = "{:0.1f} mm".format(get_distance_along_centerline())
     
     # Update line objects
     line_2d.SetPoints(pp2)
     line_ellipse1.SetPoints(fitting.sample_ellipse(ellipse))
     line_ellipse2.SetPoints(major_minor)
-    
     axes2.SetLimits(margin=0.12)
+    
+    # Show measurements. Now the results are shown in a label object, but we could do anything here ...
+    texts = []
+    print("Measurements:")
+    for key, value in measurements.items():
+        texts.append(key + ": " + value)
+        print(key.rjust(16) + ": " + value)
+    label.text = " " + "  |  ".join(texts)
 
 
 def on_sliding(e):

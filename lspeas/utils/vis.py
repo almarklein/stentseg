@@ -54,7 +54,7 @@ def showModelsStatic(ptcode,codes, vols, ss, mm, vs, showVol, clim, isoTh, clim2
     """
     # init fig
     f = vv.figure(1); vv.clf()
-    f.position = 0.00, 22.00,  1920.00, 1018.00
+    # f.position = 0.00, 22.00,  1920.00, 1018.00
     mw = 5
     if drawMesh == True:
         lc = 'w'
