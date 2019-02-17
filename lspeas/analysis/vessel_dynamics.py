@@ -334,7 +334,9 @@ slider_ref.eventSliderChanged.Bind(on_sliding_done)
 slider_ves.eventSliderChanged.Bind(on_sliding_done)
 
 
-#todo: create class/workflow to obtain radius change minor/major axis, asymmetry, 
-#todo: and area at used selected levels and volume change 
-
+#todo: measure area and volume change at/between selected level(s)
+#todo: measure radius change in minor/major axis, asymmetry
+#todo: measure how centerline segment changes (longitudinal strain)
+#todo: measure (change of) curvature of centerline
+#todo: measure (change of) curvature of stent rings
 #todo: visualize mesh with colors, each vertice representing axis change from COM/centerline
