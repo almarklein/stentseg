@@ -150,6 +150,7 @@ axes1, cbars = showModelsStatic(ptcode, ctcode1, [vol1], [s1], [modelmesh1],
               drawVessel, vesselType=1,
               climEditor=True, removeStent=removeStent, meshColor=meshColor)
 axes1 = axes1[0]
+axes1.position = 0, 0, 0.6, 1
 
 # Show or hide the volume (showing is nice, but also slows things down)
 tex3d = axes1.wobjects[1]
@@ -160,21 +161,29 @@ vv.plot(centerline, ms='.', ls='', mw=8, mc='b', alpha=0.5)
 
 # Initialize 2D view
 axes2 = vv.Axes(vv.gcf())
-axes2.position = 0.7, 200, 0.25, 0.5
+axes2.position = 0.65, 0.05, 0.3, 0.4
 axes2.daspectAuto = False
 axes2.camera = '2d'
-axes2.axis.axisColor = 'w'
+axes2.axis.showGrid = True
+axes2.axis.axisColor = 'k'
 
-# Create label to show measurements
-label = vv.Label(axes1)
-label.bgcolor = "w"
-label.position = 0, 0, 1, 25
+# Initialize axes to put widgets and labels in
+container = vv.Wibject(vv.gcf())
+container.position = 0.65, 0.5, 0.3, 0.5
+
+# Create labels to show measurements
+labelpool = []
+for i in range(16):
+    label = vv.Label(container)
+    label.fontSize = 11
+    label.position = 10, 100 + 25 * i, -20, 25
+    labelpool.append(label)
 
 # Initialize sliders
-slider_ref = vv.Slider(axes2, fullRange=(1, len(centerline)-2), value=10)
-slider_ves = vv.Slider(axes2, fullRange=(1, len(centerline)-2), value=10)
-slider_ref.position = 10, -70, -20, 25
-slider_ves.position = 10, -40, -20, 25
+slider_ref = vv.Slider(container, fullRange=(1, len(centerline)-2), value=10)
+slider_ves = vv.Slider(container, fullRange=(1, len(centerline)-2), value=10)
+slider_ref.position = 10, 5, -20, 25
+slider_ves.position = 10, 40, -20, 25
 
 # Initialize line objects for showing the plane orthogonal to centerline
 slider_ref.line_plane = vv.plot([], [], [], axes=axes1, ls='-', lw=3, lc='w', alpha = 0.9)
@@ -352,7 +361,6 @@ def take_measurements():
     
     # Early exit?
     if len(pp2) == 0:
-        label.text = ""
         line_2d.SetPoints(pp2)
         line_ellipse1.SetPoints(pp2)
         line_ellipse2.SetPoints(pp2)
@@ -388,7 +396,8 @@ def take_measurements():
         for i, d in enumerate(pp_ellipse_def.distance(p0)):
             distances_per_point[i].append(float(d))
     distances_per_point = distances_per_point[:-1]  # Because pp_ellipse[-1] == pp_ellipse[0]
-    measurements["expansions"] = DeformInfo()
+    #
+    measurements["expansions"] = DeformInfo()  # 256 values, not 10
     for i in range(len(distances_per_point)):
         distances = distances_per_point[i]
         measurements["expansions"].append((max(distances) - min(distances)) / min(distances))
@@ -430,12 +439,15 @@ def process_measurements(measurements):
         val = val.summary if isinstance(val, DeformInfo) else val
         print(key.rjust(16) + ": " + str(val))
     
-    # Show in label
-    texts = []
+    # Show in labels
+    index = 0
     for key, val in measurements.items():
         val = val.summary if isinstance(val, DeformInfo) else val
-        texts.append(key + ": " + str(val))
-    label.text = " " + "  |  ".join(texts)
+        labelpool[index].text = key + ": " + str(val)
+        index += 1
+    # Clean remaining labels
+    for index in range(index, len(labelpool)):
+        labelpool[index].text = ""
 
 
 def on_sliding(e):
