@@ -5,7 +5,7 @@ import os
 from stentseg.utils.datahandling import select_dir
 import openpyxl # http://openpyxl.readthedocs.org/
 import numpy as np
-from scipy import stats
+from lspeas.utils.normality_statistics import paired_samples_ttest
 
 
 def read_error_cam123(exceldir, workbook, profiles):
@@ -32,29 +32,6 @@ def read_ampl_errorcam123(exceldir, workbook, profile):
     errors = sheet.rows[phaserow][1:] # skip first col with notes
     errors = [obj.value for obj in errors if obj.value is not None]
     return errors
-    
-    
-def paired_samples_ttest(a,b, profile, amplitude=False):
-    if amplitude:
-        a = np.asarray(a)
-        b = np.asarray(b)
-    else:
-        if isinstance(a,list):
-            a = a[0]
-        if isinstance(b,list):
-            b = b[0]
-        
-    t2, p2 = stats.ttest_rel(a,b)
-    print(profile +": t = " + str(t2))
-    print(profile +": p = " + str(p2))
-    if p2 < 0.05:
-        print('yes different')
-    else:
-        print('no difference')
-    print("mean difference: " + str(np.mean(a-b)))
-    print()
-    
-    return t2, p2
 
 
 exceldir = select_dir(r'C:\Users\Maaike\Dropbox\UTdrive\LSPEAS\Analysis\Validation robot',
