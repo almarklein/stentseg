@@ -34,7 +34,7 @@ def normality_check(x, a=None, reta=False, alpha=0.05, showhist=True):
     
     if showhist:
     # histogram plot
-        plt.figure(4)
+        plt.figure()
         plt.clf()
         pyplot.hist(xnonan)
         pyplot.show()
