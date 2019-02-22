@@ -380,6 +380,19 @@ def take_measurements():
             area += triangle_area(p0, pp_ellipse_def[i], pp_ellipse_def[i + 1])
         measurements["area"].append(area)
     
+    # Measure distances from center to ellipse edge. We first get the distances
+    # in each face, for each point. Then we aggregate these distances to 
+    # expansion measures. So in the end we have 256 expansion measures.
+    distances_per_point = [[] for i in range(len(pp_ellipse))]
+    for pp_ellipse_def in deform_points_2d(pp_ellipse, plane):
+        for i, d in enumerate(pp_ellipse_def.distance(p0)):
+            distances_per_point[i].append(float(d))
+    distances_per_point = distances_per_point[:-1]  # Because pp_ellipse[-1] == pp_ellipse[0]
+    measurements["expansions"] = DeformInfo()
+    for i in range(len(distances_per_point)):
+        distances = distances_per_point[i]
+        measurements["expansions"].append((max(distances) - min(distances)) / min(distances))
+    
     # Measure radii of ellipse major and minor axis (and how it changes)
     pp_ellipse4 = fitting.sample_ellipse(ellipse, 4)  # major, minor, major, minor
     measurements["major radius"] = DeformInfo(unit="mm")
@@ -451,9 +464,6 @@ slider_ref.eventSliderChanged.Bind(on_sliding_done)
 slider_ves.eventSliderChanged.Bind(on_sliding_done)
 
 
-#todo: measure radius change in minor/major axis, asymmetry.
-#todo: measure distance from center to ellipse-points to get "direction-sensitive expansion".
-#todo: make it easy to export results/data.
 #todo: measure volume change at/between selected level(s)
 #todo: measure how centerline segment changes (longitudinal strain)
 #todo: measure (change of) curvature of centerline

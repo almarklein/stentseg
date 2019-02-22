@@ -1,7 +1,7 @@
 
 class DeformInfo:
-    """ Little class that enables storing per-phase information and show
-    aggregates of this.
+    """ Little class that enables storing a collection of numbers and show
+    aggregates of it.
     """
     
     def __init__(self, *values, unit=""):
@@ -34,10 +34,12 @@ class DeformInfo:
     @property
     def summary(self):
         if self.min < 100:
-            t = "{:0.2f} - {:0.2f} {} ({:0.1f}%)"
+            s = "{:0.2f} - {:0.2f}".format(self.min, self.max)
         else:
-            t = "{:0.0f} - {:0.0f} {} ({:0.1f}%)"
-        return t.format(self.min, self.max, self.unit, self.percent)
+            s = "{:0.0f} - {:0.0f}".format(self.min, self.max)
+        if self.unit:
+            s += "{} ({:0.1f}%)".format(self.unit, self.percent)
+        return s
 
 
 if __name__ == "__main__":
