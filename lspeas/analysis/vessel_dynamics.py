@@ -393,6 +393,7 @@ def take_measurements():
     # expansion measures. So in the end we have 256 expansion measures.
     distances_per_point = [[] for i in range(len(pp_ellipse))]
     for pp_ellipse_def in deform_points_2d(pp_ellipse, plane):
+        # todo: Should distance be measured to p0 or to p0 in that phase?
         for i, d in enumerate(pp_ellipse_def.distance(p0)):
             distances_per_point[i].append(float(d))
     distances_per_point = distances_per_point[:-1]  # Because pp_ellipse[-1] == pp_ellipse[0]
