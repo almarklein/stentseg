@@ -10,6 +10,7 @@ import numpy as np
 from stentseg.stentdirect.stentgraph import create_mesh
 from stentseg.motion.vis import create_mesh_with_abs_displacement
 from lspeas.utils.vis import showModelsStatic
+from lspeas.utils.deforminfo import DeformInfo
 import visvis as vv
 from stentseg.utils.centerline import points_from_mesh
 from stentseg.utils import PointSet, fitting
@@ -362,13 +363,13 @@ def take_measurements():
     assert abs(area - fitting.area(ellipse)) < 2, "area mismatch"  # mm2  typically ~ 0.1 mm2
     
     # Measure ellipse area changes
-    areas = []
+    areas = DeformInfo()
     for ellipse_points2_deformed in deform_points_2d(ellipse_points2, plane):
         area = 0
         for i in range(len(ellipse_points2_deformed)-1):
             area += triangle_area(p0, ellipse_points2_deformed[i], ellipse_points2_deformed[i + 1])
-        areas.append(float(area))
-    measurements["min-max area"] = "{:0.2f} - {:0.2f} cm^2".format(min(areas) / 100, max(areas) / 100)
+        areas.append(area)
+    measurements["min-max area"] = "{:0.2f} - {:0.2f} cm^2 ({:0.1f}%)".format(areas.min / 100, areas.max / 100, areas.percent)
     
     # Get ellipse axis
     ellipse_points = fitting.sample_ellipse(ellipse, 4)
@@ -377,12 +378,12 @@ def take_measurements():
     major_minor.append(p0); major_minor.append(ellipse_points[2])  # other major
     major_minor.append(p0); major_minor.append(ellipse_points[1])  # minor axis
     major_minor.append(p0); major_minor.append(ellipse_points[3])  # other minor
-    radii_major, radii_minor = [], []
+    radii_major, radii_minor = DeformInfo(), DeformInfo()
     for ellipse_points_deformed in deform_points_2d(ellipse_points, plane):
        radii_major.append(float( ellipse_points_deformed[0].distance(ellipse_points_deformed[2]) ))
        radii_minor.append(float( ellipse_points_deformed[1].distance(ellipse_points_deformed[3]) ))
-    measurements["min-max radius major axis"] = "{:0.2f} - {:0.2f} cm".format(min(radii_major) / 10, max(radii_major) / 10)
-    measurements["min-max radius minor axis"] = "{:0.2f} - {:0.2f} cm".format(min(radii_minor) / 10, max(radii_minor) / 10)
+    measurements["min-max radius major axis"] = "{:0.2f} - {:0.2f} cm ({:0.1f}%)".format(radii_major.min / 10, radii_major.max / 10, radii_major.percent)
+    measurements["min-max radius minor axis"] = "{:0.2f} - {:0.2f} cm ({:0.1f}%)".format(radii_minor.min / 10, radii_minor.max / 10, radii_minor.percent)
     
     # More measurements
     measurements["distance"] = "{:0.1f} mm".format(get_distance_along_centerline())
