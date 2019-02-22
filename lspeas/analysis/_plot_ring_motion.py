@@ -423,8 +423,8 @@ class MotionAnalysis():
         models in the ssdfs loaded to self with loadssdf
         """ 
         from stentseg.motion.displacement import _calculateAmplitude
-        from lspeas.utils import normality_shapiro
-        from lspeas.utils.normality_shapiro import normality_check
+        from lspeas.utils import normality_statistics
+        from lspeas.utils.normality_statistics import normality_check
         
         xamplitudes = []
         yamplitudes = []

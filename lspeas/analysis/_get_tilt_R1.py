@@ -20,7 +20,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import itertools
 from matplotlib import gridspec
-from lspeas.utils import normality_shapiro
+from lspeas.utils import normality_statistics
 
 exceldir = select_dir(r'C:\Users\Maaike\SURFdrive\UTdrive\LSPEAS\Analysis', 
                 r'D:\Profiles\koenradesma\SURFdrive\UTdrive\LSPEAS\Analysis')
