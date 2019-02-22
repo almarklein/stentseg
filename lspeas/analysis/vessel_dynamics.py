@@ -189,27 +189,43 @@ line_ellipse2 = vv.plot([], [], axes=axes2,  ms='', ls='+', lw=2, lc='b')
 
 def get_plane_points_from_centerline_index(i):
     """ Get a set of points that lie on the plane orthogonal to the centerline
-    at the given index. The points are such that they can be drawn as a line
-    for visualization purposes. The plane equation cna be done witha fit.
+    at the given index. The points are such that they can be drawn as a line for
+    visualization purposes. The plane equation can be obtained via a plane-fit.
     """
     
-    # Break given index into integer and fraction piece
-    index = int(i + 0.5)
-    t = i - index
+    if True:
+        # Cubic fit of the centerline
+        
+        i = max(1.1, min(i, centerline.shape[0] - 2.11))
+        
+        # Sample center point and two points right below/above, using
+        # "cardinal" interpolating (C1-continuous), or "basic" approximating (C2-continious).
+        pp = []
+        for j in [i - 0.1, i, i + 0.1]:
+            index = int(j)
+            t = j - index
+            coefs = pirt.get_cubic_spline_coefs(t, "basic")
+            samples = centerline[index - 1], centerline[index], centerline[index + 1], centerline[index + 2]
+            pp.append(samples[0] * coefs[0] + samples[1] * coefs[1] + samples[2] * coefs[2] + samples[3] * coefs[3])
+        
+        # Get center point and vector pointing down the centerline
+        p = pp[1]
+        vec1 = (pp[2] - pp[1]).normalize()
     
-    # Sample three points of interest
-    pa, pb, pc = centerline[index - 1], centerline[index], centerline[index + 1]
-    
-    # Get the subpixel 3D position on the centerline
-    if t < 0:
-        p = -t * pa + (1 + t) * pb
     else:
-        p = t * pc + (1 - t) * pb
-    
-    # Get the (subpixel-sampled) vector along the centerline
-    veca = (pb - pa).normalize()
-    vecb = (pc - pb).normalize()
-    vec1 = (0.5 - t) * veca + (0.5 + t) * vecb
+        # Linear fit of the centerline
+        
+        i = max(0, min(i, centerline.shape[0] - 2))
+        
+        index = int(i)
+        t = i - index
+        
+        # Sample two points of interest
+        pa, pb = centerline[index], centerline[index + 1]
+        
+        # Get center point and vector pointing down the centerline
+        p = t * pb + (1 - t) * pa
+        vec1 = (pb - pa).normalize()
     
     # Get two orthogonal vectors that define the plane that is orthogonal
     # to the above vector. We can use an arbitrary vector to get the first,
@@ -382,6 +398,7 @@ def on_sliding(e):
 def on_sliding_done(e):
     """ When the slider is released, update the whole thing.
     """
+    slider = e.owner
     pp = get_plane_points_from_centerline_index(slider.value)
     pp2, pp3 = get_vessel_points_from_plane_points(pp)
     slider.line_plane.SetPoints(pp)
