@@ -313,6 +313,23 @@ def triangle_area(p1, p2, p3):
     return (s * (s - a) * (s - b) * (s - c)) ** 0.5
 
 
+def deform_points_2d(pp2, plane):
+    """ Given a 2D pointset (and the plane that they are on), return
+    a list with the deformed versions of that pointset.
+    """
+    pp3 = fitting.project_from_plane(pp2, plane)
+    deformed = []
+    for phase in range(len(deforms)):
+        deform = deforms[phase]
+        dx = deform.get_field_in_points(pp3, 0)
+        dy = deform.get_field_in_points(pp3, 1)
+        dz = deform.get_field_in_points(pp3, 2)
+        deform_vectors = PointSet(np.stack([dx, dy, dz], 1))
+        pp3_deformed = pp3 + deform_vectors
+        deformed.append(fitting.project_to_plane(pp3_deformed, plane))
+    return deformed
+
+
 def take_measurements():
     """ This gets called when the slider is releases. We take measurements and
     update the corresponding texts and visualizations.
@@ -337,7 +354,6 @@ def take_measurements():
     ellipse = fitting.fit_ellipse(pp2)
     p0 = PointSet([ellipse[0], ellipse[1]])
     ellipse_points2 = fitting.sample_ellipse(ellipse, 256)  # results in N + 1 points
-    ellipse_points3 = fitting.project_from_plane(ellipse_points2, plane)
     area = 0
     for i in range(len(ellipse_points2)-1):
         area += triangle_area(p0, ellipse_points2[i], ellipse_points2[i + 1])
@@ -347,27 +363,26 @@ def take_measurements():
     
     # Measure ellipse area changes
     areas = []
-    for phase in range(len(deforms)):
-        deform = deforms[phase]
-        dx = deform.get_field_in_points(ellipse_points3, 0)
-        dy = deform.get_field_in_points(ellipse_points3, 1)
-        dz = deform.get_field_in_points(ellipse_points3, 2)
-        deform_vectors = PointSet(np.stack([dx, dy, dz], 1))
-        ellipse_points3_deformed = ellipse_points3 + deform_vectors
-        ellipse_points2_deformed = fitting.project_to_plane(ellipse_points3_deformed, plane)
+    for ellipse_points2_deformed in deform_points_2d(ellipse_points2, plane):
         area = 0
         for i in range(len(ellipse_points2_deformed)-1):
             area += triangle_area(p0, ellipse_points2_deformed[i], ellipse_points2_deformed[i + 1])
         areas.append(float(area))
     measurements["min-max area"] = "{:0.2f} - {:0.2f} cm^2".format(min(areas) / 100, max(areas) / 100)
     
-    # Get allipse axis
+    # Get ellipse axis
     ellipse_points = fitting.sample_ellipse(ellipse, 4)
     major_minor = PointSet(2)
     major_minor.append(p0); major_minor.append(ellipse_points[0])  # major axis
     major_minor.append(p0); major_minor.append(ellipse_points[2])  # other major
     major_minor.append(p0); major_minor.append(ellipse_points[1])  # minor axis
     major_minor.append(p0); major_minor.append(ellipse_points[3])  # other minor
+    radii_major, radii_minor = [], []
+    for ellipse_points_deformed in deform_points_2d(ellipse_points, plane):
+       radii_major.append(float( ellipse_points_deformed[0].distance(ellipse_points_deformed[2]) ))
+       radii_minor.append(float( ellipse_points_deformed[1].distance(ellipse_points_deformed[3]) ))
+    measurements["min-max radius major axis"] = "{:0.2f} - {:0.2f} cm".format(min(radii_major) / 10, max(radii_major) / 10)
+    measurements["min-max radius minor axis"] = "{:0.2f} - {:0.2f} cm".format(min(radii_minor) / 10, max(radii_minor) / 10)
     
     # More measurements
     measurements["distance"] = "{:0.1f} mm".format(get_distance_along_centerline())
