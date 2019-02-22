@@ -4,8 +4,9 @@ class DeformInfo:
     aggregates of this.
     """
     
-    def __init__(self, *values):
+    def __init__(self, *values, unit=""):
         self.values = [float(v) for v in values]
+        self.unit = unit
     
     def __repr__(self):
         stringvalues = ["{:.3g}".format(v) for v in self.values]
@@ -29,6 +30,14 @@ class DeformInfo:
     @property
     def percent(self):
         return 100 * (self.max - self.min) / self.min
+    
+    @property
+    def summary(self):
+        if self.min < 100:
+            t = "{:0.2f} - {:0.2f} {} ({:0.1f}%)"
+        else:
+            t = "{:0.0f} - {:0.0f} {} ({:0.1f}%)"
+        return t.format(self.min, self.max, self.unit, self.percent)
 
 
 if __name__ == "__main__":

@@ -3,18 +3,22 @@ radius change - area change - volume change
 
 """
 
+import os
+import sys
+import time
+
 import openpyxl
-from stentseg.utils.datahandling import select_dir, loadvol, loadmodel, loadmesh
-import sys, os, time
+import pirt
 import numpy as np
+import visvis as vv
+
+from stentseg.utils.datahandling import select_dir, loadvol, loadmodel, loadmesh
 from stentseg.stentdirect.stentgraph import create_mesh
 from stentseg.motion.vis import create_mesh_with_abs_displacement
+from stentseg.utils import PointSet, fitting
+
 from lspeas.utils.vis import showModelsStatic
 from lspeas.utils.deforminfo import DeformInfo
-import visvis as vv
-from stentseg.utils.centerline import points_from_mesh
-from stentseg.utils import PointSet, fitting
-import pirt
 
 assert openpyxl.__version__ < "2.4", "Do pip install openpyxl==2.3.5"
 
@@ -198,7 +202,6 @@ def get_plane_points_from_centerline_index(i):
         # Cubic fit of the centerline
         
         i = max(1.1, min(i, centerline.shape[0] - 2.11))
-        
         # Sample center point and two points right below/above, using
         # "cardinal" interpolating (C1-continuous), or "basic" approximating (C2-continious).
         pp = []
@@ -208,7 +211,6 @@ def get_plane_points_from_centerline_index(i):
             coefs = pirt.get_cubic_spline_coefs(t, "basic")
             samples = centerline[index - 1], centerline[index], centerline[index + 1], centerline[index + 2]
             pp.append(samples[0] * coefs[0] + samples[1] * coefs[1] + samples[2] * coefs[2] + samples[3] * coefs[3])
-        
         # Get center point and vector pointing down the centerline
         p = pp[1]
         vec1 = (pp[2] - pp[1]).normalize()
@@ -217,13 +219,10 @@ def get_plane_points_from_centerline_index(i):
         # Linear fit of the centerline
         
         i = max(0, min(i, centerline.shape[0] - 2))
-        
         index = int(i)
         t = i - index
-        
         # Sample two points of interest
         pa, pb = centerline[index], centerline[index + 1]
-        
         # Get center point and vector pointing down the centerline
         p = t * pb + (1 - t) * pa
         vec1 = (pb - pa).normalize()
@@ -269,7 +268,6 @@ def get_vessel_points_from_plane_points(pp):
     # Now iterate over the faces (triangles), and check each edge. If the two
     # points are on different sides of the plane, then we interpolate on the
     # edge to get the exact spot where the edge intersects the plane.
-    t0 = time.time()
     sampled_pp3 = PointSet(3)
     visited_edges = set()
     for fi in selection_faces:  # for each face index
@@ -286,6 +284,9 @@ def get_vessel_points_from_plane_points(pp):
 
 
 def get_distance_along_centerline():
+    """ Get the distance along the centerline between the two reference points,
+    (using linear interpolation at the ends).
+    """
     i1 = slider_ref.value
     i2 = slider_ves.value
     
@@ -305,6 +306,8 @@ def get_distance_along_centerline():
 
 
 def triangle_area(p1, p2, p3):
+    """ Calcualate triangle area based on its three vertices.
+    """
     # Use Heron's formula to calculate a triangle's area
     # https://www.mathsisfun.com/geometry/herons-formula.html
     a = p1.distance(p2)
@@ -315,8 +318,8 @@ def triangle_area(p1, p2, p3):
 
 
 def deform_points_2d(pp2, plane):
-    """ Given a 2D pointset (and the plane that they are on), return
-    a list with the deformed versions of that pointset.
+    """ Given a 2D pointset (and the plane that they are on),
+    return a list with the deformed versions of that pointset.
     """
     pp3 = fitting.project_from_plane(pp2, plane)
     deformed = []
@@ -335,13 +338,17 @@ def take_measurements():
     """ This gets called when the slider is releases. We take measurements and
     update the corresponding texts and visualizations.
     """
-    slider = slider_ves
-    pp = get_plane_points_from_centerline_index(slider.value)
+    
+    # Get points that form the contour of the vessel in 2D
+    pp = get_plane_points_from_centerline_index(slider_ves.value)
     pp2, pp3 = get_vessel_points_from_plane_points(pp)
     plane = pp2.plane
     
     # Collect measurements in a dict. That way we can process it in one step at the end
     measurements = {}
+    
+    # Measure distance between reference points
+    measurements["distance"] = "{:0.1f} mm".format(get_distance_along_centerline())
     
     # Early exit?
     if len(pp2) == 0:
@@ -349,57 +356,72 @@ def take_measurements():
         line_2d.SetPoints(pp2)
         line_ellipse1.SetPoints(pp2)
         line_ellipse2.SetPoints(pp2)
+        process_measurements(measurements)
         return
     
-    # Get ellipse, and sample it so we can calculate its area in different phases
+    # Get ellipse and its center point
     ellipse = fitting.fit_ellipse(pp2)
     p0 = PointSet([ellipse[0], ellipse[1]])
-    ellipse_points2 = fitting.sample_ellipse(ellipse, 256)  # results in N + 1 points
+    
+    # Sample ellipse to calculate its area
+    pp_ellipse = fitting.sample_ellipse(ellipse, 256)  # results in N + 1 points
     area = 0
-    for i in range(len(ellipse_points2)-1):
-        area += triangle_area(p0, ellipse_points2[i], ellipse_points2[i + 1])
-    measurements["reference area"] = "{:0.2f} cm^2".format(float(area / 100))
+    for i in range(len(pp_ellipse)-1):
+        area += triangle_area(p0, pp_ellipse[i], pp_ellipse[i + 1])
+    # measurements["reference area"] = "{:0.2f} cm^2".format(float(area / 100))
     # Do a quick check to be sure that this triangle-approximation is close enough
     assert abs(area - fitting.area(ellipse)) < 2, "area mismatch"  # mm2  typically ~ 0.1 mm2
     
-    # Measure ellipse area changes
-    areas = DeformInfo()
-    for ellipse_points2_deformed in deform_points_2d(ellipse_points2, plane):
+    # Measure ellipse area (and how it changes)
+    measurements["area"] = DeformInfo(unit="mm2")
+    for pp_ellipse_def in deform_points_2d(pp_ellipse, plane):
         area = 0
-        for i in range(len(ellipse_points2_deformed)-1):
-            area += triangle_area(p0, ellipse_points2_deformed[i], ellipse_points2_deformed[i + 1])
-        areas.append(area)
-    measurements["min-max area"] = "{:0.2f} - {:0.2f} cm^2 ({:0.1f}%)".format(areas.min / 100, areas.max / 100, areas.percent)
+        for i in range(len(pp_ellipse_def)-1):
+            area += triangle_area(p0, pp_ellipse_def[i], pp_ellipse_def[i + 1])
+        measurements["area"].append(area)
     
-    # Get ellipse axis
-    ellipse_points = fitting.sample_ellipse(ellipse, 4)
-    major_minor = PointSet(2)
-    major_minor.append(p0); major_minor.append(ellipse_points[0])  # major axis
-    major_minor.append(p0); major_minor.append(ellipse_points[2])  # other major
-    major_minor.append(p0); major_minor.append(ellipse_points[1])  # minor axis
-    major_minor.append(p0); major_minor.append(ellipse_points[3])  # other minor
-    radii_major, radii_minor = DeformInfo(), DeformInfo()
-    for ellipse_points_deformed in deform_points_2d(ellipse_points, plane):
-       radii_major.append(float( ellipse_points_deformed[0].distance(ellipse_points_deformed[2]) ))
-       radii_minor.append(float( ellipse_points_deformed[1].distance(ellipse_points_deformed[3]) ))
-    measurements["min-max radius major axis"] = "{:0.2f} - {:0.2f} cm ({:0.1f}%)".format(radii_major.min / 10, radii_major.max / 10, radii_major.percent)
-    measurements["min-max radius minor axis"] = "{:0.2f} - {:0.2f} cm ({:0.1f}%)".format(radii_minor.min / 10, radii_minor.max / 10, radii_minor.percent)
+    # Measure radii of ellipse major and minor axis (and how it changes)
+    pp_ellipse4 = fitting.sample_ellipse(ellipse, 4)  # major, minor, major, minor
+    measurements["major radius"] = DeformInfo(unit="mm")
+    measurements["minor radius"] = DeformInfo(unit="mm")
+    for pp_ellipse4_def in deform_points_2d(pp_ellipse4, plane):
+       measurements["major radius"].append(float( pp_ellipse4_def[0].distance(pp_ellipse4_def[2]) ))
+       measurements["minor radius"].append(float( pp_ellipse4_def[1].distance(pp_ellipse4_def[3]) ))
     
-    # More measurements
-    measurements["distance"] = "{:0.1f} mm".format(get_distance_along_centerline())
+    # Show measurements
+    process_measurements(measurements)
     
     # Update line objects
     line_2d.SetPoints(pp2)
     line_ellipse1.SetPoints(fitting.sample_ellipse(ellipse))
+    major_minor = PointSet(2)
+    for p in [p0, pp_ellipse4[0], p0, pp_ellipse4[2], p0, pp_ellipse4[1], p0, pp_ellipse4[3]]:
+        major_minor.append(p)
     line_ellipse2.SetPoints(major_minor)
     axes2.SetLimits(margin=0.12)
+
+
+# Global value that will be a dictionary with measurements
+mm = {}
+
+def process_measurements(measurements):
+    """ Show measurements. Now the results are shown in a label object, but we could do anything here ...
+    """
+    # Store in global for further processing
+    mm.clear()
+    mm.update(measurements)
     
-    # Show measurements. Now the results are shown in a label object, but we could do anything here ...
-    texts = []
+    # Print in shell
     print("Measurements:")
-    for key, value in measurements.items():
-        texts.append(key + ": " + value)
-        print(key.rjust(16) + ": " + value)
+    for key, val in measurements.items():
+        val = val.summary if isinstance(val, DeformInfo) else val
+        print(key.rjust(16) + ": " + str(val))
+    
+    # Show in label
+    texts = []
+    for key, val in measurements.items():
+        val = val.summary if isinstance(val, DeformInfo) else val
+        texts.append(key + ": " + str(val))
     label.text = " " + "  |  ".join(texts)
 
 
