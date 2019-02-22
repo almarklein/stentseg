@@ -70,19 +70,20 @@ def paired_samples_ttest(a,b, profile='Name', alpha=0.05, amplitude=False):
     
     return t2, p2
 
-def independent_samples_ttest(a, b, ):
+def independent_samples_ttest(a, b, alpha=0.05):
     """ Use scipy stats for a paired sampled Students t-test
     returns calculated t-statistic and two-tailed p-value
     """
-    
-    t2, p2 = stats.ttest_ind(a,b)
-    print(profile +": t = " + str(t2))
-    print(profile +": p = " + str(p2))
+    a = np.asarray(a)
+    b = np.asarray(b)
+    t2, p2 = stats.ttest_ind(a, b)
+    print('t-statistic = ' + str(t2))
+    print('p-value = ' + str(p2))
     if p2 < alpha:
         print('yes different')
     else:
         print('no difference')
-    print("mean difference: " + str(np.mean(a-b)))
+    print("mean difference: " + str(np.mean(a)-np.mean(b) ))
     print()
     
     return t2, p2
