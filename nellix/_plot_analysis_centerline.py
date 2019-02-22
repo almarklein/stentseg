@@ -13,7 +13,7 @@ import numpy as np
 import itertools
 from matplotlib import gridspec
 from lspeas.analysis.utils_analysis import _initaxis
-from lspeas.utils.normality_shapiro import normality_check 
+from lspeas.utils.normality_statistics import normality_check, independent_samples_ttest
 
 class ExcelAnalysisNellix():
     """ Create graphs from excel data
@@ -52,6 +52,52 @@ class ExcelAnalysisNellix():
         self.fontsize1 = 16 # 14
         self.fontsize2 = 16 # 15
         self.fontsize3 = 10.3
+    
+    def get_distance_change(self, patients=None, analysis='NelNel', chimneys=['LRA', 'RRA', 'SMA']):
+        """ Read distance change between nellix-nellix and nellix-chimneys for all patients
+        Analysis: 'NelNel' or 'ChimNel'
+        Chimneys: ['LRA', 'RRA', 'SMA'] or ['LRA'] get single chimney; only used with ChimNel analysis
+        """
+        
+        if patients == None:
+            patients = self.patients
+        
+        self.distanceChange = []
+        
+        # read workbooks
+        for patient in patients:
+            workbook_stent = os.path.join(self.exceldir,patient, self.workbook_analysis+patient[7:]+'.xlsx')
+            # read sheet
+            wb = openpyxl.load_workbook(workbook_stent, data_only=True)
+            sheetnames = wb.get_sheet_names()
+            
+            if analysis == 'NelNel':
+                sheetname = 'Dist_NelL_NelR'
+                sheet = wb.get_sheet_by_name(sheetname)
+                # read distance change
+                distchange = readDistanceChange(sheet, row=5, colStart=1)
+                self.distanceChange.append(distchange)
+            elif analysis == 'ChimNel':
+                for a in chimneys:
+                    # see which sheetname, not known if NelL or NelR
+                    for sheetname in sheetnames:
+                        if sheetname.startswith('Dist_'+a):
+                            sheet = wb.get_sheet_by_name(sheetname)
+                            # read distance change
+                            distchange = readDistanceChange(sheet, row=5, colStart=1)
+                            self.distanceChange.append(distchange)
+                            break # next a
+        
+        # check normality
+        W, pValue, normality = normality_check(self.distanceChange, alpha=0.05, showhist=False)
+        print('DistanceChange distribution normal:{} (pValue of {:.3f})'.format(normality, pValue))
+        print('')
+        print('Average maximum distance change: {:.1f} ± {:.1f} ({:.1f}-{:.1f})'.format(
+                                            np.mean(self.distanceChange),
+                                            np.std(self.distanceChange),
+                                            np.min(self.distanceChange),
+                                            np.max(self.distanceChange)
+                                            ))
     
     def get_segment_displacement(self, patients=None, analysis=['NelL'],location='prox'):
         """ Read segment mean displacement in x,y,z direction from excels for all patients
@@ -423,6 +469,14 @@ class ExcelAnalysisNellix():
             'plot_angles_chimney{}.png'.format(analysis)), papertype='a0', dpi=600)
         
         
+def readDistanceChange(sheet, row=5, colStart=1):
+    """ Read the maximum distance change during cardiac cycle
+    rows as excel
+    """
+    distchange = sheet.rows[row][colStart].value
+    
+    return distchange
+    
 def readSegmentDisplacement(sheet, rows=[4,5,6,7], colStart=1):
     """  Read the segment mean displacement amplitude
     rows as excel
@@ -629,9 +683,11 @@ if __name__ == '__main__':
     # patients=['chevas_09', 'chevas_09_thin']
     patients = None # None = all in self.patients
     
+    # Plots
+    # ==========================================
     # Distances
-    foo.plot_distances_between_points(patients=patients,analysis='NelNel', ylim=[8,16], saveFig=False) 
-    foo.plot_distances_between_points(patients=patients,analysis='ChimNel', ylim=[5,32], saveFig=False)
+    # foo.plot_distances_between_points(patients=patients,analysis='NelNel', ylim=[8,16], saveFig=False) 
+    # foo.plot_distances_between_points(patients=patients,analysis='ChimNel', ylim=[5,32], saveFig=False)
     
     # Angles
     # foo.plot_angles_chimney(patients=patients,analysis='Ang', rows=[7,10,6], ylim=[0, 47], ylimRel=[-2,2], saveFig=False)
@@ -644,9 +700,20 @@ if __name__ == '__main__':
     # foo.plot_displacement(patient=patient, analysis=['RRAprox','NelRprox'], 
     #             rows=[8,9], ylim=[-0.5, 0.5], ylimRel=[0,0.8], saveFig=False)
     
-    # segment prox or dist mean displacement
+    # ==========================================
+    
+    # Get statistics
+    # ==========================================
+    # Get centerline segment prox or dist mean displacement
     # foo.get_segment_displacement(patients=patients, analysis=['NelR'], location='prox')
     # foo.get_segment_displacement(patients=patients, analysis=['LRA','RRA', 'SMA'], location='dist')
-    # print(foo.segmentDisplacementX)
-    # print(len(foo.segmentDisplacementX))
+    # print(len(foo.segmentDisplacementX)) # verify number of chimneys/nellix stents
     
+    foo.get_distance_change(patients=None, analysis='ChimNel', chimneys=['LRA', 'RRA', 'SMA'])
+    foo.get_distance_change(patients=None, analysis='NelNel', chimneys=['LRA', 'RRA', 'SMA'])
+    print(len(foo.distanceChange))
+    if False:
+        outcomeNel = foo.distanceChange
+        t, p = independent_samples_ttest(foo.distanceChange, outcomeNel)
+    
+    # ==========================================
