@@ -256,7 +256,7 @@ def get_vessel_points_from_plane_points(pp):
     sampled_pp3 = PointSet(3)
     visited_edges = set()
     for fi in selection_faces:  # for each face index
-        for edge in [(fi + 0, fi + 1), (fi + 0, fi + 1), (fi + 0, fi + 1)]:
+        for edge in [(fi + 0, fi + 1), (fi + 0, fi + 2), (fi + 1, fi + 2)]:
             if above_below[edge[0]] * above_below[edge[1]] < 0:
                 if edge not in visited_edges:
                     visited_edges.add(edge)
@@ -336,7 +336,8 @@ def take_measurements():
         dx = deform.get_field_in_points(ellipse_points3, 0)
         dy = deform.get_field_in_points(ellipse_points3, 1)
         dz = deform.get_field_in_points(ellipse_points3, 2)
-        ellipse_points3_deformed = ellipse_points3 + PointSet(np.stack([dx, dy, dz], 1))
+        deform_vectors = PointSet(np.stack([dx, dy, dz], 1))
+        ellipse_points3_deformed = ellipse_points3 + deform_vectors
         ellipse_points2_deformed = fitting.project_to_plane(ellipse_points3_deformed, plane)
         area = 0
         for i in range(len(ellipse_points2_deformed)-1):
@@ -381,7 +382,6 @@ def on_sliding(e):
 def on_sliding_done(e):
     """ When the slider is released, update the whole thing.
     """
-    slider = e.owner
     pp = get_plane_points_from_centerline_index(slider.value)
     pp2, pp3 = get_vessel_points_from_plane_points(pp)
     slider.line_plane.SetPoints(pp)
@@ -396,8 +396,10 @@ slider_ref.eventSliderChanged.Bind(on_sliding_done)
 slider_ves.eventSliderChanged.Bind(on_sliding_done)
 
 
-#todo: measure area and volume change at/between selected level(s)
-#todo: measure radius change in minor/major axis, asymmetry
+#todo: measure radius change in minor/major axis, asymmetry.
+#todo: measure distance from center to ellipse-points to get "direction-sensitive expansion".
+#todo: make it easy to export results/data.
+#todo: measure volume change at/between selected level(s)
 #todo: measure how centerline segment changes (longitudinal strain)
 #todo: measure (change of) curvature of centerline
 #todo: measure (change of) curvature of stent rings
