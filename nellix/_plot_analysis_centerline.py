@@ -12,14 +12,16 @@ import matplotlib as mpl
 import numpy as np
 import itertools
 from matplotlib import gridspec
-from lspeas.analysis.utils_analysis import _initaxis 
+from lspeas.analysis.utils_analysis import _initaxis
+from lspeas.utils.normality_shapiro import normality_check 
 
 class ExcelAnalysisNellix():
     """ Create graphs from excel data
     """
     
     # exceldir = select_dir(r'F:\Nellix_chevas\CT_SSDF\SSDF')
-    exceldir = r'E:\Nellix_chevas\CT_SSDF\SSDF_automated'
+    exceldir = select_dir(r'E:\Nellix_chevas\CT_SSDF\SSDF_automated',
+                            r'D:\Nellix_chevas_BACKUP\CT_SSDF\SSDF_automated')
     dirsaveIm =  select_dir(r'C:\Users\Maaike\Desktop','D:\Profiles\koenradesma\Desktop')
     
     def __init__(self):
@@ -34,9 +36,9 @@ class ExcelAnalysisNellix():
                         'chevas_06',	
                         'chevas_07', 
                         'chevas_08',
-                        'chevas_09', 
-                        'chevas_10', 
-                        'chevas_11'
+                        'chevas_10',
+                        'chevas_09', # reintervention of pt 1
+                        'chevas_11'  # reintervention of pt 7
                         ]
     
         self.distsAll = [] # distances between all stents that were analyzed
@@ -47,24 +49,99 @@ class ExcelAnalysisNellix():
         self.tortsRelAll = []
         self.posAll = []
         self.relPosAll = []
-        self.fontsize1 = 14
-        self.fontsize2 = 15
+        self.fontsize1 = 16 # 14
+        self.fontsize2 = 16 # 15
+        self.fontsize3 = 10.3
+    
+    def get_segment_displacement(self, patients=None, analysis=['NelL'],location='prox'):
+        """ Read segment mean displacement in x,y,z direction from excels for all patients
+        Location: prox or dist
+        Analysis:  [NelL,NelR] or [NelL] or [NelR] or [SMA] or [LRA] or [RRA] or ...
+        """
+        if patients == None:
+            patients = self.patients
+            
+        self.segmentDisplacementX = []
+        self.segmentDisplacementY = []
+        self.segmentDisplacementZ = []
+        self.segmentDisplacement3d = []
+        
+        # read workbooks
+        for patient in patients:
+            workbook_stent = os.path.join(self.exceldir,patient, self.workbook_analysis+patient[7:]+'.xlsx')
+            # read sheet
+            wb = openpyxl.load_workbook(workbook_stent, data_only=True)
+            
+            for a in analysis:
+                sheetname = 'Motion_'+a+location
+                # see if patient has this stent analysis
+                try:
+                    sheet = wb.get_sheet_by_name(sheetname)
+                except KeyError:
+                    continue # next analysis
+                
+                # read segment displ
+                displX, displY, displZ, displ3d = readSegmentDisplacement(sheet, rows=[4,5,6,7], colStart=1)
+                self.segmentDisplacement3d.append(displ3d)
+                self.segmentDisplacementX.append(displX)
+                self.segmentDisplacementY.append(displY)
+                self.segmentDisplacementZ.append(displZ)
+        
+        # check normality
+        W, pValue, normality = normality_check(self.segmentDisplacementX, alpha=0.05, showhist=False)
+        print('DisplacementX distribution normal:{} (pValue of {:.3f})'.format(normality, pValue))
+        W, pValue, normality = normality_check(self.segmentDisplacementY, alpha=0.05, showhist=False)
+        print('DisplacementY distribution normal:{} (pValue of {:.3f})'.format(normality, pValue))
+        W, pValue, normality = normality_check(self.segmentDisplacementZ, alpha=0.05, showhist=False)
+        print('DisplacementZ distribution normal:{} (pValue of {:.3f})'.format(normality, pValue))
+        W, pValue, normality = normality_check(self.segmentDisplacement3d, alpha=0.05, showhist=False)
+        print('Displacement3d distribution normal:{} (pValue of {:.3f})'.format(normality, pValue))
+        print('')
+        print('Average segment displacement in x: {:.1f} ± {:.1f} ({:.1f}-{:.1f})'.format(
+                                            np.mean(self.segmentDisplacementX),
+                                            np.std(self.segmentDisplacementX),
+                                            np.min(self.segmentDisplacementX),
+                                            np.max(self.segmentDisplacementX)
+                                            ))
+        print('')
+        print('Average segment displacement in y: {:.1f} ± {:.1f} ({:.1f}-{:.1f})'.format(
+                                            np.mean(self.segmentDisplacementY),
+                                            np.std(self.segmentDisplacementY),
+                                            np.min(self.segmentDisplacementY),
+                                            np.max(self.segmentDisplacementY)
+                                            ))
+        
+        print('')
+        print('Average segment displacement in z: {:.1f} ± {:.1f} ({:.1f}-{:.1f})'.format(
+                                            np.mean(self.segmentDisplacementZ),
+                                            np.std(self.segmentDisplacementZ),
+                                            np.min(self.segmentDisplacementZ),
+                                            np.max(self.segmentDisplacementZ)
+                                            ))
+        print('')
+        print('Average segment displacement in 3d: {:.1f} ± {:.1f} ({:.1f}-{:.1f})'.format(
+                                            np.mean(self.segmentDisplacement3d),
+                                            np.std(self.segmentDisplacement3d),
+                                            np.min(self.segmentDisplacement3d),
+                                            np.max(self.segmentDisplacement3d)
+                                            ))
+        
     
     def plot_displacement(self, patient='chevas_01', analysis=['NelLprox'], rows=[8,9], 
                 ylim=[-0.5, 0.5], ylimRel=[0,0.8], saveFig=False):
-        """
-        Plot relative displacement with respect to position at avgreg and 
+        """ Plot relative displacement with respect to position at avgreg and 
         all positions at each phase. 
         Rows is row as in excel sheet; analysis='NelRprox' or 'LRAprox' or 'LRAdist'
         """
         # init figure
-        self.f1 = plt.figure(figsize=(11.6, 5.8)) # 11.6, 4.62
+        self.f1 = plt.figure(figsize=(11.8, 5.8)) # 11.6, 5.8
         xlabels = ['0', '10', '20', '30', '40', '50', '60', '70','80','90']
         xrange = range(1,1+len(xlabels)) # not start from x=0 to play with margin xlim
         xrange2 = np.asarray([1,2,3,4,5,6,7,8,9,10])
         xrange2 = xrange2 + 0.5
         fontsize1 = self.fontsize1
         fontsize2 = self.fontsize2
+        fontsize3 = self.fontsize3
         
         # init axis
         factor = 1
@@ -106,7 +183,7 @@ class ExcelAnalysisNellix():
                     sheet = wb.get_sheet_by_name(sheetname)  
                     shortname = sheetname[7:] # e.g. 'RRAprox'
                     
-                    pavg, pphases, pdisplacement = readDisplacement(sheet,rows=rows,colStart=1)
+                    pavg, pphases, pdisplacement = readPositionPhases(sheet,rows=rows,colStart=1)
                     self.relPosAll.append(pdisplacement)
                     
                     # get vector magnitudes between phases
@@ -153,14 +230,15 @@ class ExcelAnalysisNellix():
         Rows is row as in excel sheet; analysis='NelNel' or 'ChimNel'
         """
         # init figure
-        self.f1 = plt.figure(figsize=(11.6, 5.8)) # 11.6, 4.62
+        self.f1 = plt.figure(figsize=(11.8, 5.8)) # 11.6, 4.62
         xlabels = ['0', '10', '20', '30', '40', '50', '60', '70','80','90']
         xrange = range(1,1+len(xlabels)) # not start from x=0 to play with margin xlim
         fontsize1 = self.fontsize1
         fontsize2 = self.fontsize2
+        fontsize3 = self.fontsize3
         
         # init axis
-        factor = 1.33
+        factor = 1.36 # 1.33
         gs = gridspec.GridSpec(1, 2, width_ratios=[1, factor]) # plot right wider
         ax1 = plt.subplot(gs[0])
         plt.xticks(xrange, xlabels, fontsize = fontsize1)
@@ -183,8 +261,8 @@ class ExcelAnalysisNellix():
         # marker = 'o'
         alpha = 0.9
         
-        colors = create_iter_colors()
-        markers = create_iter_markers()
+        # colors = create_iter_colors()
+        # markers = create_iter_markers()
         lstyles = create_iter_ls(type=1)
         
         if patients == None:
@@ -203,26 +281,40 @@ class ExcelAnalysisNellix():
                             sheetname.startswith('Dist_LRA') or
                             sheetname.startswith('Dist_SMA')):
                         sheet = wb.get_sheet_by_name(sheetname)  
-                        shortname = sheetname[5:-1] # e.g. 'RRA_Nel' 
+                        shortname = 'Nel-'+sheetname[5:8] # e.g. 'RRA_Nel' to Nel-RRA
                 elif analysis == 'NelNel':
                     if sheetname.startswith('Dist_Nel'):
                         sheet = wb.get_sheet_by_name(sheetname)
-                        shortname = 'NelNel'
+                        shortname = 'Nel-Nel'
                 if not sheet is None:        
                     dists, distsRel = readDistancesBetweenPoints(sheet,rows=rows,colStart=1)
                     self.distsAll.append(dists)
                     self.distsRelAll.append(distsRel)
-                    color1 = next(colors)
-                    marker = next(markers)
+                    # color1 = next(colors)
+                    color1 = color_per_patient(patient)
+                    # marker = next(markers)
+                    marker = marker_per_chimney(shortname)
                     ls = next(lstyles)
                     # plot
+                    if patient == 'chevas_09':
+                        ptlegend = '01**'+':'+shortname # reintervention of pt 1
+                        ls = '--'
+                    elif patient == 'chevas_10':
+                        ptlegend = '09*'+': '+shortname
+                        ls = '--'
+                    elif patient == 'chevas_11':
+                        ptlegend = '07**'+':'+shortname # reintervention of pt 7
+                        ls = '--'
+                    else:
+                        ptlegend = patient[7:]+':  '+shortname
+                    
                     ax1.plot(xrange, dists, ls=ls, lw=lw, marker=marker, color=color1, 
-                            label='%s:%s' % (patient[7:],shortname), alpha=alpha)
+                            label=ptlegend, alpha=alpha)
                     ax2.plot(xrange, distsRel, ls=ls, lw=lw, marker=marker, color=color1, 
-                            label='%s:%s' % (patient[7:],shortname), alpha=alpha)
+                            label=ptlegend, alpha=alpha)
                 
-        ax2.legend(loc='upper right', fontsize=10, numpoints=2, title='Analysis:')
-        _initaxis([ax1,ax2])
+        ax2.legend(loc='upper right', fontsize=fontsize3, numpoints=2, title='Legend:')
+        _initaxis([ax1,ax2], axsize=fontsize1)
         
         if saveFig:
             plt.savefig(os.path.join(self.dirsaveIm, 
@@ -234,14 +326,15 @@ class ExcelAnalysisNellix():
         """ Plot Angulation or Tortuosity. analysis='Ang' or 'Tort'
         """
         # init figure
-        self.f2 = plt.figure(figsize=(11.6, 5.8)) # 11.6, 4.62
+        self.f2 = plt.figure(figsize=(11.8, 5.8)) # 11.6, 4.62
         xlabels = ['0', '10', '20', '30', '40', '50', '60', '70','80','90']
         xrange = range(1,1+len(xlabels)) # not start from x=0 to play with margin xlim
         fontsize1 = self.fontsize1
         fontsize2 = self.fontsize2
+        fontsize3 = self.fontsize3
         
         # init axis
-        factor = 1.33
+        factor = 1.32
         gs = gridspec.GridSpec(1, 2, width_ratios=[1, factor]) # plot right wider
         ax1 = plt.subplot(gs[0])
         plt.xticks(xrange, xlabels, fontsize = fontsize1)
@@ -253,6 +346,7 @@ class ExcelAnalysisNellix():
         elif analysis=='Tort':
             ax1.set_ylabel('Tortuosity (AU)', fontsize=fontsize2) # absolute
         ax1.set_ylim(ylim)
+        ax1.set_yticks(np.arange(ylim[0], ylim[1], 5))
         ax1.set_xlim([0.8, len(xlabels)+0.2]) # xlim margins 0.2
         ax1.set_xlabel('Phase in cardiac cycle', fontsize=fontsize2)
         
@@ -270,8 +364,8 @@ class ExcelAnalysisNellix():
         # marker = 'o'
         alpha = 0.9
         
-        colors = create_iter_colors()
-        markers = create_iter_markers()
+        # colors = create_iter_colors()
+        # markers = create_iter_markers()
         lstyles = create_iter_ls(type=1)
         
         if patients == None:
@@ -298,16 +392,30 @@ class ExcelAnalysisNellix():
                         y = torts
                         yrel = tortsRel
                     shortname = sheetname[-3:] # LRA or RRA or SMA
-                    color1 = next(colors)
-                    marker = next(markers)
+                    # color1 = next(colors)
+                    color1 = color_per_patient(patient)
+                    # marker = next(markers)
+                    marker = marker_per_chimney(shortname)
                     ls = next(lstyles)
                     # plot
+                    if patient == 'chevas_09':
+                        ptlegend = '01**'+':'+shortname # reintervention of pt 1
+                        ls = '--'
+                    elif patient == 'chevas_10':
+                        ptlegend = '09*'+': '+shortname
+                        ls = '--'
+                    elif patient == 'chevas_11':
+                        ptlegend = '07**'+':'+shortname # reintervention of pt 7
+                        ls = '--'
+                    else:
+                        ptlegend = patient[7:]+':  '+shortname
+                    
                     ax1.plot(xrange, y, ls=ls, lw=lw, marker=marker, color=color1, 
-                            label='%s:%s' % (patient[7:],shortname), alpha=alpha)
+                            label=ptlegend, alpha=alpha)
                     ax2.plot(xrange, yrel, ls=ls, lw=lw, marker=marker, color=color1, 
-                            label='%s:%s' % (patient[7:],shortname), alpha=alpha)
+                            label=ptlegend, alpha=alpha)
                 
-        ax2.legend(loc='upper right', fontsize=10, numpoints=2, title='Analysis:')
+        ax2.legend(loc='upper right', fontsize=fontsize3, numpoints=2, title='Legend:')
         _initaxis([ax1,ax2])
         
         if saveFig:
@@ -315,9 +423,24 @@ class ExcelAnalysisNellix():
             'plot_angles_chimney{}.png'.format(analysis)), papertype='a0', dpi=600)
         
         
+def readSegmentDisplacement(sheet, rows=[4,5,6,7], colStart=1):
+    """  Read the segment mean displacement amplitude
+    rows as excel
+    """
+    rowStart3d= rows[0]-1
+    rowStartx= rows[1]-1
+    rowStarty= rows[2]-1
+    rowStartz= rows[3]-1
+    # read mean displacement amplitude
+    displ3d = sheet.rows[rowStart3d][colStart].value
+    displX = sheet.rows[rowStartx][colStart].value
+    displY = sheet.rows[rowStarty][colStart].value
+    displZ = sheet.rows[rowStartz][colStart].value
+    
+    return displX, displY, displZ, displ3d
 
-def readDisplacement(sheet,rows=[8, 9],colStart=1, nphases=10):
-    """ Read position of a point at avgreg and at each phase in cycle
+def readPositionPhases(sheet,rows=[8, 9],colStart=1, nphases=10):
+    """ Read position of the CoM point at avgreg and at each phase in cycle
     rows as excel rows
     """ 
     rowStart1 = rows[0]-1
@@ -420,6 +543,43 @@ def create_iter_colors(type=1):
     
     return colors
     
+def color_per_patient(patient):
+    colors = [
+                                '#a6cee3', # 1
+                                '#fb9a99', # 2 
+                                '#33a02c', # 3
+                                '#fdbf6f', # 4 
+                                '#1f78b4', # 5
+                                '#e31a1c', # 6
+                                '#b2df8a', # 7 
+                                '#cab2d6', # 8 
+                                '#ff7f00', # 9
+                                ]
+    if patient == 'chevas_01':
+        color = colors[0] 
+    elif patient == 'chevas_02':
+        color = colors[1] 
+    elif patient == 'chevas_03':
+        color = colors[2] 
+    elif patient == 'chevas_04':
+        color = colors[3] 
+    elif patient == 'chevas_05':
+        color = colors[4] 
+    elif patient == 'chevas_06':
+        color = colors[5] 
+    elif patient == 'chevas_07':
+        color = colors[6]
+    elif patient == 'chevas_08':
+        color = colors[7] 
+    elif patient == 'chevas_09':
+        color = colors[0] # pt 1
+    elif patient == 'chevas_10':
+        color = colors[-1] # color 9th pt
+    elif patient == 'chevas_11':
+        color = colors[6] # pt 7
+    
+    return color
+    
 def create_iter_markers(type=1):
     if type == 1:
         markers = itertools.cycle([
@@ -438,6 +598,17 @@ def create_iter_markers(type=1):
         markers = itertools.cycle(['o', '^', 's','d'])
     
     return markers
+
+def marker_per_chimney(shortname):
+    if 'RRA' in shortname:
+        marker = 'o'
+    elif 'LRA' in shortname:
+        marker = 's'
+    elif 'SMA' in shortname:
+        marker = '^'
+    else:
+        marker = 'o'
+    return marker
 
 def create_iter_ls(type=1):
     if type == 1:
@@ -458,21 +629,24 @@ if __name__ == '__main__':
     # patients=['chevas_09', 'chevas_09_thin']
     patients = None # None = all in self.patients
     
-    # # Distances
-    # foo.plot_distances_between_points(patients=patients,analysis='NelNel', ylim=[8,17], saveFig=True) 
-    # foo.plot_distances_between_points(patients=patients,analysis='ChimNel', ylim=[5,40], saveFig=True)
-    # 
-    # # Angles
-    # foo.plot_angles_chimney(patients=patients,analysis='Ang', rows=[7,10,6], ylim=[0, 47], ylimRel=[-2,2], saveFig=True)
-    # 
+    # Distances
+    foo.plot_distances_between_points(patients=patients,analysis='NelNel', ylim=[8,16], saveFig=False) 
+    foo.plot_distances_between_points(patients=patients,analysis='ChimNel', ylim=[5,32], saveFig=False)
+    
+    # Angles
+    # foo.plot_angles_chimney(patients=patients,analysis='Ang', rows=[7,10,6], ylim=[0, 47], ylimRel=[-2,2], saveFig=False)
+    
     # # Tortuosity
-    # foo.plot_angles_chimney(patients=patients,analysis='Tort', rows=[4,7,3], ylim=[0.99, 1.11], ylimRel=[-0.01,0.01], saveFig=True)
+    # foo.plot_angles_chimney(patients=patients,analysis='Tort', rows=[4,7,3], ylim=[0.99, 1.11], ylimRel=[-0.01,0.01], saveFig=False)
     
-    # Displacement
-    patient = 'chevas_07'
-    foo.plot_displacement(patient=patient, analysis=['RRAprox','NelRprox'], 
-                rows=[8,9], ylim=[-0.5, 0.5], ylimRel=[0,0.8], saveFig=True)
+    # # Displacement
+    # patient = 'chevas_07'
+    # foo.plot_displacement(patient=patient, analysis=['RRAprox','NelRprox'], 
+    #             rows=[8,9], ylim=[-0.5, 0.5], ylimRel=[0,0.8], saveFig=False)
     
-    
-    
+    # segment prox or dist mean displacement
+    # foo.get_segment_displacement(patients=patients, analysis=['NelR'], location='prox')
+    # foo.get_segment_displacement(patients=patients, analysis=['LRA','RRA', 'SMA'], location='dist')
+    # print(foo.segmentDisplacementX)
+    # print(len(foo.segmentDisplacementX))
     
