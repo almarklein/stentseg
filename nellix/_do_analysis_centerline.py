@@ -8,6 +8,7 @@ from stentseg.utils.datahandling import select_dir, loadvol, loadmodel
 from stentseg.utils.picker import pick3d
 from stentseg.utils.visualization import DrawModelAxes, show_ctvolume, plot_points
 from stentseg.utils import PointSet, _utils_GUI, visualization
+from stentseg.motion.vis import get_graph_in_phase
 import visvis as vv
 import numpy as np
 import copy
@@ -228,17 +229,17 @@ class _Do_Analysis_Centerline:
             if key.startswith('ppCenterlineRRA'):
                 ppRRA = s[key]
                 key1 = key[12:]
-                self.centerline_angle_change(key1, ppRRA, 'Ang_RRA')
+                self.chimney_angle_change(key1, ppRRA, 'Ang_RRA')
                 self.centerline_tortuosity_change(key1, ppRRA, 'Tort_RRA')
             if key.startswith('ppCenterlineLRA'):
                 ppLRA = s[key]
                 key1 = key[12:]
-                self.centerline_angle_change(key1, ppLRA, 'Ang_LRA')
+                self.chimney_angle_change(key1, ppLRA, 'Ang_LRA')
                 self.centerline_tortuosity_change(key1, ppLRA, 'Tort_LRA')
             if key.startswith('ppCenterlineSMA'):
                 ppSMA = s[key]
                 key1 = key[12:]
-                self.centerline_angle_change(key1, ppSMA, 'Ang_SMA')
+                self.chimney_angle_change(key1, ppSMA, 'Ang_SMA')
                 self.centerline_tortuosity_change(key1, ppSMA, 'Tort_SMA')
     
     def centerline_tortuosity_change(self, key, ppCh, name_output):
@@ -259,9 +260,34 @@ class _Do_Analysis_Centerline:
         output['Name'] = name_output
         output['Type'] = 'centerline_tortuosity_change'
         self.storeOutput.append(output)
-
-    def centerline_angle_change(self, key, ppCh, name_output):
-        """ Calculate the angle change of the given centerline
+    
+    def chimney_nel_angle_change():
+        """
+        
+        """
+        # ============
+        # Calcualte for each phase the angle between chimney end segments 
+        # n1Indices = point1 + point1Deforms
+        # n2Indices = point2 + point2Deforms
+        # n3Indices = point3 + point3Deforms
+        # 
+        # # get vectors
+        # v1 = n1Indices - n2Indices
+        # v2 = n3Indices - n2Indices
+        # 
+        # # get angles
+        # angles = []
+        # for i in range(len(v1)):
+        #     angles.append(math.degrees(math.acos((np.dot(v1[i],v2[i]))/
+        #     (np.linalg.norm(v1[i])*np.linalg.norm(v2[i])))))
+        # angles = np.array(angles) # 10 angles; for each phase
+    
+    
+    def chimney_angle_change(self, key, ppCh, name_output, armlength=10):
+        """ Calculate the chimney angle change during the cycle
+        -> for each point on the given centerline to obtain the values for the point with the greatest change
+        -> and peak angles during the phases, anywhere on the stent  
+        --> or between prox and dist segments?
         ppCh is a PointSet of the CLL, which is in correct order 
         """
         
@@ -291,69 +317,185 @@ class _Do_Analysis_Centerline:
         # 
         
         
-        # Calculate greatest angle along cll with fixed arms
-        angle = 180 # straigth
-        for i, n2 in enumerate(ppCh):
-            n1, n3, anglenew = get_angle_at_fixed_arms(ppCh, n2, armlength=15)
-            if anglenew is None:
-                continue
-            print('Angle for points along cll= {}'.format(anglenew) )
-            if anglenew < angle:
-                midnode = [copy.copy(n2), copy.copy(i)]
-                point1 = copy.copy(n1)
-                point3 = copy.copy(n3)
-            angle = min(angle, anglenew)
-        
-        # check if anglenew was found, cll could be too short for armlength
-        if angle == 180:
-            for i, n2 in enumerate(ppCh):
-                n1, n3, anglenew = get_angle_at_fixed_arms(ppCh, n2, armlength=7)
-                if anglenew is None:
-                    continue
-                print('Angle for points along cll= {}'.format(anglenew) )
-                if anglenew < angle:
-                    midnode = [copy.copy(n2), copy.copy(i)]
-                    point1 = copy.copy(n1)
-                    point3 = copy.copy(n3)
-                angle = min(angle, anglenew)
-        
-        # show points at which angle was calculated
-        a1 = self.a
-        mw =18
-        if False: # False=do not show arm points
-            plot_point1 = plot_points(point1, mc='b', mw=mw, ax=a1)
-            self.points_plotted.append(plot_point1)
-            plot_point3 = plot_points(point3, mc='g', mw=mw, ax=a1)
-            self.points_plotted.append(plot_point3)
-            # self.createNodePoint(tuple(point1), color='b')
-            # self.createNodePoint(tuple(point3))
-            
-        # show midnode
-        print('Detected midnode: location {} and angle {}'.format(midnode, angle))
-        n2 = midnode[0]
-        plot_point2 = plot_points(n2, mc='m', mw=mw, ax=a1)
-        self.points_plotted.append(plot_point2)
-        # self.createNodePoint(tuple(n2), color='m')
-        
-        # Calc angle change cycle
-        # use the endpoints: get prox and dist point for ppCh
-        point1, point3 = get_prox_dist_points_cll(ppCh)
-        # get deforms of nodes during cardiac cycle
+        # get number of phases during cardiac cycle
         model = self.s['model'+key] # skip 'ppCenterline' in key
-        n1Deforms = model.node[tuple(point1)]['deforms']
-        n2Deforms = model.node[tuple(n2)]['deforms']
-        n3Deforms = model.node[tuple(point3)]['deforms']
-        # get angulation
-        output = line_line_angulation(point1, 
-                            n1Deforms, n2, n2Deforms, point3, n3Deforms)
+        number_of_phases = len(model.node[tuple(ppCh[0])]['deforms'])
+        assert model.number_of_edges() == 1 # a centerline is one edge
         
-        # add chimney angle mid cardiac cycle
-        output['angleMidCycle'] = output['angles_meanstd'][0]
+        # determine arms length by check length of chimney
+        ppChLength = dist_over_centerline(ppCh, type='euclidian')
+        if not ppChLength > 2*armlength:
+            armlength = np.floor(ppChLength/2)-1 # Angle from ~mid of the stent or fix at 5 mm?
+        
+        # ===================
+        # Calculate for each cll point the angles during phases; obtain point with max change
+        
+        # for each centerline point...  
+        angleChange = 0
+        
+        for i, n in enumerate(ppCh):
+            anglesCycle_i = []
+            anglesCycleNodes_i = []
+            # ...calculate angle for each phase
+            for phasenr in range(number_of_phases):
+                model_phase_Ch = get_graph_in_phase(model, phasenr)
+                edge = model_phase_Ch.edges()[0]
+                ppCh_phase = model_phase_Ch.edge[edge[0]][edge[1]]['path']
+                n2 = ppCh_phase[i]
+                n1, n3, anglenew = get_angle_at_fixed_arms(ppCh_phase, n2, armlength=armlength)
+                if anglenew is None:
+                    break # next point; cll point not far enough from cll ends to calculate angle
+                # collect angles during the phases
+                anglesCycle_i.append(anglenew)
+                anglesCycleNodes_i.append([i, n, n2, n1, n3]) # index,n,n2  ,n1,n3
+            if anglenew is None:
+                continue # next point; cll point not far enough from cll ends to calculate angle
+            
+            # get angle change
+            angleChangeNew = max(anglesCycle_i) - min(anglesCycle_i)
+            if angleChangeNew > angleChange:
+                angleChange = angleChangeNew
+                # store angles and nodes for so far max angle change
+                anglesCycle = anglesCycle_i
+                anglesCycleNodes = anglesCycleNodes_i
+        
+        # visualize angle arms avgreg=mid cycle
+        n = anglesCycleNodes[0][1]
+        n1, n3, anglenew = get_angle_at_fixed_arms(ppCh, n, armlength=armlength)
+        armpoints = np.asarray([n1, n, n3])
+        a1 = self.a
+        mw =15
+        if True: # False=do not show arm points
+            plotted_points = plot_points(armpoints,mc='r',mw=mw,ls='-',lw=12,lc='r',alpha=0.7,ax=a1)
+            self.points_plotted.append(plotted_points)
+        
+        # get location of point with max angle change
+        proxendcll, distendcll = get_prox_dist_points_cll(ppCh)
+        location_of_midpoint_n = dist_over_centerline(ppCh,cl_point1=proxendcll,
+                                 cl_point2=n,type='euclidian') # distance from proximal end centerline
+        total_length_cll = dist_over_centerline(ppCh, type='euclidian')
+        
+        # store output
+        print('Angle phases of point with max angle change= {}'.format(anglesCycle))
+        print('')
+        meanAnglesCycle = [np.mean(anglesCycle), np.std(anglesCycle)] 
+        minmaxAnglesCycle = [np.min(anglesCycle), np.max(anglesCycle)]
+        
+        output = {
+        'point_angle_diff_max': angleChange, 
+        'angles_phases': anglesCycle, 'angles_meanstd': meanAnglesCycle, 
+        'angles_minmax': minmaxAnglesCycle, # where min is sharpest angle
+        'anglenodes_positions_cycle': anglesCycleNodes, #list 10xlist index,n,n2  ,n1,n3 for arms
+        'location_point_max_angle_change': location_of_midpoint_n, # dist from proximal end
+        'total_length_chimney_midCycle': total_length_cll,
+        'angleMidCycle': anglenew
+        }
+        
+        
+        # ============
+        # Calculate for each phase peak angle (peak may be at different locations on centerline)
+        peakAngle_phases = []
+        peakAngle_phases_location = []
+        for phasenr in range(number_of_phases):
+            model_phase_Ch = get_graph_in_phase(model, phasenr)
+            edge = model_phase_Ch.edges()[0]
+            ppCh_phase = model_phase_Ch.edge[edge[0]][edge[1]]['path']
+            cllAngles = []
+            cllAngles_n = []
+            cllAngles_i = []
+            for i, n in enumerate(ppCh_phase):
+                n1, n3, anglenew = get_angle_at_fixed_arms(ppCh_phase, n, armlength=armlength)
+                if anglenew is None:
+                    continue # next point; cll point not far enough from cll ends to calculate angle
+                cllAngles.append(anglenew) # for each point on cll an angle
+                cllAngles_n.append(n)
+                cllAngles_i.append(i)
+            # get greatest of cll angles but 180 degrees is straigth so min
+            peakAngle = min(cllAngles)
+            peakAngle_index = cllAngles.index(peakAngle) # index in list of obtained angles
+            proxendcll, distendcll = get_prox_dist_points_cll(ppCh_phase)
+            n = cllAngles_n[peakAngle_index]
+            peakAngle_index_cll = cllAngles_i[peakAngle_index]
+            peakAngle_location = dist_over_centerline(ppCh_phase,cl_point1=proxendcll,
+                                 cl_point2=n,type='euclidian') # distance from proximal end centerline
+            peakAngle_phases.append(peakAngle)
+            peakAngle_phases_location.append([peakAngle_index_cll, peakAngle_location])
+        
+        peakAngle_phase_max = max(peakAngle_phases)
+        peakAngle_phase_min = min(peakAngle_phases)
+        peakAngle_phase_max_phase = peakAngle_phases.index(peakAngle_phase_max) # which phase was max?
+        peakAngle_phase_min_phase = peakAngle_phases.index(peakAngle_phase_min) # which phase was min?
+        peakAngle_phases_diff = peakAngle_phase_max - peakAngle_phase_min
+        peakAngle_phases_meanstd = [np.mean(peakAngle_phases), np.std(peakAngle_phases)]
+        
+        print('PeakAngle during cycle= {}'.format(peakAngle_phases))
+        print('')
+        
+        #add to output dict
+        output['peakAngle_per_phase'] = peakAngle_phases
+        output['peakAngle_min_and_max'] = [peakAngle_phase_min, peakAngle_phase_max] # where min is greatest angle
+        output['peakAngle_phases_diff'] = peakAngle_phases_diff
+        output['peakAngle_phases_meanstd'] = peakAngle_phases_meanstd
+        output['peakAngle_phases_location'] = peakAngle_phases_location # for each phase location of peakAngle
         
         # Store output with name
         output['Name'] = name_output
-        output['Type'] = 'centerline_angle_change'
+        output['Type'] = 'chimney_angle_change'
+        
+        self.angleChange_output = output
         self.storeOutput.append(output)
+        
+        
+        # # Calculate greatest angle along cll with fixed arms
+        # angle = 180 # straigth
+        # for i, n2 in enumerate(ppCh):
+        #     n1, n3, anglenew = get_angle_at_fixed_arms(ppCh, n2, armlength=15)
+        #     if anglenew is None:
+        #         continue
+        #     print('Angle for points along cll= {}'.format(anglenew) )
+        #     if anglenew < angle:
+        #         midnode = [copy.copy(n2), copy.copy(i)]
+        #         point1 = copy.copy(n1)
+        #         point3 = copy.copy(n3)
+        #     angle = min(angle, anglenew)
+        # 
+        # # show points at which angle was calculated
+        # a1 = self.a
+        # mw =18
+        # if False: # False=do not show arm points
+        #     plot_point1 = plot_points(point1, mc='b', mw=mw, ax=a1)
+        #     self.points_plotted.append(plot_point1)
+        #     plot_point3 = plot_points(point3, mc='g', mw=mw, ax=a1)
+        #     self.points_plotted.append(plot_point3)
+        #     # self.createNodePoint(tuple(point1), color='b')
+        #     # self.createNodePoint(tuple(point3))
+        #     
+        # # show midnode
+        # print('Detected midnode: location {} and angle {}'.format(midnode, angle))
+        # n2 = midnode[0]
+        # plot_point2 = plot_points(n2, mc='m', mw=mw, ax=a1)
+        # self.points_plotted.append(plot_point2)
+        # # self.createNodePoint(tuple(n2), color='m')
+        # 
+        # # Calc angle change cycle
+        # # use the endpoints: get prox and dist point for ppCh
+        # point1, point3 = get_prox_dist_points_cll(ppCh)
+        # # get deforms of nodes during cardiac cycle
+        # model = self.s['model'+key] # skip 'ppCenterline' in key
+        # n1Deforms = model.node[tuple(point1)]['deforms']
+        # n2Deforms = model.node[tuple(n2)]['deforms']
+        # n3Deforms = model.node[tuple(point3)]['deforms']
+        # # get angulation
+        # output = line_line_angulation(point1, 
+        #                     n1Deforms, n2, n2Deforms, point3, n3Deforms)
+        # 
+        # # add chimney angle mid cardiac cycle
+        # output['angleMidCycle'] = output['angles_meanstd'][0]
+        # 
+        # # Store output with name
+        # output['Name'] = name_output
+        # output['Type'] = 'chimney_angle_change'
+        # self.storeOutput.append(output)
 
 
     def storeOutputToExcel(self):
@@ -453,38 +595,61 @@ class _Do_Analysis_Centerline:
                 worksheet.write('A9', 'Distance between points at each phase in cardiac cycle',bold)
                 worksheet.write_row('B9', list(out['distances_phases']) )
                 
-            elif out['Type'] == 'centerline_angle_change':
+            elif out['Type'] == 'chimney_angle_change':
                 worksheet.write('A2', 'Type:', bold)
-                worksheet.write('B2', 'Angle change of chimney centerline',bold)
+                worksheet.write('B2', 'Angle change of chimney centerline: max change for a point and peak angles of chimney',bold)
                 
-                worksheet.write('A3', 'Position [avgreg] and deforms of node at proximal end (x,y,z)',bold)
-                worksheet.write('B3', str(tuple(out['Node1'][0])) )
-                worksheet.write_row('C3', [str(tuple(x)) for x in out['Node1'][1]] ) # nphases x 3
+                worksheet.write('A3', 'Max angle change for a point on chimney',bold)
+                worksheet.write('B3', out['point_angle_diff_max'] )
                 
-                worksheet.write('A4', 'Position [avgreg] and deforms of midnode with max angulation (x,y,z)',bold)
-                worksheet.write('B4', str(tuple(out['Node2'][0])) )
-                worksheet.write_row('C4', [str(tuple(x)) for x in out['Node2'][1]] ) # nphases x 3
+                worksheet.write('A4', 'Min and max angle of this point',bold)
+                worksheet.write_row('B4', out['angles_minmax'] )
                 
-                worksheet.write('A5', 'Position [avgreg] and deforms of node at distal end (x,y,z)',bold)
-                worksheet.write('B5', str(tuple(out['Node3'][0])) )
-                worksheet.write_row('C5', [str(tuple(x)) for x in out['Node3'][1]] ) # nphases x 3
+                worksheet.write('A5', 'Index of this point on cll',bold)
+                worksheet.write_row('B5', [phase[0] for phase in out['anglenodes_positions_cycle']] ) # index i of midnode n in phases
+                worksheet.write('A6', 'Position of arm node n2 during cycle (x,y,z)',bold)
+                worksheet.write_row('B6', [str(tuple(x[2])) for x in out['anglenodes_positions_cycle']] ) # nphases x 3 (xyz position)
+                worksheet.write('A7', 'Position of arm node n1 during cycle (x,y,z)',bold)
+                worksheet.write_row('B7', [str(tuple(x[3])) for x in out['anglenodes_positions_cycle']] ) # nphases x 3 
+                worksheet.write('A8', 'Position of arm node n3 during cycle (x,y,z)',bold)
+                worksheet.write_row('B8', [str(tuple(x[4])) for x in out['anglenodes_positions_cycle']] ) # nphases x 3 
                 
-                worksheet.write('A6', 'Angle between points at mid cardiac cycle [avgreg]',bold)
-                worksheet.write('B6', out['angleMidCycle'])
+                worksheet.write('A9', 'Location of this point from prox end of chimney, mm',bold)
+                worksheet.write('B9', out['location_point_max_angle_change'] )
                 
-                worksheet.write('A7', 'Maximum angle change between points during cardiac cycle',bold)
-                worksheet.write('B7', out['point_angle_diff_max'][0])
-                worksheet.write_row('C7', out['point_angle_diff_max'][1]) # phase min angle, phase max angle
+                worksheet.write('A10', 'Length of chimney at mid cardiac cycle, mm',bold)
+                worksheet.write('B10', out['total_length_chimney_midCycle'] )
                 
-                worksheet.write('A8', 'Minimum and maximum angle between points during cardiac cycle',bold)
-                worksheet.write_row('B8', out['angles_minmax'])
+                worksheet.write('A11', 'Angle of arms at mid cardiac cycle [avgreg]',bold)
+                worksheet.write('B11', out['angleMidCycle'])
                 
-                worksheet.write('A9', 'Mean and std of angles between points during cardiac cycle',bold)
-                worksheet.write_row('B9', out['angles_meanstd'])
+                worksheet.write('A12', 'Angle of this point at each phase in cardiac cycle',bold)
+                worksheet.write_row('B12', list(out['angles_phases']) )
                 
-                worksheet.write('A10', 'Angle between points at each phase in cardiac cycle',bold)
-                worksheet.write_row('B10', list(out['angles_phases']) )
-            
+                worksheet.write('A13', 'Mean and std of angles of this point during cardiac cycle',bold)
+                worksheet.write_row('B13', out['angles_meanstd'])
+                
+                # now write peakAngle output
+                worksheet.write('A15', 'Peak angle of chimney during cycle (peakAngle output):')
+                worksheet.write('A16', 'Max angle diff between peak angle min and max',bold)
+                worksheet.write('B16', out['peakAngle_phases_diff'] )
+                
+                worksheet.write('A17', 'Min and max peakAngle',bold)
+                worksheet.write_row('B17', out['peakAngle_min_and_max'] )
+                
+                worksheet.write('A18', 'Index of peakAngle on cll during cardiac cycle',bold)
+                worksheet.write_row('B18', [x[0] for x in out['peakAngle_phases_location'] ])
+                
+                worksheet.write('A19', 'Distance from prox end chimney of peakAngle during cardiac cycle, mm',bold)
+                worksheet.write_row('B19', [x[1] for x in out['peakAngle_phases_location'] ])
+                
+                worksheet.write('A20', 'PeakAngle at each phase in cardiac cycle',bold)
+                worksheet.write_row('B20', list(out['peakAngle_per_phase']) )
+                
+                worksheet.write('A21', 'Mean and std of peakAngles during cardiac cycle',bold)
+                worksheet.write_row('B21', out['peakAngle_phases_meanstd'])
+                
+                
             elif out['Type'] == 'centerline_tortuosity_change':
                 worksheet.write('A2', 'Type:', bold)
                 worksheet.write('B2', 'Tortuosity change of chimney centerline',bold)
@@ -517,10 +682,11 @@ class _Do_Analysis_Centerline:
 
 def get_angle_at_fixed_arms(ppCll, p, armlength=15):
     """ Get angle at fixed arms length from point p.
-    Arms length 15 mm is standard in angle tool in 3Mensio
+    Arms length 15 mm is standard in angle tool in 3Mensio but chimney stent may be too short
     """
     index_p = np.where(np.all(ppCll == p, axis=-1))[0][0]
     npoints = len(ppCll)
+    
     # find first point while looking at points before p
     for i in range(npoints):
         j = index_p - i
@@ -534,8 +700,8 @@ def get_angle_at_fixed_arms(ppCll, p, armlength=15):
         # get dist (length of vector)
         dist1 = vec1.norm() # or np.linalg.norm(v)
         if dist1 >= armlength:
-            #print(i,j, dist1)
-            break # break loop point found
+            # print(i,j, dist1)
+            break # break loop; point at armslength found
             
     # find second point while looking at points after p
     for i in range(npoints):
@@ -609,23 +775,13 @@ def line_line_angulation(point1, point1Deforms, point2, point2Deforms, point3, p
     angles = np.array(angles) # 10 angles; for each phase
     
     # get all angle differences of all phases
-    # todo: could be simplified by just getting diff of min and max of angles 
-    pos_combinations = list(itertools.combinations(range(len(v1)),2))
-    angle_diff = []
-    for i in pos_combinations:
-        angle_diff.append(abs(angles[i[0]] - angles[i[1]]))
-    angle_diff = np.array(angle_diff) # angle differences between all phase combinations
+    maxangle = max(angles)
+    minangle = min(angles)
+    maxanglephase = int(np.where(angles==max(angles))[0]) * 10 # 180 degrees is straigth, so greater is smaller angle
+    minanglephase = int(np.where(angles==min(angles))[0]) * 10
+    maxanglechange = maxangle-minangle
     
-    # get max angle differences
-    point_angle_diff_max = angle_diff.max()
-    point_angle_diff_max = [point_angle_diff_max, [x*10 for x in
-    (pos_combinations[list(angle_diff).index(point_angle_diff_max)])]] # angle diff, [phase1, phase2]
-    
-    # todo: min diff redundant info?
-    # get min angle differences
-    point_angle_diff_min = angle_diff.min()
-    point_angle_diff_min = [point_angle_diff_min, [x*10 for x in 
-    (pos_combinations[list(angle_diff).index(point_angle_diff_min)])]]
+    point_angle_diff_max = [maxanglechange, [maxanglephase, minanglephase]] # phases dias, syst
     
     print('Angle phases= {}'.format(angles))
     
@@ -633,7 +789,6 @@ def line_line_angulation(point1, point1Deforms, point2, point2Deforms, point3, p
     minmaxAnglesCycle = [np.min(angles), np.max(angles)]
     
     output = {
-    'point_angle_diff_min':point_angle_diff_min,
     'point_angle_diff_max': point_angle_diff_max, 
     'angles_phases': angles, 'angles_meanstd': meanAnglesCycle, 
     'angles_minmax': minmaxAnglesCycle,
@@ -751,6 +906,8 @@ def calculate_motion_points(ppCll, ppCllDeforms, lenSegment, dim='xyz', part='pr
 
 
 def get_prox_dist_points_cll(ppCll1):
+    """ get prox and dist ends of the centerline assuming that origin in proximal
+    """
     # Get prox point for ppCll1
     pends1 = np.array([ppCll1[0], ppCll1[-1]])  # pp centerline is in order of centerline points
     pends1 = pends1[pends1[:,-1].argsort() ] # sort with z, ascending
