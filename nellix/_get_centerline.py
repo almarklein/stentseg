@@ -86,7 +86,7 @@ class _Get_Centerline:
                     p_as_tuple = tuple(p.flat)
                     nodes.add_node(p_as_tuple)
                     nodes_total.add_node(p_as_tuple)
-            
+                # add pp as one edge so that pathpoints are in fixed order
                 pstart = tuple(pp[0].flat)
                 pend = tuple(pp[-1].flat)
                 nodes.add_edge(pstart, pend, path = pp  )
