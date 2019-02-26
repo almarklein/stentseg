@@ -27,8 +27,8 @@ def dist_over_centerline(cl, cl_point1=None, cl_point2=None, type='euclidian'):
         if isinstance(cl_point1, PointSet):
             cl_point1 = np.asarray(cl_point1)
             cl_point2 = np.asarray(cl_point2)
-        indpoint1 = np.where( np.all(cl == cl_point1, axis=-1) )[0] # -1 counts from last to the first axis
-        indpoint2 = np.where( np.all(cl == cl_point2, axis=-1) )[0] 
+        indpoint1 = int(np.where( np.all(cl == cl_point1, axis=-1) )[0]) # -1 counts from last to the first axis
+        indpoint2 = int(np.where( np.all(cl == cl_point2, axis=-1) )[0]) 
         if indpoint1 == indpoint2:
             print('Points on centerline are at same level, distance is zero')
             dist = 0
