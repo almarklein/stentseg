@@ -127,33 +127,29 @@ class _Do_Analysis_Centerline:
         Stores output in centerlines_prox_distance_change()
         """
         s = self.s # ssdf with centerline pointsets pp identified
+        ppNelR = s['ppCenterlineNelR']
+        ppNelL = s['ppCenterlineNelL']
         for key in s:
-            ppNelR = s['ppCenterlineNelR']
-            ppNelL = s['ppCenterlineNelL']
             if key.startswith('ppCenterlineRRA'):
                 ppRRA = s[key]
                 key1 = key[12:]
                 ppNel, key2 = self.get_nellix_closest_to_chimney(ppRRA, ppNelR, ppNelL)
-                # ppNelR = s['ppCenterlineNelR']
-                # key2 = 'NelR'
                 self.centerlines_prox_distance_change(key1, key2, ppRRA, ppNel, 'Dist_{}_{}'.format(key1,key2),color='y')
-            if key.startswith('ppCenterlineLRA'):
+            elif key.startswith('ppCenterlineLRA'):
                 ppLRA = s[key]
                 key1 = key[12:]
                 ppNel, key2 = self.get_nellix_closest_to_chimney(ppLRA, ppNelR, ppNelL)
-                # ppNelL = s['ppCenterlineNelL']
-                # key2 = 'NelL'
                 self.centerlines_prox_distance_change(key1, key2, ppLRA, ppNel, 'Dist_{}_{}'.format(key1,key2),color='c')
-            if key.startswith('ppCenterlineSMA'):
+            elif key.startswith('ppCenterlineSMA'):
                 ppSMA = s[key]
                 key1 = key[12:]
                 ppNel, key2 = self.get_nellix_closest_to_chimney(ppSMA, ppNelR, ppNelL)
                 self.centerlines_prox_distance_change(key1, key2, ppSMA, ppNel, 'Dist_{}_{}'.format(key1,key2),
                                                       mw=17,color='m',marker='v',alpha=0.7)
-            if key.startswith('ppCenterlineNelL'):
-                ppNelL = s[key]
+            elif key.startswith('ppCenterlineNelL'):
+                # ppNelL = s[key]
                 key1 = key[12:]
-                ppNelR = s['ppCenterlineNelR']
+                # ppNelR = s['ppCenterlineNelR']
                 key2 = 'NelR'
                 self.centerlines_prox_distance_change(key1, key2, ppNelL, ppNelR, 'Dist_{}_{}'.format(key1,key2), 
                                                       mw=17,color='r',marker='^',alpha=0.7)
@@ -222,7 +218,9 @@ class _Do_Analysis_Centerline:
         
     
     def chimneys_angle_change(self):
-        """Calculate angle change for each chimney stent
+        """Calculate angle change for each chimney stent:
+        - of chimney itself
+        - between chimney and nellix proximal segments
         """
         s = self.s # ssdf with centerline pointsets pp identified
         for key in s:
@@ -231,16 +229,19 @@ class _Do_Analysis_Centerline:
                 key1 = key[12:]
                 self.chimney_angle_change(key1, ppRRA, 'Ang_RRA')
                 self.centerline_tortuosity_change(key1, ppRRA, 'Tort_RRA')
+                self.chimney_nel_angle_change(key1, ppRRA, 'Ang_RRA_Nel', armlength=10)
             if key.startswith('ppCenterlineLRA'):
                 ppLRA = s[key]
                 key1 = key[12:]
                 self.chimney_angle_change(key1, ppLRA, 'Ang_LRA')
                 self.centerline_tortuosity_change(key1, ppLRA, 'Tort_LRA')
+                self.chimney_nel_angle_change(key1, ppLRA, 'Ang_LRA_Nel', armlength=10)
             if key.startswith('ppCenterlineSMA'):
                 ppSMA = s[key]
                 key1 = key[12:]
                 self.chimney_angle_change(key1, ppSMA, 'Ang_SMA')
                 self.centerline_tortuosity_change(key1, ppSMA, 'Tort_SMA')
+                self.chimney_nel_angle_change(key1, ppSMA, 'Ang_SMA_Nel', armlength=10)
     
     def centerline_tortuosity_change(self, key, ppCh, name_output):
         """ Tortuosity of pp centerline during cardiac cycle phases
@@ -261,27 +262,98 @@ class _Do_Analysis_Centerline:
         output['Type'] = 'centerline_tortuosity_change'
         self.storeOutput.append(output)
     
-    def chimney_nel_angle_change():
+    def chimney_nel_angle_change(self, key, ppCh, name_output, armlength=10):
+        """ Calculate angle between prox segment of chimney and nellix (vectors) at
+        each phase in cardiac cycle
+        default armlength 10 point from top of cll
         """
+        # Get chimney model
+        model = self.s['model'+key] # skip 'ppCenterline' in key
+        # get number of phases during cardiac cycle
+        number_of_phases = len(model.node[tuple(ppCh[0])]['deforms'])
+        assert model.number_of_edges() == 1 # a centerline is one edge
         
-        """
+        # determine which nellix stent was closest to chimney
+        ppNelR = self.s['ppCenterlineNelR']
+        ppNelL = self.s['ppCenterlineNelL']
+        ppNel, key2 = self.get_nellix_closest_to_chimney(ppCh, ppNelR, ppNelL)
+        # Get nellix model
+        modelNel = self.s['model'+key2]
+        
+        # Calculate for each phase angle between prox segment of chimney and nellix
+        anglesCycle = []
+        for phasenr in range(number_of_phases):
+            # === For chimney vector ===
+            model_phase_Ch = get_graph_in_phase(model, phasenr)
+            edge = model_phase_Ch.edges()[0]
+            ppCh_phase = model_phase_Ch.edge[edge[0]][edge[1]]['path']
+            # Get prox segment vectors
+            proxendcll, distendcll = get_prox_dist_points_cll(ppCh_phase)
+            
+            #get point on cll at armlength from prox end
+            point2, vectorCh = get_point_on_cll_at_armslength(ppCh_phase, proxendcll, armlength=armlength, type='distal')
+            
+            # === For Nellix vector ===
+            # get vector prox segment nellix
+            model_phase_Nel = get_graph_in_phase(modelNel, phasenr)
+            edge = model_phase_Nel.edges()[0]
+            ppNel_phase = model_phase_Nel.edge[edge[0]][edge[1]]['path']
+            # Get prox segment vectors
+            proxendcll, distendcll = get_prox_dist_points_cll(ppNel_phase)
+            #get point on cll at armlength from prox end
+            point2_nel, vectorNel = get_point_on_cll_at_armslength(ppNel_phase, proxendcll, armlength=armlength, type='distal')
+            
+            # Obtain angle between vectors
+            phi = abs(PointSet(vectorCh).angle(PointSet(vectorNel)))
+            angle = phi*180.0/np.pi # direction vector in degrees
+            anglesCycle.append(angle) 
+        
+        # For visualization get vectors and angle at mid cycle
+        # == chimney ==
+        proxendcll, distendcll = get_prox_dist_points_cll(ppCh)
+        point, vector = get_point_on_cll_at_armslength(ppCh, proxendcll, armlength=armlength, type='distal')
+        # == nellix ==
+        proxendcllNel, distendcllNel = get_prox_dist_points_cll(ppNel)
+        pointNel, vectorNel = get_point_on_cll_at_armslength(ppNel, proxendcllNel, armlength=armlength, type='distal')
+        
+        phi = abs(PointSet(vector).angle(PointSet(vectorNel)))
+        angle_avgreg = phi*180.0/np.pi # direction vector in degrees
+        
+        # visualize vectors chimney and nellix
+        a1 = self.a
+        mw =15
+        if True: # False=do not show arm points
+            vectorpoints = np.asarray([proxendcll, point])
+            plotted_points = plot_points(vectorpoints,mc='r',mw=mw,ls='-',lw=12,lc='r',alpha=0.7,ax=a1)
+            self.points_plotted.append(plotted_points)
+            vectorpointsNel = np.asarray([proxendcllNel, pointNel])
+            plotted_pointsNel = plot_points(vectorpointsNel,mc='r',mw=mw,ls='-',lw=12,lc='r',alpha=0.7,ax=a1)
+            self.points_plotted.append(plotted_pointsNel)
+        
         # ============
-        # Calcualte for each phase the angle between chimney end segments 
-        # n1Indices = point1 + point1Deforms
-        # n2Indices = point2 + point2Deforms
-        # n3Indices = point3 + point3Deforms
-        # 
-        # # get vectors
-        # v1 = n1Indices - n2Indices
-        # v2 = n3Indices - n2Indices
-        # 
-        # # get angles
-        # angles = []
-        # for i in range(len(v1)):
-        #     angles.append(math.degrees(math.acos((np.dot(v1[i],v2[i]))/
-        #     (np.linalg.norm(v1[i])*np.linalg.norm(v2[i])))))
-        # angles = np.array(angles) # 10 angles; for each phase
-    
+        # store output
+        print('Angles during cardiac cycle= {}'.format(anglesCycle))
+        print('')
+        meanAnglesCycle = [np.mean(anglesCycle), np.std(anglesCycle)] 
+        minmaxAnglesCycle = [np.min(anglesCycle), np.max(anglesCycle)]
+        angleChange = max(anglesCycle) - min(anglesCycle)
+        
+        output = {
+        'vectorAngle_diff_max': angleChange, 
+        'vectorAngles_phases': anglesCycle, 
+        'vectorAngles_meanstd': meanAnglesCycle, 
+        'vectorAngles_minmax': minmaxAnglesCycle, # where min is sharpest angle
+        'vectorAngleMidCycle': angle_avgreg,
+        'vectorArmlength': armlength
+        }
+        # Store output with name
+        output['Name'] = name_output
+        output['Type'] = 'chimney_nel_angle_change'
+        
+        self.vectorAngleChange_output = output
+        self.storeOutput.append(output)
+        
+        
     
     def chimney_angle_change(self, key, ppCh, name_output, armlength=10):
         """ Calculate the chimney angle change during the cycle
@@ -383,7 +455,8 @@ class _Do_Analysis_Centerline:
         
         output = {
         'point_angle_diff_max': angleChange, 
-        'angles_phases': anglesCycle, 'angles_meanstd': meanAnglesCycle, 
+        'angles_phases': anglesCycle, 
+        'angles_meanstd': meanAnglesCycle, 
         'angles_minmax': minmaxAnglesCycle, # where min is sharpest angle
         'anglenodes_positions_cycle': anglesCycleNodes, #list 10xlist index,n,n2  ,n1,n3 for arms
         'location_point_max_angle_change': location_of_midpoint_n, # dist from proximal end
@@ -438,6 +511,7 @@ class _Do_Analysis_Centerline:
         output['peakAngle_phases_meanstd'] = peakAngle_phases_meanstd
         output['peakAngle_phases_location'] = peakAngle_phases_location # for each phase location of peakAngle
         
+        # ============
         # Store output with name
         output['Name'] = name_output
         output['Type'] = 'chimney_angle_change'
@@ -605,7 +679,7 @@ class _Do_Analysis_Centerline:
                 worksheet.write('A4', 'Min and max angle of this point',bold)
                 worksheet.write_row('B4', out['angles_minmax'] )
                 
-                worksheet.write('A5', 'Index of this point on cll',bold)
+                worksheet.write('A5', 'Index of this point on cll (from prox or dist end)',bold)
                 worksheet.write_row('B5', [phase[0] for phase in out['anglenodes_positions_cycle']] ) # index i of midnode n in phases
                 worksheet.write('A6', 'Position of arm node n2 during cycle (x,y,z)',bold)
                 worksheet.write_row('B6', [str(tuple(x[2])) for x in out['anglenodes_positions_cycle']] ) # nphases x 3 (xyz position)
@@ -631,13 +705,14 @@ class _Do_Analysis_Centerline:
                 
                 # now write peakAngle output
                 worksheet.write('A15', 'Peak angle of chimney during cycle (peakAngle output):')
+                
                 worksheet.write('A16', 'Max angle diff between peak angle min and max',bold)
                 worksheet.write('B16', out['peakAngle_phases_diff'] )
                 
                 worksheet.write('A17', 'Min and max peakAngle',bold)
                 worksheet.write_row('B17', out['peakAngle_min_and_max'] )
                 
-                worksheet.write('A18', 'Index of peakAngle on cll during cardiac cycle',bold)
+                worksheet.write('A18', 'Index of peakAngle on cll during cardiac cycle (from prox or dist end)',bold)
                 worksheet.write_row('B18', [x[0] for x in out['peakAngle_phases_location'] ])
                 
                 worksheet.write('A19', 'Distance from prox end chimney of peakAngle during cardiac cycle, mm',bold)
@@ -648,6 +723,28 @@ class _Do_Analysis_Centerline:
                 
                 worksheet.write('A21', 'Mean and std of peakAngles during cardiac cycle',bold)
                 worksheet.write_row('B21', out['peakAngle_phases_meanstd'])
+            
+            elif out['Type'] == 'chimney_nel_angle_change':
+                worksheet.write('A2', 'Type:', bold)
+                worksheet.write('B2', 'Angle between prox chimney and prox nellix during the cycle',bold)
+                
+                worksheet.write('A3', 'Armlength for vectors, mm',bold)
+                worksheet.write('B3', out['vectorArmlength'])
+                
+                worksheet.write('A4', 'Max angle diff between vector angle min and max',bold)
+                worksheet.write('B4', out['vectorAngle_diff_max'] )
+                
+                worksheet.write('A5', 'Min and max vectorAngle',bold)
+                worksheet.write_row('B5', out['vectorAngles_minmax'] )
+                
+                worksheet.write('A6', 'VectorAngle at each phase in cardiac cycle',bold)
+                worksheet.write_row('B6', list(out['vectorAngles_phases']) )
+                
+                worksheet.write('A7', 'Mean and std of vectorAngles during cardiac cycle',bold)
+                worksheet.write_row('B7', out['vectorAngles_meanstd'])
+                
+                worksheet.write('A8', 'VectorAngle at mid cardiac cycle [avgreg]',bold)
+                worksheet.write('B8', out['vectorAngleMidCycle'])
                 
                 
             elif out['Type'] == 'centerline_tortuosity_change':
@@ -679,6 +776,39 @@ class _Do_Analysis_Centerline:
         
         workbook.close()
 
+
+# =======================================
+def get_point_on_cll_at_armslength(ppCll, point1, armlength=10, type='distal'):
+    """ From point1 on cll get point distally on cll at armslength 
+    type: distal of proximal; to get point at armlength in distal or proximal 
+    direction, assuming that origin of ct volume is proximal/cranial
+    """
+    pends = np.array([ppCll[0], ppCll[-1]])
+    if pends[0,-1] > pends[1,-1]: # check of z, start point is distal
+        if type == 'distal': 
+            ppCll = ppCll[::-1] # reverse array so that first point is proximal
+        elif type == 'proximal':
+            pass
+    else: #start point is proximal
+        if type == 'proximal':
+            ppCll = ppCll[::-1] # reverse array so that first point is distal
+        elif type == 'distal':
+            pass
+    
+    # find index of point1
+    i_point1 = int(np.where( np.all(ppCll == point1, axis=-1) )[0])
+    # loop through centerline from point1 to find point at armlength
+    for i in range(len(ppCll)):
+        point2 = ppCll[i_point1+i] # next point
+        # calculate vector  
+        vec1 = PointSet(3)        
+        vec1.append(point1-point2)
+        # get dist =length of vector
+        dist = vec1.norm() # or np.linalg.norm(v)
+        if dist >= armlength:
+            break # break loop; point at armslength found
+    
+    return point2, vec1
 
 def get_angle_at_fixed_arms(ppCll, p, armlength=15):
     """ Get angle at fixed arms length from point p.
