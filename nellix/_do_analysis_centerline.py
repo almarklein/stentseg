@@ -98,24 +98,24 @@ class _Do_Analysis_Centerline:
                 # Store output with name
                 output['Name'] = name_output
                 self.storeOutput.append(output)
-                # visualize segment analyzed in avgreg
                 pp = output['ppSegment'] # [positions nodes avgreg]
+                # visualize segment analyzed in avgreg
                 a1 = self.a
-                point = plot_points(pp, mc='g', ax=a1)
+                point = plot_points(pp, mc='y', ax=a1)
                 self.points_plotted.append(point)
                 
-                # for chimneys also get distal segment motion
-                if not key.startswith('ppCenterlineNel'):
-                    name_output = 'Motion_'+key[12:]+'dist'
-                    output = calculate_motion_points(ppCll, ppCllDeforms, lenSegment,dim=dim, part='dist')
-                    output['Type'] = 'motion_centerlines_segments'
-                    # Store output with name
-                    output['Name'] = name_output
-                    self.storeOutput.append(output)
-                    # visualize segment analyzed in avgreg
-                    pp = output['ppSegment'] # [positions nodes avgreg]
+                # now obtain motion for distal segment
+                name_output = 'Motion_'+key[12:]+'dist'
+                output = calculate_motion_points(ppCll, ppCllDeforms, lenSegment,dim=dim, part='dist')
+                output['Type'] = 'motion_centerlines_segments'
+                # Store output with name
+                output['Name'] = name_output
+                self.storeOutput.append(output)
+                pp = output['ppSegment'] # [positions nodes avgreg]
+                # visualize segment analyzed in avgreg
+                if not key.startswith('ppCenterlineNel'): # do not visualize distal nellix
                     a1 = self.a
-                    point = plot_points(pp, mc='y', ax=a1)
+                    point = plot_points(pp, mc='r', ax=a1)
                     self.points_plotted.append(point)
                     
     
