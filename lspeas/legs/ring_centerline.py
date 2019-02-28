@@ -27,7 +27,7 @@ from stentseg.utils.visualization import show_ctvolume
 from stentseg.stentdirect.stentgraph import create_mesh
 from stentseg.utils.utils_graphs_pointsets import points_from_edges_in_graph
 from stentseg.utils.centerline import points_from_nodes_in_graph
-from stentseg.utils.datahandling import select_dir, loadvol, loadmodel, loadmodel_location
+from stentseg.utils.datahandling import select_dir, loadvol, loadmodel
 
 
 
@@ -70,7 +70,7 @@ for i in nrs:
 
 
 ## Visualize centerlines rings
-s2 = loadmodel_location(targetdir2, ptcode, ctcode, cropname)
+s2 = loadmodel(targetdir2, ptcode, ctcode, cropname, modelname='stentseedsavgreg')
 pmodel = points_from_nodes_in_graph(s2.model)
 if FIG1 == True:
     f = vv.figure(1); vv.clf()
