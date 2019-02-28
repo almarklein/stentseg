@@ -21,8 +21,7 @@ class ecgSlider:
         self.slider.showTicks = True
         self.slider.edgeColor = 0,0,0
         self.container.bgcolor = 1,0,0
-        yslider = fig.position[3]-fig.position[1]-35
-        self.container.position = 0.15, -20, 0.7, 20
+        self.container.position = 0.15, -20, 0.7, 20 # x y w h
         self.slider.position = 0, 0, 1, 15
         self.fig = fig
         self.maxRange = self.slider.fullRange.max
@@ -43,15 +42,14 @@ class ecgSlider:
         """
         motionIndex = self.dm.motionIndex
         ecgFrac = motionIndex/self.dm.motionCount
-        self.slider.value = ecgFrac * self.maxRange
+        self.slider.value = np.int(ecgFrac * 100) # to percentage 0, 10, 20...
     
     def _OnClose(self, event):
         self._finished = True
     
-    def _OnPosition(self, event):
+    def _OnPosition(self, event): #todo: redundant?
         # update position
-        yslider = self.fig.position[3]+self.fig.position[1]-35
-        self.slider.position = 0.15, yslider, 0.7, 20
+        self.container.position = (0.15, -20, 0.7, 20)
         
     def _OnKey(self, event):
         if event.text == 'w':
