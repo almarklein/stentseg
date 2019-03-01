@@ -53,6 +53,58 @@ class ExcelAnalysisNellix():
         self.fontsize2 = 16 # 15
         self.fontsize3 = 10.3
     
+    def get_angle_change(self, patients=None, analysis='ChimNel', chimneys=['LRA', 'RRA', 'SMA']):
+        """ Read angle change for the chimneys or for the angle between chimney and nellix
+        prox segments for all patients
+        Analysis: 'ChimNel' or 'Chim'
+        chimneys: ['LRA', 'RRA', 'SMA'] or ['LRA'] get single chimney
+        """
+        
+        if patients == None:
+            patients = self.patients
+        
+        self.angleChange = []
+        
+        # read workbooks
+        for patient in patients:
+            workbook_stent = os.path.join(self.exceldir,patient, self.workbook_analysis+patient[7:]+'.xlsx')
+            # read sheet
+            wb = openpyxl.load_workbook(workbook_stent, data_only=True)
+            sheetnames = wb.get_sheet_names()
+            
+            if analysis == 'Chim': # chimney angle
+                for a in chimneys:
+                    # see which sheetname, not known if NelL or NelR
+                    for sheetname in sheetnames:
+                        if sheetname.startswith('Ang_'+a):
+                            sheet = wb.get_sheet_by_name(sheetname)
+                            # read distance change
+                            angchange = readDistanceChange(sheet, row=7, colStart=1)
+                            self.angleChange.append(angchange)
+                            break # next a
+            elif analysis == 'ChimNel': # chimney-to-Nellix angle
+                for a in chimneys:
+                    # see which sheetname, not known if NelL or NelR
+                    for sheetname in sheetnames:
+                        if sheetname.startswith('Ang_'+a+'_Nel'):
+                            sheet = wb.get_sheet_by_name(sheetname)
+                            # read distance change
+                            angchange = readDistanceChange(sheet, row=7, colStart=1)
+                            self.angleChange.append(angchange)
+                            break # next a
+        
+        # check normality
+        W, pValue, normality = normality_check(self.angleChange, alpha=0.05, showhist=False)
+        print('AngleChange distribution normal:{} (pValue of {:.3f})'.format(normality, pValue))
+        print('')
+        print('Average maximum angle change: {:.1f} ± {:.1f} ({:.1f}-{:.1f})'.format(
+                                            np.mean(self.angleChange),
+                                            np.std(self.angleChange),
+                                            np.min(self.angleChange),
+                                            np.max(self.angleChange)
+                                            ))
+        
+    
     def get_distance_change(self, patients=None, analysis='NelNel', chimneys=['LRA', 'RRA', 'SMA']):
         """ Read distance change between nellix-nellix and nellix-chimneys for all patients
         Analysis: 'NelNel' or 'ChimNel'
@@ -75,7 +127,7 @@ class ExcelAnalysisNellix():
                 sheetname = 'Dist_NelL_NelR'
                 sheet = wb.get_sheet_by_name(sheetname)
                 # read distance change
-                distchange = readDistanceChange(sheet, row=5, colStart=1)
+                distchange = readDistanceChange(sheet, row=6, colStart=1)
                 self.distanceChange.append(distchange)
             elif analysis == 'ChimNel':
                 for a in chimneys:
@@ -84,7 +136,7 @@ class ExcelAnalysisNellix():
                         if sheetname.startswith('Dist_'+a):
                             sheet = wb.get_sheet_by_name(sheetname)
                             # read distance change
-                            distchange = readDistanceChange(sheet, row=5, colStart=1)
+                            distchange = readDistanceChange(sheet, row=6, colStart=1)
                             self.distanceChange.append(distchange)
                             break # next a
         
@@ -469,11 +521,12 @@ class ExcelAnalysisNellix():
             'plot_angles_chimney{}.png'.format(analysis)), papertype='a0', dpi=600)
         
         
-def readDistanceChange(sheet, row=5, colStart=1):
+def readDistanceChange(sheet, row=6, colStart=1):
     """ Read the maximum distance change during cardiac cycle
+    Also works for Angulation Change (row=7)
     rows as excel
     """
-    distchange = sheet.rows[row][colStart].value
+    distchange = sheet.rows[row-1][colStart].value
     
     return distchange
     
@@ -704,16 +757,26 @@ if __name__ == '__main__':
     
     # Get statistics
     # ==========================================
-    # Get centerline segment prox or dist mean displacement
+    # Get displacement of centerline segment prox or dist 
     # foo.get_segment_displacement(patients=patients, analysis=['NelR'], location='prox')
     # foo.get_segment_displacement(patients=patients, analysis=['LRA','RRA', 'SMA'], location='dist')
     # print(len(foo.segmentDisplacementX)) # verify number of chimneys/nellix stents
     
+    # Get distance change between Nellix stents or between Nellix and chimney ends
     foo.get_distance_change(patients=None, analysis='ChimNel', chimneys=['LRA', 'RRA', 'SMA'])
     foo.get_distance_change(patients=None, analysis='NelNel', chimneys=['LRA', 'RRA', 'SMA'])
     print(len(foo.distanceChange))
     if False:
         outcomeNel = foo.distanceChange
         t, p = independent_samples_ttest(foo.distanceChange, outcomeNel)
+    
+    # Get angle change of chimneys or between chimneys and Nellix stents
+    foo.get_angle_change(patients=None, analysis='Chim', chimneys=['SMA'])
+    print(len(foo.angleChange))
+    if False:
+        outcomeChim = foo.angleChange
+        t, p = independent_samples_ttest(foo.angleChange, outcomeChim)
+    
+    
     
     # ==========================================
