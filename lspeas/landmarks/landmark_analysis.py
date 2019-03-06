@@ -1,8 +1,9 @@
-""" Functionality to calculate errors and visualize the landmark validation data
+"""Functionality to calculate errors and visualize the landmark validation data
 Uses as input .mat files with struct containing 10x3x12 data for each observer and 
 patient case. See matcode internship Freija.
-r'C:\Users\Maaike\Dropbox\UTdrive\LSPEAS\Studenten\M2.2_20161205 Freija Geldof\Freija overdracht\LSPEAS_landmarks'
 """
+#...\LSPEAS\Studenten\M2.2_20161205 Freija Geldof\Freija overdracht\LSPEAS_landmarks
+
 import os
 import scipy.io
 import visvis as vv
@@ -75,7 +76,7 @@ ctcode = '6months'
 cropname = 'stent' # use stent crops
 what = 'landmarksphases' # 'landmarksphases' or 'landmarksavgreg'
 
-dirlandmarks = r'C:\Users\Maaike\Dropbox\UTdrive\LSPEAS\Analysis\Landmark Validation'
+dirlandmarks = r'D:\Profiles\koenradesma\SURFdrive\UTdrive\LSPEAS\Analysis\Landmark Validation\LSPEAS'
 # where to save figures
 dirsave =  select_dir(r'C:\Users\Maaike\Desktop','D:\Profiles\koenradesma\Desktop')
 savefig = False
