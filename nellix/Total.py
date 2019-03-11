@@ -7,12 +7,11 @@ import os
 from stentseg.utils.datahandling import select_dir, loadmodel, loadvol
 
 
-ptcode = 'chevas_01'
+ptcode = 'chevas_02'
 ctcode = '12months' # is not the true follow-up time but use for all
 # dicom_basedir = r'E:\Nellix_chevas\CT_SSDF\no 1\STD00001\10phases'
 # print(dicom_basedir)
 basedir = select_dir(r'E:\Nellix_chevas\CT_SSDF\SSDF_automated')
-
 
 ## LOAD CT
 if False:
@@ -27,11 +26,17 @@ if False:
         #vol = foo.getVol()
         print('registration: done')
 
-## SEGEMENTATION
+## SEGEMENTATION STENT
 if False:
         from nellix._do_segmentation_nellix import _Do_Segmentation
-        foo = _Do_Segmentation(ptcode,ctcode,basedir,seed_th=[600], show=False, normalize=True)
+        foo = _Do_Segmentation(ptcode,ctcode,basedir,seed_th=[600], show=True, normalize=True)
         print('segmentation: done')
+
+## SEGMENTATION VASCULATURE
+if True:
+        from nellix._do_segmentation_vessel import _Do_Segmentation_Vessel
+        foo = _Do_Segmentation_Vessel(ptcode,ctcode,basedir,threshold=225, show=True, normalize=False)
+        print('segmentation vessel: done')
 
 ## SELECT POINT FOR CENTERLINE
 if False:
@@ -42,23 +47,26 @@ if False:
         print('Get Endpoints: done')
 
 ## CALCULATE CENTERLINE
-
-
-StartPoints = [ (173.2, 127.0, 113.7), 
-                (174.1, 139.5, 114.1), 
-                (144.6, 113.9, 66.5), 
-                (118.9, 145.9, 76.9), 
-                (171.6, 162.6, 42.4),(166.7, 159.5, 43.8), (161.6, 156.4, 44.9)]
-EndPoints = [   (143.3, 160.9, 37.7), 
-                (144.3, 168.4, 44.4), 
-                (132.1, 154.2, 38.0), 
-                (138.7, 156.3, 28.9), 
-                (166.7, 159.5, 43.8), (161.6, 156.4, 44.9), (141.1, 153.0, 40.1)]
-
-
 if False:
+        StartPoints = [ (173.2, 127.0, 113.7), 
+                        (174.1, 139.5, 114.1), 
+                        (144.6, 113.9, 66.5), 
+                        (118.9, 145.9, 76.9), 
+                        (171.6, 162.6, 42.4),(166.7, 159.5, 43.8), (161.6, 156.4, 44.9)]
+        EndPoints = [   (143.3, 160.9, 37.7), 
+                        (144.3, 168.4, 44.4), 
+                        (132.1, 154.2, 38.0), 
+                        (138.7, 156.3, 28.9), 
+                        (166.7, 159.5, 43.8), (161.6, 156.4, 44.9), (141.1, 153.0, 40.1)]
+        
+        
+        StartPoints = [(113.6, 89.5, 34.3)] # pt 1 chim vessel
+        EndPoints =   [(128.5, 94.1, 31.6)]
+
         from nellix._get_centerline import _Get_Centerline
-        foo = _Get_Centerline(ptcode,ctcode,StartPoints,EndPoints, basedir) # MK: start=distal points
+        # modelname = 'modelavgreg' # default for stents
+        modelname = 'modelvesselavgreg' 
+        foo = _Get_Centerline(ptcode,ctcode,StartPoints,EndPoints, basedir, modelname=modelname) # MK: start=distal points
         # loads prox_avgreg (reg) and prox_modelavgreg (segm)
         # saves centerline_modelavgreg and centerline_total_modelavgreg; also with _deforms as dynamic centerline
         # in centerline we have all centerlines but separate graphs; in centerline_total merged in one graph
@@ -76,24 +84,24 @@ if False:
         a, s2 = identifyCenterlines(s, ptcode,ctcode,basedir,modelname,showVol='MIP')
 
 ## MOTION ANALYSIS CENTERLINES
-if True: 
+if False: 
         import os
         from stentseg.utils.datahandling import select_dir, loadmodel, loadvol
         from stentseg.utils.picker import pick3d
         
         ptcodes = [
                 'chevas_01',
-                'chevas_02',
-                'chevas_03',
-                'chevas_04',
-                'chevas_05',
-                'chevas_06',
-                'chevas_07',
-                'chevas_08',
-                'chevas_09',
-                'chevas_10',
-                'chevas_11',
-                'chevas_09_thin'
+                # 'chevas_02',
+                # 'chevas_03',
+                # 'chevas_04',
+                # 'chevas_05',
+                # 'chevas_06',
+                # 'chevas_07',
+                # 'chevas_08',
+                # 'chevas_09',
+                # 'chevas_10',
+                # 'chevas_11',
+                # 'chevas_09_thin'
                                 ]
         ctcode = '12months'
         basedir = select_dir(r'E:\Nellix_chevas\CT_SSDF\SSDF_automated')
@@ -101,10 +109,10 @@ if True:
         for ptcode in ptcodes:
                 from nellix._do_analysis_centerline import _Do_Analysis_Centerline
                 AC = _Do_Analysis_Centerline(ptcode,ctcode,basedir,showVol='ISO') # loads centerline_modelavgreg_deforms_id
-                AC.chimneys_angle_change()
+                AC.chimneys_angle_change(armlength=10)
                 AC.motion_centerlines_segments(lenSegment=10)
                 AC.distance_change_nelnel_nelCh()
-                AC.storeOutputToExcel()
+                # AC.storeOutputToExcel()
 
 ## [OLD CODE] MOTION ANALYSIS CENTERLINES - CLICK NODES
 if False:
