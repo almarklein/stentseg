@@ -166,6 +166,8 @@ class PointSelect3D:
         renderstyle = 'mip'
         a_MIP.daspect = 1,1,-1
         self.b4 = vv.volshow(vol, clim=(0,2500), renderStyle = renderstyle, axes=a_MIP)
+        c = vv.ClimEditor(a_MIP)
+        c.position = (10, 50)
         
         # set axis settings
         for a in [a_transversal, a_coronal, a_sagittal, a_MIP]:
