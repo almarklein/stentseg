@@ -2,7 +2,8 @@
 will overwrite in pt folder
 """
 class _Do_Segmentation:
-    def __init__(self,ptcode,ctcode,basedir, seed_th=[600], show=True, normalize=False):
+    def __init__(self,ptcode,ctcode,basedir, seed_th=[600], show=True, 
+                normalize=False, modelname='model'):
         
         import os
         
@@ -20,7 +21,7 @@ class _Do_Segmentation:
         import scipy
         from scipy import ndimage
         import copy
-
+        
         # Select dataset to register
         cropname = 'prox'
         # phase = 10
@@ -36,7 +37,6 @@ class _Do_Segmentation:
         s.vol.sampling = [vol_org.sampling[1], vol_org.sampling[1], vol_org.sampling[2]] # z,y,x
         s.sampling = s.vol.sampling
         vol = s.vol
-        
         
         ## Initialize segmentation parameters
         stentType = 'nellix'  # 'zenith';'nellix' runs modified pruning algorithm in Step3
@@ -146,7 +146,7 @@ class _Do_Segmentation:
         
         
         # Save
-        filename = '%s_%s_%s_%s.ssdf' % (ptcode, ctcode, cropname, 'model'+ what)
+        filename = '%s_%s_%s_%s.ssdf' % (ptcode, ctcode, cropname, modelname+ what)
         ssdf.save(os.path.join(basedir, ptcode, filename), s2)
         print('saved to disk as {}.'.format(filename) )
 
