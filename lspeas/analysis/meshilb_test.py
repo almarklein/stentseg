@@ -78,6 +78,120 @@ def test_detect_holes():
         m.ensure_closed()
 
 
+def test_plane_cut():
+
+    # On a tetrahedron
+    m1 = meshlib.Mesh(meshlib.make_tetrahedron())
+    assert m1._vertices.shape[0] == 4
+    assert m1._faces.shape[0] == 4
+    #
+    m2 = m1.cut_plane((0, 0, +1, 0))
+    assert m2.ensure_closed() == 0
+    assert m2._vertices.shape[0] == 4 + 3 + 1
+    assert m2._faces.shape[0] == 4 - 1 + 3
+    #
+    m2 = m1.cut_plane((0, 0, -1, 0))
+    assert m2.ensure_closed() == 0
+    assert m2._vertices.shape[0] == 4 + 3 + 1
+    assert m2._faces.shape[0] == 4 + 3 + 3
+
+    # On a cube
+    m1 = meshlib.Mesh(meshlib.make_cube())
+    assert np.isclose(m1.volume(), 8)
+    assert m1._vertices.shape[0] == 8
+    assert m1._faces.shape[0] == 12
+    #
+    m2 = m1.cut_plane((0, 0, 1, 0))
+    assert m2.ensure_closed() == 0
+    assert np.isclose(m2.volume(), 4)
+    assert m2._vertices.shape[0] == 8 + 8 + 1
+    assert m2._faces.shape[0] == 12 - 2 + 8 + 4
+
+    # On a sphere
+    m1 = meshlib.Mesh(meshlib.make_sphere())
+    assert 4 < m1.volume() < 4.2  # 4.188790 == pi * 4/3
+    #
+    m2 = m1.cut_plane((0, 0, 1, 0))
+    assert m2.ensure_closed() == 0
+    assert np.isclose(m2.volume(), m1.volume() / 2)
+    assert m2._vertices.shape[0] > m1._vertices.shape[0]
+    assert m2._faces.shape[0] < m1._faces.shape[0]  # the lid takes less than what we discard
+
+    # Test on more spheres (tests the grouping over multiple rims)
+    vertices = np.row_stack([meshlib.make_sphere() + np.array([5, 0, 0]),
+                             meshlib.make_sphere() + np.array([10, 0, 0]),
+                             meshlib.make_sphere() + np.array([15, 0, 0]),
+                             ])
+    m1 = meshlib.Mesh(vertices)
+    assert 12 < m1.volume() < 12.6
+    #
+    m2 = m1.cut_plane((0, 0, 1, 0))
+    assert m2.ensure_closed() == 0
+    assert np.isclose(m2.volume(), m1.volume() / 2)
+    assert m2._vertices.shape[0] > m1._vertices.shape[0]
+    assert m2._faces.shape[0] < m1._faces.shape[0]
+
+    # Check that the correct side is removed - part 1
+    m1 = meshlib.Mesh(meshlib.make_tetrahedron())
+    m2 = m1.cut_plane((0, 0, 1, 0))  # should keep upper part
+    assert m2.volume() < m1.volume() / 2
+    #
+    m2 = m1.cut_plane((0, 0, -1, 0))  # should keep lower part
+    assert m2.volume() > m1.volume() / 2
+
+    # Check that the correct side is removed - part 2
+    m1 = meshlib.Mesh(meshlib.make_sphere())
+    m2 = m1.cut_plane((0, 0, 1, 0))  # middle,  keep upper part
+    assert m2.get_flat_vertices()[:, 2].min() == 0
+    assert m2.get_flat_vertices()[:, 2].max() == 1
+    #
+    m2 = m1.cut_plane((0, 0, -1, 0))  # middle,  keep bottom part
+    assert m2.get_flat_vertices()[:, 2].min() == -1
+    assert m2.get_flat_vertices()[:, 2].max() == 0
+    #
+    m2 = m1.cut_plane((0, 0, 1, -0.5))  # should keep small lower part
+    assert np.isclose(m2.get_flat_vertices()[:, 2].min(), 0.5)
+    assert m2.get_flat_vertices()[:, 2].max() == 1
+    assert m2.volume() < m1.volume() / 4
+    #
+    m2 = m1.cut_plane((0, 0, -1, 0.5))  # should keep big lower part
+    assert m2.get_flat_vertices()[:, 2].min() == -1
+    assert np.isclose(m2.get_flat_vertices()[:, 2].max(), 0.5)
+    assert m2.volume() > 3 * m1.volume() / 4
+
+    # Test what happens if we cut near a vertex
+    m1 = meshlib.Mesh(meshlib.make_tetrahedron())
+    assert m2.ensure_closed() == 0
+    assert m1._faces.shape[0] == 4
+    #
+    m2 = m1.cut_plane((0, 0, 1, -1.01))  # cut just above top vertex
+    assert m2.ensure_closed() == 0
+    assert m2._faces.shape[0] == 0
+    #
+    m2 = m1.cut_plane((0, 0, 1, +1))  # cut below lowest vertex
+    assert m2.ensure_closed() == 0
+    assert m2._faces.shape[0] == 4
+    #
+    m2 = m1.cut_plane((0, 0, 1, -0.99))  # cut just below top vertex
+    assert m2.ensure_closed() == 0
+    assert m2._faces.shape[0] == 6
+    assert m2.volume() < 0.01 * m1.volume()
+    #
+    m2 = m1.cut_plane((0, 0, -1, 0.99))  # cut just below top vertex - flipped
+    assert m2.ensure_closed() == 0
+    assert m2._faces.shape[0] == 10
+    assert m2.volume() > 0.99 * m1.volume()
+    #
+    m2 = m1.cut_plane((0, 0, 1, -1))  # cut at top vertex
+    assert m2.ensure_closed() == 0
+    assert m2._faces.shape[0] == 6  # not 0, 4 would have been better
+    assert m2.volume() == 0
+    #
+    m2 = m1.cut_plane((0, 0, -1, 1))  # cut at top vertex - flipped
+    assert m2.ensure_closed() == 0
+    assert m2._faces.shape[0] == 4  # untouched
+
+
 def speed():
     vertices = meshlib.make_sphere(5)
     t0 = time.perf_counter()
@@ -94,4 +208,5 @@ if __name__ == "__main__":
     test_maker_funcs()
     test_fix_wrong_winding()
     test_detect_holes()
+    test_plane_cut()
 

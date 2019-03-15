@@ -8,6 +8,13 @@ jit = lambda x: x
 # jit = numba.jit
 
 
+# Interesting methods:
+# - remove unused vertices, but can be obtained by m = Mesh(m.get_flat_vertices())
+# - split the different connected objects into multiple mesh objects.
+# - combine mesh objects into one.
+# - squash so that anything on the inside gets removed, glueing intersection shapes together.
+
+
 class Mesh:
     """ A class to represent a geometric mesh.
 
@@ -130,16 +137,16 @@ class Mesh:
 
         # All vertices are in at least 3 faces. This is a basic sanity check
         # but does not mean that the mesh is closed!
-        counts = set()
+        counts = dict()
         for vi, faces in self._v2f.items():
-            counts.add(len(faces))
-        for count in counts:
+            counts[len(faces)] = counts.get(len(faces), 0) + 1
+        for count in counts.keys():
             if count < 3:
                 raise ValueError("was expecting all vertices to be in at least 3 faces.")
 
     @jit
     def ensure_closed(self):
-        """ Ensurs that the mesh is closed, that all faces have the
+        """ Ensure that the mesh is closed, that all faces have the
         same winding ,and that the winding follows the right hand rule
         (by checking that the volume is positive). It is recommended
         to call this on incoming data.
@@ -158,7 +165,7 @@ class Mesh:
             while front:
                 fi_check = front.pop()
                 vi1, vi2, vi3 = faces[fi_check, 0], faces[fi_check, 1], faces[fi_check, 2]
-                edgesthathaveneighbours = set()
+                neighbour_per_edge = [0, 0, 0]
                 neighbour_faces = set()
                 neighbour_faces.update(v2f[vi1])
                 neighbour_faces.update(v2f[vi2])
@@ -168,7 +175,7 @@ class Mesh:
                     matching_vertices = {vj1, vj2, vj3}.intersection({vi1, vi2, vi3})
                     if len(matching_vertices) >= 2:
                         if {vi1, vi2} == matching_vertices:
-                            edgesthathaveneighbours.add(1)
+                            neighbour_per_edge[0] += 1
                             if fi in faces_to_check:
                                 faces_to_check.discard(fi)
                                 front.add(fi)
@@ -178,7 +185,7 @@ class Mesh:
                                     count_reversed += 1
                                     faces[fi, 1], faces[fi, 2] = int(faces[fi, 2]), int(faces[fi, 1])
                         elif {vi2, vi3} == matching_vertices:
-                            edgesthathaveneighbours.add(2)
+                            neighbour_per_edge[1] += 1
                             if fi in faces_to_check:
                                 faces_to_check.discard(fi)
                                 front.add(fi)
@@ -188,7 +195,7 @@ class Mesh:
                                     count_reversed += 1
                                     faces[fi, 1], faces[fi, 2] = int(faces[fi, 2]), int(faces[fi, 1])
                         elif {vi3, vi1} == matching_vertices:
-                            edgesthathaveneighbours.add(3)
+                            neighbour_per_edge[2] += 1
                             if fi in faces_to_check:
                                 faces_to_check.discard(fi)
                                 front.add(fi)
@@ -200,8 +207,11 @@ class Mesh:
                 # Now that we checked all neighbours, check if we have a neighbour on each edge.
                 # If this is so for all faces, we know that the mesh is closed. The mesh
                 # can still have weird crossovers or parts sticking out (e.g. a Klein bottle).
-                if edgesthathaveneighbours != {1, 2, 3}:
-                    msg = "there is a hole in the mesh at face {} {}".format(fi_check, edgesthathaveneighbours)
+                if neighbour_per_edge != [1, 1, 1]:
+                    if 0 in neighbour_per_edge:
+                        msg = "There is a hole in the mesh at face {} {}".format(fi_check, neighbour_per_edge)
+                    else:
+                        msg = "To many neighbour faces for face {} {}".format(fi_check, neighbour_per_edge)
                     #print("WARNING:", msg)
                     raise ValueError(msg)
 
@@ -241,8 +251,15 @@ class Mesh:
         return vol1
 
     def cut_plane(self, plane):
-        """ Cut the part of the mesh that is in front of the given plane.
+        """ Cut the part of the mesh that is in behind the given plane.
+
+        The plane is a tuple (a, b, c, d), such that a*x + b*y + c*z + d = 0.
+        The (a, b, c) part can be seen as the plan's normal. E.g. (0, 0, 1, -1)
+        represents the plane that will cut everything below z=1.
         """
+
+        # It seems most natural to remove the part *behind* the given plane,
+        # so that the plane kinda forms the "lid" of the hole that is created.
 
         # This mesh
         faces = self._faces
@@ -251,21 +268,21 @@ class Mesh:
         # Prepare for creating a new mesh
         new_faces = np.zeros((0, 3), np.int32)  # Build up from scratch
         new_vertices = self._vertices.copy()  # Start with full, decimate later
+        reused_rim_vertices = set()
         edge_to_vertex_index = {}
 
         # Get signed distance of each vertex to the plane
         signed_distances = signed_distance_to_plane(vertices, plane)
 
         def get_new_vertex_id(vi1, vi2):
-            key = min(vi1, vi2), max(vi1, vi2)
+            key = min(vi1, vi2), max(vi1, vi2)  # todo: if we ensure the order, we can omit this
             try:
                 return edge_to_vertex_index[key]
             except KeyError:
                 d1, d2 = abs(signed_distances[vi1]), abs(signed_distances[vi2])
                 w1, w2 = d2 / (d1 + d2), d1 / (d1 + d2)
-                vertex = w1 * vertices[vi1] + w2 * vertices[vi2]
                 new_vi = len(new_vertices)
-                new_vertices.append(vertex)
+                append3(new_vertices, w1 * vertices[vi1] + w2 * vertices[vi2])
                 edge_to_vertex_index[key] = new_vi
                 return new_vi
 
@@ -275,61 +292,62 @@ class Mesh:
         for fi in range(len(faces)):  # for each face index
             vi1, vi2, vi3 = faces[fi, 0], faces[fi, 1], faces[fi, 2]
             s1, s2, s3 = signed_distances[vi1], signed_distances[vi2], signed_distances[vi3]
-            include = True
-            if s1 >= 0 and s2 >= 0 and s3 >= 0:
+            if s1 < 0 and s2 < 0 and s3 < 0:
                 pass  # The whole face is to be dropped
-            elif s1 < 0 and s2 < 0 and s3 < 0:
+            elif s1 >= 0 and s2 >= 0 and s3 >= 0:
                 # The whole face is to be included
-                new_faces.append(faces[fi])
-            elif s1 < 0 and s2 >= 0 and s3 >= 0:
+                append3(new_faces, faces[fi])
+            elif s1 >= 0 and s2 < 0 and s3 < 0:
                 a = vi1
                 b = get_new_vertex_id(vi1, vi2)
                 c = get_new_vertex_id(vi1, vi3)
-                new_faces.append(a, b, c)
-            elif s2 < 0 and s3 >= 0 and s1 >= 0:
+                append3(new_faces, (a, b, c))
+            elif s2 >= 0 and s3 < 0 and s1 < 0:
                 a = vi2
                 b = get_new_vertex_id(vi2, vi3)
                 c = get_new_vertex_id(vi2, vi1)
-                new_faces.append(a, b, c)
-            elif s3 < 0 and s1 >= 0 and s2 >= 0:
+                append3(new_faces, (a, b, c))
+            elif s3 >= 0 and s1 < 0 and s2 < 0:
                 a = vi3
                 b = get_new_vertex_id(vi3, vi1)
                 c = get_new_vertex_id(vi3, vi2)
-                new_faces.append(a, b, c)
-            elif s1 < 0 and s2 < 0 and s3 >= 0:
+                append3(new_faces, (a, b, c))
+            elif s1 >= 0 and s2 >= 0 and s3 < 0:
                 a = vi1
                 b = vi2
                 c = get_new_vertex_id(vi1, vi3)
                 d = get_new_vertex_id(vi2, vi3)
-                new_faces.append(a, b, d)
-                new_faces.append(b, c, d)
-            elif s2 < 0 and s3 < 0 and s1 >= 0:
+                append3(new_faces, (a, d, c))
+                append3(new_faces, (b, d, a))
+            elif s2 >= 0 and s3 >= 0 and s1 < 0:
                 a = vi2
                 b = vi3
                 c = get_new_vertex_id(vi2, vi1)
                 d = get_new_vertex_id(vi3, vi1)
-                new_faces.append(a, b, d)
-                new_faces.append(b, c, d)
-            elif s3 < 0 and s1 < 1 and s2 >= 0:
+                append3(new_faces, (a, d, c))
+                append3(new_faces, (b, d, a))
+            elif s3 >= 0 and s1 >= 0 and s2 < 0:
                 a = vi3
                 b = vi1
                 c = get_new_vertex_id(vi3, vi2)
                 d = get_new_vertex_id(vi1, vi2)
-                new_faces.append(a, b, d)
-                new_faces.append(b, c, d)
+                append3(new_faces, (a, d, c))
+                append3(new_faces, (b, d, a))
             else:
                 assert False, "Unforeseen, this should not happen"
 
         # Create v2f map
         new_v2f = self._calculate_v2f(new_faces)
 
-        # Find the different holes that make up the rim of the mesh
+        # Find the different holes that make up the rim of the mesh.
+        # We collect vertices in groups that each represent a path over a rim.
         groups = []
         rim_indices_left = set(range(len(self._vertices), len(new_vertices)))
-        rim_indices_done = set()
+        rim_indices_left.update(reused_rim_vertices)
         while rim_indices_left:
             # Pick arbitrarty vertex on the rim. This will be our seed for a new group.
             vi = rim_indices_left.pop()
+            rim_indices_left.add(vi)  # Because we want to and here
             group = [vi]
             groups.append(group)
             # Now walk along the rim until we're back
@@ -349,9 +367,6 @@ class Mesh:
                     elif vi3 == vi and vi1 in rim_indices_left:
                         vi_next = vi1
                         break
-                else:
-                    continue
-                break
                 # Done, or next
                 if vi_next is None:
                     raise RuntimeError("Could not find next vertex on the rim")
@@ -362,15 +377,17 @@ class Mesh:
 
         # Put the lid on each hole. Each group is ordered with correct winding already.
         for group in groups:
-            center_vertex = sum(new_vertices[vi] for vi in group) / len(group)
-            center_vi = len(vertices_new)
-            vertices_new.add(center_vertex)
+            assert group[0] == group[-1]  # is already circular
+            center_vertex = new_vertices[group].mean(0)
+            center_vi = len(new_vertices)
+            append3(new_vertices, center_vertex)
             new_v2f[center_vi] = fis = []
-            for i in range(len(group) -1):
-                fis.append(len(new_faces))
-                new_faces.add(group[i], group[i + 1], center_vi)
-            fis.append(len(new_faces))
-            new_faces.add(group[-1], group[0], center_vi)
+            for i in range(len(group) - 1):
+                fi = len(new_faces)
+                fis.append(fi)
+                new_v2f[group[i]].append(fi)
+                new_v2f[group[i + 1]].append(fi)
+                append3(new_faces, (group[i], center_vi, group[i + 1]))
 
         return Mesh(new_vertices, new_faces, new_v2f)
 
