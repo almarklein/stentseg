@@ -1,5 +1,4 @@
 import numpy as np
-from stentseg.utils import PointSet, fitting
 
 
 class Mesh:
@@ -21,8 +20,8 @@ class Mesh:
         if faces is None:
             self._from_vertices(vertices)
         else:
-            self._vertices = vertices
-            self._faces = faces
+            self._vertices = np.asarray(vertices, dtype=np.float32)
+            self._faces = np.asarray(faces, dtype=np.int32)
             if v2f is None:
                 self._v2f = self._calculate_v2f(self._faces)
             else:
@@ -46,12 +45,12 @@ class Mesh:
         """
         faces = self._faces
         vertices = self._vertices
-        flat_vertices = PointSet(3)
+        flat_vertices = np.zeros((0, 3), np.float32)
         for fi in range(len(faces)):
             vi1, vi2, vi3 = faces[fi, 0], faces[fi, 1], faces[fi, 2]
-            flat_vertices.append(vertices[vi1])
-            flat_vertices.append(vertices[vi2])
-            flat_vertices.append(vertices[vi3])
+            append3(flat_vertices, vertices[vi1])
+            append3(flat_vertices, vertices[vi2])
+            append3(flat_vertices, vertices[vi3])
         return flat_vertices
 
     def _calculate_v2f(self, faces):
@@ -69,35 +68,33 @@ class Mesh:
         """ Create a mesh from only the vertices (e.g. from STL) by
         recombining equal vertices into faces.
         """
-        self._vertices = vertices = PointSet(3, np.float32)
-        self._faces = faces = PointSet(3, np.int32)
+        self._vertices = vertices = np.zeros((0, 3), np.float32)
+        self._faces = faces =  np.zeros((0, 3), np.int32)
         self._v2f = v2f = {}
 
         xyz2f = {}
 
         if not(vertices_in.ndim == 2 and vertices_in.shape[1] == 3):
-            raise ValueError("Vertices must be an Nx3 array (or 3D PointSet).")
+            raise ValueError("Vertices must be an Nx3 array.")
         if len(vertices_in) % 3 != 0:
             raise ValueError("There must be a multiple of 3 vertices.")
-        if not isinstance(vertices_in, PointSet):
-            vertices_in = PointSet(vertices_in)
 
         for fi in range(len(vertices_in) // 3):
             fi2 = len(faces)
             face = []
             for vi in (fi * 3 + 0, fi * 3 + 1, fi * 3 + 2):
                 xyz = vertices_in[vi]
-                xyz = float(xyz[0, 0]), float(xyz[0, 1]), float(xyz[0, 2])
+                xyz = float(xyz[0]), float(xyz[1]), float(xyz[2])
                 if xyz in xyz2f:
                     vi2 = xyz2f[xyz]  # re-use vertex
                 else:
                     vi2 = len(vertices)  # new vertex
-                    vertices.append(xyz)
+                    append3(vertices, xyz)
                     xyz2f[xyz] = vi2
                 face.append(vi2)
                 faceslist = v2f.setdefault(vi2, [])
                 faceslist.append(fi2)
-            faces.append(face)
+            append3(faces, face)
 
     def validate(self):
         """ perform basic validation on the mesh.
@@ -249,12 +246,12 @@ class Mesh:
         vertices = self._vertices
 
         # Prepare for creating a new mesh
-        new_faces = PointSet(3, np.int32)  # Build up from scratch
+        new_faces = np.zeros((0, 3), np.int32)  # Build up from scratch
         new_vertices = self._vertices.copy()  # Start with full, decimate later
         edge_to_vertex_index = {}
 
         # Get signed distance of each vertex to the plane
-        signed_distances = fitting.signed_distance_to_plane(vertices, plane)
+        signed_distances = signed_distance_to_plane(vertices, plane)
 
         def get_new_vertex_id(vi1, vi2):
             key = min(vi1, vi2), max(vi1, vi2)
@@ -375,11 +372,32 @@ class Mesh:
         return Mesh(new_vertices, new_faces, new_v2f)
 
 
+## Util functions
+
+
+def append3(arr, p):
+    arr.resize((arr.shape[0] + 1, arr.shape[1]), refcheck=False)
+    arr[-1] = p
+
+
+def norm(p):
+    return (p[0] ** 2 + p[1] ** 2 + p[2] ** 2) ** 0.5
+
+
+def signed_distance_to_plane(pp, plane):
+    a, b, c, d = plane
+    plane_norm = (a**2 + b**2 + c**2) ** 0.5
+    return (a * pp[:, 0] + b * pp[:, 1] + c * pp[:, 2] + d) / plane_norm
+
+
+## Maker functions
+
+
 def make_cube():
     """ Create a vertex array representing a cube centered at the origin,
     spanning 1 unit in each direction (thus having a volume of 8).
     """
-    vertices = PointSet(3)
+    vertices =  np.zeros((0, 3), np.float32)
     for rot in [0, 1, 2]:
         for c in [-1, +1]:
             a1, a2 = -1 * c, +1 * c
@@ -387,7 +405,7 @@ def make_cube():
             for values in [(a1, b1, c), (a2, b2, c), (a1, b2, c),
                            (a1, b1, c), (a2, b1, c), (a2, b2, c)]:
                 values = values[rot:] + values[:rot]
-                vertices.append(values)
+                append3(vertices, values)
     return vertices
 
 
@@ -403,11 +421,11 @@ def make_tetrahedron():
     v3 = -sqrt(2/9), -sqrt(2/3), -1/3
     v4 = 0, 0, 1
     # Create faces
-    vertices = PointSet(3)
+    vertices = np.zeros((0, 3), np.float32)
     for v1, v2, v3 in [(v1, v2, v4), (v2, v3, v4), (v3, v1, v4), (v1, v3, v2)]:
-        vertices.append(v1)
-        vertices.append(v2)
-        vertices.append(v3)
+        append3(vertices, v1)
+        append3(vertices, v2)
+        append3(vertices, v3)
     return vertices
 
 
@@ -434,11 +452,11 @@ def make_icosahedron():
         (6,1,10), (9,0,11), (9,11,2), (9,2,5), (7,2,11)
     ]
 
-    vertices = PointSet(3)
+    vertices = np.zeros((0, 3), np.float32)
     for v1, v2, v3 in faces:
-        vertices.append(vdata[v1])
-        vertices.append(vdata[v3])  # note the out-of order to make CCW winding
-        vertices.append(vdata[v2])
+        append3(vertices, vdata[v1])
+        append3(vertices, vdata[v3])  # note the out-of order to make CCW winding
+        append3(vertices, vdata[v2])
 
     return vertices
 
@@ -449,13 +467,13 @@ def make_sphere(ndiv=3):
     """
     vertices = make_icosahedron()
     for iter in range(ndiv):
-        new_vertices = PointSet(3)
+        new_vertices = np.zeros((0, 3), np.float32)
         for vi0 in range(0, len(vertices), 3):
             v1, v2, v3 = vertices[vi0 + 0], vertices[vi0 + 1], vertices[vi0 + 2]
             v4, v5, v6 = 0.5 * (v1 + v2), 0.5 * (v2 + v3), 0.5 * (v3 + v1)
-            v4, v5, v6 = v4.normalize(), v5.normalize(), v6.normalize()
+            v4, v5, v6 = v4 / norm(v4), v5 / norm(v5), v6 / norm(v6)
             for vi in [v1, v4, v6, v2, v5, v4, v3, v6, v5, v4, v5, v6]:
-                new_vertices.append(vi)
+                append3(new_vertices, vi)
         vertices = new_vertices
     return vertices
 
