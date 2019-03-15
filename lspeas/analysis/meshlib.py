@@ -1,5 +1,12 @@
 import numpy as np
 
+jit = lambda x: x
+
+# Make things faster? volume() certainly become faster, but ensure_closed,
+# which is more critical, does not.
+# import numba
+# jit = numba.jit
+
 
 class Mesh:
     """ A class to represent a geometric mesh.
@@ -39,6 +46,7 @@ class Mesh:
         """
         return self._vertices, self._faces
 
+    @jit
     def get_flat_vertices(self):
         """ Get a representation of the mesh as flat vertices, e.g. to
         export to STL.
@@ -53,6 +61,7 @@ class Mesh:
             append3(flat_vertices, vertices[vi3])
         return flat_vertices
 
+    @jit
     def _calculate_v2f(self, faces):
         """ Calculate the v2f map from the given faces.
         """
@@ -64,6 +73,7 @@ class Mesh:
             v2f.setdefault(vi3, []).append(fi)
         return v2f
 
+    @jit
     def _from_vertices(self, vertices_in):
         """ Create a mesh from only the vertices (e.g. from STL) by
         recombining equal vertices into faces.
@@ -96,6 +106,7 @@ class Mesh:
                 faceslist.append(fi2)
             append3(faces, face)
 
+    @jit
     def validate(self):
         """ perform basic validation on the mesh.
         """
@@ -126,6 +137,7 @@ class Mesh:
             if count < 3:
                 raise ValueError("was expecting all vertices to be in at least 3 faces.")
 
+    @jit
     def ensure_closed(self):
         """ Ensurs that the mesh is closed, that all faces have the
         same winding ,and that the winding follows the right hand rule
@@ -203,20 +215,11 @@ class Mesh:
 
         return count_reversed
 
+    @jit
     def volume(self):
         """ Calculate the volume of the mesh. You probably want to run ensure_closed()
         on untrusted data when using this.
         """
-
-        # https://stackoverflow.com/a/1568551
-        def _volume_of_triangle(p1, p2, p3):
-            v321 = p3[0] * p2[1] * p1[2]
-            v231 = p2[0] * p3[1] * p1[2]
-            v312 = p3[0] * p1[1] * p2[2]
-            v132 = p1[0] * p3[1] * p2[2]
-            v213 = p2[0] * p1[1] * p3[2]
-            v123 = p1[0] * p2[1] * p3[2]
-            return (1.0 / 6.0) * (-v321 + v231 + v312 - v132 - v213 + v123)
 
         vertices = self._vertices
         faces = self._faces
@@ -225,8 +228,8 @@ class Mesh:
         # vol2 = 0
         for fi in range(len(faces)):
             vi1, vi2, vi3 = faces[fi, 0], faces[fi, 1], faces[fi, 2]
-            vol1 += _volume_of_triangle(vertices[vi1], vertices[vi2], vertices[vi3])
-            # vol2 += _volume_of_triangle(vertices[vi1] + 10, vertices[vi2] + 10, vertices[vi3] + 10)
+            vol1 += volume_of_triangle(vertices[vi1], vertices[vi2], vertices[vi3])
+            # vol2 += volume_of_triangle(vertices[vi1] + 10, vertices[vi2] + 10, vertices[vi3] + 10)
 
         # # Check integrity
         # err_per = (abs(vol1) - abs(vol2)) / max(abs(vol1) + abs(vol2), 0.000000001)
@@ -375,15 +378,30 @@ class Mesh:
 ## Util functions
 
 
+@jit
 def append3(arr, p):
     arr.resize((arr.shape[0] + 1, arr.shape[1]), refcheck=False)
     arr[-1] = p
 
 
+@jit
 def norm(p):
     return (p[0] ** 2 + p[1] ** 2 + p[2] ** 2) ** 0.5
 
 
+@jit
+def volume_of_triangle(p1, p2, p3):
+    # https://stackoverflow.com/a/1568551
+    v321 = p3[0] * p2[1] * p1[2]
+    v231 = p2[0] * p3[1] * p1[2]
+    v312 = p3[0] * p1[1] * p2[2]
+    v132 = p1[0] * p3[1] * p2[2]
+    v213 = p2[0] * p1[1] * p3[2]
+    v123 = p1[0] * p2[1] * p3[2]
+    return (1.0 / 6.0) * (-v321 + v231 + v312 - v132 - v213 + v123)
+
+
+@jit
 def signed_distance_to_plane(pp, plane):
     a, b, c, d = plane
     plane_norm = (a**2 + b**2 + c**2) ** 0.5

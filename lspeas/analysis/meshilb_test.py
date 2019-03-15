@@ -1,9 +1,9 @@
 import time
 
 import numpy as np
+from pytest import raises
 
 import meshlib
-from pytest import raises
 
 
 def test_maker_funcs():
@@ -82,9 +82,12 @@ def speed():
     vertices = meshlib.make_sphere(5)
     t0 = time.perf_counter()
     m = meshlib.Mesh(vertices)
-    m.ensure_closed()
     t1 = time.perf_counter()
-    print("Sphere", len(vertices), t1 - t0)
+    m.ensure_closed()
+    t2 = time.perf_counter()
+    m.volume()
+    t3 = time.perf_counter()
+    print("Sphere", len(vertices), t1 - t0, t2 - t1, t3 - t2)
 
 
 if __name__ == "__main__":
