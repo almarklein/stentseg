@@ -284,6 +284,15 @@ def project_to_plane(pp, plane):
     return pp2
 
 
+def signed_distance_to_plane(pp, plane):
+    """ Find the signed distances of the given 3D points to the given plane.
+    Note that the distances are signed, and can thus be negative.
+    """
+    a, b, c, d = plane
+    plane_norm = (a**2 + b**2 + c**2) ** 0.5
+    return (a * pp[:, 0] + b * pp[:, 1] + c * pp[:, 2] + d) / plane_norm
+
+
 def project_from_plane(pp, plane):
     """ Project 2D points on a plane to the original 3D coordinate frame
     
