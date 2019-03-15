@@ -7,11 +7,11 @@ import os
 from stentseg.utils.datahandling import select_dir, loadmodel, loadvol
 
 
-ptcode = 'chevas_02'
+ptcode = 'chevas_01'
 ctcode = '12months' # is not the true follow-up time but use for all
 # dicom_basedir = r'E:\Nellix_chevas\CT_SSDF\no 1\STD00001\10phases'
 # print(dicom_basedir)
-basedir = select_dir(r'E:\Nellix_chevas\CT_SSDF\SSDF_automated')
+basedir = select_dir(r'F:\Nellix_chevas\CT_SSDF\SSDF_automated')
 
 ## LOAD CT
 if False:
@@ -33,9 +33,9 @@ if False:
         print('segmentation: done')
 
 ## SEGMENTATION VASCULATURE
-if True:
+if False:
         from nellix._do_segmentation_vessel import _Do_Segmentation_Vessel
-        foo = _Do_Segmentation_Vessel(ptcode,ctcode,basedir,threshold=225, show=True, normalize=False)
+        foo = _Do_Segmentation_Vessel(ptcode,ctcode,basedir,threshold=275, show=True, normalize=False)
         print('segmentation vessel: done')
 
 ## SELECT POINT FOR CENTERLINE
@@ -77,14 +77,15 @@ if False:
 ## IDENTIFY CENTERLINES FOR ANALYSIS
 if False:
         from stentseg.utils.centerline import points_from_nodes_in_graph
-        s = loadmodel(basedir, ptcode, ctcode, 'prox', modelname='centerline_modelavgreg_deforms')
+        # modelname = 'centerline_modelavgreg_deforms'
+        modelname = 'centerline_modelvesselavgreg_deforms' 
+        s = loadmodel(basedir, ptcode, ctcode, 'prox', modelname=modelname)
         
         from nellix.identify_centerlines import identifyCenterlines
-        modelname='centerline_modelavgreg_deforms'
         a, s2 = identifyCenterlines(s, ptcode,ctcode,basedir,modelname,showVol='MIP')
 
 ## MOTION ANALYSIS CENTERLINES
-if False: 
+if True: 
         import os
         from stentseg.utils.datahandling import select_dir, loadmodel, loadvol
         from stentseg.utils.picker import pick3d
@@ -104,15 +105,23 @@ if False:
                 # 'chevas_09_thin'
                                 ]
         ctcode = '12months'
-        basedir = select_dir(r'E:\Nellix_chevas\CT_SSDF\SSDF_automated')
+        basedir = select_dir(r'F:\Nellix_chevas\CT_SSDF\SSDF_automated')
         
         for ptcode in ptcodes:
                 from nellix._do_analysis_centerline import _Do_Analysis_Centerline
                 AC = _Do_Analysis_Centerline(ptcode,ctcode,basedir,showVol='ISO') # loads centerline_modelavgreg_deforms_id
+                # chimney / chimney-nel angles
                 AC.chimneys_angle_change(armlength=10)
-                AC.motion_centerlines_segments(lenSegment=10)
+                # chimney-vessel transition angle
+                AC.chimneys_vessel_angle_change(armlength=10)
+                # motion stents
+                AC.motion_centerlines_segments(lenSegment=10) # stents
+                # motion vessel after stent
+                AC.motion_centerlines_segments(lenSegment=10, type='vessels')
+                # distances nel-nel and chim-nel
                 AC.distance_change_nelnel_nelCh()
-                # AC.storeOutputToExcel()
+                # save to excel
+                AC.storeOutputToExcel()
 
 ## [OLD CODE] MOTION ANALYSIS CENTERLINES - CLICK NODES
 if False:
