@@ -28,6 +28,12 @@ class _Do_Analysis_Centerline:
         Init motion analysis on centerlines 
         """
         self.s = loadmodel(basedir, ptcode, ctcode, 'prox', modelname='centerline_modelavgreg_deforms_id')
+        #load model of vessel centerline, distal of stent, if available
+        try:
+            self.s_vessel = loadmodel(basedir, ptcode, ctcode, 'prox', modelname='centerline_modelvesselavgreg_deforms_id')
+        except FileNotFoundError:
+            self.s_vessel = None
+        #load vol for visualization
         s = loadvol(basedir, ptcode, ctcode, 'prox', what='avgreg')
         # set sampling for cases where this was not stored correctly
         s.vol.sampling = [s.sampling[1], s.sampling[1], s.sampling[2]]
@@ -51,9 +57,13 @@ class _Do_Analysis_Centerline:
         for key in self.s:
             if key.startswith('model'):
                 self.s[key].Draw(mc='b', mw = 5, lc='b', alpha = 0.5)
+        if not self.s_vessel is None:
+            for key in self.s_vessel:
+                if key.startswith('model'):
+                    self.s_vessel[key].Draw(mc='b', mw = 5, lc='b', alpha = 0.5)
         vv.title('Model for ChEvas %s  -  %s' % (ptcode[7:], 'follow-up')) # ctcode not correct
         
-        f.eventKeyDown.Bind(lambda event: _utils_GUI.RotateView(event, [self.a]) )
+        f.eventKeyDown.Bind(lambda event: _utils_GUI.RotateView(event, [self.a], axishandling=False) )
         f.eventKeyDown.Bind(lambda event: _utils_GUI.ViewPresets(event, [self.a]) )
         self.fig = f
         
@@ -76,15 +86,19 @@ class _Do_Analysis_Centerline:
         # node_point.nr = i
         self.node_points.append(node_point)
     
-    def motion_centerlines_segments(self, lenSegment=5, dim='xyz'):
+    def motion_centerlines_segments(self, lenSegment=10, type='stents'):
         """ given a centerline, compute motion of points in centerline segment
         dim: amplitude of motion in x,y,z, or xyz 
+        type: stents or vessels
         self has ssdf with dynamic model of cll and ppCenterline
         stores mean displacement pattern of segment points and amplitude mean std min max 
         """
-        s = self.s # ssdf with centerline pointsets pp identified
+        if type == 'stents':
+            s = self.s # ssdf with centerline pointsets pp identified
+        elif type == 'vessels':
+            s = self.s_vessel
         for key in s:
-            if key.startswith('ppCenterline'): # each branch or Nel
+            if key.startswith('ppCenterline'): # each branch or Nel or vessel
                 ppCll = s[key]
                 name_output = 'Motion_'+key[12:]+'prox'
                 model = s['model'+key[12:]] # skip 'ppCenterline' in key
@@ -93,7 +107,7 @@ class _Do_Analysis_Centerline:
                 ppCllDeforms = model.edge[edge[0]][edge[1]]['pathdeforms']
                 ppCllDeforms = np.asarray(ppCllDeforms) # npoints x nphases x 3
                 #ppCll == model.edge[edge[0]][edge[1]]['path']
-                output = calculate_motion_points(ppCll, ppCllDeforms, lenSegment,dim=dim, part='prox')
+                output = calculate_motion_points(key, ppCll, ppCllDeforms, lenSegment, part='prox')
                 output['Type'] = 'motion_centerlines_segments'
                 # Store output with name
                 output['Name'] = name_output
@@ -104,19 +118,20 @@ class _Do_Analysis_Centerline:
                 point = plot_points(pp, mc='y', ax=a1)
                 self.points_plotted.append(point)
                 
-                # now obtain motion for distal segment
-                name_output = 'Motion_'+key[12:]+'dist'
-                output = calculate_motion_points(ppCll, ppCllDeforms, lenSegment,dim=dim, part='dist')
-                output['Type'] = 'motion_centerlines_segments'
-                # Store output with name
-                output['Name'] = name_output
-                self.storeOutput.append(output)
-                pp = output['ppSegment'] # [positions nodes avgreg]
-                # visualize segment analyzed in avgreg
-                if not key.startswith('ppCenterlineNel'): # do not visualize distal nellix
-                    a1 = self.a
-                    point = plot_points(pp, mc='r', ax=a1)
-                    self.points_plotted.append(point)
+                if type == 'stents':
+                    # now obtain motion for distal segment
+                    name_output = 'Motion_'+key[12:]+'dist'
+                    output = calculate_motion_points(key, ppCll, ppCllDeforms, lenSegment, part='dist')
+                    output['Type'] = 'motion_centerlines_segments'
+                    # Store output with name
+                    output['Name'] = name_output
+                    self.storeOutput.append(output)
+                    pp = output['ppSegment'] # [positions nodes avgreg]
+                    # visualize segment analyzed in avgreg
+                    if not key.startswith('ppCenterlineNel'): # do not visualize distal nellix
+                        a1 = self.a
+                        point = plot_points(pp, mc='r', ax=a1)
+                        self.points_plotted.append(point)
                     
     
     def distance_change_nelnel_nelCh(self):
@@ -243,6 +258,19 @@ class _Do_Analysis_Centerline:
                 self.centerline_tortuosity_change(key1, ppSMA, 'Tort_SMA')
                 self.chimney_nel_angle_change(key1, ppSMA, 'Ang_SMA_Nel', armlength=armlength)
     
+    def chimneys_vessel_angle_change(self, armlength=10):
+        """ Calculate angle at stent-vessel transition, between vector dist 
+        stent and prox end vessel centerline
+        """ 
+        s_vessel = self.s_vessel # ssdf with centerline pointsets pp identified
+        
+        for key in s_vessel:
+            if key.startswith('ppCenterline'):
+                ppVessel = s_vessel[key]
+                key1 = key[12:] # e.g. vLRA
+                name_output = 'Ang_'+key1[1:]+'_Vessel' # Ang_LRA_Vessel
+                self.chimney_vessel_angle_change(key1, ppVessel, name_output, armlength=10)
+        
     def centerline_tortuosity_change(self, key, ppCh, name_output):
         """ Tortuosity of pp centerline during cardiac cycle phases
         """
@@ -262,6 +290,99 @@ class _Do_Analysis_Centerline:
         output['Type'] = 'centerline_tortuosity_change'
         self.storeOutput.append(output)
     
+    def chimney_vessel_angle_change(self, key, ppVessel, name_output, armlength=10):
+        """ Calculate angle between dist segment chimney and vessel after stent
+        at each phase in the cardiac cycle
+        """ 
+        # Get vessel model
+        model = self.s_vessel['model'+key] # skip 'ppCenterline' in key
+        # get number of phases during cardiac cycle
+        number_of_phases = len(model.node[tuple(ppVessel[0])]['deforms'])
+        assert model.number_of_edges() == 1 # a centerline is one edge
+        
+        # Get chimney model
+        key2 = key[1:] # from vLRA to LRA
+        modelChim = self.s['model'+key2]
+        ppCh = self.s['ppCenterline'+key2]
+        
+        # Calculate for each phase angle between dist chimney and prox vessel
+        anglesCycle = []
+        for phasenr in range(number_of_phases):
+            # === For chimney vector ===
+            model_phase_Ch = get_graph_in_phase(modelChim, phasenr)
+            edge = model_phase_Ch.edges()[0]
+            ppCh_phase = model_phase_Ch.edge[edge[0]][edge[1]]['path']
+            # Get prox segment vectors
+            proxendcll, distendcll = get_prox_dist_points_cll(ppCh_phase)
+            
+            #get point on cll at armlength from distal end
+            point2, vectorCh = get_point_on_cll_at_armslength(ppCh_phase, 
+                    distendcll, armlength=armlength, type='proximal')
+            
+            # === For VESSEL vector ===
+            # get vector prox segment vessel
+            model_phase_Vessel = get_graph_in_phase(model, phasenr)
+            edge = model_phase_Vessel.edges()[0]
+            ppNel_phase = model_phase_Vessel.edge[edge[0]][edge[1]]['path']
+            # Get prox segment vectors
+            proxendcll, distendcll = get_prox_dist_points_cll(ppNel_phase, key=key)
+            #get point on cll at armlength from prox end
+            point2_nel, vectorNel = get_point_on_cll_at_armslength(ppNel_phase, 
+                    proxendcll, armlength=armlength, type='distal', key=key)
+            
+            # Obtain angle between vectors
+            phi = abs(PointSet(vectorCh).angle(PointSet(vectorNel)))
+            angle = phi*180.0/np.pi # direction vector in degrees
+            anglesCycle.append(angle) 
+        
+        # For visualization get vectors and angle at mid cycle
+        # == vessel ==
+        proxendcll, distendcll = get_prox_dist_points_cll(ppVessel, key=key)
+        point, vector = get_point_on_cll_at_armslength(ppVessel, proxendcll, 
+                armlength=armlength, type='distal', key=key)
+        # == chimney ==
+        proxendcllNel, distendcllNel = get_prox_dist_points_cll(ppCh)
+        pointNel, vectorNel = get_point_on_cll_at_armslength(ppCh, distendcllNel, 
+                armlength=armlength, type='proximal')
+        
+        phi = abs(PointSet(vector).angle(PointSet(vectorNel)))
+        angle_avgreg = phi*180.0/np.pi # direction vector in degrees
+        
+        # visualize vectors chimney and nellix
+        a1 = self.a
+        mw =15
+        if True: # False=do not show arm points
+            color = 'y'
+            vectorpoints = np.asarray([proxendcll, point])
+            plotted_points = plot_points(vectorpoints,mc=color,mw=mw,ls='-',lw=12,lc=color,alpha=0.7,ax=a1)
+            self.points_plotted.append(plotted_points)
+            vectorpointsNel = np.asarray([distendcllNel, pointNel])
+            plotted_pointsNel = plot_points(vectorpointsNel,mc=color,mw=mw,ls='-',lw=12,lc=color,alpha=0.7,ax=a1)
+            self.points_plotted.append(plotted_pointsNel)
+        
+        # ============
+        # store output
+        print('Angles during cardiac cycle= {}'.format(anglesCycle))
+        print('')
+        meanAnglesCycle = [np.mean(anglesCycle), np.std(anglesCycle)] 
+        minmaxAnglesCycle = [np.min(anglesCycle), np.max(anglesCycle)]
+        angleChange = max(anglesCycle) - min(anglesCycle)
+        
+        output = {
+        'vectorAngle_diff_max': angleChange, 
+        'vectorAngles_phases': anglesCycle, 
+        'vectorAngles_meanstd': meanAnglesCycle, 
+        'vectorAngles_minmax': minmaxAnglesCycle, # where min is sharpest angle
+        'vectorAngleMidCycle': angle_avgreg,
+        'vectorArmlength': armlength
+        }
+        # Store output with name
+        output['Name'] = name_output
+        output['Type'] = 'chimney_nel_angle_change' # vessel-Nel but same format output dict
+        
+        self.vectorAngleChange_output = output
+        self.storeOutput.append(output)
+        
     def chimney_nel_angle_change(self, key, ppCh, name_output, armlength=10):
         """ Calculate angle between prox segment of chimney and nellix (vectors) at
         each phase in cardiac cycle
@@ -801,22 +922,57 @@ class _Do_Analysis_Centerline:
 
 
 # =======================================
-def get_point_on_cll_at_armslength(ppCll, point1, armlength=10, type='distal'):
+def get_point_on_cll_at_armslength(ppCll, point1, armlength=10, type='distal', key=[]):
     """ From point1 on cll get point distally on cll at armslength 
-    type: distal of proximal; to get point at armlength in distal or proximal 
-    direction, assuming that origin of ct volume is proximal/cranial
+    type: distal or proximal; to get point at armlength in distal or proximal 
+    direction, assuming that origin of ct volume is cranial
     """
     pends = np.array([ppCll[0], ppCll[-1]])
-    if pends[0,-1] > pends[1,-1]: # check of z, start point is distal
-        if type == 'distal': 
-            ppCll = ppCll[::-1] # reverse array so that first point is proximal
-        elif type == 'proximal':
-            pass
-    else: #start point is proximal
-        if type == 'proximal':
-            ppCll = ppCll[::-1] # reverse array so that first point is distal
-        elif type == 'distal':
-            pass
+    
+    if 'vLRA' in key:
+        if pends[0,0] > pends[1,0]: # check x, start was distal
+            if type == 'distal': 
+                ppCll = ppCll[::-1] # reverse array so that first point is proximal
+            elif type == 'proximal':
+                pass
+        else: #start point is proximal
+            if type == 'proximal':
+                ppCll = ppCll[::-1] # reverse array so that first point is distal
+            elif type == 'distal':
+                pass
+    elif 'vRRA' in key:
+        if pends[0,0] < pends[1,0]: # check x, start was distal    
+            if type == 'distal': 
+                ppCll = ppCll[::-1] # reverse array so that first point is proximal
+            elif type == 'proximal':
+                pass
+        else: #start point is proximal
+            if type == 'proximal':
+                ppCll = ppCll[::-1] # reverse array so that first point is distal
+            elif type == 'distal':
+                pass
+    elif 'vSMA' in key:
+        if pends[0,1] < pends[1,1]: # check y, start was distal
+            if type == 'distal': 
+                ppCll = ppCll[::-1] # reverse array so that first point is proximal
+            elif type == 'proximal':
+                pass
+        else: #start point is proximal
+            if type == 'proximal':
+                ppCll = ppCll[::-1] # reverse array so that first point is distal
+            elif type == 'distal':
+                pass
+    else:
+        if pends[0,-1] > pends[1,-1]: # check of z, start point is distal
+            if type == 'distal': 
+                ppCll = ppCll[::-1] # reverse array so that first point is proximal
+            elif type == 'proximal':
+                pass
+        else: #start point is proximal
+            if type == 'proximal':
+                ppCll = ppCll[::-1] # reverse array so that first point is distal
+            elif type == 'distal':
+                pass
     
     # find index of point1
     i_point1 = int(np.where( np.all(ppCll == point1, axis=-1) )[0])
@@ -1008,27 +1164,52 @@ def calculate_tortuosity_change(ppCll, ppCllDeforms):
     return output
 
 
-def calculate_motion_points(ppCll, ppCllDeforms, lenSegment, dim='xyz', part='prox'):
+def calculate_motion_points(key, ppCll, ppCllDeforms, lenSegment, part='prox'):
     """ Mean motion pattern of segment of points on Cll and mean amplitude
     of motion. Proximal segment is analyzed.
     ppCll is centerline path (points)
     part = 'prox' or 'dist'
     """
-    pends = np.array([ppCll[0], ppCll[-1]])  # pp centerline is in order of centerline points
-    if pends[0,-1] > pends[1,-1]: # check z, start was distal
+    def segment_when_start_distal(ppCll, lenSegment, part):
         if part == 'prox':
             pp = ppCll[-1*lenSegment:] # last points=prox segment
             ppDeforms = ppCllDeforms[-1*lenSegment:]
         elif part =='dist':
             pp = ppCll[:lenSegment]
-            ppDeforms = ppCllDeforms[:lenSegment] 
-    else: # first point=prox
+            ppDeforms = ppCllDeforms[:lenSegment]
+        return pp, ppDeforms
+        
+    def segment_when_start_proximal(ppCll, lenSegment, part):
         if part == 'prox':
             pp = ppCll[:lenSegment]
             ppDeforms = ppCllDeforms[:lenSegment]
         elif part == 'dist':
             pp = ppCll[-1*lenSegment:] # last points=dist segment
             ppDeforms = ppCllDeforms[-1*lenSegment:]
+        return pp, ppDeforms
+    
+    pends = np.array([ppCll[0], ppCll[-1]])  # pp centerline is in order of centerline points
+    
+    if 'vLRA' in key:
+        if pends[0,0] > pends[1,0]: # check x, start was distal
+            pp, ppDeforms = segment_when_start_distal(ppCll, lenSegment, part)
+        else: # first point=prox
+            pp, ppDeforms = segment_when_start_proximal(ppCll, lenSegment, part)
+    elif 'vRRA' in key:
+        if pends[0,0] < pends[1,0]: # check x, start was distal
+            pp, ppDeforms = segment_when_start_distal(ppCll, lenSegment, part) 
+        else: # first point=prox
+            pp, ppDeforms = segment_when_start_proximal(ppCll, lenSegment, part)
+    elif 'vSMA' in key:
+        if pends[0,1] < pends[1,1]: # check y, start was distal
+            pp, ppDeforms = segment_when_start_distal(ppCll, lenSegment, part)
+        else: # first point=prox
+            pp, ppDeforms = segment_when_start_proximal(ppCll, lenSegment, part)
+    else:
+        if pends[0,-1] > pends[1,-1]: # check z, start was distal
+            pp, ppDeforms = segment_when_start_distal(ppCll, lenSegment, part)
+        else: # first point=prox
+            pp, ppDeforms = segment_when_start_proximal(ppCll, lenSegment, part)
     
     # get CoM of segment at avgreg
     meanPosAvgSegment = np.mean(pp, axis = 0)
@@ -1058,14 +1239,28 @@ def calculate_motion_points(ppCll, ppCllDeforms, lenSegment, dim='xyz', part='pr
     return output
 
 
-def get_prox_dist_points_cll(ppCll1):
-    """ get prox and dist ends of the centerline assuming that origin in proximal
+def get_prox_dist_points_cll(ppCll1, key=[]):
+    """ get prox and dist ends of the centerline assuming that origin is cranial,
+    right, anterior
     """
-    # Get prox point for ppCll1
+    # Get prox and dist point for ppCll1
     pends1 = np.array([ppCll1[0], ppCll1[-1]])  # pp centerline is in order of centerline points
-    pends1 = pends1[pends1[:,-1].argsort() ] # sort with z, ascending
-    proxp1 = pends1[0]   # smallest z; origin is prox
-    distp1 = pends1[-1]
+    if 'vLRA' in key:
+        pends1 = pends1[pends1[:,0].argsort() ] # sort with x, ascending
+        proxp1 = pends1[0]   # smallest x; origin is cranial, right, anterior
+        distp1 = pends1[-1]
+    elif 'vRRA' in key:
+        pends1 = pends1[pends1[:,0].argsort() ] # sort with x, ascending
+        proxp1 = pends1[-1]   # largest x; origin is cranial, right, anterior
+        distp1 = pends1[0]
+    elif 'vSMA' in key:
+        pends1 = pends1[pends1[:,1].argsort() ] # sort with y, ascending
+        proxp1 = pends1[-1]   # smallest x; origin is cranial, right, anterior
+        distp1 = pends1[0]
+    else:
+        pends1 = pends1[pends1[:,-1].argsort() ] # sort with z, ascending
+        proxp1 = pends1[0]   # smallest z; origin is cranial
+        distp1 = pends1[-1]
     
     return proxp1, distp1
 

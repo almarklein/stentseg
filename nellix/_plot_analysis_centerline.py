@@ -876,7 +876,7 @@ if __name__ == '__main__':
     # Angles pointdeflection chimney
     foo.plot_angles_chimney(patients=patients,analysis='AngChim', ylim=[0, 35.01], ylimRel=[-2,2], saveFig=False)
     
-    # Angles pointdeflection chimney
+    # Angles vectors chimney nellix
     foo.plot_angles_chimney(patients=patients,analysis='AngChimNel', ylim=[100, 170.01], ylimRel=[-2,2], saveFig=False)
     
     
