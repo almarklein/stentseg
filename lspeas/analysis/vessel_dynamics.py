@@ -121,12 +121,16 @@ except NameError:
 try:
     ppvessel
 except NameError:
+    # Load mesh with visvis, then put in our meshlib.Mesh() and let it ensure that
+    # the mesh is closed, check the winding, etc. so that we can cut it with planes,
+    # and reliably calculate volume.
     filename = '{}_{}_neck.stl'.format(ptcode,ctcode1)
-    vessel1 = loadmesh(basedirMesh,ptcode[-3:],filename) #inverts Z
-    vv.processing.unwindFaces(vessel1)
-    ppvessel = PointSet(vessel1._vertices)  # Yes, this has duplicates, but thats ok
-    # Create mesh description that has checks builtin to ensure it's a closed surface etc.
-    vesselMesh = meshlib.Mesh(vessel1._vertices)
+    vesselMesh = loadmesh(basedirMesh, ptcode[-3:], filename) #inverts Z
+    vv.processing.unwindFaces(vesselMesh)
+    vesselMesh = meshlib.Mesh(vesselMesh._vertices)
+    vesselMesh.ensure_closed()
+    ppvessel = PointSet(vesselMesh.get_flat_vertices())  # Must be flat!
+
 
 # Load ring model
 try:
@@ -148,7 +152,8 @@ centerline = PointSet(np.column_stack(
 
 # Show ctvolume, vessel mesh, ring model - this uses figure 1 and clears it
 axes1, cbars = showModelsStatic(ptcode, ctcode1, [vol1], [s1], [modelmesh1],
-              [vessel1], showVol, clim, isoTh, clim2, clim2D, drawRingMesh,
+              [vv.BaseMesh(*vesselMesh.get_vertices_and_faces())],
+              showVol, clim, isoTh, clim2, clim2D, drawRingMesh,
               ringMeshDisplacement, drawModelLines, showvol2D, showAxis,
               drawVessel, vesselType=1,
               climEditor=True, removeStent=removeStent, meshColor=meshColor)
@@ -161,10 +166,10 @@ tex3d.visible = False
 
 # VesselMeshes
 vesselVisMesh1 = axes1.wobjects[4]
-vesselVisMesh1.cullFaces = "back"  # todo: back?
+vesselVisMesh1.cullFaces = "front"  # Show the back
 # vesselVisMesh2 = vv.Mesh(axes1, *vesselMesh.get_vertices_and_faces())
 vesselVisMesh2 = vv.Mesh(axes1, np.zeros((6, 3), np.float32), np.zeros((3, 3), np.int32))
-vesselVisMesh2.cullFaces = "front"  # todo: back?
+vesselVisMesh2.cullFaces = "back"
 vesselVisMesh2.faceColor = "red"
 
 

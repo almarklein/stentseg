@@ -108,8 +108,7 @@ def loadmesh(basedirMesh, ptcode=None, meshname=None, invertZ=True, fname=None):
             mesh = vv.meshRead(os.path.join(basedirMesh, fname))
     if invertZ == True:
         # z is negative, must be flipped to match dicom orientation CT data
-        for vertice in mesh._vertices:
-            vertice[-1] = vertice[-1]*-1 # assumes mesh in x,y,z
+        mesh._vertices[:, -1] *= -1
     return mesh
 
 
