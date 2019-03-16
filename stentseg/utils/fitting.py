@@ -237,6 +237,9 @@ def fit_plane(pp):
     # Normalize
     nn = np.linalg.norm(B[0:3])
     B = B / nn
+    # Make sure that the plane points up
+    if B[3] > 0:
+        B = [-x for x in B]
     # Return a b c d
     return B[0], B[1], B[2], B[3]
 

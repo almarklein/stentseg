@@ -19,6 +19,7 @@ from stentseg.utils import PointSet, fitting
 
 from lspeas.utils.vis import showModelsStatic
 from lspeas.utils.deforminfo import DeformInfo
+from lspeas.utils import meshlib
 
 assert openpyxl.__version__ < "2.4", "Do pip install openpyxl==2.3.5"
 
@@ -39,9 +40,9 @@ def load_excel_centerline(basedirCenterline, vol, ptcode, ctcode, filename=None)
     sheet = wb.get_sheet_by_name(wb.sheetnames[0]) # data on first sheet
     colStart = 2 # col C
     rowStart = 1 # row 2 excel
-    coordx = sheet.columns[colStart][rowStart:] 
+    coordx = sheet.columns[colStart][rowStart:]
     coordy = sheet.columns[colStart+1][rowStart:]
-    coordz = sheet.columns[colStart+2][rowStart:]  
+    coordz = sheet.columns[colStart+2][rowStart:]
     #convert to values
     coordx = [obj.value for obj in coordx]
     coordy = [obj.value for obj in coordy]
@@ -51,15 +52,15 @@ def load_excel_centerline(basedirCenterline, vol, ptcode, ctcode, filename=None)
     centerlineY = np.asarray(coordy, dtype=np.float32)
     centerlineZ = np.asarray(coordz, dtype=np.float32)
     centerlineZ = np.flip(centerlineZ, axis=0) # z of volume is also flipped
-    
+
     # convert centerline coordinates to world coordinates (mm)
     origin = vol1.origin # z,y,x
     sampling = vol1.sampling # z,y,x
-    
+
     centerlineX = centerlineX*sampling[2] +origin[2]
     centerlineY = centerlineY*sampling[1] +origin[1]
     centerlineZ = (centerlineZ-0.5*vol1.shape[0])*sampling[0] + origin[0]
-    
+
     return centerlineX, centerlineY, centerlineZ
 
 
@@ -68,7 +69,7 @@ basedir = select_dir(
     os.getenv('LSPEAS_BASEDIR', ''),
     r'D:\LSPEAS\LSPEAS_ssdf',
     r'F:\LSPEAS_ssdf_backup')
-                     
+
 basedirMesh = select_dir(
     r'D:\Profiles\koenradesma\SURFdrive\UTdrive\MedDataMimics\LSPEAS_Mimics',
     r'C:\Users\Maaike\SURFdrive\UTdrive\MedDataMimics\LSPEAS_Mimics',
@@ -115,7 +116,7 @@ except NameError:
     deforms = [s_deforms[key] for key in dir(s_deforms) if key.startswith('deform')]
     deforms = [pirt.DeformationFieldBackward(*fields) for fields in deforms]
 
-# Load vesselmesh (mimics)
+# Load vessel mesh (mimics)
 # We make sure that it is a mesh without faces, which makes our sampling easier
 try:
     ppvessel
@@ -124,6 +125,8 @@ except NameError:
     vessel1 = loadmesh(basedirMesh,ptcode[-3:],filename) #inverts Z
     vv.processing.unwindFaces(vessel1)
     ppvessel = PointSet(vessel1._vertices)  # Yes, this has duplicates, but thats ok
+    # Create mesh description that has checks builtin to ensure it's a closed surface etc.
+    vesselMesh = meshlib.Mesh(vessel1._vertices)
 
 # Load ring model
 try:
@@ -144,9 +147,9 @@ centerline = PointSet(np.column_stack(
 ## Setup visualization
 
 # Show ctvolume, vessel mesh, ring model - this uses figure 1 and clears it
-axes1, cbars = showModelsStatic(ptcode, ctcode1, [vol1], [s1], [modelmesh1], 
-              [vessel1], showVol, clim, isoTh, clim2, clim2D, drawRingMesh, 
-              ringMeshDisplacement, drawModelLines, showvol2D, showAxis, 
+axes1, cbars = showModelsStatic(ptcode, ctcode1, [vol1], [s1], [modelmesh1],
+              [vessel1], showVol, clim, isoTh, clim2, clim2D, drawRingMesh,
+              ringMeshDisplacement, drawModelLines, showvol2D, showAxis,
               drawVessel, vesselType=1,
               climEditor=True, removeStent=removeStent, meshColor=meshColor)
 axes1 = axes1[0]
@@ -155,6 +158,15 @@ axes1.position = 0, 0, 0.6, 1
 # Show or hide the volume (showing is nice, but also slows things down)
 tex3d = axes1.wobjects[1]
 tex3d.visible = False
+
+# VesselMeshes
+vesselVisMesh1 = axes1.wobjects[4]
+vesselVisMesh1.cullFaces = "back"  # todo: back?
+# vesselVisMesh2 = vv.Mesh(axes1, *vesselMesh.get_vertices_and_faces())
+vesselVisMesh2 = vv.Mesh(axes1, np.zeros((6, 3), np.float32), np.zeros((3, 3), np.int32))
+vesselVisMesh2.cullFaces = "front"  # todo: back?
+vesselVisMesh2.faceColor = "red"
+
 
 # Show the centerline
 vv.plot(centerline, ms='.', ls='', mw=8, mc='b', alpha=0.5)
@@ -206,10 +218,10 @@ def get_plane_points_from_centerline_index(i):
     at the given index. The points are such that they can be drawn as a line for
     visualization purposes. The plane equation can be obtained via a plane-fit.
     """
-    
+
     if True:
         # Cubic fit of the centerline
-        
+
         i = max(1.1, min(i, centerline.shape[0] - 2.11))
         # Sample center point and two points right below/above, using
         # "cardinal" interpolating (C1-continuous), or "basic" approximating (C2-continious).
@@ -223,10 +235,10 @@ def get_plane_points_from_centerline_index(i):
         # Get center point and vector pointing down the centerline
         p = pp[1]
         vec1 = (pp[2] - pp[1]).normalize()
-    
+
     else:
         # Linear fit of the centerline
-        
+
         i = max(0, min(i, centerline.shape[0] - 2))
         index = int(i)
         t = i - index
@@ -235,7 +247,7 @@ def get_plane_points_from_centerline_index(i):
         # Get center point and vector pointing down the centerline
         p = t * pb + (1 - t) * pa
         vec1 = (pb - pa).normalize()
-    
+
     # Get two orthogonal vectors that define the plane that is orthogonal
     # to the above vector. We can use an arbitrary vector to get the first,
     # but there is a tiiiiiny chance that it is equal to vec1 so that the
@@ -244,7 +256,7 @@ def get_plane_points_from_centerline_index(i):
     if vec2.norm() == 0:
         vec2 = vec1.cross((1, 0, 0))
     vec3 = vec1.cross(vec2)
-    
+
     # Sample some point on the plane and get the plane's equation
     pp = PointSet(3)
     radius = 6
@@ -259,21 +271,21 @@ def get_vessel_points_from_plane_points(pp):
     defined by the given plane points. Returns a 2D and a 3D point set.
     """
     abcd = fitting.fit_plane(pp)
-    
+
     # Get 2d and 3d coordinates of points that lie (almost) on the plane
-    pp2 = fitting.project_to_plane(ppvessel, abcd)
-    pp3 = fitting.project_from_plane(pp2, abcd)
-    above_below = np.sign(ppvessel[:, 2] - pp3[:, 2])  # Note: we're only looking in z-axis
-    distances = (ppvessel - pp3).norm()
-    
+    # pp2 = fitting.project_to_plane(ppvessel, abcd)
+    # pp3 = fitting.project_from_plane(pp2, abcd)
+    signed_distances = fitting.signed_distance_to_plane(ppvessel, abcd)
+    distances = np.abs(signed_distances)
+
     # Select points to consider. This is just to reduce the search space somewhat.
     selection = np.where(distances < 5)[0]
-    
+
     # We assume that each tree points in ppvessel makes up a triangle (face)
     # We make sure of that when we load the mesh.
     # Select first index of each face (every 3 vertices is 1 face), and remove duplicates
     selection_faces = set(3 * (selection // 3))
-    
+
     # Now iterate over the faces (triangles), and check each edge. If the two
     # points are on different sides of the plane, then we interpolate on the
     # edge to get the exact spot where the edge intersects the plane.
@@ -281,14 +293,14 @@ def get_vessel_points_from_plane_points(pp):
     visited_edges = set()
     for fi in selection_faces:  # for each face index
         for edge in [(fi + 0, fi + 1), (fi + 0, fi + 2), (fi + 1, fi + 2)]:
-            if above_below[edge[0]] * above_below[edge[1]] < 0:
+            if signed_distances[edge[0]] * signed_distances[edge[1]] < 0:
                 if edge not in visited_edges:
                     visited_edges.add(edge)
                     d1, d2 = distances[edge[0]], distances[edge[1]]
                     w1, w2 = d2 / (d1 + d2), d1 / (d1 + d2)
                     p = w1 * ppvessel[edge[0]] + w2 * ppvessel[edge[1]]
                     sampled_pp3.append(p)
-    
+
     return fitting.project_to_plane(sampled_pp3, abcd), sampled_pp3
 
 
@@ -298,19 +310,19 @@ def get_distance_along_centerline():
     """
     i1 = slider_ref.value
     i2 = slider_ves.value
-    
+
     index1 = int(np.ceil(i1))
     index2 = int(np.floor(i2))
     t1 = i1 - index1  # -1 < t1 <= 0
     t2 = i2 - index2  # 0 <= t2 < 1
-    
+
     dist = 0
     dist += -t1 * (centerline[index1] - centerline[index1 - 1]).norm()
     dist += +t2 * (centerline[index2] - centerline[index2 + 1]).norm()
-    
+
     for index in range(index1, index2):
         dist += (centerline[index + 1] - centerline[index]).norm()
-    
+
     return float(dist)
 
 
@@ -347,30 +359,40 @@ def take_measurements():
     """ This gets called when the slider is releases. We take measurements and
     update the corresponding texts and visualizations.
     """
-    
+
     # Get points that form the contour of the vessel in 2D
     pp = get_plane_points_from_centerline_index(slider_ves.value)
     pp2, pp3 = get_vessel_points_from_plane_points(pp)
     plane = pp2.plane
-    
+
+    # Update the mesh of the
+    plane1 = fitting.fit_plane(get_plane_points_from_centerline_index(slider_ref.value))
+    plane2 = fitting.fit_plane(get_plane_points_from_centerline_index(slider_ves.value))
+    plane2 = [-x for x in plane2]  # flip the plane upside doen
+    submesh = vesselMesh.cut_plane(plane1).cut_plane(plane2)
+
     # Collect measurements in a dict. That way we can process it in one step at the end
     measurements = {}
-    
+
     # Measure distance between reference points
     measurements["distance"] = "{:0.1f} mm".format(get_distance_along_centerline())
-    
+
+    measurements["volume"] ="{:0.1f} cm^2".format(submesh.volume() / 1000)
+
     # Early exit?
     if len(pp2) == 0:
         line_2d.SetPoints(pp2)
         line_ellipse1.SetPoints(pp2)
         line_ellipse2.SetPoints(pp2)
+        vesselVisMesh2.SetFaces(np.zeros((3, 3), np.int32))
+        vesselVisMesh2.SetNormals(None)
         process_measurements(measurements)
         return
-    
+
     # Get ellipse and its center point
     ellipse = fitting.fit_ellipse(pp2)
     p0 = PointSet([ellipse[0], ellipse[1]])
-    
+
     # Sample ellipse to calculate its area
     pp_ellipse = fitting.sample_ellipse(ellipse, 256)  # results in N + 1 points
     area = 0
@@ -379,7 +401,7 @@ def take_measurements():
     # measurements["reference area"] = "{:0.2f} cm^2".format(float(area / 100))
     # Do a quick check to be sure that this triangle-approximation is close enough
     assert abs(area - fitting.area(ellipse)) < 2, "area mismatch"  # mm2  typically ~ 0.1 mm2
-    
+
     # Measure ellipse area (and how it changes)
     measurements["area"] = DeformInfo(unit="mm2")
     for pp_ellipse_def in deform_points_2d(pp_ellipse, plane):
@@ -387,9 +409,9 @@ def take_measurements():
         for i in range(len(pp_ellipse_def)-1):
             area += triangle_area(p0, pp_ellipse_def[i], pp_ellipse_def[i + 1])
         measurements["area"].append(area)
-    
+
     # Measure distances from center to ellipse edge. We first get the distances
-    # in each face, for each point. Then we aggregate these distances to 
+    # in each face, for each point. Then we aggregate these distances to
     # expansion measures. So in the end we have 256 expansion measures.
     distances_per_point = [[] for i in range(len(pp_ellipse))]
     for pp_ellipse_def in deform_points_2d(pp_ellipse, plane):
@@ -402,7 +424,7 @@ def take_measurements():
     for i in range(len(distances_per_point)):
         distances = distances_per_point[i]
         measurements["expansions"].append((max(distances) - min(distances)) / min(distances))
-    
+
     # Measure radii of ellipse major and minor axis (and how it changes)
     pp_ellipse4 = fitting.sample_ellipse(ellipse, 4)  # major, minor, major, minor
     measurements["major radius"] = DeformInfo(unit="mm")
@@ -410,10 +432,10 @@ def take_measurements():
     for pp_ellipse4_def in deform_points_2d(pp_ellipse4, plane):
        measurements["major radius"].append(float( pp_ellipse4_def[0].distance(pp_ellipse4_def[2]) ))
        measurements["minor radius"].append(float( pp_ellipse4_def[1].distance(pp_ellipse4_def[3]) ))
-    
+
     # Show measurements
     process_measurements(measurements)
-    
+
     # Update line objects
     line_2d.SetPoints(pp2)
     line_ellipse1.SetPoints(fitting.sample_ellipse(ellipse))
@@ -422,6 +444,12 @@ def take_measurements():
         major_minor.append(p)
     line_ellipse2.SetPoints(major_minor)
     axes2.SetLimits(margin=0.12)
+
+    # Update submesh object
+    vertices, faces = submesh.get_vertices_and_faces()
+    vesselVisMesh2.SetVertices(vertices)
+    vesselVisMesh2.SetFaces(np.zeros((3, 3), np.int32) if len(faces) == 0 else faces)
+    vesselVisMesh2.SetNormals(None)
 
 
 # Global value that will be a dictionary with measurements
@@ -433,13 +461,13 @@ def process_measurements(measurements):
     # Store in global for further processing
     mm.clear()
     mm.update(measurements)
-    
+
     # Print in shell
     print("Measurements:")
     for key, val in measurements.items():
         val = val.summary if isinstance(val, DeformInfo) else val
         print(key.rjust(16) + ": " + str(val))
-    
+
     # Show in labels
     index = 0
     for key, val in measurements.items():
@@ -464,9 +492,10 @@ def on_sliding_done(e):
     """
     slider = e.owner
     pp = get_plane_points_from_centerline_index(slider.value)
-    pp2, pp3 = get_vessel_points_from_plane_points(pp)
     slider.line_plane.SetPoints(pp)
-    slider.line_3d.SetPoints(pp3)
+    # pp2, pp3 = get_vessel_points_from_plane_points(pp)
+    # slider.line_3d.SetPoints(pp3)
+
     take_measurements()
 
 
