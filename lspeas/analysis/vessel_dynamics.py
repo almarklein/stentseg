@@ -360,6 +360,42 @@ def deform_points_2d(pp2, plane):
     return deformed
 
 
+def measure_centerline_strain():
+    """ Measure the centerline strain.
+    """
+    i1 = slider_ref.value
+    i2 = slider_ves.value
+
+    # Get the centerline section of interest
+    index1 = int(np.ceil(i1))
+    index2 = int(np.floor(i2))
+    section = centerline[index1:index2 + 1]
+
+    # get this section of the centerline for each phase
+    sections = []
+    for phase in range(len(deforms)):
+        deform = deforms[phase]
+        dx = deform.get_field_in_points(section, 0)
+        dy = deform.get_field_in_points(section, 1)
+        dz = deform.get_field_in_points(section, 2)
+        deform_vectors = PointSet(np.stack([dx, dy, dz], 1))
+        sections.append(section + deform_vectors)
+
+    # For each linepiece between to points on the centerline,
+    # measure its length in the 10 phases,
+    # and use the max / min of that as a measure for strain.
+    strain = DeformInfo()
+    strain.append(1)
+    for i in range(len(section) - 1):
+        distances = []
+        for phase in range(len(deforms)):
+            section = sections[phase]
+            distances.append(section[i].distance(section[i + 1]))
+        strain.append(max(distances) / min(distances))
+
+    return strain
+
+
 def take_measurements():
     """ This gets called when the slider is releases. We take measurements and
     update the corresponding texts and visualizations.
@@ -384,7 +420,7 @@ def take_measurements():
 
     # Measure distance between reference points
     measurements["distance"] = "{:0.1f} mm".format(get_distance_along_centerline())
-
+    measurements["centerline strain"] = measure_centerline_strain()
     # Early exit?
     if len(pp2) == 0:
         line_2d.SetPoints(pp2)
@@ -416,7 +452,7 @@ def take_measurements():
             area += triangle_area(p0, pp_ellipse_def[i], pp_ellipse_def[i + 1])
         measurements["area"].append(area)
 
-    # Measure how the volume changes
+    # Measure how the volume changes - THIS BIT IS COMPUTATIONALLY EXPENSIVE
     measurements["volume"] = DeformInfo(unit="cm2")
     submesh._ori_vertices = submesh._vertices.copy()
     for phase in range(len(deforms)):
@@ -533,7 +569,6 @@ slider_ref.eventSliderChanged.Bind(on_sliding_done)
 slider_ves.eventSliderChanged.Bind(on_sliding_done)
 
 
-#todo: measure how centerline segment changes (longitudinal strain)
 #todo: measure (change of) curvature of centerline
 #todo: measure (change of) curvature of stent rings
 #todo: visualize mesh with colors, each vertice representing axis change from COM/centerline
