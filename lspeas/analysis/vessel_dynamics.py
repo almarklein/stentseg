@@ -382,8 +382,6 @@ def take_measurements():
     # Measure distance between reference points
     measurements["distance"] = "{:0.1f} mm".format(get_distance_along_centerline())
 
-    measurements["volume"] ="{:0.1f} cm^2".format(submesh.volume() / 1000)
-
     # Early exit?
     if len(pp2) == 0:
         line_2d.SetPoints(pp2)
@@ -414,6 +412,20 @@ def take_measurements():
         for i in range(len(pp_ellipse_def)-1):
             area += triangle_area(p0, pp_ellipse_def[i], pp_ellipse_def[i + 1])
         measurements["area"].append(area)
+
+    # Measure how the volume changes
+    measurements["volume"] = DeformInfo(unit="cm2")
+    submesh._ori_vertices = submesh._vertices.copy()
+    for phase in range(len(deforms)):
+        deform = deforms[phase]
+        submesh._vertices = submesh._ori_vertices.copy()
+        dx = deform.get_field_in_points(submesh._vertices, 0)
+        dy = deform.get_field_in_points(submesh._vertices, 1)
+        dz = deform.get_field_in_points(submesh._vertices, 2)
+        submesh._vertices[:, 0] += dx
+        submesh._vertices[:, 1] += dy
+        submesh._vertices[:, 2] += dz
+        measurements["volume"].append(submesh.volume() / 1000)
 
     # Measure distances from center to ellipse edge. We first get the distances
     # in each face, for each point. Then we aggregate these distances to
