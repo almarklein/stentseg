@@ -379,6 +379,9 @@ def take_measurements():
     # Collect measurements in a dict. That way we can process it in one step at the end
     measurements = {}
 
+    # Store slider positions, so we can reproduce this measurement later
+    measurements["segment"] = [slider_ref.value, slider_ves.value]
+
     # Measure distance between reference points
     measurements["distance"] = "{:0.1f} mm".format(get_distance_along_centerline())
 
@@ -516,6 +519,13 @@ def on_sliding_done(e):
     take_measurements()
 
 
+def set_sliders(value_ref, value_ves):
+    """ Set the sliders to a specific position, e.g. to reproduce a measurement.
+    """
+    slider_ref.value = value_ref
+    slider_ves.value = value_ves
+
+
 # Connect!
 slider_ref.eventSliding.Bind(on_sliding)
 slider_ves.eventSliding.Bind(on_sliding)
@@ -523,7 +533,6 @@ slider_ref.eventSliderChanged.Bind(on_sliding_done)
 slider_ves.eventSliderChanged.Bind(on_sliding_done)
 
 
-#todo: measure volume change at/between selected level(s)
 #todo: measure how centerline segment changes (longitudinal strain)
 #todo: measure (change of) curvature of centerline
 #todo: measure (change of) curvature of stent rings
