@@ -234,7 +234,7 @@ def get_plane_points_from_centerline_index(i):
         for j in [i - 0.1, i, i + 0.1]:
             index = int(j)
             t = j - index
-            coefs = pirt.get_cubic_spline_coefs(t, "basic")
+            coefs = pirt.interp.get_cubic_spline_coefs(t, "basic")
             samples = centerline[index - 1], centerline[index], centerline[index + 1], centerline[index + 2]
             pp.append(samples[0] * coefs[0] + samples[1] * coefs[1] + samples[2] * coefs[2] + samples[3] * coefs[3])
         # Get center point and vector pointing down the centerline
@@ -381,7 +381,7 @@ def measure_centerline_strain():
         deform_vectors = PointSet(np.stack([dx, dy, dz], 1))
         sections.append(section + deform_vectors)
 
-    # For each linepiece between to points on the centerline,
+    # For each linepiece between two points on the centerline,
     # measure its length in the 10 phases,
     # and use the max / min of that as a measure for strain.
     strain = DeformInfo()
