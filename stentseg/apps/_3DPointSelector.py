@@ -13,7 +13,7 @@ import OpenGL.GLU as glu
 class VolViewer:
     """ VolViewer. View (CT) volume while scrolling through slices x,y or z depending on the direction chosen
     """
-    def __init__(self, vol, direction, axes=None):
+    def __init__(self, vol, direction, axes=None, clim=None):
         self.direction = direction
         # Store vol and init
         if self.direction == 0:
@@ -39,8 +39,10 @@ class VolViewer:
         self.f = vv.gcf()
             
         # Create slice in 2D texture
-        # self.t = vv.imshow(self.vol[self.round_slice,:,:],clim = [self.vol.min(), self.vol.max()],axes=self.a)
-        self.t = vv.imshow(self.vol[self.round_slice,:,:],axes=self.a)
+        if clim:
+            self.t = vv.imshow(self.vol[self.round_slice,:,:],clim = clim, axes=self.a)
+        else:
+            self.t = vv.imshow(self.vol[self.round_slice,:,:],axes=self.a)
         
         # Bind
         self.a.eventScroll.Bind(self.on_scroll)
@@ -91,7 +93,7 @@ class PointSelect3D:
     """ A helper class for 3d point select. Use the select3dpoint function to
     perform manual point selection.
     """    
-    def __init__(self, vol, a_transversal, a_coronal, a_sagittal, a_MIP, a_text, nr_of_stents):
+    def __init__(self, vol, a_transversal, a_coronal, a_sagittal, a_MIP, a_text, nr_of_stents, clim=None):
         self.nr_of_stents = nr_of_stents
         self.f = vv.gcf()
         self.vol = vol
@@ -159,9 +161,9 @@ class PointSelect3D:
             sam = (1,1,1)
         
         # Display the slices and 3D MIP
-        self.b1 = VolViewer(vol, 0, axes=a_transversal)
-        self.b2 = VolViewer(vol, 1, axes=a_coronal)
-        self.b3 = VolViewer(vol, 2, axes=a_sagittal)
+        self.b1 = VolViewer(vol, 0, axes=a_transversal, clim=clim)
+        self.b2 = VolViewer(vol, 1, axes=a_coronal, clim=clim)
+        self.b3 = VolViewer(vol, 2, axes=a_sagittal, clim=clim)
         
         renderstyle = 'mip'
         a_MIP.daspect = 1,1,-1
@@ -334,7 +336,7 @@ class PointSelect3D:
         vv.processEvents()
         self.updatePosition()
 
-def select3dpoints(vol, nr_of_stents, fig=None):
+def select3dpoints(vol, nr_of_stents, fig=None, clim=None):
     """ Manually select 3d points in a volume. In the given figure (or a new 
     figure if None), three axes are created that display the transversal, 
     sagittal and coronal slices of the volume. The user can then use the mouse 
@@ -368,7 +370,7 @@ def select3dpoints(vol, nr_of_stents, fig=None):
         a.showAxis = False
     
     # Create PointSelect instance
-    pointselect3d = PointSelect3D(vol, a1, a3, a2, a4, a5, nr_of_stents)
+    pointselect3d = PointSelect3D(vol, a1, a3, a2, a4, a5, nr_of_stents, clim)
     
     # Enter a mainloop
     while not pointselect3d._finished:

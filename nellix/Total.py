@@ -41,7 +41,8 @@ if False:
 ## SELECT POINT FOR CENTERLINE
 if False:
         from nellix._select_stent_endpoints import _Select_Stent_Endpoints
-        foo = _Select_Stent_Endpoints(ptcode,ctcode,basedir) # loads prox_avgreg
+        clim = (-500,500)
+        foo = _Select_Stent_Endpoints(ptcode,ctcode,basedir,clim=clim) # loads prox_avgreg
         StartPoints = foo.StartPoints # proximal
         EndPoints = foo.EndPoints # distal
         print('Get Endpoints: done')
@@ -81,7 +82,7 @@ if False:
         a, s2 = identifyCenterlines(s, ptcode,ctcode,basedir,modelname,showVol='MIP')
 
 ## MOTION ANALYSIS CENTERLINES
-if True: 
+if False: 
         import os
         from stentseg.utils.datahandling import select_dir, loadmodel, loadvol
         from stentseg.utils.picker import pick3d
