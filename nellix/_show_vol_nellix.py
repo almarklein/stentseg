@@ -6,6 +6,7 @@ import os
 import pirt
 import visvis as vv
 from stentseg.utils.datahandling import select_dir, loadvol
+from stentseg.utils.visualization import show_ctvolume
 from pirt.utils.deformvis import DeformableTexture3D
 import scipy
 from stentseg.utils import _utils_GUI
@@ -20,6 +21,17 @@ ctcode, nr = '12months', 1
 cropname = 'prox'
 
 s0 = loadvol(basedir, ptcode, ctcode, cropname, 'avgreg')
+
+vol = s0.vol
+fig = vv.figure(); vv.clf()
+fig.position = 0.00, 22.00,  1920.00, 1018.00
+clim = (0,2000)
+# Show volume
+a1 = vv.subplot(111)
+a1.daspect = 1,1,-1
+t = show_ctvolume(vol, axis=a1, showVol='MIP', clim =clim, isoTh=250, 
+                removeStent=False, climEditor=True)
+vv.xlabel('x (mm)');vv.ylabel('y (mm)');vv.zlabel('z (mm)')
 
 ## Show 3D movie, by alternating the 10 volumes
 
