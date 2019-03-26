@@ -1,5 +1,5 @@
 """
-Script to show the stent model.
+Script to show the stent model in motion.
 """
 
 import os
@@ -23,10 +23,10 @@ basedir = select_dir(os.getenv('LSPEAS_BASEDIR', ''),
                      r'F:\LSPEAS_ssdf_BACKUP',r'G:\LSPEAS_ssdf_BACKUP')
 
 # Select dataset to register
-# ptcode = 'LSPEAS_003'
-# ctcode, nr = 'discharge', 1
-ptcode = 'QRM_FANTOOM_20160121'
-ctcode, nr = 'ZA3-75-1.2', 1
+ptcode = 'LSPEASF_C_01'
+ctcode, nr = 'd', 1
+# ptcode = 'QRM_FANTOOM_20160121'
+# ctcode, nr = 'ZA3-75-1.2', 1
 cropname = 'ring'
 modelname = 'modelavgreg'
 motion = 'amplitude'  # amplitude or sum

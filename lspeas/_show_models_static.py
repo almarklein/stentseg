@@ -23,7 +23,7 @@ basedirMesh = select_dir(r'D:\Profiles\koenradesma\SURFdrive\UTdrive\MedDataMimi
     r'C:\Users\Maaike\SURFdrive\UTdrive\MedDataMimics\LSPEAS_Mimics')
 
 # Select dataset to register
-ptcode = 'LSPEAS_002'
+ptcode = 'LSPEAS_021'
 # codes = ctcode1, ctcode2, ctcode3 = 'discharge', '1month', '24months'
 codes = ctcode1, ctcode2 = 'discharge', '24months'
 # codes = ctcode1 = '12months'
@@ -34,12 +34,11 @@ modelname = 'modelavgreg'
 cropvol = 'stent'
 
 drawModelLines = False  # True or False
-drawMesh, meshDisplacement = True, False
-meshColor = [(1,1,0,1), (0,128/255,1,1)]
-removeStent = True
-dimensions = 'xyz'
+drawMesh, meshDisplacement, dimensions = True, False, 'xyz'
+meshColor = [(1,1,0,1), (0,128/255,1,1)] # [(0,1,0,1)]
 showAxis = False
-showVol  = 'MIP'  # MIP or ISO or 2D or None
+showVol  = 'ISO'  # MIP or ISO or 2D or None
+removeStent = True
 showvol2D = False
 drawVessel = True
 
@@ -165,7 +164,7 @@ if len(codes) == 5:
 axes, cbars = showModelsStatic(ptcode, codes, vols, ss, mm, vs, showVol, clim, 
         isoTh, clim2, clim2D, drawMesh, meshDisplacement, drawModelLines, 
         showvol2D, showAxis, drawVessel, climEditor=True, removeStent=removeStent,
-        meshColor=meshColor) #meshColor=[(0,1,0,1)])
+        meshColor=meshColor)
 
 
 ## Set view

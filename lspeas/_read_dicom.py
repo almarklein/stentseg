@@ -6,7 +6,7 @@ import imageio
 from stentseg.utils.datahandling import select_dir, loadvol
 from stentseg.utils.datahandling import savecropvols, saveaveraged, cropaveraged
 
-dicom_basedir = r'D:\Profiles\koenradesma\Desktop\LSPEASF_A_03c_arterieel2'
+dicom_basedir = r'D:\Profiles\koenradesma\Desktop\A02d_arterieel_veneus\arterieel'
 vols2 = [vol2 for vol2 in imageio.get_reader(dicom_basedir, 'DICOM', 'V')]
 
 for i, vol in enumerate(vols2):

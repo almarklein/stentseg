@@ -6,7 +6,7 @@ def model2mesh(basedir,savedir,ptcode,ctcode,cropname,modelname='modelavgreg'):
     from stentseg.stentdirect.stentgraph import create_mesh
     
     # formats that can be saved to: .obj .stl .ssdf .bsdf 
-    filename = '%s_%s_%s_%s.stl' % (ptcode, ctcode, cropname, 'model')
+    filename = '%s_%s_%s_%s.stl' % (ptcode, ctcode, cropname, modelname)
     # Load the stent model and mesh
     s = loadmodel(basedir, ptcode, ctcode, cropname, modelname)
     model = s.model
@@ -37,8 +37,8 @@ if __name__ == '__main__':
     #             'LSPEAS_009','LSPEAS_011','LSPEAS_017',
     #             'LSPEAS_019','LSPEAS_020','LSPEAS_021'
     #             ]
-    ptcodes = ['LSPEAS_018', 'LSPEAS_025', 'LSPEAS_023']
-    ctcode = '24months'
+    ptcodes = ['LSPEAS_003']
+    ctcode = '1month'
     cropname = 'ring'
     modelname = 'modelavgreg'
     

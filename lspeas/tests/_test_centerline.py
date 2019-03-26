@@ -37,7 +37,7 @@ elif TEST > 10:
                         r'F:\LSPEAS_ssdf_backup', r'G:\LSPEAS_ssdf_backup')
     basedirstl = r'D:\Profiles\koenradesma\SURFdrive\UTdrive\MedDataMimics\LSPEAS_Mimics\Tests'
     
-    ptcode = 'LSPEAS_003'
+    ptcode = 'LSPEAS_002'
     ctcode = '12months'
     cropname = 'stent'
     showAxis = False  # True or False
