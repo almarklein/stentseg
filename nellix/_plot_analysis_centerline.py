@@ -547,7 +547,7 @@ class ExcelAnalysisNellix():
         elif analysis=='AngChimNel':
             yticks = 10
         elif analysis == 'AngChimVessel':
-            yticks = 5
+            yticks = 10
         ax1.set_ylim(ylim)
         ax1.set_yticks(np.arange(ylim[0], ylim[1], yticks))
         ax1.set_xlim([0.8, len(xlabels)+0.2]) # xlim margins 0.2
@@ -560,6 +560,8 @@ class ExcelAnalysisNellix():
         ax2.set_ylim(ylimRel)
         ax2.set_xlim([0.8, len(xlabels)*factor+0.2]) # xlim margins 0.2; # longer for legend
         ax2.set_xlabel('Phase in cardiac cycle', fontsize=fontsize2)
+        yticksRel = 0.5
+        ax2.set_yticks(np.arange(ylimRel[0], ylimRel[1], yticksRel))
         
         # plot init
         lw = 1
@@ -903,13 +905,13 @@ if __name__ == '__main__':
     # foo.plot_distances_between_points(patients=patients,analysis='ChimNel', ylim=[5,32], saveFig=False)
     
     # Angles pointdeflection chimney
-    foo.plot_angles_chimney(patients=patients,analysis='AngChim', ylim=[0, 35.01], ylimRel=[-2,2], saveFig=False)
+    foo.plot_angles_chimney(patients=patients,analysis='AngChim', ylim=[0, 35.01], ylimRel=[-2,2.01], saveFig=False)
     
     # Angles vectors chimney nellix
-    foo.plot_angles_chimney(patients=patients,analysis='AngChimNel', ylim=[100, 170.01], ylimRel=[-2,2], saveFig=False)
+    foo.plot_angles_chimney(patients=patients,analysis='AngChimNel', ylim=[100, 170.01], ylimRel=[-2,2.01], saveFig=False)
     
     # Angles vectors chimney to vessel transition (end-stent angle)
-    foo.plot_angles_chimney(patients=patients,analysis='AngChimVessel', ylim=[0, 60.01], ylimRel=[-2,2], saveFig=False)
+    foo.plot_angles_chimney(patients=patients,analysis='AngChimVessel', ylim=[0, 85.01], ylimRel=[-3,3.01], saveFig=False)
     
     # # Tortuosity
     # foo.plot_angles_chimney(patients=patients,analysis='Tort', ylim=[0.99, 1.11], ylimRel=[-0.01,0.01], saveFig=False)
@@ -965,7 +967,7 @@ if __name__ == '__main__':
     #     t, p = independent_samples_ttest(foo.angleMax, outcomeChimNelMax)
     
     # Get chimney-vessel vector angle change
-    foo.get_angle_change(patients=None, analysis='ChimVessel', chimneys=['LRA'])
+    foo.get_angle_change(patients=None, analysis='ChimVessel', chimneys=['LRA', 'RRA', 'SMA'])
     print(len(foo.angleChange)) # verify number of chimneys
     outcomeChimVessel = foo.angleChange
     outcomeChimVesselMin = foo.angleMin
