@@ -139,7 +139,7 @@ def showModelsStatic(ptcode,codes, vols, ss, mm, vs, showVol, clim, isoTh, clim2
     return axes, cbars
 
 
-def showVesselMesh(vesselstl, ax=None, vesselMeshColor=(1,0,0,0.4),
+def showVesselMesh(vesselstl, ax=None, vesselMeshColor=(1,0,0,0.5),
     type = 1, **kwargs):
     """ plot pointcloud of mesh in ax
     type = 1 use vv.mesh; type = 2 use vv.plot
@@ -150,7 +150,7 @@ def showVesselMesh(vesselstl, ax=None, vesselMeshColor=(1,0,0,0.4),
         return
     if type == 1:
         vessel = vv.mesh(vesselstl, axes=ax, **kwargs)
-        vessel.faceColor = vesselMeshColor # (1,0,0,0.4) or alpha 0.6
+        vessel.faceColor = vesselMeshColor # (1,0,0,0.5) or alpha 0.4-0.6
         return vessel
     elif type == 2:
         # get PointSet from STL 

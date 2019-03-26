@@ -18,7 +18,6 @@ from stentseg.utils.picker import pick3d, get_picked_seed
 from stentseg.utils.visualization import DrawModelAxes
 from stentseg.utils.utils_graphs_pointsets import points_from_edges_in_graph
 from stentseg.utils.centerline import points_from_nodes_in_graph
-from stentseg.utils.datahandling import select_dir, loadvol, loadmodel, loadmodel_location
 
 # Select the ssdf basedir
 basedir = select_dir(os.getenv('LSPEAS_BASEDIR', ''),

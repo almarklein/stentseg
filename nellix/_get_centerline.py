@@ -1,10 +1,10 @@
 
 class _Get_Centerline:
-    def __init__(self,ptcode,ctcode,StartPoints,EndPoints,basedir):
+    def __init__(self,ptcode,ctcode,StartPoints,EndPoints,basedir, modelname='modelavgreg'):
         """ with start and endpoints provided, calculate centerline and save as
         ssdf in basedir as model and dynamic model
         """
-        #todo: name of dynamic model is now deforms, should be dynamic   
+        #todo: name of dynamic model is now deforms, unclear, should be dynamic   
         #import numpy as np
         import visvis as vv
         import numpy as np
@@ -21,7 +21,7 @@ class _Get_Centerline:
         stentnr = len(StartPoints)
         
         cropname = 'prox'
-        what = 'modelavgreg'
+        what = modelname
         what_vol = 'avgreg'
         vismids = True
         m = loadmodel(basedir, ptcode, ctcode, cropname, what)
@@ -86,7 +86,7 @@ class _Get_Centerline:
                     p_as_tuple = tuple(p.flat)
                     nodes.add_node(p_as_tuple)
                     nodes_total.add_node(p_as_tuple)
-            
+                # add pp as one edge so that pathpoints are in fixed order
                 pstart = tuple(pp[0].flat)
                 pend = tuple(pp[-1].flat)
                 nodes.add_edge(pstart, pend, path = pp  )

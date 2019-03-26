@@ -8,7 +8,7 @@ from stentseg.motion.dynamic import incorporate_motion_nodes, incorporate_motion
 from visvis import ssdf 
 import os
 import scipy.io
-from stentseg.utils.datahandling import select_dir, loadvol, loadmodel, loadmodel_location
+from stentseg.utils.datahandling import select_dir, loadvol, loadmodel
 
 
 # Select the ssdf basedir

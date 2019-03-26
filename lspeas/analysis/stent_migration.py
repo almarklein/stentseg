@@ -21,8 +21,8 @@ from lspeas.utils.get_anaconda_ringparts import _get_model_hooks,get_midpoints_p
 
 ## Initialize
 # select the ssdf basedir
-basedir = select_dir(r'/LSPEAS\LSPEAS_ssdf',
-                     r'/LSPEAS_ssdf_backup')
+basedir = select_dir(r'F/LSPEAS\LSPEAS_ssdf',
+                     r'F/LSPEAS_ssdf_backup')
                      
 basedirstl = select_dir(r'D:\Profiles\koenradesma\Dropbox\UTdrive\MedDataMimics\LSPEAS_Mimics\Tests')
 

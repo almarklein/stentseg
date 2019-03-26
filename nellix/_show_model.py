@@ -16,7 +16,7 @@ class _Show_Model:
         from stentseg.motion.vis import create_mesh_with_abs_displacement
         import copy
         from stentseg.motion.dynamic import incorporate_motion_nodes, incorporate_motion_edges
-        from lspeas.ecgslider import runEcgSlider
+        from lspeas.utils.ecgslider import runEcgSlider
         from stentseg.utils import _utils_GUI 
 
         import numpy as np
@@ -29,7 +29,7 @@ class _Show_Model:
         showVol = 'mip'  # MIP or ISO or 2D or None
         clim0 = (0,2000)
         # clim2 = (0,2)
-        motionPlay = 9, 2   # each x ms, a step of x %
+        motionPlay = 9, 1   # each x ms, a step of x %
         
         s = loadvol(basedir, ptcode, ctcode, cropname, what = 'deforms')
         m = loadmodel(basedir, ptcode, ctcode, cropname, 'centerline_modelavgreg')
@@ -121,7 +121,7 @@ class _Show_Model:
             dm.motionAmplitude = 0.5  # For a mesh we can (more) safely increase amplitude
         
         ## run ecgslider
-        # ecg = runEcgSlider(dm, f, a, motionPlay)
+        ecg = runEcgSlider(dm, f, a, motionPlay)
                 
         ## Turn on/off axis
         # vv.figure(1); a1 = vv.gca(); vv.figure(2); a2= vv.gca()

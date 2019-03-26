@@ -15,7 +15,7 @@ from stentseg.utils.datahandling import select_dir, loadvol, loadmodel
 class LandmarkSelector:
     """ LandmarkSelector. Create MIP by default
     """
-    def __init__(self, ptcode, s, what='phases', axes=None, **kwargs):
+    def __init__(self, dirsave,ptcode,ctcode,cropname, s, what='phases', axes=None, **kwargs):
         """ s is struct from loadvol
         """
         
@@ -24,6 +24,9 @@ class LandmarkSelector:
         self.defaultzoom = 0.025 # check current zoom with foo.ax.GetView()
         self.what = what
         self.ptcode = ptcode
+        self.dirsave = dirsave
+        self.ctcode = ctcode
+        self.cropname = cropname
         if self.what == 'phases':
             self.phase = 0
         else:
@@ -39,11 +42,6 @@ class LandmarkSelector:
             self.vol = s.vol0 # when phases
         except AttributeError:
             self.vol = s.vol # when avgreg
-        
-        # if axes is None:
-        #     self.ax = vv.gca()
-        # else:
-        #     self.ax = axes
         
         self.ax = vv.subplot(121)
         self.axref = vv.subplot(122)
@@ -75,13 +73,19 @@ class LandmarkSelector:
         self._butback.position = 125,150
         self._butback.text = 'Undo'
         
-        # Create Close button
+        # Create Next/Save button
         self._finished = False
         self._butclose = vv.PushButton(a_select)
         self._butclose.position = 10,230
-        self._butclose.text = 'Finish/Next'
+        self._butclose.text = 'Next/Save'
         
-        # Create Reset View button
+        # # Create Save landmarks button
+        # self._save = False
+        # self._butsave = vv.PushButton(a_select)
+        # self._butsave.position = 125,230
+        # self._butsave.text = 'Save|Finished'
+        
+        # Create Reset-View button
         self._resetview = False
         self._butresetview = vv.PushButton(a_select)
         self._butresetview.position = 10,180
@@ -93,6 +97,7 @@ class LandmarkSelector:
         self._butselect.eventPress.Bind(self._onSelect)
         self._butback.eventPress.Bind(self._onBack)
         self._butresetview.eventPress.Bind(self._onView)
+        # self._butsave.eventPress.Bind(self._onSave)
         
         self._updateTextIndex()
         self._updateTitle()
@@ -146,7 +151,7 @@ class LandmarkSelector:
         print(self.points)
         phase = self.phase
         # store model and pack
-        storegraph = self.graph #todo: need a copy?
+        storegraph = self.graph
         self.s_landmarks['landmarks{}'.format(phase)] = storegraph.pack() # s.vol0 etc
         if self.what == 'phases':
             # go to next phase 
@@ -172,9 +177,27 @@ class LandmarkSelector:
             
             self.ax.camera = self.axref.camera
         
-        print('Finish/Next was pressed')
+        # === Store landmarks graph ssdf ===
+        dirsave = self.dirsave
+        ptcode = self.ptcode
+        ctcode = self.ctcode
+        cropname = self.cropname
+        what = self.what
+        saveLandmarkModel(self, dirsave, ptcode, ctcode, cropname, what)
+        
+        print('Next/Finish was pressed - Landmarks stored')
         return
         
+    # def _onSave(self, event):
+    #     """ save landmarks graph
+    #     """
+    #     dirsave = self.dirsave
+    #     ptcode = self.ptcode
+    #     ctcode = self.ctcode
+    #     cropname = self.cropname
+    #     what = self.what
+    #     saveLandmarkModel(self, dirsave, ptcode, ctcode, cropname, what)
+    
     def _onBack(self, event):
         # remove last selected point
         if not (self.pointindex <0): # index always 0 for first point
@@ -197,7 +220,8 @@ class LandmarkSelector:
 
 
 def saveLandmarkModel(ls, dirsave, ptcode, ctcode, cropname, what):
-    """
+    """ Save graph with landmarks; do not store volumes again
+    Use within or outside class LandmarkSelector
     """
     import os
     
@@ -218,10 +242,11 @@ def saveLandmarkModel(ls, dirsave, ptcode, ctcode, cropname, what):
     # Save
     filename = '%s_%s_%s_%s.ssdf' % (ptcode, ctcode, cropname, 'landmarks'+what)
     ssdf.save(os.path.join(dirsave, filename), s2)
+    print('')
     print('saved to disk to {}.'.format(os.path.join(dirsave, filename)) )
 
 
-def makeModelDynamic(basedir, ptcode, ctcode, cropname, what='landmarksavgreg',
+def makeLandmarkModelDynamic(basedir, ptcode, ctcode, cropname, what='landmarksavgreg',
                      savedir=None):
     """ Make model dynamic with deforms from registration 
         (and store/overwrite to disk)

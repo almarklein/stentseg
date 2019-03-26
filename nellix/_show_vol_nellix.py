@@ -15,7 +15,7 @@ basedir = select_dir(r'E:\Nellix_chevas\CT_SSDF\SSDF')
 basedir = select_dir(r'E:\Nellix_chevas\CT_SSDF\SSDF_automated')
 
 # Select dataset to register
-ptcode = 'chevas_09'
+ptcode = 'chevas_01'
 ctcode, nr = '12months', 1
 cropname = 'prox'
 
@@ -48,11 +48,11 @@ vv.title('ECG-gated CT scan Nellix %s  -  %s' % (ptcode[7:], ctcode))
 
 # Setup data container
 container = vv.MotionDataContainer(a)
-showVol = 'iso'
+showVol = 'mip'
 for vol in vols:
     #     t = vv.volshow2(vol, clim=(-550, 500)) # -750, 1000
-    t = vv.volshow(vol, clim=(0, 2500), renderStyle = showVol)
-    t.isoThreshold = 600               # iso or mip work well 
+    t = vv.volshow(vol, clim=(-100, 1500), renderStyle = showVol)
+    t.isoThreshold = 275               # iso or mip work well 
     t.parent = container
     if showVol == 'iso':
         t.colormap = {'g': [(0.0, 0.0), (0.33636364, 1.0)],

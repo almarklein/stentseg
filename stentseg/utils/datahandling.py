@@ -136,7 +136,10 @@ def loadmodel(basedir, ptcode, ctcode, cropname, modelname='modelavgreg'):
     """
     # Load
     fname = '%s_%s_%s_%s.ssdf' % (ptcode, ctcode, cropname, modelname)
-    s = ssdf.load(os.path.join(basedir, ptcode, fname))
+    try:
+        s = ssdf.load(os.path.join(basedir, ptcode, fname))
+    except FileNotFoundError:
+        s = ssdf.load(os.path.join(basedir, fname))
     # Turn into graph model
     from stentseg.stentdirect import stentgraph
     for key in dir(s):
@@ -145,27 +148,31 @@ def loadmodel(basedir, ptcode, ctcode, cropname, modelname='modelavgreg'):
             model.unpack(s[key])
             s[key] = model
         # also unpack seeds if exist 
-        #(mind that also seeds need to be packed before save is possible again)
-        if key.startswith('seeds'):
+        #-mind that also seeds need to be packed before save is possible again-
+        elif key.startswith('seeds'):
             seeds = stentgraph.StentGraph()
             seeds.unpack(s[key])
             s[key] = seeds
+        elif key.startswith('landmark'): # landmark validation
+            landmarks = stentgraph.StentGraph()
+            landmarks.unpack(s[key])
+            s[key] = landmarks
     return s
 
-def loadmodel_location(basedir, ptcode, ctcode, cropname, modelname='stentseedsavgreg'):
-    """ Load stent model. An ssdf struct is returned.
-    """
-    # Load
-    fname = '%s_%s_%s_%s.ssdf' % (ptcode, ctcode, cropname, modelname)
-    s = ssdf.load(os.path.join(basedir, fname))
-    # Turn into graph model
-    from stentseg.stentdirect import stentgraph
-    for key in dir(s):
-        if key.startswith('model'):
-            model = stentgraph.StentGraph()
-            model.unpack(s[key])
-            s[key] = model
-    return s
+# def loadmodel_location(basedir, ptcode, ctcode, cropname, modelname='stentseedsavgreg'):
+#     """ Load stent model. An ssdf struct is returned.
+#     """
+#     # Load
+#     fname = '%s_%s_%s_%s.ssdf' % (ptcode, ctcode, cropname, modelname)
+#     s = ssdf.load(os.path.join(basedir, fname))
+#     # Turn into graph model
+#     from stentseg.stentdirect import stentgraph
+#     for key in dir(s):
+#         if key.startswith('model'):
+#             model = stentgraph.StentGraph()
+#             model.unpack(s[key])
+#             s[key] = model
+#     return s
 
 
 def savecropvols(vols, basedir, ptcode, ctcode, cropname, stenttype, sampling=None, meta=None):

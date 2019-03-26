@@ -24,11 +24,11 @@ basedir = select_dir(os.getenv('LSPEAS_BASEDIR', ''),
 # basedir = select_dir(r'D:\LSPEAS_F\LSPEASF_ssdf', r'F:\LSPEASF_ssdf_backup')
 
 # Select dataset to register
-ptcode = 'lspeas_002'
-ctcode =  '24months'
+ptcode = 'lspeas_003'
+ctcode =  '1month'
 cropname = 'ring'
 what = 'avgreg' # avgreg
-normalize = False
+normalize = True
 crop = False
 
 # Load volumes
@@ -64,19 +64,19 @@ stentType = 'anacondaRing'
 # 'branch' or 'nellix' runs Nellixdirect with modified seeding
 
 p = getDefaultParams(stentType)
-p.seed_threshold = [600,2000]        # step 1 [lower th] or [lower th, higher th]
+p.seed_threshold = [1000]        # step 1 [lower th] or [lower th, higher th]
 p.mcp_speedFactor = 750                 # step 2, costToCtValue; 
                                         # lower-> longer paths (costs low) -- higher-> short paths (costs high)
-p.mcp_maxCoverageFronts = 0.003         # step 2, base.py; replaces mcp_evolutionThreshold
-p.graph_weakThreshold = 500             # step 3, stentgraph.prune_very_weak
-p.graph_expectedNumberOfEdges = 2       # step 3, stentgraph.prune_weak
+p.mcp_maxCoverageFronts = 0.004         # step 2, base.py; replaces mcp_evolutionThreshold
+p.graph_weakThreshold = 750             # step 3, stentgraph.prune_very_weak
+p.graph_expectedNumberOfEdges = 3       # step 3, stentgraph.prune_weak
 p.graph_trimLength =  0                 # step 3, stentgraph.prune_tails
-p.graph_minimumClusterSize = 1         # step 3, stentgraph.prune_clusters
-p.graph_strongThreshold = 3500          # step 3, stentgraph.prune_weak and stentgraph.prune_redundant
+p.graph_minimumClusterSize = 10         # step 3, stentgraph.prune_clusters
+p.graph_strongThreshold = 2500          # step 3, stentgraph.prune_weak and stentgraph.prune_redundant
 p.graph_min_strutlength = 5             # step 3, stent_anaconda prune_redundant
 p.graph_max_strutlength = 13            # step 3, stent_anaconda prune_redundant
-p.graph_angleVector = 5                 # step 3, corner detect
-p.graph_angleTh = 180                    # step 3, corner detect
+# p.graph_angleVector = 5                 # step 3, corner detect
+# p.graph_angleTh = 180                    # step 3, corner detect
 
 ## Perform segmentation
 
@@ -91,6 +91,8 @@ if normalize:
 
 # Perform the first (seeding) step out of 3 steps of stentDirect
 sd.Step1()
+
+vol = vol2
 
 ## Visualization and interactive segmentation steps
 #todo: depending on the speedFactor fronts do not propagate from manually added seeds. 

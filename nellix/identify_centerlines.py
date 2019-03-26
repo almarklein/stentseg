@@ -46,7 +46,7 @@ def interactiveCenterlineID(s,ptcode,ctcode,basedir,cropname,modelname,
     import numpy as np
     
     print("Move mouse over centerlines and press ENTER to identify")
-    print("Give either NelL, NelR, LRA, RRA, SMA")
+    print("Give either NelL, NelR, LRA, RRA, SMA for stents or vLRA, vRRA, vSMA for transition vessel-stent")
     print("Press ESCAPE to save ssdf and finish")
     # Get clusters of nodes from each centerline
     clusters = []
@@ -97,7 +97,7 @@ def interactiveCenterlineID(s,ptcode,ctcode,basedir,cropname,modelname,
                     raise RuntimeError('Centerline has more than 2 nodes with 1 neighbour')
                 ends = np.asarray(ends, dtype='float32')
                 # add selected cll to s2
-                if name in ['NelL', 'NelR', 'LRA', 'RRA', 'SMA']:
+                if name in ['NelL', 'NelR', 'LRA', 'RRA', 'SMA', 'vLRA', 'vRRA', 'vSMA']:
                     s2['model'+name] = model
                     for i, ppend in enumerate(ppendsall): # pp for each centerline
                         if ends[0] in ppend: # should not matter which end
@@ -105,7 +105,7 @@ def interactiveCenterlineID(s,ptcode,ctcode,basedir,cropname,modelname,
                             s2['ppCenterline'+name] = ppallcenterlines[i]
                     m.hitTest = False
                 else:
-                    print("Name entered not known, give either NelL, NelR, LRA, RRA, SMA")
+                    print("Name entered not known, give either NelL, NelR, LRA, RRA, SMA, 'vLRA', 'vRRA', 'vSMA'")
         if event.key == vv.KEY_ESCAPE:
             # Save ssdf
             filename = '%s_%s_%s_%s.ssdf' % (ptcode, ctcode, cropname, modelname+'_id')

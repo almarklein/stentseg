@@ -9,7 +9,7 @@ import scipy.io
 
 from stentseg.utils import PointSet, _utils_GUI
 from stentseg.utils.centerline import find_centerline, points_from_mesh, smooth_centerline, pp_to_graph
-from stentseg.utils.datahandling import select_dir, loadvol, loadmodel, loadmodel_location
+from stentseg.utils.datahandling import select_dir, loadvol, loadmodel
 from stentseg.utils.visualization import show_ctvolume
 from stentseg.stentdirect import stentgraph
 from stentseg.utils.centerline import points_from_nodes_in_graph
@@ -42,7 +42,7 @@ s = loadvol(basedir, ptcode, ctcode, cropname, what)
 if TEST == 1:
     # Load model
     targetdir = os.path.join(basedirstl, ptcode)
-    s2 = loadmodel_location(targetdir, ptcode, ctcode, cropname)
+    s2 = loadmodel(targetdir, ptcode, ctcode, cropname, modelname='stentseedsavgreg')
     pp = points_from_nodes_in_graph(s2.model)
     
     start1 = (170.8, 158, 177.4) # x,y,z - distal point
