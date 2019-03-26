@@ -99,7 +99,7 @@ class ExcelAnalysisNellix():
                                 # read change
                                 angchange = readMaxChange(sheet, row=row1, colStart=1)
                                 self.angleChange.append(angchange)
-                                angmin, angmax = readMinMax(sheet, row=row1+1, colStart=1)
+                                angmin, angmax = readMinMax(sheet, row=row1+1, colStart=1, correctorientation=True)
                                 self.angleMin.append(angmin)
                                 self.angleMax.append(angmax)
                                 locationchange = readLocationChange(sheet, row=19, colStart=1, nphases=10)
@@ -242,7 +242,8 @@ class ExcelAnalysisNellix():
     def get_segment_displacement(self, patients=None, analysis=['NelL'],location='prox'):
         """ Read segment mean displacement in x,y,z direction from excels for all patients
         Location: prox or dist
-        Analysis:  [NelL,NelR] or [NelL] or [NelR] or [SMA] or [LRA] or [RRA] or ...
+        Analysis:  [NelL,NelR] or [NelL] or [NelR] or [SMA] or [LRA] or [RRA] or 
+        [vRRA] [vLRA] [vSMA] for vessel portion distal to stent
         """
         if patients == None:
             patients = self.patients
@@ -689,8 +690,8 @@ def readMinMax(sheet, row=17, colStart=1, correctorientation=True):
     angles defined such that 0 = straight, 60 = sharp, 110 = severe
     """
     if correctorientation:
-        minvalue = 180 - sheet.rows[row-1][colStart].value # B
-        maxvalue = 180 - sheet.rows[row-1][colStart+1].value # C
+        maxvalue = 180 - sheet.rows[row-1][colStart].value # B
+        minvalue = 180 - sheet.rows[row-1][colStart+1].value # C
     else:
         minvalue = sheet.rows[row-1][colStart].value # B
         maxvalue = sheet.rows[row-1][colStart+1].value # C
@@ -905,13 +906,13 @@ if __name__ == '__main__':
     # foo.plot_distances_between_points(patients=patients,analysis='ChimNel', ylim=[5,32], saveFig=False)
     
     # Angles pointdeflection chimney
-    foo.plot_angles_chimney(patients=patients,analysis='AngChim', ylim=[0, 35.01], ylimRel=[-2,2.01], saveFig=False)
+    # foo.plot_angles_chimney(patients=patients,analysis='AngChim', ylim=[0, 35.01], ylimRel=[-3,3.01], saveFig=False)
     
     # Angles vectors chimney nellix
-    foo.plot_angles_chimney(patients=patients,analysis='AngChimNel', ylim=[100, 170.01], ylimRel=[-2,2.01], saveFig=False)
+    # foo.plot_angles_chimney(patients=patients,analysis='AngChimNel', ylim=[100, 170.01], ylimRel=[-3,3.01], saveFig=False)
     
     # Angles vectors chimney to vessel transition (end-stent angle)
-    foo.plot_angles_chimney(patients=patients,analysis='AngChimVessel', ylim=[0, 85.01], ylimRel=[-3,3.01], saveFig=False)
+    # foo.plot_angles_chimney(patients=patients,analysis='AngChimVessel', ylim=[0, 85.01], ylimRel=[-3,3.01], saveFig=False)
     
     # # Tortuosity
     # foo.plot_angles_chimney(patients=patients,analysis='Tort', ylim=[0.99, 1.11], ylimRel=[-0.01,0.01], saveFig=False)
@@ -926,8 +927,17 @@ if __name__ == '__main__':
     # Get statistics
     # ==========================================
     # Get displacement of centerline segment prox or dist 
-    # foo.get_segment_displacement(patients=patients, analysis=['NelR'], location='prox')
-    # foo.get_segment_displacement(patients=patients, analysis=['LRA','RRA', 'SMA'], location='dist')
+    # foo.get_segment_displacement(patients=patients, analysis=['NelL', 'NelR'], location='prox')
+    # foo.get_segment_displacement(patients=patients, analysis=['LRA','RRA', 'SMA'], location='prox')
+    # print(len(foo.segmentDisplacementX)) # verify number of chimneys/nellix stents
+    # outcomeDispl = foo.segmentDisplacement3d
+    # foo.get_segment_displacement(patients=patients, analysis=['LRA','RRA','SMA'], location='prox')
+    # if False:
+    #     t, p = independent_samples_ttest(foo.segmentDisplacement3d, outcomeDispl)
+    
+    # Get displacement of centerline segment vessel distal to stent (location is always prox)
+    # foo.get_segment_displacement(patients=patients, analysis=['vLRA'], location='prox')
+    # foo.get_segment_displacement(patients=patients, analysis=['vLRA','vRRA', 'vSMA'], location='prox')
     # print(len(foo.segmentDisplacementX)) # verify number of chimneys/nellix stents
     
     # Get distance change between Nellix stents or between Nellix and chimney ends
@@ -967,17 +977,25 @@ if __name__ == '__main__':
     #     t, p = independent_samples_ttest(foo.angleMax, outcomeChimNelMax)
     
     # Get chimney-vessel vector angle change
+    # foo.get_angle_change(patients=None, analysis='ChimVessel', chimneys=['LRA', 'RRA'])
+    # print(len(foo.angleChange)) # verify number of chimneys
+    # outcomeChimVessel = foo.angleChange
+    # outcomeChimVesselMin = foo.angleMin
+    # outcomeChimVesselMax = foo.angleMax
+    # foo.get_angle_change(patients=None, analysis='ChimVessel', chimneys=['SMA'])
+    # print(len(foo.angleChange)) # verify number of chimneys
+    # if False:
+    #     t, p = independent_samples_ttest(foo.angleChange, outcomeChimVessel)
+    # if False:
+    #     t, p = independent_samples_ttest(foo.angleMin, outcomeChimVesselMin)
+    #     t, p = independent_samples_ttest(foo.angleMax, outcomeChimVesselMax)
+    
+    # Compare chimney-Nellix vector angle change with end-stent angle change
+    foo.get_angle_change(patients=None, analysis='ChimNel', chimneys=['LRA','RRA','SMA'])
+    print(len(foo.angleChange)) # verify number of chimneys
+    outcomeChimNel = foo.angleChange
     foo.get_angle_change(patients=None, analysis='ChimVessel', chimneys=['LRA', 'RRA', 'SMA'])
     print(len(foo.angleChange)) # verify number of chimneys
-    outcomeChimVessel = foo.angleChange
-    outcomeChimVesselMin = foo.angleMin
-    outcomeChimVesselMax = foo.angleMax
-    foo.get_angle_change(patients=None, analysis='ChimVessel', chimneys=['SMA'])
-    print(len(foo.angleChange)) # verify number of chimneys
-    if False:
-        t, p = independent_samples_ttest(foo.angleChange, outcomeChimVessel)
-    if False:
-        t, p = independent_samples_ttest(foo.angleMin, outcomeChimVesselMin)
-        t, p = independent_samples_ttest(foo.angleMax, outcomeChimVesselMax)
-    
+    if True:
+        t, p = independent_samples_ttest(foo.angleChange, outcomeChimNel)
     # ==========================================
