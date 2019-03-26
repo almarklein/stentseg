@@ -50,12 +50,12 @@ class ExcelAnalysisNellix():
         self.fontsize3 = 10.3
     
     def get_angle_change(self, patients=None, analysis='ChimNel', chimneys=['LRA', 'RRA', 'SMA'], angletype='pointdeflection'):
-        """ Read angle change for the chimneys or for the angle between chimney and nellix
-        prox segments for all patients
-        Analysis: 'ChimNel' or 'Chim'
+        """ Read angle change for the chimneys or for the angle between prox chimney and nellix
+        or for angle between dist chimney and vessel (end-stent angle)
+        Analysis: 'ChimNel' or 'Chim' or 'ChimVessel'
         chimneys: ['LRA', 'RRA', 'SMA'] or ['LRA'] get single chimney
-        angletype: 'pointdeflection'      --> point with greatest angle change
-                   'peakangle' --> max diff between peak angle over phases
+        angletype: 'pointdeflection'    --> point with greatest angle change
+                   'peakangle'          --> max diff between peak angle over phases
         """
         
         if patients == None:
@@ -119,7 +119,22 @@ class ExcelAnalysisNellix():
                             self.angleMin.append(angmin)
                             self.angleMax.append(angmax)
                             break # next a
-        
+            
+            elif analysis == 'ChimVessel': # chimney-to-Nellix angle
+                for a in chimneys:
+                    # see which sheetname, not known if NelL or NelR
+                    for sheetname in sheetnames:
+                        if sheetname.startswith('Ang_'+a+'_Vessel'):
+                            sheet = wb.get_sheet_by_name(sheetname)
+                            # read change
+                            angchange = readMaxChange(sheet, row=4, colStart=1)
+                            self.angleChange.append(angchange)
+                            angmin, angmax = readMinMax(sheet, row=5, colStart=1, correctorientation=True)
+                            self.angleMin.append(angmin)
+                            self.angleMax.append(angmax)
+                            break # next a
+            
+            
         # check normality anglechange
         W, pValue, normality = normality_check(self.angleChange, alpha=0.05, showhist=False)
         print('')
@@ -498,6 +513,7 @@ class ExcelAnalysisNellix():
         analysis: 'AngChim' or AngChimNel or 'Tort'
         Angulation AngChim is pointdeflection angle
         Angulation AngChimNel is vector angle during cycle
+        Angulation AngChimVessel is vector angle between stent and distal vessel (end-stent angle)
         """
         # init figure
         self.f2 = plt.figure(figsize=(11.8, 5.8)) # 11.6, 4.62
@@ -530,6 +546,8 @@ class ExcelAnalysisNellix():
             yticks = 5
         elif analysis=='AngChimNel':
             yticks = 10
+        elif analysis == 'AngChimVessel':
+            yticks = 5
         ax1.set_ylim(ylim)
         ax1.set_yticks(np.arange(ylim[0], ylim[1], yticks))
         ax1.set_xlim([0.8, len(xlabels)+0.2]) # xlim margins 0.2
@@ -558,6 +576,8 @@ class ExcelAnalysisNellix():
             """        
             if analysis =='AngChimNel':
                 shortname = 'Nel-'+sheetname[4:7] # e.g. 'RRA_Nel' to Nel-RRA
+            elif analysis == 'AngChimVessel':
+                shortname = sheetname[4:7] # e.g. LRA
             else:
                 shortname = sheetname[-3:] # LRA or RRA or SMA
             # color1 = next(colors)
@@ -602,6 +622,15 @@ class ExcelAnalysisNellix():
                         plot_per_chimney(sheetname, analysis, patient, xrange, angs, angsRel)
             elif analysis == 'AngChimNel':
                 for sheetname in ['Ang_RRA_Nel', 'Ang_LRA_Nel', 'Ang_SMA_Nel']:
+                    if sheetname in sheetnames:
+                        sheet = wb.get_sheet_by_name(sheetname)
+                        angs, angsRel = readAnglesChimney(sheet,rows=[8,6],colStart=1, analysis=analysis)
+                        self.angsAll.append(angs)
+                        self.angsRelAll.append(angsRel)
+                        # plot
+                        plot_per_chimney(sheetname, analysis, patient, xrange, angs, angsRel)
+            elif analysis == 'AngChimVessel':
+                for sheetname in ['Ang_RRA_Vessel', 'Ang_LRA_Vessel', 'Ang_SMA_Vessel']:
                     if sheetname in sheetnames:
                         sheet = wb.get_sheet_by_name(sheetname)
                         angs, angsRel = readAnglesChimney(sheet,rows=[8,6],colStart=1, analysis=analysis)
@@ -727,7 +756,7 @@ def readDistancesBetweenPoints(sheet,rows=[9,5],colStart=1, nphases=10):
 
 def readAnglesChimney(sheet,rows=[11, 12],colStart=1, analysis='AngChim'):
     """ read angles over all phases cardiac cycle in excel
-    analysis: 'Ang' or 'Tort'
+    analysis: 'AngChim' or AngChimNel or AngChimVessel or 'Tort'
     """
     # read distances
     rowStart1 = rows[1]-1 # angles
@@ -736,7 +765,7 @@ def readAnglesChimney(sheet,rows=[11, 12],colStart=1, analysis='AngChim'):
     # colStart = 1 # B
     # angles / tort
     angs = sheet.rows[rowStart1][colStart:colStart+10] # B to K, 10 phases 
-    if 'AngChim' in analysis: # for AngChim and AngChimNel
+    if 'AngChim' in analysis: # for AngChim, AngChimNel and AngChimVessel
         angs = [180-obj.value for obj in angs] # so that 0 is straight: 70 is scherpere hoek dan 40
         angs = np.asarray(angs)
         # get angle mid cycle
@@ -879,6 +908,8 @@ if __name__ == '__main__':
     # Angles vectors chimney nellix
     foo.plot_angles_chimney(patients=patients,analysis='AngChimNel', ylim=[100, 170.01], ylimRel=[-2,2], saveFig=False)
     
+    # Angles vectors chimney to vessel transition (end-stent angle)
+    foo.plot_angles_chimney(patients=patients,analysis='AngChimVessel', ylim=[0, 60.01], ylimRel=[-2,2], saveFig=False)
     
     # # Tortuosity
     # foo.plot_angles_chimney(patients=patients,analysis='Tort', ylim=[0.99, 1.11], ylimRel=[-0.01,0.01], saveFig=False)
@@ -932,5 +963,19 @@ if __name__ == '__main__':
     # if False:
     #     t, p = independent_samples_ttest(foo.angleMin, outcomeChimNelMin)
     #     t, p = independent_samples_ttest(foo.angleMax, outcomeChimNelMax)
+    
+    # Get chimney-vessel vector angle change
+    foo.get_angle_change(patients=None, analysis='ChimVessel', chimneys=['LRA'])
+    print(len(foo.angleChange)) # verify number of chimneys
+    outcomeChimVessel = foo.angleChange
+    outcomeChimVesselMin = foo.angleMin
+    outcomeChimVesselMax = foo.angleMax
+    foo.get_angle_change(patients=None, analysis='ChimVessel', chimneys=['SMA'])
+    print(len(foo.angleChange)) # verify number of chimneys
+    if False:
+        t, p = independent_samples_ttest(foo.angleChange, outcomeChimVessel)
+    if False:
+        t, p = independent_samples_ttest(foo.angleMin, outcomeChimVesselMin)
+        t, p = independent_samples_ttest(foo.angleMax, outcomeChimVesselMax)
     
     # ==========================================
