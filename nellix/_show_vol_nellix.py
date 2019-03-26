@@ -9,13 +9,13 @@ from stentseg.utils.datahandling import select_dir, loadvol
 from pirt.utils.deformvis import DeformableTexture3D
 import scipy
 from stentseg.utils import _utils_GUI
+import copy
 
 # Select the ssdf basedir
-basedir = select_dir(r'E:\Nellix_chevas\CT_SSDF\SSDF')
 basedir = select_dir(r'E:\Nellix_chevas\CT_SSDF\SSDF_automated')
 
 # Select dataset to register
-ptcode = 'chevas_01'
+ptcode = 'chevas_10'
 ctcode, nr = '12months', 1
 cropname = 'prox'
 
@@ -51,7 +51,7 @@ container = vv.MotionDataContainer(a)
 showVol = 'mip'
 for vol in vols:
     #     t = vv.volshow2(vol, clim=(-550, 500)) # -750, 1000
-    t = vv.volshow(vol, clim=(-100, 1500), renderStyle = showVol)
+    t = vv.volshow(vol, clim=(-300, 2000), renderStyle = showVol)
     t.isoThreshold = 275               # iso or mip work well 
     t.parent = container
     if showVol == 'iso':
@@ -67,11 +67,13 @@ f.eventKeyDown.Bind(lambda event: _utils_GUI.ViewPresets(event, [a]) )
 ## Show 3D movie, by showing one volume that is moved by motion fields
 
 # Load volume
-s = loadvol(basedir, ptcode, ctcode, cropname, '10avgreg')
+s = loadvol(basedir, ptcode, ctcode, cropname, 'avgreg')
+vol_org = copy.deepcopy(s.vol)
+s.vol.sampling = [vol_org.sampling[1], vol_org.sampling[1], vol_org.sampling[2]] # z,y,x
 vol = s.vol
 
 # Load deformations (use backward mapping to deform texture 3D volume)
-s = loadvol(basedir, ptcode, ctcode, cropname, '10deforms')
+s = loadvol(basedir, ptcode, ctcode, cropname, 'deforms')
 phases = []
 for key in dir(s):
     if key.startswith('deform'):
@@ -97,7 +99,7 @@ vv.ColormapEditor(vv.gcf())
 
 # Setup motion container
 dt = DeformableTexture3D(a, vol)
-dt.clim = 0, 2000
+dt.clim = -300, 2000
 dt.isoThreshold = 300
 dt.renderStyle = 'iso'  # iso or mip work well
 dt.SetDeforms(*[list(reversed(deform)) for deform in deforms_backward])
