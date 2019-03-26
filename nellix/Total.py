@@ -7,11 +7,11 @@ import os
 from stentseg.utils.datahandling import select_dir, loadmodel, loadvol
 
 
-ptcode = 'chevas_01'
+ptcode = 'chevas_11'
 ctcode = '12months' # is not the true follow-up time but use for all
-# dicom_basedir = r'E:\Nellix_chevas\CT_SSDF\no 1\STD00001\10phases'
+# dicom_basedir = r'E:\Nellix_chevas\CT_SSDF\no 11\STD00001\10phases'
 # print(dicom_basedir)
-basedir = select_dir(r'F:\Nellix_chevas\CT_SSDF\SSDF_automated')
+basedir = select_dir(r'E:\Nellix_chevas\CT_SSDF\SSDF_automated')
 
 ## LOAD CT
 if False:
@@ -48,21 +48,17 @@ if False:
 
 ## CALCULATE CENTERLINE
 if False:
-        StartPoints = [ (173.2, 127.0, 113.7), 
-                        (174.1, 139.5, 114.1), 
-                        (144.6, 113.9, 66.5), 
-                        (118.9, 145.9, 76.9), 
-                        (171.6, 162.6, 42.4),(166.7, 159.5, 43.8), (161.6, 156.4, 44.9)]
-        EndPoints = [   (143.3, 160.9, 37.7), 
-                        (144.3, 168.4, 44.4), 
-                        (132.1, 154.2, 38.0), 
-                        (138.7, 156.3, 28.9), 
-                        (166.7, 159.5, 43.8), (161.6, 156.4, 44.9), (141.1, 153.0, 40.1)]
+        # StartPoints = [ (173.2, 127.0, 113.7), 
+        #                 (174.1, 139.5, 114.1), 
+        #                 (144.6, 113.9, 66.5), 
+        #                 (118.9, 145.9, 76.9), 
+        #                 (171.6, 162.6, 42.4),(166.7, 159.5, 43.8), (161.6, 156.4, 44.9)]
+        # EndPoints = [   (143.3, 160.9, 37.7), 
+        #                 (144.3, 168.4, 44.4), 
+        #                 (132.1, 154.2, 38.0), 
+        #                 (138.7, 156.3, 28.9), 
+        #                 (166.7, 159.5, 43.8), (161.6, 156.4, 44.9), (141.1, 153.0, 40.1)]
         
-        
-        StartPoints = [(113.6, 89.5, 34.3)] # pt 1 chim vessel
-        EndPoints =   [(128.5, 94.1, 31.6)]
-
         from nellix._get_centerline import _Get_Centerline
         # modelname = 'modelavgreg' # default for stents
         modelname = 'modelvesselavgreg' 
@@ -92,20 +88,20 @@ if True:
         
         ptcodes = [
                 'chevas_01',
-                # 'chevas_02',
-                # 'chevas_03',
-                # 'chevas_04',
-                # 'chevas_05',
-                # 'chevas_06',
-                # 'chevas_07',
-                # 'chevas_08',
-                # 'chevas_09',
-                # 'chevas_10',
-                # 'chevas_11',
-                # 'chevas_09_thin'
+                'chevas_02',
+                'chevas_03',
+                'chevas_04',
+                'chevas_05',
+                'chevas_06',
+                'chevas_07',
+                'chevas_08',
+                'chevas_09',
+                'chevas_10',
+                'chevas_11',
+                'chevas_09_thin'
                                 ]
         ctcode = '12months'
-        basedir = select_dir(r'F:\Nellix_chevas\CT_SSDF\SSDF_automated')
+        basedir = select_dir(r'E:\Nellix_chevas\CT_SSDF\SSDF_automated')
         
         for ptcode in ptcodes:
                 from nellix._do_analysis_centerline import _Do_Analysis_Centerline
