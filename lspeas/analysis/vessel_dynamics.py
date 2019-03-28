@@ -196,11 +196,14 @@ for i in range(16):
     label.position = 10, 100 + 25 * i, -20, 25
     labelpool.append(label)
 
-# Initialize sliders
+# Initialize sliders and buttons
 slider_ref = vv.Slider(container, fullRange=(1, len(centerline)-2), value=10)
 slider_ves = vv.Slider(container, fullRange=(1, len(centerline)-2), value=10)
+button_go = vv.PushButton(container, "Take all measurements (incl. volume)")
 slider_ref.position = 10, 5, -20, 25
 slider_ves.position = 10, 40, -20, 25
+button_go.position = 10, 70, -20, 25
+button_go.bgcolor = slider_ref.bgcolor = slider_ves.bgcolor = 0.8, 0.8, 1.0
 
 # Initialize line objects for showing the plane orthogonal to centerline
 slider_ref.line_plane = vv.plot([], [], [], axes=axes1, ls='-', lw=3, lc='w', alpha = 0.9)
@@ -396,7 +399,7 @@ def measure_centerline_strain():
     return strain
 
 
-def take_measurements():
+def take_measurements(measure_volume_change):
     """ This gets called when the slider is releases. We take measurements and
     update the corresponding texts and visualizations.
     """
@@ -405,12 +408,6 @@ def take_measurements():
     pp = get_plane_points_from_centerline_index(slider_ves.value)
     pp2, pp3 = get_vessel_points_from_plane_points(pp)
     plane = pp2.plane
-
-    # Update the mesh of the
-    plane1 = fitting.fit_plane(get_plane_points_from_centerline_index(slider_ref.value))
-    plane2 = fitting.fit_plane(get_plane_points_from_centerline_index(slider_ves.value))
-    plane2 = [-x for x in plane2]  # flip the plane upside doen
-    submesh = vesselMesh.cut_plane(plane1).cut_plane(plane2)
 
     # Collect measurements in a dict. That way we can process it in one step at the end
     measurements = {}
@@ -453,18 +450,26 @@ def take_measurements():
         measurements["area"].append(area)
 
     # Measure how the volume changes - THIS BIT IS COMPUTATIONALLY EXPENSIVE
-    measurements["volume"] = DeformInfo(unit="cm2")
-    submesh._ori_vertices = submesh._vertices.copy()
-    for phase in range(len(deforms)):
-        deform = deforms[phase]
-        submesh._vertices = submesh._ori_vertices.copy()
-        dx = deform.get_field_in_points(submesh._vertices, 0)
-        dy = deform.get_field_in_points(submesh._vertices, 1)
-        dz = deform.get_field_in_points(submesh._vertices, 2)
-        submesh._vertices[:, 0] += dx
-        submesh._vertices[:, 1] += dy
-        submesh._vertices[:, 2] += dz
-        measurements["volume"].append(submesh.volume() / 1000)
+    submesh = meshlib.Mesh(np.zeros((0, 3)))
+    if measure_volume_change:
+        # Update the submesh
+        plane1 = fitting.fit_plane(get_plane_points_from_centerline_index(slider_ref.value))
+        plane2 = fitting.fit_plane(get_plane_points_from_centerline_index(slider_ves.value))
+        plane2 = [-x for x in plane2]  # flip the plane upside doen
+        submesh = vesselMesh.cut_plane(plane1).cut_plane(plane2)
+        # Measure its motion
+        measurements["volume"] = DeformInfo(unit="cm2")
+        submesh._ori_vertices = submesh._vertices.copy()
+        for phase in range(len(deforms)):
+            deform = deforms[phase]
+            submesh._vertices = submesh._ori_vertices.copy()
+            dx = deform.get_field_in_points(submesh._vertices, 0)
+            dy = deform.get_field_in_points(submesh._vertices, 1)
+            dz = deform.get_field_in_points(submesh._vertices, 2)
+            submesh._vertices[:, 0] += dx
+            submesh._vertices[:, 1] += dy
+            submesh._vertices[:, 2] += dz
+            measurements["volume"].append(submesh.volume() / 1000)
 
     # Measure distances from center to ellipse edge. We first get the distances
     # in each face, for each point. Then we aggregate these distances to
@@ -549,10 +554,13 @@ def on_sliding_done(e):
     slider = e.owner
     pp = get_plane_points_from_centerline_index(slider.value)
     slider.line_plane.SetPoints(pp)
-    # pp2, pp3 = get_vessel_points_from_plane_points(pp)
-    # slider.line_3d.SetPoints(pp3)
+    take_measurements(False)  # dont do volume
 
-    take_measurements()
+
+def on_button_press(e):
+    """ When the button is pressed, take measurements.
+    """
+    take_measurements(True)
 
 
 def set_sliders(value_ref, value_ves):
@@ -567,7 +575,7 @@ slider_ref.eventSliding.Bind(on_sliding)
 slider_ves.eventSliding.Bind(on_sliding)
 slider_ref.eventSliderChanged.Bind(on_sliding_done)
 slider_ves.eventSliderChanged.Bind(on_sliding_done)
-
+button_go.eventMouseDown.Bind(on_button_press)
 
 #todo: measure (change of) curvature of centerline
 #todo: measure (change of) curvature of stent rings
