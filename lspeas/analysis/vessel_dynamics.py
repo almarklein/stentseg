@@ -384,19 +384,21 @@ def measure_centerline_strain():
         deform_vectors = PointSet(np.stack([dx, dy, dz], 1))
         sections.append(section + deform_vectors)
 
-    # For each linepiece between two points on the centerline,
-    # measure its length in the 10 phases,
-    # and use the max / min of that as a measure for strain.
-    strain = DeformInfo()
-    strain.append(1)
-    for i in range(len(section) - 1):
-        distances = []
-        for phase in range(len(deforms)):
-            section = sections[phase]
-            distances.append(section[i].distance(section[i + 1]))
-        strain.append(max(distances) / min(distances))
+    # Measure the strain of the full section, by measuring the total length in each phase.
+    lengths = []
+    for phase in range(len(deforms)):
+        section = sections[phase]
+        length = sum(float(section[i].distance(section[i + 1]))
+                     for i in range(len(section) - 1))
+        lengths.append(length)
 
-    return strain
+    if min(lengths) == 0:
+        return 0
+    else:
+        # Strain as delta-length divided by initial length
+        return (max(lengths) - min(lengths)) / min(lengths)
+        # ... or as what Wikipedia calls "stretch ratio">
+        # return max(lengths) / min(lengths)
 
 
 def take_measurements(measure_volume_change):
@@ -450,7 +452,7 @@ def take_measurements(measure_volume_change):
         measurements["area"].append(area)
 
     # Measure how the volume changes - THIS BIT IS COMPUTATIONALLY EXPENSIVE
-    submesh = meshlib.Mesh(np.zeros((0, 3)))
+    submesh = meshlib.Mesh(np.zeros((3, 3)))
     if measure_volume_change:
         # Update the submesh
         plane1 = fitting.fit_plane(get_plane_points_from_centerline_index(slider_ref.value))
