@@ -416,11 +416,8 @@ def take_measurements(measure_volume_change):
     measurements = {}
 
     # Store slider positions, so we can reproduce this measurement later
-    measurements["segment"] = [slider_ref.value, slider_ves.value]
+    measurements["centerline indices"] = slider_ref.value, slider_ves.value
 
-    # Measure distance between reference points
-    measurements["distance"] = "{:0.1f} mm".format(get_distance_along_centerline())
-    measurements["centerline strain"] = measure_centerline_strain()
     # Early exit?
     if len(pp2) == 0:
         line_2d.SetPoints(pp2)
@@ -431,10 +428,15 @@ def take_measurements(measure_volume_change):
         process_measurements(measurements)
         return
 
+    # Measure length of selected part of the centerline and the strain in that section
+    measurements["centerline distance"] = get_distance_along_centerline()
+    measurements["centerline strain"] = measure_centerline_strain()
+
     # Measure centerline curvature
-    curvature_mean, curvature_max, curvature_max_change = measure_curvature(centerline, deforms)
-    measurements["curvature mean"] = curvature_mean
-    measurements["curvature max"] = curvature_mean
+    curvature_mean, curvature_max, curvature_max_pos, curvature_max_change = measure_curvature(centerline, deforms)
+    measurements["curvature mean"] = DeformInfo(curvature_mean)
+    measurements["curvature max"] = DeformInfo(curvature_max)
+    measurements["curvature max pos"] = DeformInfo(curvature_max_pos)
     measurements["curvature max change"] = curvature_max_change
 
     # Get ellipse and its center point
@@ -446,17 +448,45 @@ def take_measurements(measure_volume_change):
     area = 0
     for i in range(len(pp_ellipse)-1):
         area += triangle_area(p0, pp_ellipse[i], pp_ellipse[i + 1])
-    # measurements["reference area"] = "{:0.2f} cm^2".format(float(area / 100))
+    # measurements["reference area"] = float(area)
     # Do a quick check to be sure that this triangle-approximation is close enough
     assert abs(area - fitting.area(ellipse)) < 2, "area mismatch"  # mm2  typically ~ 0.1 mm2
 
     # Measure ellipse area (and how it changes)
-    measurements["area"] = DeformInfo(unit="mm2")
+    measurements["ellipse area"] = DeformInfo(unit="mm2")
     for pp_ellipse_def in deform_points_2d(pp_ellipse, plane):
         area = 0
         for i in range(len(pp_ellipse_def)-1):
             area += triangle_area(p0, pp_ellipse_def[i], pp_ellipse_def[i + 1])
-        measurements["area"].append(area)
+        measurements["ellipse area"].append(area)
+
+    # # Measure expansion of ellipse in 256 locations?
+    # # Measure distances from center to ellipse edge. We first get the distances
+    # # in each face, for each point. Then we aggregate these distances to
+    # # expansion measures. So in the end we have 256 expansion measures.
+    # distances_per_point = [[] for i in range(len(pp_ellipse))]
+    # for pp_ellipse_def in deform_points_2d(pp_ellipse, plane):
+    #     # todo: Should distance be measured to p0 or to p0 in that phase?
+    #     for i, d in enumerate(pp_ellipse_def.distance(p0)):
+    #         distances_per_point[i].append(float(d))
+    # distances_per_point = distances_per_point[:-1]  # Because pp_ellipse[-1] == pp_ellipse[0]
+    # #
+    # measurements["expansions"] = DeformInfo()  # 256 values, not 10
+    # for i in range(len(distances_per_point)):
+    #     distances = distances_per_point[i]
+    #     measurements["expansions"].append((max(distances) - min(distances)) / min(distances))
+
+    # Measure radii of ellipse major and minor axis (and how it changes)
+    pp_ellipse4 = fitting.sample_ellipse(ellipse, 4)  # major, minor, major, minor
+    measurements["ellipse expansion major1"] = DeformInfo(unit="mm")
+    measurements["ellipse expansion minor1"] = DeformInfo(unit="mm")
+    measurements["ellipse expansion major2"] = DeformInfo(unit="mm")
+    measurements["ellipse expansion minor2"] = DeformInfo(unit="mm")
+    for pp_ellipse4_def in deform_points_2d(pp_ellipse4, plane):
+        measurements["ellipse expansion major1"].append(float( pp_ellipse4_def[0].distance(p0) ))
+        measurements["ellipse expansion minor1"].append(float( pp_ellipse4_def[1].distance(p0) ))
+        measurements["ellipse expansion major2"].append(float( pp_ellipse4_def[2].distance(p0) ))
+        measurements["ellipse expansion minor2"].append(float( pp_ellipse4_def[3].distance(p0) ))
 
     # Measure how the volume changes - THIS BIT IS COMPUTATIONALLY EXPENSIVE
     submesh = meshlib.Mesh(np.zeros((3, 3)))
@@ -467,7 +497,7 @@ def take_measurements(measure_volume_change):
         plane2 = [-x for x in plane2]  # flip the plane upside doen
         submesh = vesselMesh.cut_plane(plane1).cut_plane(plane2)
         # Measure its motion
-        measurements["volume"] = DeformInfo(unit="cm2")
+        measurements["volume"] = DeformInfo(unit="mm3")
         submesh._ori_vertices = submesh._vertices.copy()
         for phase in range(len(deforms)):
             deform = deforms[phase]
@@ -478,30 +508,7 @@ def take_measurements(measure_volume_change):
             submesh._vertices[:, 0] += dx
             submesh._vertices[:, 1] += dy
             submesh._vertices[:, 2] += dz
-            measurements["volume"].append(submesh.volume() / 1000)
-
-    # Measure distances from center to ellipse edge. We first get the distances
-    # in each face, for each point. Then we aggregate these distances to
-    # expansion measures. So in the end we have 256 expansion measures.
-    distances_per_point = [[] for i in range(len(pp_ellipse))]
-    for pp_ellipse_def in deform_points_2d(pp_ellipse, plane):
-        # todo: Should distance be measured to p0 or to p0 in that phase?
-        for i, d in enumerate(pp_ellipse_def.distance(p0)):
-            distances_per_point[i].append(float(d))
-    distances_per_point = distances_per_point[:-1]  # Because pp_ellipse[-1] == pp_ellipse[0]
-    #
-    measurements["expansions"] = DeformInfo()  # 256 values, not 10
-    for i in range(len(distances_per_point)):
-        distances = distances_per_point[i]
-        measurements["expansions"].append((max(distances) - min(distances)) / min(distances))
-
-    # Measure radii of ellipse major and minor axis (and how it changes)
-    pp_ellipse4 = fitting.sample_ellipse(ellipse, 4)  # major, minor, major, minor
-    measurements["major radius"] = DeformInfo(unit="mm")
-    measurements["minor radius"] = DeformInfo(unit="mm")
-    for pp_ellipse4_def in deform_points_2d(pp_ellipse4, plane):
-       measurements["major radius"].append(float( pp_ellipse4_def[0].distance(pp_ellipse4_def[2]) ))
-       measurements["minor radius"].append(float( pp_ellipse4_def[1].distance(pp_ellipse4_def[3]) ))
+            measurements["volume"].append(submesh.volume())
 
     # Show measurements
     process_measurements(measurements)
@@ -542,6 +549,7 @@ def process_measurements(measurements):
     index = 0
     for key, val in measurements.items():
         val = val.summary if isinstance(val, DeformInfo) else val
+        val = "{:0.4g}".format(val) if isinstance(val, float) else val
         labelpool[index].text = key + ": " + str(val)
         index += 1
     # Clean remaining labels
@@ -586,6 +594,5 @@ slider_ref.eventSliderChanged.Bind(on_sliding_done)
 slider_ves.eventSliderChanged.Bind(on_sliding_done)
 button_go.eventMouseDown.Bind(on_button_press)
 
-#todo: measure (change of) curvature of centerline
 #todo: measure (change of) curvature of stent rings
-#todo: visualize mesh with colors, each vertice representing axis change from COM/centerline
+#todo: visualize mesh with motion and use colors to represent radius change

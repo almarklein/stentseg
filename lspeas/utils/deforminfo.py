@@ -1,48 +1,52 @@
 
-class DeformInfo:
+class DeformInfo(list):
     """ Little class that enables storing a collection of numbers and show
     aggregates of it.
     """
-    
-    def __init__(self, *values, unit=""):
-        self.values = [float(v) for v in values]
+
+    def __init__(self, values=None, unit=""):
         self.unit = unit
-    
+        for v in values or []:
+            self.append(v)
+
     def __repr__(self):
-        stringvalues = ["{:.3g}".format(v) for v in self.values]
-        return "<Deforminfo: {}>".format(", ".join(stringvalues))
-    
+        r = super().__repr__()
+        return "<Deforminfo {} {}>".format(r, self.unit)
+
     def append(self, value):
-        self.values.append(float(value))
-    
+        super().append(float(value))
+
     @property
     def min(self):
-        return min(self.values)
-    
+        return min(self)
+
     @property
     def max(self):
-        return max(self.values)
-    
+        return max(self)
+
     @property
     def mean(self):
-        return sum(self.values) / len(self.values)
-    
+        return sum(self) / len(self)
+
     @property
     def percent(self):
         return 100 * (self.max - self.min) / self.min
-    
+
     @property
     def summary(self):
-        if self.min < 100:
-            s = "{:0.2f} - {:0.2f}".format(self.min, self.max)
+        if self.min < 1000:
+            s = "{:0.4g} - {:0.4g}".format(self.min, self.max)
         else:
             s = "{:0.0f} - {:0.0f}".format(self.min, self.max)
         if self.unit:
-            s += "{} ({:0.1f}%)".format(self.unit, self.percent)
+            s += " " + self.unit
+        if self.min > 0:
+            s += " ({:0.1f}%)".format(self.percent)
+
         return s
 
 
 if __name__ == "__main__":
-    
-    x = DeformInfo(3, 4.123, 5, 6)
+
+    x = DeformInfo(3, 4.123, 5, 6, unit="cm")
     print(x)

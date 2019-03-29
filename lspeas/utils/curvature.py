@@ -8,7 +8,8 @@ import numpy as np
 def measure_curvature(pp, deforms):
     """ Take curvature measurements. With 10 phases:
     * mean curvature per phase (list of 10 values)
-    * max curvature per phase (list of 10 (position, max-value) tuples)
+    * max curvature per phase (list of 10 values)
+    * max_curvature locations list of 10 positions)
     * tuple (position, max-value) for the point with the most curvature change.
     """
     pp = np.asarray(pp)
@@ -30,9 +31,11 @@ def measure_curvature(pp, deforms):
 
     # Max curvature per phase and position (1 tuple per phase)
     max_per_phase = []
+    max_per_phase_loc = []
     for curvatures in curvatures_per_phase:
         index = np.argmax(curvatures)
-        max_per_phase.append((length_along_path(pp, index), float(curvatures[index])))
+        max_per_phase.append((float(curvatures[index])))
+        max_per_phase_loc.append(length_along_path(pp, index))
 
     # Max change (index, max-value)
     max_index, max_change, max_value = 0, 0, 0
@@ -41,8 +44,9 @@ def measure_curvature(pp, deforms):
         change = max(curvature_per_phase) / min(curvature_per_phase)
         if change > max_change:
             max_index, max_change, max_value = index, change, max(curvature_per_phase)
+    max_change = length_along_path(pp, max_index), max_value
 
-    return mean_per_phase, max_per_phase, (length_along_path(pp, max_index), max_value)
+    return mean_per_phase, max_per_phase, max_per_phase_loc, max_change
 
 
 def length_along_path(pp, index):
