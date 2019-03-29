@@ -19,6 +19,7 @@ from stentseg.utils import PointSet, fitting
 
 from lspeas.utils.vis import showModelsStatic
 from lspeas.utils.deforminfo import DeformInfo
+from lspeas.utils.curvature import measure_curvature
 from lspeas.utils import meshlib
 
 assert openpyxl.__version__ < "2.4", "Do pip install openpyxl==2.3.5"
@@ -429,6 +430,12 @@ def take_measurements(measure_volume_change):
         vesselVisMesh2.SetNormals(None)
         process_measurements(measurements)
         return
+
+    # Measure centerline curvature
+    curvature_mean, curvature_max, curvature_max_change = measure_curvature(centerline, deforms)
+    measurements["curvature mean"] = curvature_mean
+    measurements["curvature max"] = curvature_mean
+    measurements["curvature max change"] = curvature_max_change
 
     # Get ellipse and its center point
     ellipse = fitting.fit_ellipse(pp2)
