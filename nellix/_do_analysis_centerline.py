@@ -23,7 +23,7 @@ class _Do_Analysis_Centerline:
     """ Analyze motion of dynamic centerline models
     Functions for chimneys/branches and main stents
     """
-    def __init__(self,ptcode,ctcode,basedir,showVol='MIP',clim=(0,2500),**kwargs):
+    def __init__(self,ptcode,ctcode,basedir,showVol='MIP',clim=(0,2500), color='b', mw=5, **kwargs):
         """
         Init motion analysis on centerlines 
         """
@@ -46,21 +46,21 @@ class _Do_Analysis_Centerline:
         f = vv.figure(1); vv.clf()
         f.position = 0.00, 22.00,  1920.00, 1018.00
         self.a = vv.gca()
-        self.a.axis.axisColor = 1,1,1
+        self.a.axis.axisColor = 0,0,0#1,1,1
         self.a.axis.visible = False
-        self.a.bgcolor = 0,0,0
+        self.a.bgcolor = 1,1,1#0,0,0
         self.a.daspect = 1, 1, -1
         t = show_ctvolume(vol, showVol=showVol, clim=clim, removeStent=False, 
-                        climEditor=True, isoTh=300, **kwargs)
+                        climEditor=True, isoTh=225, **kwargs)
         self.label = pick3d(self.a, vol)
         vv.xlabel('x (mm)');vv.ylabel('y (mm)');vv.zlabel('z (mm)')
         for key in self.s:
             if key.startswith('model'):
-                self.s[key].Draw(mc='b', mw = 5, lc='b', alpha = 0.5)
+                self.s[key].Draw(mc=color, mw = mw, lc=color, alpha = 0.5)
         if not self.s_vessel is None:
             for key in self.s_vessel:
                 if key.startswith('model'):
-                    self.s_vessel[key].Draw(mc='b', mw = 5, lc='b', alpha = 0.5)
+                    self.s_vessel[key].Draw(mc=color, mw = mw, lc=color, alpha = 0.5)
         vv.title('Model for ChEvas %s  -  %s' % (ptcode[7:], 'follow-up')) # ctcode not correct
         
         f.eventKeyDown.Bind(lambda event: _utils_GUI.RotateView(event, [self.a], axishandling=False) )
@@ -398,6 +398,10 @@ class _Do_Analysis_Centerline:
         ppNelR = self.s['ppCenterlineNelR']
         ppNelL = self.s['ppCenterlineNelL']
         ppNel, key2 = self.get_nellix_closest_to_chimney(ppCh, ppNelR, ppNelL)
+        
+        # if 'LRA' in key: # for visualization of both Nellix stents case 02 for figure methods
+        #     ppNel, key2 = ppNelL, 'NelL'
+        
         # Get nellix model
         modelNel = self.s['model'+key2]
         
