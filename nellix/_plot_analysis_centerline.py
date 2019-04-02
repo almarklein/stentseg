@@ -66,6 +66,7 @@ class ExcelAnalysisNellix():
         self.angleMax = []
         self.locationOnChimney = [] # location on chimney as percentage distance from prox / length chimney
         self.locationChange = [] # location change of peak angle 
+        self.lengthchimneys = []
         
         # read workbooks
         for patient in patients:
@@ -87,8 +88,9 @@ class ExcelAnalysisNellix():
                                 angchange = readMaxChange(sheet, row=row1, colStart=1)
                                 self.angleChange.append(angchange)
                                 # where was point of max deflection on ccl?
-                                pointlocation = readLocationPointDeflection(sheet, row=9, colStart=1)
+                                pointlocation, distfromproxendchimney, lengthchimney = readLocationPointDeflection(sheet, row=9, colStart=1)
                                 self.locationOnChimney.append(pointlocation) # percentage of chimney length
+                                self.lengthchimneys.append(lengthchimney)
                                 break # next a
                     elif angletype == 'peakangle':
                         row1 = 16
@@ -102,8 +104,13 @@ class ExcelAnalysisNellix():
                                 angmin, angmax = readMinMax(sheet, row=row1+1, colStart=1, correctorientation=True)
                                 self.angleMin.append(angmin)
                                 self.angleMax.append(angmax)
+                                # how did location of peakangle change during cycle?
                                 locationchange = readLocationChange(sheet, row=19, colStart=1, nphases=10)
                                 self.locationChange.append(locationchange)
+                                # where was point of peak angle at mid cycle?
+                                pointlocation, distfromproxendchimney, lengthchimney = readLocationPointDeflection(sheet, row=24, colStart=1)
+                                self.locationOnChimney.append(pointlocation) # percentage of chimney length
+                                self.lengthchimneys.append(lengthchimney)
                                 break # next a
                             
             elif analysis == 'ChimNel': # chimney-to-Nellix angle
@@ -149,14 +156,19 @@ class ExcelAnalysisNellix():
         # location and min max peak angle
         if analysis == 'Chim':
             print('')
-            if angletype == 'pointdeflection':
-                print('Average location on chimney as percentage: {:.1f} ± {:.1f} ({:.1f}-{:.1f})'.format(
-                                                    np.mean(self.locationOnChimney),
-                                                    np.std(self.locationOnChimney),
-                                                    np.min(self.locationOnChimney),
-                                                    np.max(self.locationOnChimney)
-                                                    ))
-            elif angletype == 'peakangle':
+            print('Average location on chimney as percentage: {:.1f} ± {:.1f} ({:.1f}-{:.1f})'.format(
+                                                np.mean(self.locationOnChimney),
+                                                np.std(self.locationOnChimney),
+                                                np.min(self.locationOnChimney),
+                                                np.max(self.locationOnChimney)
+                                                )) # for peakangle this is at mid cardiac cycle
+            print('Average length of chimney stents (mm): {:.1f} ± {:.1f} ({:.1f}-{:.1f})'.format(
+                                                np.mean(self.lengthchimneys),
+                                                np.std(self.lengthchimneys),
+                                                np.min(self.lengthchimneys),
+                                                np.max(self.lengthchimneys)
+                                                ))
+            if angletype == 'peakangle':
                 print('Average location change of peak angle: {:.1f} ± {:.1f} ({:.1f}-{:.1f})'.format(
                                                     np.mean(self.locationChange),
                                                     np.std(self.locationChange),
@@ -658,14 +670,14 @@ class ExcelAnalysisNellix():
             'plot_angles_chimney{}.png'.format(analysis)), papertype='a0', dpi=600)
         
 
-def readLocationPointDeflection(sheet, row=9, colStart=1):
+def readLocationPointDeflection(sheet, row=9, rowlength=10, colStart=1):
     """ Read location of point with max deflection, obtain as percentage of chimney length
     """
     distfromproxendchimney = sheet.rows[row-1][colStart].value
-    lengthchimney = sheet.rows[row][colStart].value
+    lengthchimney = sheet.rows[rowlength-1][colStart].value
     pointlocation = 100*distfromproxendchimney/lengthchimney
     
-    return pointlocation
+    return pointlocation, distfromproxendchimney, lengthchimney
     
 def readLocationChange(sheet, row=19, colStart=1, nphases=10):
     """ Read locations of peak angle and obtain change in location
@@ -896,8 +908,8 @@ if __name__ == '__main__':
     
     foo = ExcelAnalysisNellix()
     
-    # patients=['chevas_09', 'chevas_09_thin']
     patients = None # None = all in self.patients
+    patients=['chevas_09', 'chevas_09_thin']
     
     # Plots
     # ==========================================
@@ -926,9 +938,10 @@ if __name__ == '__main__':
     
     # Get statistics
     # ==========================================
-    # Get displacement of centerline segment prox or dist 
-    # foo.get_segment_displacement(patients=patients, analysis=['NelL', 'NelR'], location='prox')
-    # foo.get_segment_displacement(patients=patients, analysis=['LRA','RRA', 'SMA'], location='prox')
+    # Get displacement of centerline segment prox or dist
+     
+    foo.get_segment_displacement(patients=patients, analysis=['NelL', 'NelR'], location='prox')
+    foo.get_segment_displacement(patients=patients, analysis=['LRA','RRA', 'SMA'], location='prox')
     # print(len(foo.segmentDisplacementX)) # verify number of chimneys/nellix stents
     # outcomeDispl = foo.segmentDisplacement3d
     # foo.get_segment_displacement(patients=patients, analysis=['LRA','RRA','SMA'], location='prox')
@@ -936,11 +949,13 @@ if __name__ == '__main__':
     #     t, p = independent_samples_ttest(foo.segmentDisplacement3d, outcomeDispl)
     
     # Get displacement of centerline segment vessel distal to stent (location is always prox)
+    
     # foo.get_segment_displacement(patients=patients, analysis=['vLRA'], location='prox')
     # foo.get_segment_displacement(patients=patients, analysis=['vLRA','vRRA', 'vSMA'], location='prox')
     # print(len(foo.segmentDisplacementX)) # verify number of chimneys/nellix stents
     
     # Get distance change between Nellix stents or between Nellix and chimney ends
+    
     # foo.get_distance_change(patients=None, analysis='ChimNel', chimneys=['LRA', 'RRA', 'SMA'])
     # foo.get_distance_change(patients=None, analysis='NelNel')
     # print(len(foo.distanceChange)) # verify number of chimneys/nellix stents
@@ -949,7 +964,8 @@ if __name__ == '__main__':
     #     t, p = independent_samples_ttest(foo.distanceChange, outcomeNel)
     
     # Get chimney angle change
-    # foo.get_angle_change(patients=None, analysis='Chim', chimneys=['SMA'], angletype = 'peakangle') # pointdeflection or peakangle 
+    
+    # foo.get_angle_change(patients=None, analysis='Chim', chimneys=['LRA', 'RRA','SMA'], angletype = 'peakangle') # pointdeflection or peakangle 
     # print(len(foo.angleChange))
     # outcomeChim = foo.angleChange
     # outcomeChimMin = foo.angleMin
@@ -963,6 +979,7 @@ if __name__ == '__main__':
     #     t, p = independent_samples_ttest(foo.angleMax, outcomeChimMax)
     
     # Get chimney-Nellix vector angle change
+    
     # foo.get_angle_change(patients=None, analysis='ChimNel', chimneys=['RRA'])
     # print(len(foo.angleChange)) # verify number of chimneys
     # outcomeChimNel = foo.angleChange
@@ -977,6 +994,7 @@ if __name__ == '__main__':
     #     t, p = independent_samples_ttest(foo.angleMax, outcomeChimNelMax)
     
     # Get chimney-vessel vector angle change
+    
     # foo.get_angle_change(patients=None, analysis='ChimVessel', chimneys=['LRA', 'RRA'])
     # print(len(foo.angleChange)) # verify number of chimneys
     # outcomeChimVessel = foo.angleChange
@@ -991,11 +1009,50 @@ if __name__ == '__main__':
     #     t, p = independent_samples_ttest(foo.angleMax, outcomeChimVesselMax)
     
     # Compare chimney-Nellix vector angle change with end-stent angle change
-    foo.get_angle_change(patients=None, analysis='ChimNel', chimneys=['LRA','RRA','SMA'])
-    print(len(foo.angleChange)) # verify number of chimneys
-    outcomeChimNel = foo.angleChange
-    foo.get_angle_change(patients=None, analysis='ChimVessel', chimneys=['LRA', 'RRA', 'SMA'])
-    print(len(foo.angleChange)) # verify number of chimneys
-    if True:
-        t, p = independent_samples_ttest(foo.angleChange, outcomeChimNel)
+    
+    # foo.get_angle_change(patients=None, analysis='ChimNel', chimneys=['LRA','RRA','SMA'])
+    # print(len(foo.angleChange)) # verify number of chimneys
+    # outcomeChimNel = foo.angleChange
+    # foo.get_angle_change(patients=None, analysis='ChimVessel', chimneys=['LRA', 'RRA', 'SMA'])
+    # print(len(foo.angleChange)) # verify number of chimneys
+    # if True:
+    #     t, p = independent_samples_ttest(foo.angleChange, outcomeChimNel)
+    
     # ==========================================
+    
+    
+    # Compare length of chimney stents between single, double and triple for angle
+    
+    # foo.get_angle_change(patients=None, analysis='Chim', chimneys=['LRA', 'RRA','SMA'], angletype = 'peakangle')
+    # lensingles = [foo.lengthchimneys[i] for i in [0,3,4,5,9] ]
+    # lendoubles = [foo.lengthchimneys[i] for i in [1,2,10,11,12,13] ]
+    # lentriples = [foo.lengthchimneys[i] for i in [6,7,8,14,15,16,17,18,19] ]
+    # lendoublestriples = [foo.lengthchimneys[i] for i in [1,2,10,11,12,13,6,7,8,14,15,16,17,18,19] ]
+    # 
+    # print('Average length single chimneys: {:.1f} ± {:.1f} ({:.1f}-{:.1f})'.format(
+    #                                     np.mean(lensingles),
+    #                                     np.std(lensingles),
+    #                                     np.min(lensingles),
+    #                                     np.max(lensingles)
+    #                                     ))
+    # print('Average length double chimneys: {:.1f} ± {:.1f} ({:.1f}-{:.1f})'.format(
+    #                                     np.mean(lendoubles),
+    #                                     np.std(lendoubles),
+    #                                     np.min(lendoubles),
+    #                                     np.max(lendoubles)
+    #                                     ))
+    # print('Average length triple chimneys: {:.1f} ± {:.1f} ({:.1f}-{:.1f})'.format(
+    #                                     np.mean(lentriples),
+    #                                     np.std(lentriples),
+    #                                     np.min(lentriples),
+    #                                     np.max(lentriples)
+    #                                     ))
+    # print('Average length double and triple chimneys: {:.1f} ± {:.1f} ({:.1f}-{:.1f})'.format(
+    #                                     np.mean(lendoublestriples),
+    #                                     np.std(lendoublestriples),
+    #                                     np.min(lendoublestriples),
+    #                                     np.max(lendoublestriples)
+    #                                     ))
+    # if True:
+    #     t, p = independent_samples_ttest(lensingles, lendoublestriples)
+    # 
