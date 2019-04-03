@@ -76,7 +76,7 @@ for ptcode in ptcodes:
             for i in range(N):
                 phase = i*10
                 s2['meta%i'%phase] = s['meta%i'%phase]
-            s2.origin = s.origin #todo: is used in loadvol when deforms are loaded. Correct or deform origin?
+            s2.origin = s.origin #todo: s.origin is used in loadvol when deforms are loaded. correct or use deform origin?
             s2.stenttype = s.stenttype
             s2.croprange = s.croprange
             # Obtain deform fields
@@ -85,7 +85,7 @@ for ptcode in ptcodes:
                 fields = [field for field in reg.get_deform(i).as_backward()]
                 s2['deform%i'%phase] = fields
             s2.sampling = s2.deform0[0].sampling  # Sampling of deform is different!
-            #s2.origin = s2.deform0[0].origin  # But origin is zero
+            #s2.origin = s2.deform0[0].origin  # But origin is zero 
             s2.originDeforms = s2.deform0[0].origin  # But origin is zero
             s2.params = reg.params
             
