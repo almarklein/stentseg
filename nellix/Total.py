@@ -7,9 +7,9 @@ import os
 from stentseg.utils.datahandling import select_dir, loadmodel, loadvol
 
 
-ptcode = 'chevas_11'
+ptcode = 'chevas_09_thin'
 ctcode = '12months' # is not the true follow-up time but use for all
-# dicom_basedir = r'E:\Nellix_chevas\CT_SSDF\no 11\STD00001\10phases'
+# dicom_basedir = r'E:\Nellix_chevas\CT_SSDF\no 9\STD00001\10phases_thin'
 # print(dicom_basedir)
 basedir = select_dir(r'E:\Nellix_chevas\CT_SSDF\SSDF_automated')
 
@@ -88,21 +88,22 @@ if False:
         from stentseg.utils.picker import pick3d
         
         ptcodes = [
-                'chevas_01',
-                'chevas_02',
-                'chevas_03',
-                'chevas_04',
-                'chevas_05',
-                'chevas_06',
-                'chevas_07',
-                'chevas_08',
-                'chevas_09',
-                'chevas_10',
-                'chevas_11',
+                # 'chevas_01',
+                # 'chevas_02',
+                # 'chevas_03',
+                # 'chevas_04',
+                # 'chevas_05',
+                # 'chevas_06',
+                # 'chevas_07',
+                # 'chevas_08',
+                # 'chevas_09',
+                # 'chevas_10',
+                # 'chevas_11',
                 'chevas_09_thin'
                                 ]
         ctcode = '12months'
-        basedir = select_dir(r'E:\Nellix_chevas\CT_SSDF\SSDF_automated')
+        basedir = select_dir(r'E:\Nellix_chevas\CT_SSDF\SSDF_automated',
+                r'D:\Nellix_chevas_BACKUP\CT_SSDF\SSDF_automated')
         
         for ptcode in ptcodes:
                 from nellix._do_analysis_centerline import _Do_Analysis_Centerline
@@ -112,13 +113,13 @@ if False:
                 # chimney-vessel transition angle
                 AC.chimneys_vessel_angle_change(armlength=10)
                 # motion stents
-                AC.motion_centerlines_segments(lenSegment=10) # stents
+                # AC.motion_centerlines_segments(lenSegment=10) # stents
                 # motion vessel after stent
-                AC.motion_centerlines_segments(lenSegment=10, type='vessels')
+                # AC.motion_centerlines_segments(lenSegment=10, type='vessels')
                 # distances nel-nel and chim-nel
-                AC.distance_change_nelnel_nelCh()
+                # AC.distance_change_nelnel_nelCh()
                 # save to excel
-                AC.storeOutputToExcel()
+                # AC.storeOutputToExcel()
 
 ## [OLD CODE] MOTION ANALYSIS CENTERLINES - CLICK NODES
 if False:
