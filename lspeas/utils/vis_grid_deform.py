@@ -1,11 +1,14 @@
 from stentseg.utils.datahandling import select_dir
+import numpy as np
+import os
+import visvis as vv
 
-def imagePooper(reg, fname='test', checkSize=25):
+def imagePooper(reg, fname='test', checkSize=25, gridsize=10, phase1=0, phase2=1):
     """
     """
     ims = reg._ims.copy()
-    im1, im2 = ims[0], ims[1]
-    im3 = reg.get_final_deform(0,1).apply_deformation(im1) # transform from im1 to im2
+    im1, im2 = ims[phase1], ims[phase2]
+    im3 = reg.get_final_deform(phase1,phase2).apply_deformation(im1) # transform from im1 to im2
     # Correct images  
     im1 -= im1.min()        
     im1 /= im1.max()
@@ -41,12 +44,12 @@ def imagePooper(reg, fname='test', checkSize=25):
         y += checkSize
     # Show grid image
     grid1 = np.zeros(im1.shape, dtype=np.float32)
-    size = 10
+    size = gridsize
     grid1[:,::size] = 1
     grid1[:,1::size] = 1
     grid1[::size,:] = 1
     grid1[1::size,:] = 1
-    grid2 = reg.get_final_deform().apply_deformation(grid1)
+    grid2 = reg.get_final_deform(phase1,phase2).apply_deformation(grid1)
     # Save
     # path = 'C:/almar/report/_paper 2011 SPIE MI/images/'
     path = select_dir(r'D:\Profiles\koenradesma\Desktop',

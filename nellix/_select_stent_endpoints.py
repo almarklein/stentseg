@@ -5,7 +5,7 @@ Created on 28 jun. 2016
 '''
 
 class _Select_Stent_Endpoints:
-    def __init__(self,ptcode,ctcode,basedir):
+    def __init__(self,ptcode,ctcode,basedir, clim=None):
         """ select start and endpoints to be used for centerline generation
         """
         from stentseg.apps._3DPointSelector import select3dpoints
@@ -36,7 +36,7 @@ class _Select_Stent_Endpoints:
         # nr_of_stents = int(m.combo.currentText())
         
         # Endpoint selection
-        points = select3dpoints(s.vol,nr_of_stents = 6)
+        points = select3dpoints(s.vol,nr_of_stents = 6, clim=clim)
         self.StartPoints = points[0]
         self.EndPoints = points[1]
         

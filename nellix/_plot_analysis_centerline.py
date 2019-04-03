@@ -66,6 +66,7 @@ class ExcelAnalysisNellix():
         self.angleMax = []
         self.locationOnChimney = [] # location on chimney as percentage distance from prox / length chimney
         self.locationChange = [] # location change of peak angle 
+        self.lengthchimneys = []
         
         # read workbooks
         for patient in patients:
@@ -87,8 +88,9 @@ class ExcelAnalysisNellix():
                                 angchange = readMaxChange(sheet, row=row1, colStart=1)
                                 self.angleChange.append(angchange)
                                 # where was point of max deflection on ccl?
-                                pointlocation = readLocationPointDeflection(sheet, row=9, colStart=1)
+                                pointlocation, distfromproxendchimney, lengthchimney = readLocationPointDeflection(sheet, row=9, colStart=1)
                                 self.locationOnChimney.append(pointlocation) # percentage of chimney length
+                                self.lengthchimneys.append(lengthchimney)
                                 break # next a
                     elif angletype == 'peakangle':
                         row1 = 16
@@ -99,11 +101,16 @@ class ExcelAnalysisNellix():
                                 # read change
                                 angchange = readMaxChange(sheet, row=row1, colStart=1)
                                 self.angleChange.append(angchange)
-                                angmin, angmax = readMinMax(sheet, row=row1+1, colStart=1)
+                                angmin, angmax = readMinMax(sheet, row=row1+1, colStart=1, correctorientation=True)
                                 self.angleMin.append(angmin)
                                 self.angleMax.append(angmax)
+                                # how did location of peakangle change during cycle?
                                 locationchange = readLocationChange(sheet, row=19, colStart=1, nphases=10)
                                 self.locationChange.append(locationchange)
+                                # where was point of peak angle at mid cycle?
+                                pointlocation, distfromproxendchimney, lengthchimney = readLocationPointDeflection(sheet, row=24, colStart=1)
+                                self.locationOnChimney.append(pointlocation) # percentage of chimney length
+                                self.lengthchimneys.append(lengthchimney)
                                 break # next a
                             
             elif analysis == 'ChimNel': # chimney-to-Nellix angle
@@ -149,14 +156,19 @@ class ExcelAnalysisNellix():
         # location and min max peak angle
         if analysis == 'Chim':
             print('')
-            if angletype == 'pointdeflection':
-                print('Average location on chimney as percentage: {:.1f} ± {:.1f} ({:.1f}-{:.1f})'.format(
-                                                    np.mean(self.locationOnChimney),
-                                                    np.std(self.locationOnChimney),
-                                                    np.min(self.locationOnChimney),
-                                                    np.max(self.locationOnChimney)
-                                                    ))
-            elif angletype == 'peakangle':
+            print('Average location on chimney as percentage: {:.1f} ± {:.1f} ({:.1f}-{:.1f})'.format(
+                                                np.mean(self.locationOnChimney),
+                                                np.std(self.locationOnChimney),
+                                                np.min(self.locationOnChimney),
+                                                np.max(self.locationOnChimney)
+                                                )) # for peakangle this is at mid cardiac cycle
+            print('Average length of chimney stents (mm): {:.1f} ± {:.1f} ({:.1f}-{:.1f})'.format(
+                                                np.mean(self.lengthchimneys),
+                                                np.std(self.lengthchimneys),
+                                                np.min(self.lengthchimneys),
+                                                np.max(self.lengthchimneys)
+                                                ))
+            if angletype == 'peakangle':
                 print('Average location change of peak angle: {:.1f} ± {:.1f} ({:.1f}-{:.1f})'.format(
                                                     np.mean(self.locationChange),
                                                     np.std(self.locationChange),
@@ -229,9 +241,12 @@ class ExcelAnalysisNellix():
                             break # next a
         
         # check normality
-        W, pValue, normality = normality_check(self.distanceChange, alpha=0.05, showhist=False)
-        print('DistanceChange distribution normal:{} (pValue of {:.3f})'.format(normality, pValue))
-        print('')
+        try:
+            W, pValue, normality = normality_check(self.distanceChange, alpha=0.05, showhist=False)
+            print('DistanceChange distribution normal:{} (pValue of {:.3f})'.format(normality, pValue))
+            print('')
+        except ValueError:
+            pass
         print('Average maximum distance change: {:.1f} ± {:.1f} ({:.1f}-{:.1f})'.format(
                                             np.mean(self.distanceChange),
                                             np.std(self.distanceChange),
@@ -242,7 +257,8 @@ class ExcelAnalysisNellix():
     def get_segment_displacement(self, patients=None, analysis=['NelL'],location='prox'):
         """ Read segment mean displacement in x,y,z direction from excels for all patients
         Location: prox or dist
-        Analysis:  [NelL,NelR] or [NelL] or [NelR] or [SMA] or [LRA] or [RRA] or ...
+        Analysis:  [NelL,NelR] or [NelL] or [NelR] or [SMA] or [LRA] or [RRA] or 
+        [vRRA] [vLRA] [vSMA] for vessel portion distal to stent
         """
         if patients == None:
             patients = self.patients
@@ -274,15 +290,18 @@ class ExcelAnalysisNellix():
                 self.segmentDisplacementZ.append(displZ)
         
         # check normality
-        W, pValue, normality = normality_check(self.segmentDisplacementX, alpha=0.05, showhist=False)
-        print('DisplacementX distribution normal:{} (pValue of {:.3f})'.format(normality, pValue))
-        W, pValue, normality = normality_check(self.segmentDisplacementY, alpha=0.05, showhist=False)
-        print('DisplacementY distribution normal:{} (pValue of {:.3f})'.format(normality, pValue))
-        W, pValue, normality = normality_check(self.segmentDisplacementZ, alpha=0.05, showhist=False)
-        print('DisplacementZ distribution normal:{} (pValue of {:.3f})'.format(normality, pValue))
-        W, pValue, normality = normality_check(self.segmentDisplacement3d, alpha=0.05, showhist=False)
-        print('Displacement3d distribution normal:{} (pValue of {:.3f})'.format(normality, pValue))
-        print('')
+        try: # does not work if less than 3 values
+            W, pValue, normality = normality_check(self.segmentDisplacementX, alpha=0.05, showhist=False)
+            print('DisplacementX distribution normal:{} (pValue of {:.3f})'.format(normality, pValue))
+            W, pValue, normality = normality_check(self.segmentDisplacementY, alpha=0.05, showhist=False)
+            print('DisplacementY distribution normal:{} (pValue of {:.3f})'.format(normality, pValue))
+            W, pValue, normality = normality_check(self.segmentDisplacementZ, alpha=0.05, showhist=False)
+            print('DisplacementZ distribution normal:{} (pValue of {:.3f})'.format(normality, pValue))
+            W, pValue, normality = normality_check(self.segmentDisplacement3d, alpha=0.05, showhist=False)
+            print('Displacement3d distribution normal:{} (pValue of {:.3f})'.format(normality, pValue))
+            print('')
+        except ValueError:
+            pass
         print('Average segment displacement in x: {:.1f} ± {:.1f} ({:.1f}-{:.1f})'.format(
                                             np.mean(self.segmentDisplacementX),
                                             np.std(self.segmentDisplacementX),
@@ -313,15 +332,15 @@ class ExcelAnalysisNellix():
                                             ))
         
     
-    def plot_displacement(self, patient='chevas_01', analysis=['NelLprox'], rows=[8,9], 
-                ylim=[-0.5, 0.5], ylimRel=[0,0.8], saveFig=False):
+    def plot_displacement(self, patients=None, analysis=['NelLprox'], rows=[8,9], 
+                ylim=[-0.5, 0.5], saveFig=False):
         """ Plot relative displacement with respect to position at avgreg and 
         all positions at each phase. 
         Rows is row as in excel sheet; analysis='NelRprox' or 'LRAprox' or 'LRAdist'
         """
         # init figure
-        self.f1 = plt.figure(figsize=(11.8, 5.8)) # 11.6, 5.8
-        xlabels = ['0', '10', '20', '30', '40', '50', '60', '70','80','90']
+        self.f1 = plt.figure(figsize=(11.8, 4.562)) # 11.6, 5.8
+        xlabels = ['0', '', '20', '', '40', '', '60', '','80','']
         xrange = range(1,1+len(xlabels)) # not start from x=0 to play with margin xlim
         xrange2 = np.asarray([1,2,3,4,5,6,7,8,9,10])
         xrange2 = xrange2 + 0.5
@@ -331,21 +350,36 @@ class ExcelAnalysisNellix():
         
         # init axis
         factor = 1
-        gs = gridspec.GridSpec(1, 2, width_ratios=[1, factor]) 
+        gs = gridspec.GridSpec(1, 3, width_ratios=[1, factor, factor]) 
         ax1 = plt.subplot(gs[0])
         plt.xticks(xrange, xlabels, fontsize = fontsize1)
         ax2 = plt.subplot(gs[1])
         plt.xticks(xrange, xlabels, fontsize = fontsize1)
+        ax3 = plt.subplot(gs[2])
+        plt.xticks(xrange, xlabels, fontsize = fontsize1)
         
-        ax1.set_ylabel('Relative position x/y/z (mm)', fontsize=fontsize2)
+        ax1.set_ylabel('Relative position (mm)', fontsize=fontsize2)
         ax1.set_ylim(ylim)
         ax1.set_xlim([0.8, len(xlabels)+0.2]) # xlim margins 0.2
         ax1.set_xlabel('Phase in cardiac cycle', fontsize=fontsize2)
+        ax1.set_title('x',fontsize=fontsize2+1)
         
-        ax2.set_ylabel('Displacement 3D (mm)', fontsize=fontsize2) # relative pos wrt avgreg
-        ax2.set_ylim(ylimRel)
-        ax2.set_xlim([0.8, len(xlabels)*factor+0.7]) # xlim margins 0.2
+        # ax2.set_ylabel('Displacement 3D (mm)', fontsize=fontsize2) # relative pos wrt avgreg
+        # ax2.set_ylim(ylimRel)
+        # ax2.set_xlim([0.8, len(xlabels)*factor+0.7]) # xlim margins 0.2
+        # ax2.set_xlabel('Phase in cardiac cycle', fontsize=fontsize2)
+        
+        # ax2.set_ylabel('Relative position x/y/z (mm)', fontsize=fontsize2)
+        ax2.set_ylim(ylim)
+        ax2.set_xlim([0.8, len(xlabels)+0.2]) # xlim margins 0.2
         ax2.set_xlabel('Phase in cardiac cycle', fontsize=fontsize2)
+        ax2.set_title('y',fontsize=fontsize2+1)
+        
+        # ax3.set_ylabel('Relative position x/y/z (mm)', fontsize=fontsize2)
+        ax3.set_ylim(ylim)
+        ax3.set_xlim([0.8, len(xlabels)+0.2]) # xlim margins 0.2
+        ax3.set_xlabel('Phase in cardiac cycle', fontsize=fontsize2)
+        ax3.set_title('z',fontsize=fontsize2+1)
         
         # plot init
         lw = 1
@@ -353,52 +387,65 @@ class ExcelAnalysisNellix():
         # marker = 'o'
         alpha = 0.9
         
-        colors = create_iter_colors(type=2)
-        markers = create_iter_markers(type=3)
-        lstyles = create_iter_ls(type=2)
+        lstyles = create_iter_ls(type=3)
         
-        # read workbook
-        workbook_stent = os.path.join(self.exceldir,patient, self.workbook_analysis+patient[7:]+'.xlsx')
-        # read sheet
-        wb = openpyxl.load_workbook(workbook_stent, data_only=True)
-        sheetnames = wb.get_sheet_names()
-        for a in analysis:
-            for sheetname in sheetnames:
-                i = 0
-                if sheetname.startswith('Motion_{}'.format(a) ):
-                    sheet = wb.get_sheet_by_name(sheetname)  
-                    shortname = sheetname[7:] # e.g. 'RRAprox'
-                    
-                    pavg, pphases, pdisplacement = readPositionPhases(sheet,rows=rows,colStart=1)
-                    self.relPosAll.append(pdisplacement)
-                    
-                    # get vector magnitudes between phases
-                    vec_between_phases = []
-                    for i, p in enumerate(pphases[:-1]):
-                        vec_between_phases.append(p-pphases[i+1])
-                    # add vector between last and first phase
-                    vec_last_to_first = pphases[-1] - pphases[0]
-                    vec_between_phases.append(vec_last_to_first)
-                    # to array for magnitude
-                    vec_between_phases = np.asarray(vec_between_phases)
-                    vec_between_phases_magn = np.linalg.norm(vec_between_phases, axis=1) # vector magnitude for each phase
-                    
-                    # plot
-                    for i, text in enumerate(['x', 'y', 'z', '3D']): # x,y,z and magnitude
-                        color1 = next(colors)
-                        marker = next(markers)
-                        ls = next(lstyles)
-                        if i == 3: # plot once the magnitudes
-                            ax2.plot(xrange2, vec_between_phases_magn, ls=ls, lw=lw, marker=marker, color=color1, 
-                                    label='%s:%s_%s' % (patient[7:],shortname,text), alpha=alpha)
-                            break
-                        # for x y and z new color
-                        ax1.plot(xrange, pdisplacement[:,i], ls=ls, lw=lw, marker=marker, color=color1, 
-                                label='%s:%s_%s' % (patient[7:],shortname,text), alpha=alpha)
+        if patients == None:
+            patients = self.patients
             
-        ax1.legend(loc='upper right', fontsize=10, numpoints=2, title='Analysis:')
-        ax2.legend(loc='upper right', fontsize=10, numpoints=2, title='Analysis:')
-        _initaxis([ax1,ax2])
+        for patient in patients:
+            # color = color_per_patient(patient)
+            ls = next(lstyles)
+            # read workbook
+            workbook_stent = os.path.join(self.exceldir,patient, self.workbook_analysis+patient[7:]+'.xlsx')
+            # read sheet
+            wb = openpyxl.load_workbook(workbook_stent, data_only=True)
+            sheetnames = wb.get_sheet_names()
+            for a in analysis:
+                sheetname = 'Motion_'+a
+                # see if patient has this stent analysis
+                try:
+                    sheet = wb.get_sheet_by_name(sheetname)
+                except KeyError:
+                    continue # next analysis
+            
+                shortname = sheetname[7:] # e.g. 'RRAprox'
+                
+                pavg, pphases, pdisplacement = readPositionPhases(sheet,rows=rows,colStart=1)
+                self.relPosAll.append(pdisplacement)
+                
+                # # get vector magnitudes between phases
+                # vec_between_phases = []
+                # for i, p in enumerate(pphases[:-1]):
+                #     vec_between_phases.append(p-pphases[i+1])
+                # # add vector between last and first phase
+                # vec_last_to_first = pphases[-1] - pphases[0]
+                # vec_between_phases.append(vec_last_to_first)
+                # # to array for magnitude
+                # vec_between_phases = np.asarray(vec_between_phases)
+                # vec_between_phases_magn = np.linalg.norm(vec_between_phases, axis=1) # vector magnitude for each phase
+                
+                marker = marker_per_chimney(shortname)
+                color = color_per_stent(shortname)
+                
+                # plot legend
+                if patient == 'chevas_09':
+                    ptlegend = '01**'+':'+shortname # reintervention of pt 1
+                elif patient == 'chevas_10':
+                    ptlegend = '09*'+': '+shortname
+                elif patient == 'chevas_11':
+                    ptlegend = '07**'+':'+shortname # reintervention of pt 7
+                elif patient == 'chevas_09_thin':
+                    ptlegend = '01**-thin'+':'+shortname # reintervention of pt 1
+                else:
+                    ptlegend = patient[7:]+':  '+shortname
+                
+                # plot
+                for i, ax in enumerate([ax1, ax2, ax3]): # for x,y,z
+                    ax.plot(xrange, pdisplacement[:,i], ls=ls, lw=lw, marker=marker, color=color, 
+                            label=ptlegend, alpha=alpha)
+            
+        ax3.legend(loc='upper right', fontsize=10, numpoints=2, title='Legend:')
+        _initaxis([ax1,ax2,ax3])
     
         if saveFig:
             savename = 'plot_displacement_{}_{}.png'.format(patient[7:],analysis)
@@ -408,7 +455,7 @@ class ExcelAnalysisNellix():
             savename = savename.replace(', ', '_')
             plt.savefig(os.path.join(self.dirsaveIm, savename), papertype='a0', dpi=600) 
         
-    def plot_distances_between_points(self, patients=None, analysis='NelNel', rows=[9,5], 
+    def plot_distances_between_points(self, patients=None, analysis=['NelNel'], rows=[9,5], 
                 ylim=[0, 32], ylimRel=[-0.5,0.5], saveFig=False):
         """
         Plot relative distance change with respect to distance at avgreg and 
@@ -460,44 +507,48 @@ class ExcelAnalysisNellix():
             # read sheet
             wb = openpyxl.load_workbook(workbook_stent, data_only=True)
             sheetnames = wb.get_sheet_names()
-            for sheetname in sheetnames:
-                sheet = None
-                if analysis == 'ChimNel':
-                    if (sheetname.startswith('Dist_RRA') or
-                            sheetname.startswith('Dist_LRA') or
-                            sheetname.startswith('Dist_SMA')):
-                        sheet = wb.get_sheet_by_name(sheetname)  
-                        shortname = 'Nel-'+sheetname[5:8] # e.g. 'RRA_Nel' to Nel-RRA
-                elif analysis == 'NelNel':
-                    if sheetname.startswith('Dist_Nel'):
-                        sheet = wb.get_sheet_by_name(sheetname)
-                        shortname = 'Nel-Nel'
-                if not sheet is None:        
-                    dists, distsRel = readDistancesBetweenPoints(sheet,rows=rows,colStart=1)
-                    self.distsAll.append(dists)
-                    self.distsRelAll.append(distsRel)
-                    # color1 = next(colors)
-                    color1 = color_per_patient(patient)
-                    # marker = next(markers)
-                    marker = marker_per_chimney(shortname)
-                    ls = next(lstyles)
-                    # plot
-                    if patient == 'chevas_09':
-                        ptlegend = '01**'+':'+shortname # reintervention of pt 1
-                        ls = '--'
-                    elif patient == 'chevas_10':
-                        ptlegend = '09*'+': '+shortname
-                        ls = '--'
-                    elif patient == 'chevas_11':
-                        ptlegend = '07**'+':'+shortname # reintervention of pt 7
-                        ls = '--'
-                    else:
-                        ptlegend = patient[7:]+':  '+shortname
-                    
-                    ax1.plot(xrange, dists, ls=ls, lw=lw, marker=marker, color=color1, 
-                            label=ptlegend, alpha=alpha)
-                    ax2.plot(xrange, distsRel, ls=ls, lw=lw, marker=marker, color=color1, 
-                            label=ptlegend, alpha=alpha)
+            for a in analysis:
+                for sheetname in sheetnames:
+                    sheet = None
+                    if a == 'ChimNel':
+                        if (sheetname.startswith('Dist_RRA') or
+                                sheetname.startswith('Dist_LRA') or
+                                sheetname.startswith('Dist_SMA')):
+                            sheet = wb.get_sheet_by_name(sheetname)  
+                            shortname = 'Nel-'+sheetname[5:8] # e.g. 'RRA_Nel' to Nel-RRA
+                    elif a == 'NelNel':
+                        if sheetname.startswith('Dist_Nel'):
+                            sheet = wb.get_sheet_by_name(sheetname)
+                            shortname = 'Nel-Nel'
+                    if not sheet is None:        
+                        dists, distsRel = readDistancesBetweenPoints(sheet,rows=rows,colStart=1)
+                        self.distsAll.append(dists)
+                        self.distsRelAll.append(distsRel)
+                        
+                        color1 = color_per_patient(patient)
+                        # color1 = color_per_stent(shortname) # for 09 vs 09 thin
+                        marker = marker_per_chimney(shortname)
+                        ls = next(lstyles)
+                        # plot
+                        if patient == 'chevas_09':
+                            ptlegend = '01**'+':'+shortname # reintervention of pt 1
+                            ls = '--'
+                        elif patient == 'chevas_10':
+                            ptlegend = '09*'+': '+shortname
+                            ls = '--'
+                        elif patient == 'chevas_11':
+                            ptlegend = '07**'+':'+shortname # reintervention of pt 7
+                            ls = '--'
+                        elif patient == 'chevas_09_thin':
+                            ptlegend = '01**-thin'+':'+shortname # reintervention of pt 1
+                            ls = '--'
+                        else:
+                            ptlegend = patient[7:]+':  '+shortname
+                        
+                        ax1.plot(xrange, dists, ls=ls, lw=lw, marker=marker, color=color1, 
+                                label=ptlegend, alpha=alpha)
+                        ax2.plot(xrange, distsRel, ls=ls, lw=lw, marker=marker, color=color1, 
+                                label=ptlegend, alpha=alpha)
                 
         ax2.legend(loc='upper right', fontsize=fontsize3, numpoints=2, title='Legend:')
         _initaxis([ax1,ax2], axsize=fontsize1)
@@ -547,7 +598,7 @@ class ExcelAnalysisNellix():
         elif analysis=='AngChimNel':
             yticks = 10
         elif analysis == 'AngChimVessel':
-            yticks = 5
+            yticks = 10
         ax1.set_ylim(ylim)
         ax1.set_yticks(np.arange(ylim[0], ylim[1], yticks))
         ax1.set_xlim([0.8, len(xlabels)+0.2]) # xlim margins 0.2
@@ -560,6 +611,8 @@ class ExcelAnalysisNellix():
         ax2.set_ylim(ylimRel)
         ax2.set_xlim([0.8, len(xlabels)*factor+0.2]) # xlim margins 0.2; # longer for legend
         ax2.set_xlabel('Phase in cardiac cycle', fontsize=fontsize2)
+        yticksRel = 0.5
+        ax2.set_yticks(np.arange(ylimRel[0], ylimRel[1], yticksRel))
         
         # plot init
         lw = 1
@@ -567,8 +620,6 @@ class ExcelAnalysisNellix():
         # marker = 'o'
         alpha = 0.9
         
-        # colors = create_iter_colors()
-        # markers = create_iter_markers()
         lstyles = create_iter_ls(type=1)
         
         def plot_per_chimney(sheetname, analysis, patient, xrange, y, yrel):
@@ -580,20 +631,23 @@ class ExcelAnalysisNellix():
                 shortname = sheetname[4:7] # e.g. LRA
             else:
                 shortname = sheetname[-3:] # LRA or RRA or SMA
-            # color1 = next(colors)
+            
             color1 = color_per_patient(patient)
-            # marker = next(markers)
+            color1 = color_per_stent(shortname) # for 09 vs 09 thin
             marker = marker_per_chimney(shortname)
             ls = next(lstyles)
             # plot
             if patient == 'chevas_09':
                 ptlegend = '01**'+':'+shortname # reintervention of pt 1
-                ls = '--'
+                ls = '-'
             elif patient == 'chevas_10':
                 ptlegend = '09*'+': '+shortname
                 ls = '--'
             elif patient == 'chevas_11':
                 ptlegend = '07**'+':'+shortname # reintervention of pt 7
+                ls = '--'
+            elif patient == 'chevas_09_thin':
+                ptlegend = '01**-thin'+':'+shortname # reintervention of pt 1
                 ls = '--'
             else:
                 ptlegend = patient[7:]+':  '+shortname
@@ -655,14 +709,14 @@ class ExcelAnalysisNellix():
             'plot_angles_chimney{}.png'.format(analysis)), papertype='a0', dpi=600)
         
 
-def readLocationPointDeflection(sheet, row=9, colStart=1):
+def readLocationPointDeflection(sheet, row=9, rowlength=10, colStart=1):
     """ Read location of point with max deflection, obtain as percentage of chimney length
     """
     distfromproxendchimney = sheet.rows[row-1][colStart].value
-    lengthchimney = sheet.rows[row][colStart].value
+    lengthchimney = sheet.rows[rowlength-1][colStart].value
     pointlocation = 100*distfromproxendchimney/lengthchimney
     
-    return pointlocation
+    return pointlocation, distfromproxendchimney, lengthchimney
     
 def readLocationChange(sheet, row=19, colStart=1, nphases=10):
     """ Read locations of peak angle and obtain change in location
@@ -687,8 +741,8 @@ def readMinMax(sheet, row=17, colStart=1, correctorientation=True):
     angles defined such that 0 = straight, 60 = sharp, 110 = severe
     """
     if correctorientation:
-        minvalue = 180 - sheet.rows[row-1][colStart].value # B
-        maxvalue = 180 - sheet.rows[row-1][colStart+1].value # C
+        maxvalue = 180 - sheet.rows[row-1][colStart].value # B
+        minvalue = 180 - sheet.rows[row-1][colStart+1].value # C
     else:
         minvalue = sheet.rows[row-1][colStart].value # B
         maxvalue = sheet.rows[row-1][colStart+1].value # C
@@ -844,6 +898,8 @@ def color_per_patient(patient):
         color = colors[-1] # color 9th pt
     elif patient == 'chevas_11':
         color = colors[6] # pt 7
+    elif patient == 'chevas_09_thin':
+        color = colors[0] # pt 1
     
     return color
     
@@ -873,9 +929,40 @@ def marker_per_chimney(shortname):
         marker = 's'
     elif 'SMA' in shortname:
         marker = '^'
+    elif 'NelL' in shortname:
+        marker = '^'
+    elif 'NelR' in shortname:
+        marker = 'd'
     else:
-        marker = 'o'
+        marker = '^'
     return marker
+
+def color_per_stent(shortname):
+    colors = [
+                                '#a6cee3', # 1
+                                '#fb9a99', # 2 
+                                '#33a02c', # 3
+                                '#fdbf6f', # 4 
+                                '#1f78b4', # 5
+                                '#e31a1c', # 6
+                                '#b2df8a', # 7 
+                                '#cab2d6', # 8 
+                                '#ff7f00', # 9
+                                ]
+    if 'RRA' in shortname:
+        color = colors[0]
+    elif 'LRA' in shortname:
+        color = colors[1]
+    elif 'SMA' in shortname:
+        color = colors[3]
+    elif 'NelL' in shortname:
+        color = colors[0]
+    elif 'NelR' in shortname:
+        color = colors[1]
+    elif 'Nel-Nel' in shortname:
+        color = colors[4]
+    
+    return color
 
 def create_iter_ls(type=1):
     if type == 1:
@@ -885,7 +972,7 @@ def create_iter_ls(type=1):
         lstyles = itertools.cycle(['-', '-', '-', '-', '--','--','--','--'])
     
     elif type == 3:
-        lstyles = itertools.cycle(['-', '--', '.-'])
+        lstyles = itertools.cycle(['-', '--']) #, '.-'])
 
     return lstyles
 
@@ -893,56 +980,76 @@ if __name__ == '__main__':
     
     foo = ExcelAnalysisNellix()
     
-    # patients=['chevas_09', 'chevas_09_thin']
     patients = None # None = all in self.patients
+    patients=['chevas_09', 'chevas_09_thin' ]
+    # patients=['chevas_09']
+    # patients=['chevas_09_thin']
     
     # Plots
     # ==========================================
     # Distances
-    # foo.plot_distances_between_points(patients=patients,analysis='NelNel', ylim=[8,16], saveFig=False) 
-    # foo.plot_distances_between_points(patients=patients,analysis='ChimNel', ylim=[5,32], saveFig=False)
+    # foo.plot_distances_between_points(patients=patients,analysis=['NelNel'], ylim=[8,16], saveFig=False) 
+    # foo.plot_distances_between_points(patients=patients,analysis=['ChimNel'], ylim=[5,32], saveFig=False)
     
     # Angles pointdeflection chimney
-    foo.plot_angles_chimney(patients=patients,analysis='AngChim', ylim=[0, 35.01], ylimRel=[-2,2], saveFig=False)
+    foo.plot_angles_chimney(patients=patients,analysis='AngChim', ylim=[0, 35.01], ylimRel=[-3,3.01], saveFig=True)
     
     # Angles vectors chimney nellix
-    foo.plot_angles_chimney(patients=patients,analysis='AngChimNel', ylim=[100, 170.01], ylimRel=[-2,2], saveFig=False)
+    # foo.plot_angles_chimney(patients=patients,analysis='AngChimNel', ylim=[100, 170.01], ylimRel=[-3,3.01], saveFig=True)
     
     # Angles vectors chimney to vessel transition (end-stent angle)
-    foo.plot_angles_chimney(patients=patients,analysis='AngChimVessel', ylim=[0, 60.01], ylimRel=[-2,2], saveFig=False)
+    foo.plot_angles_chimney(patients=patients,analysis='AngChimVessel', ylim=[0, 85.01], ylimRel=[-3,3.01], saveFig=True)
     
     # # Tortuosity
     # foo.plot_angles_chimney(patients=patients,analysis='Tort', ylim=[0.99, 1.11], ylimRel=[-0.01,0.01], saveFig=False)
     
     # # Displacement
-    # patient = 'chevas_07'
-    # foo.plot_displacement(patient=patient, analysis=['RRAprox','NelRprox'], 
-    #             rows=[8,9], ylim=[-0.5, 0.5], ylimRel=[0,0.8], saveFig=False)
+    # foo.plot_displacement(patients=patients, analysis=['NelRprox','NelLprox' ], 
+    #             rows=[8,9], ylim=[-0.51, 0.5], saveFig=True)
+    # foo.plot_displacement(patients=patients, analysis=['LRAprox', 'RRAprox', 'SMAprox' ], 
+    #             rows=[8,9], ylim=[-0.51, 0.5], saveFig=True)
+    # foo.plot_displacement(patients=patients, analysis=['LRAdist', 'RRAdist', 'SMAdist' ], 
+    #             rows=[8,9], ylim=[-0.51, 0.5], saveFig=True)
+    # foo.plot_displacement(patients=patients, analysis=['vLRAprox', 'vRRAprox', 'vSMAprox' ], 
+    #             rows=[8,9], ylim=[-0.51, 0.5], saveFig=True)
     
     # ==========================================
     
     # Get statistics
     # ==========================================
-    # Get displacement of centerline segment prox or dist 
-    # foo.get_segment_displacement(patients=patients, analysis=['NelR'], location='prox')
+    # Get displacement of centerline segment prox or dist
+     
+    # foo.get_segment_displacement(patients=patients, analysis=['NelL', 'NelR'], location='prox')
     # foo.get_segment_displacement(patients=patients, analysis=['LRA','RRA', 'SMA'], location='dist')
+    # print(len(foo.segmentDisplacementX)) # verify number of chimneys/nellix stents
+    # outcomeDispl = foo.segmentDisplacement3d
+    # foo.get_segment_displacement(patients=patients, analysis=['LRA','RRA','SMA'], location='prox')
+    # if False:
+    #     t, p = independent_samples_ttest(foo.segmentDisplacement3d, outcomeDispl)
+    
+    # Get displacement of centerline segment vessel distal to stent (location is always prox)
+    
+    # foo.get_segment_displacement(patients=patients, analysis=['vLRA'], location='prox')
+    # foo.get_segment_displacement(patients=patients, analysis=['vLRA','vRRA', 'vSMA'], location='prox')
     # print(len(foo.segmentDisplacementX)) # verify number of chimneys/nellix stents
     
     # Get distance change between Nellix stents or between Nellix and chimney ends
-    # foo.get_distance_change(patients=None, analysis='ChimNel', chimneys=['LRA', 'RRA', 'SMA'])
-    # foo.get_distance_change(patients=None, analysis='NelNel')
+    
+    # foo.get_distance_change(patients=patients, analysis='ChimNel', chimneys=['LRA', 'RRA', 'SMA'])
+    # foo.get_distance_change(patients=patients, analysis='NelNel')
     # print(len(foo.distanceChange)) # verify number of chimneys/nellix stents
     # if False:
     #     outcomeNel = foo.distanceChange
     #     t, p = independent_samples_ttest(foo.distanceChange, outcomeNel)
     
     # Get chimney angle change
-    # foo.get_angle_change(patients=None, analysis='Chim', chimneys=['SMA'], angletype = 'peakangle') # pointdeflection or peakangle 
+    
+    # foo.get_angle_change(patients=patients, analysis='Chim', chimneys=['LRA', 'RRA','SMA'], angletype = 'peakangle') # pointdeflection or peakangle 
     # print(len(foo.angleChange))
     # outcomeChim = foo.angleChange
     # outcomeChimMin = foo.angleMin
     # outcomeChimMax = foo.angleMax
-    # foo.get_angle_change(patients=None, analysis='Chim', chimneys=['LRA','RRA'], angletype = 'peakangle')
+    # foo.get_angle_change(patients=patients, analysis='Chim', chimneys=['LRA','RRA'], angletype = 'peakangle')
     # print(len(foo.angleChange)) # verify number of chimneys
     # if False:
     #     t, p = independent_samples_ttest(foo.angleChange, outcomeChim)
@@ -951,12 +1058,13 @@ if __name__ == '__main__':
     #     t, p = independent_samples_ttest(foo.angleMax, outcomeChimMax)
     
     # Get chimney-Nellix vector angle change
-    # foo.get_angle_change(patients=None, analysis='ChimNel', chimneys=['RRA'])
+    
+    # foo.get_angle_change(patients=patients, analysis='ChimNel', chimneys=['LRA','RRA','SMA'])
     # print(len(foo.angleChange)) # verify number of chimneys
     # outcomeChimNel = foo.angleChange
     # outcomeChimNelMin = foo.angleMin
     # outcomeChimNelMax = foo.angleMax
-    # foo.get_angle_change(patients=None, analysis='ChimNel', chimneys=['SMA'])
+    # foo.get_angle_change(patients=patients, analysis='ChimNel', chimneys=['SMA'])
     # print(len(foo.angleChange)) # verify number of chimneys
     # if False:
     #     t, p = independent_samples_ttest(foo.angleChange, outcomeChimNel)
@@ -965,17 +1073,65 @@ if __name__ == '__main__':
     #     t, p = independent_samples_ttest(foo.angleMax, outcomeChimNelMax)
     
     # Get chimney-vessel vector angle change
-    foo.get_angle_change(patients=None, analysis='ChimVessel', chimneys=['LRA'])
-    print(len(foo.angleChange)) # verify number of chimneys
-    outcomeChimVessel = foo.angleChange
-    outcomeChimVesselMin = foo.angleMin
-    outcomeChimVesselMax = foo.angleMax
-    foo.get_angle_change(patients=None, analysis='ChimVessel', chimneys=['SMA'])
-    print(len(foo.angleChange)) # verify number of chimneys
-    if False:
-        t, p = independent_samples_ttest(foo.angleChange, outcomeChimVessel)
-    if False:
-        t, p = independent_samples_ttest(foo.angleMin, outcomeChimVesselMin)
-        t, p = independent_samples_ttest(foo.angleMax, outcomeChimVesselMax)
+    
+    # foo.get_angle_change(patients=patients, analysis='ChimVessel', chimneys=['LRA', 'RRA', 'SMA'])
+    # print(len(foo.angleChange)) # verify number of chimneys
+    # outcomeChimVessel = foo.angleChange
+    # outcomeChimVesselMin = foo.angleMin
+    # outcomeChimVesselMax = foo.angleMax
+    # foo.get_angle_change(patients=None, analysis='ChimVessel', chimneys=['SMA'])
+    # print(len(foo.angleChange)) # verify number of chimneys
+    # if False:
+    #     t, p = independent_samples_ttest(foo.angleChange, outcomeChimVessel)
+    # if False:
+    #     t, p = independent_samples_ttest(foo.angleMin, outcomeChimVesselMin)
+    #     t, p = independent_samples_ttest(foo.angleMax, outcomeChimVesselMax)
+    
+    # Compare chimney-Nellix vector angle change with end-stent angle change
+    
+    # foo.get_angle_change(patients=None, analysis='ChimNel', chimneys=['LRA','RRA','SMA'])
+    # print(len(foo.angleChange)) # verify number of chimneys
+    # outcomeChimNel = foo.angleChange
+    # foo.get_angle_change(patients=None, analysis='ChimVessel', chimneys=['LRA', 'RRA', 'SMA'])
+    # print(len(foo.angleChange)) # verify number of chimneys
+    # if True:
+    #     t, p = independent_samples_ttest(foo.angleChange, outcomeChimNel)
     
     # ==========================================
+    
+    
+    # Compare length of chimney stents between single, double and triple for angle
+    
+    # foo.get_angle_change(patients=None, analysis='Chim', chimneys=['LRA', 'RRA','SMA'], angletype = 'peakangle')
+    # lensingles = [foo.lengthchimneys[i] for i in [0,3,4,5,9] ]
+    # lendoubles = [foo.lengthchimneys[i] for i in [1,2,10,11,12,13] ]
+    # lentriples = [foo.lengthchimneys[i] for i in [6,7,8,14,15,16,17,18,19] ]
+    # lendoublestriples = [foo.lengthchimneys[i] for i in [1,2,10,11,12,13,6,7,8,14,15,16,17,18,19] ]
+    # 
+    # print('Average length single chimneys: {:.1f} ± {:.1f} ({:.1f}-{:.1f})'.format(
+    #                                     np.mean(lensingles),
+    #                                     np.std(lensingles),
+    #                                     np.min(lensingles),
+    #                                     np.max(lensingles)
+    #                                     ))
+    # print('Average length double chimneys: {:.1f} ± {:.1f} ({:.1f}-{:.1f})'.format(
+    #                                     np.mean(lendoubles),
+    #                                     np.std(lendoubles),
+    #                                     np.min(lendoubles),
+    #                                     np.max(lendoubles)
+    #                                     ))
+    # print('Average length triple chimneys: {:.1f} ± {:.1f} ({:.1f}-{:.1f})'.format(
+    #                                     np.mean(lentriples),
+    #                                     np.std(lentriples),
+    #                                     np.min(lentriples),
+    #                                     np.max(lentriples)
+    #                                     ))
+    # print('Average length double and triple chimneys: {:.1f} ± {:.1f} ({:.1f}-{:.1f})'.format(
+    #                                     np.mean(lendoublestriples),
+    #                                     np.std(lendoublestriples),
+    #                                     np.min(lendoublestriples),
+    #                                     np.max(lendoublestriples)
+    #                                     ))
+    # if True:
+    #     t, p = independent_samples_ttest(lensingles, lendoublestriples)
+    # 

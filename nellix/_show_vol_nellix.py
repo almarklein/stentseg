@@ -6,20 +6,45 @@ import os
 import pirt
 import visvis as vv
 from stentseg.utils.datahandling import select_dir, loadvol
+from stentseg.utils.visualization import show_ctvolume
 from pirt.utils.deformvis import DeformableTexture3D
 import scipy
 from stentseg.utils import _utils_GUI
+import copy
+from stentseg.utils.picker import pick3d
 
 # Select the ssdf basedir
-basedir = select_dir(r'E:\Nellix_chevas\CT_SSDF\SSDF')
-basedir = select_dir(r'E:\Nellix_chevas\CT_SSDF\SSDF_automated')
+basedir = select_dir(r'E:\Nellix_chevas\CT_SSDF\SSDF_automated',
+                r'D:\Nellix_chevas_BACKUP\CT_SSDF\SSDF_automated')
 
 # Select dataset to register
-ptcode = 'chevas_01'
+ptcode = 'chevas_09_thin'
 ctcode, nr = '12months', 1
 cropname = 'prox'
 
-s0 = loadvol(basedir, ptcode, ctcode, cropname, 'avgreg')
+s0 = loadvol(basedir, ptcode, ctcode, cropname, 'phases')
+
+# vol = s0.vol
+vol = s0.vol20
+key = 'vol20'
+zscale = (s0[key].sampling[0] / s0[key].sampling[1]) # z / y
+# resample vol using spline interpolation, 3rd order polynomial
+vol_zoom = scipy.ndimage.interpolation.zoom(s0[key],[zscale,1,1],'float32') 
+s0[key].sampling = [s0[key].sampling[1],s0[key].sampling[1],s0[key].sampling[2]]
+# aanpassingen voor scale en origin
+vol_zoom_type = vv.Aarray(vol_zoom, s0[key].sampling, s0[key].origin)
+vol = vol_zoom_type
+
+fig = vv.figure(); vv.clf()
+fig.position = 0.00, 22.00,  1920.00, 1018.00
+clim = (0,2000)
+# Show volume
+a1 = vv.subplot(111)
+a1.daspect = 1,1,-1
+t = show_ctvolume(vol, axis=a1, showVol='MIP', clim =clim, isoTh=250, 
+                removeStent=False, climEditor=True)
+label = pick3d(vv.gca(), vol)
+vv.xlabel('x (mm)');vv.ylabel('y (mm)');vv.zlabel('z (mm)')
 
 ## Show 3D movie, by alternating the 10 volumes
 
@@ -51,7 +76,7 @@ container = vv.MotionDataContainer(a)
 showVol = 'mip'
 for vol in vols:
     #     t = vv.volshow2(vol, clim=(-550, 500)) # -750, 1000
-    t = vv.volshow(vol, clim=(-100, 1500), renderStyle = showVol)
+    t = vv.volshow(vol, clim=(-300, 2000), renderStyle = showVol)
     t.isoThreshold = 275               # iso or mip work well 
     t.parent = container
     if showVol == 'iso':
@@ -67,11 +92,13 @@ f.eventKeyDown.Bind(lambda event: _utils_GUI.ViewPresets(event, [a]) )
 ## Show 3D movie, by showing one volume that is moved by motion fields
 
 # Load volume
-s = loadvol(basedir, ptcode, ctcode, cropname, '10avgreg')
+s = loadvol(basedir, ptcode, ctcode, cropname, 'avgreg')
+vol_org = copy.deepcopy(s.vol)
+s.vol.sampling = [vol_org.sampling[1], vol_org.sampling[1], vol_org.sampling[2]] # z,y,x
 vol = s.vol
 
 # Load deformations (use backward mapping to deform texture 3D volume)
-s = loadvol(basedir, ptcode, ctcode, cropname, '10deforms')
+s = loadvol(basedir, ptcode, ctcode, cropname, 'deforms')
 phases = []
 for key in dir(s):
     if key.startswith('deform'):
@@ -97,7 +124,7 @@ vv.ColormapEditor(vv.gcf())
 
 # Setup motion container
 dt = DeformableTexture3D(a, vol)
-dt.clim = 0, 2000
+dt.clim = -300, 2000
 dt.isoThreshold = 300
 dt.renderStyle = 'iso'  # iso or mip work well
 dt.SetDeforms(*[list(reversed(deform)) for deform in deforms_backward])
