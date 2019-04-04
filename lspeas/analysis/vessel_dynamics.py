@@ -69,7 +69,8 @@ def load_excel_centerline(basedirCenterline, vol, ptcode, ctcode, filename=None)
 basedir = select_dir(
     os.getenv('LSPEAS_BASEDIR', ''),
     r'D:\LSPEAS\LSPEAS_ssdf',
-    r'F:\LSPEAS_ssdf_backup')
+    r'F:\LSPEAS_ssdf_backup',
+    r'F:\LSPEAS_ssdf_BACKUP')
 
 basedirMesh = select_dir(
     r'D:\Profiles\koenradesma\SURFdrive\UTdrive\MedDataMimics\LSPEAS_Mimics',
@@ -79,6 +80,7 @@ basedirMesh = select_dir(
 basedirCenterline = select_dir(
     r"C:\stack\data\lspeas\vaatwand",
     r'D:\Profiles\koenradesma\SURFdrive\UTdrive\LSPEAS_centerlines_terarecon',
+    r'C:\Users\Maaike\SURFdrive\UTdrive\LSPEAS_centerlines_terarecon',
     r"C:\stack\data\lspeas\vaatwand")
 
 # Select dataset to register
