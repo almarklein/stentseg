@@ -633,13 +633,13 @@ class ExcelAnalysisNellix():
                 shortname = sheetname[-3:] # LRA or RRA or SMA
             
             color1 = color_per_patient(patient)
-            color1 = color_per_stent(shortname) # for 09 vs 09 thin
+            # color1 = color_per_stent(shortname) # for 09 vs 09 thin
             marker = marker_per_chimney(shortname)
             ls = next(lstyles)
             # plot
             if patient == 'chevas_09':
                 ptlegend = '01**'+':'+shortname # reintervention of pt 1
-                ls = '-'
+                ls = '--'
             elif patient == 'chevas_10':
                 ptlegend = '09*'+': '+shortname
                 ls = '--'
@@ -981,9 +981,7 @@ if __name__ == '__main__':
     foo = ExcelAnalysisNellix()
     
     patients = None # None = all in self.patients
-    patients=['chevas_09', 'chevas_09_thin' ]
-    # patients=['chevas_09']
-    # patients=['chevas_09_thin']
+    # patients=['chevas_09', 'chevas_09_thin' ]
     
     # Plots
     # ==========================================
@@ -992,13 +990,13 @@ if __name__ == '__main__':
     # foo.plot_distances_between_points(patients=patients,analysis=['ChimNel'], ylim=[5,32], saveFig=False)
     
     # Angles pointdeflection chimney
-    foo.plot_angles_chimney(patients=patients,analysis='AngChim', ylim=[0, 35.01], ylimRel=[-3,3.01], saveFig=True)
+    # foo.plot_angles_chimney(patients=patients,analysis='AngChim', ylim=[0, 35.01], ylimRel=[-3,3.01], saveFig=True)
     
     # Angles vectors chimney nellix
-    # foo.plot_angles_chimney(patients=patients,analysis='AngChimNel', ylim=[100, 170.01], ylimRel=[-3,3.01], saveFig=True)
+    # foo.plot_angles_chimney(patients=patients,analysis='AngChimNel', ylim=[100, 170.01], ylimRel=[-3,3.01], saveFig=False)
     
     # Angles vectors chimney to vessel transition (end-stent angle)
-    foo.plot_angles_chimney(patients=patients,analysis='AngChimVessel', ylim=[0, 85.01], ylimRel=[-3,3.01], saveFig=True)
+    # foo.plot_angles_chimney(patients=patients,analysis='AngChimVessel', ylim=[0, 85.01], ylimRel=[-3,3.01], saveFig=True)
     
     # # Tortuosity
     # foo.plot_angles_chimney(patients=patients,analysis='Tort', ylim=[0.99, 1.11], ylimRel=[-0.01,0.01], saveFig=False)
@@ -1079,7 +1077,7 @@ if __name__ == '__main__':
     # outcomeChimVessel = foo.angleChange
     # outcomeChimVesselMin = foo.angleMin
     # outcomeChimVesselMax = foo.angleMax
-    # foo.get_angle_change(patients=None, analysis='ChimVessel', chimneys=['SMA'])
+    # foo.get_angle_change(patients=None, analysis='ChimVessel', chimneys=['RRA'])
     # print(len(foo.angleChange)) # verify number of chimneys
     # if False:
     #     t, p = independent_samples_ttest(foo.angleChange, outcomeChimVessel)
@@ -1134,4 +1132,77 @@ if __name__ == '__main__':
     #                                     ))
     # if True:
     #     t, p = independent_samples_ttest(lensingles, lendoublestriples)
+    
+  
+    # ==========================================
+    
+    # Compare 09 with 09-thin
+    
+    ## angles
+    # patients=['chevas_09']
     # 
+    # foo.get_angle_change(patients=patients, analysis='ChimNel', chimneys=['LRA', 'RRA','SMA'], angletype = 'peakangle')
+    # p09 = np.asarray(foo.angleChange)
+    # 
+    # patients2=['chevas_09_thin']
+    # foo.get_angle_change(patients=patients2, analysis='ChimNel', chimneys=['LRA', 'RRA','SMA'], angletype = 'peakangle')
+    # p09thin = np.asarray(foo.angleChange)
+    # 
+    # print(p09)
+    # print()
+    # print(p09thin)
+    # print()
+    # print(p09-p09thin)
+    # print()
+    # meandiff = np.mean(abs(p09-p09thin))
+    # print(meandiff)
+    # print(np.std(abs(p09-p09thin)))
+    # 
+    # ## distances
+    # 
+    # patients=['chevas_09']
+    # 
+    # foo.get_distance_change(patients=patients, analysis='ChimNel', chimneys=['LRA', 'RRA', 'SMA'])
+    # p09 = np.asarray(foo.distanceChange)
+    # 
+    # patients2=['chevas_09_thin']
+    # foo.get_distance_change(patients=patients2, analysis='ChimNel', chimneys=['LRA', 'RRA', 'SMA'])
+    # p09thin = np.asarray(foo.distanceChange)
+    # 
+    # print(p09)
+    # print()
+    # print(p09thin)
+    # print()
+    # print(p09-p09thin)
+    # print()
+    # meandiff = np.mean(abs(p09-p09thin))
+    # print(meandiff)
+    # print(np.std(abs(p09-p09thin)))
+    # 
+    # ## displacement
+    # 
+    # patients=['chevas_09']
+    # foo.get_segment_displacement(patients=patients, analysis=['LRA','RRA', 'SMA'], location='prox')
+    # d3d = foo.segmentDisplacement3d
+    # foo.get_segment_displacement(patients=patients, analysis=['LRA','RRA', 'SMA'], location='dist')
+    # p09 = np.asarray(d3d+foo.segmentDisplacement3d)
+    # 
+    # patients2=['chevas_09_thin']
+    # foo.get_segment_displacement(patients=patients2, analysis=['LRA','RRA', 'SMA'], location='prox')
+    # d3d = foo.segmentDisplacement3d
+    # foo.get_segment_displacement(patients=patients2, analysis=['LRA','RRA', 'SMA'], location='dist')
+    # p09thin = np.asarray(d3d+foo.segmentDisplacement3d)
+    # 
+    # print(p09)
+    # print()
+    # print(p09thin)
+    # print()
+    # print(p09-p09thin)
+    # print()
+    # meandiff = np.mean(abs(p09-p09thin))
+    # print(meandiff)
+    # print(np.std(abs(p09-p09thin)))
+    #     
+    #     
+        
+        
