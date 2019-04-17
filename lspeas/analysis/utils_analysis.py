@@ -19,14 +19,15 @@ import string
 def cols2num(cols):
     """ convert column in excel to number for python.
     Input = ['B','K']; output = 1, 10
+    * does not work with double chars, e.g. AA and beyond; use openpyxl.utils.column_index_from_string
     """
     nums = []
     for col in cols:
         num = 0
-        for c in col:
-            if c in string.ascii_letters:
-                num = num * 26 + (ord(c.upper()) - ord('A')) + 1
-                nums.append(num-1)
+        #for c in col:
+        if col in string.ascii_letters:
+            num = num * 26 + (ord(col.upper()) - ord('A')) + 1
+            nums.append(num-1)
     return nums
 
 
