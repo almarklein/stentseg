@@ -20,7 +20,7 @@ class ExcelAnalysisNellix():
     """
     
     # exceldir = select_dir(r'F:\Nellix_chevas\CT_SSDF\SSDF')
-    exceldir = select_dir(r'E:\Nellix_chevas\CT_SSDF\SSDF_automated',
+    exceldir = select_dir(r'F:\Nellix_chevas\CT_SSDF\SSDF_automated',
                             r'D:\Nellix_chevas_BACKUP\CT_SSDF\SSDF_automated')
     dirsaveIm =  select_dir(r'C:\Users\Maaike\Desktop','D:\Profiles\koenradesma\Desktop')
     
@@ -1015,7 +1015,7 @@ if __name__ == '__main__':
     
     # Get statistics
     # ==========================================
-    # Get displacement of centerline segment prox or dist
+    ## Get displacement of centerline segment prox or dist
      
     # foo.get_segment_displacement(patients=patients, analysis=['NelL', 'NelR'], location='prox')
     # foo.get_segment_displacement(patients=patients, analysis=['LRA','RRA', 'SMA'], location='dist')
@@ -1025,13 +1025,13 @@ if __name__ == '__main__':
     # if False:
     #     t, p = independent_samples_ttest(foo.segmentDisplacement3d, outcomeDispl)
     
-    # Get displacement of centerline segment vessel distal to stent (location is always prox)
+    ## Get displacement of centerline segment vessel distal to stent (location is always prox)
     
     # foo.get_segment_displacement(patients=patients, analysis=['vLRA'], location='prox')
     # foo.get_segment_displacement(patients=patients, analysis=['vLRA','vRRA', 'vSMA'], location='prox')
     # print(len(foo.segmentDisplacementX)) # verify number of chimneys/nellix stents
     
-    # Get distance change between Nellix stents or between Nellix and chimney ends
+    ## Get distance change between Nellix stents or between Nellix and chimney ends
     
     # foo.get_distance_change(patients=patients, analysis='ChimNel', chimneys=['LRA', 'RRA', 'SMA'])
     # foo.get_distance_change(patients=patients, analysis='NelNel')
@@ -1040,52 +1040,52 @@ if __name__ == '__main__':
     #     outcomeNel = foo.distanceChange
     #     t, p = independent_samples_ttest(foo.distanceChange, outcomeNel)
     
-    # Get chimney angle change
+    ## Get chimney angle change
     
-    # foo.get_angle_change(patients=patients, analysis='Chim', chimneys=['LRA', 'RRA','SMA'], angletype = 'peakangle') # pointdeflection or peakangle 
+    # foo.get_angle_change(patients=patients, analysis='Chim', chimneys=['LRA', 'RRA'], angletype = 'peakangle') # pointdeflection or peakangle 
     # print(len(foo.angleChange))
     # outcomeChim = foo.angleChange
     # outcomeChimMin = foo.angleMin
     # outcomeChimMax = foo.angleMax
-    # foo.get_angle_change(patients=patients, analysis='Chim', chimneys=['LRA','RRA'], angletype = 'peakangle')
+    # foo.get_angle_change(patients=patients, analysis='Chim', chimneys=['SMA'], angletype = 'peakangle')
     # print(len(foo.angleChange)) # verify number of chimneys
-    # if False:
+    # if True:
     #     t, p = independent_samples_ttest(foo.angleChange, outcomeChim)
-    # if False:
+    # if True:
     #     t, p = independent_samples_ttest(foo.angleMin, outcomeChimMin)
     #     t, p = independent_samples_ttest(foo.angleMax, outcomeChimMax)
-    
-    # Get chimney-Nellix vector angle change
-    
-    # foo.get_angle_change(patients=patients, analysis='ChimNel', chimneys=['LRA','RRA','SMA'])
+    # 
+    ## Get chimney-Nellix vector angle change
+    # 
+    # foo.get_angle_change(patients=patients, analysis='ChimNel', chimneys=['LRA','RRA'])
     # print(len(foo.angleChange)) # verify number of chimneys
     # outcomeChimNel = foo.angleChange
     # outcomeChimNelMin = foo.angleMin
     # outcomeChimNelMax = foo.angleMax
     # foo.get_angle_change(patients=patients, analysis='ChimNel', chimneys=['SMA'])
     # print(len(foo.angleChange)) # verify number of chimneys
-    # if False:
+    # if True:
     #     t, p = independent_samples_ttest(foo.angleChange, outcomeChimNel)
-    # if False:
+    # if True:
     #     t, p = independent_samples_ttest(foo.angleMin, outcomeChimNelMin)
     #     t, p = independent_samples_ttest(foo.angleMax, outcomeChimNelMax)
     
-    # Get chimney-vessel vector angle change
+    ## Get chimney-vessel vector angle change
     
-    # foo.get_angle_change(patients=patients, analysis='ChimVessel', chimneys=['LRA', 'RRA', 'SMA'])
+    # foo.get_angle_change(patients=patients, analysis='ChimVessel', chimneys=['LRA', 'RRA'])
     # print(len(foo.angleChange)) # verify number of chimneys
     # outcomeChimVessel = foo.angleChange
     # outcomeChimVesselMin = foo.angleMin
     # outcomeChimVesselMax = foo.angleMax
-    # foo.get_angle_change(patients=None, analysis='ChimVessel', chimneys=['RRA'])
+    # foo.get_angle_change(patients=patients, analysis='ChimVessel', chimneys=['SMA'])
     # print(len(foo.angleChange)) # verify number of chimneys
-    # if False:
+    # if True:
     #     t, p = independent_samples_ttest(foo.angleChange, outcomeChimVessel)
-    # if False:
+    # if True:
     #     t, p = independent_samples_ttest(foo.angleMin, outcomeChimVesselMin)
     #     t, p = independent_samples_ttest(foo.angleMax, outcomeChimVesselMax)
     
-    # Compare chimney-Nellix vector angle change with end-stent angle change
+    ## Compare chimney-Nellix vector angle change with end-stent angle change
     
     # foo.get_angle_change(patients=None, analysis='ChimNel', chimneys=['LRA','RRA','SMA'])
     # print(len(foo.angleChange)) # verify number of chimneys
@@ -1098,8 +1098,8 @@ if __name__ == '__main__':
     # ==========================================
     
     
-    # Compare length of chimney stents between single, double and triple for angle
-    
+    ## Compare length of chimney stents between single, double and triple for angle
+    # 
     # foo.get_angle_change(patients=None, analysis='Chim', chimneys=['LRA', 'RRA','SMA'], angletype = 'peakangle')
     # lensingles = [foo.lengthchimneys[i] for i in [0,3,4,5,9] ]
     # lendoubles = [foo.lengthchimneys[i] for i in [1,2,10,11,12,13] ]
@@ -1138,14 +1138,14 @@ if __name__ == '__main__':
     
     # Compare 09 with 09-thin
     
-    ## angles
+    # ## angles
     # patients=['chevas_09']
     # 
-    # foo.get_angle_change(patients=patients, analysis='ChimNel', chimneys=['LRA', 'RRA','SMA'], angletype = 'peakangle')
+    # foo.get_angle_change(patients=patients, analysis='ChimNel', chimneys=['LRA', 'RRA','SMA'], angletype = 'pointdeflection')
     # p09 = np.asarray(foo.angleChange)
     # 
     # patients2=['chevas_09_thin']
-    # foo.get_angle_change(patients=patients2, analysis='ChimNel', chimneys=['LRA', 'RRA','SMA'], angletype = 'peakangle')
+    # foo.get_angle_change(patients=patients2, analysis='ChimNel', chimneys=['LRA', 'RRA','SMA'], angletype = 'pointdeflection')
     # p09thin = np.asarray(foo.angleChange)
     # 
     # print(p09)
@@ -1157,7 +1157,9 @@ if __name__ == '__main__':
     # meandiff = np.mean(abs(p09-p09thin))
     # print(meandiff)
     # print(np.std(abs(p09-p09thin)))
-    # 
+    # print()
+    # print(np.max(abs(p09-p09thin)))
+    
     # ## distances
     # 
     # patients=['chevas_09']
@@ -1178,7 +1180,9 @@ if __name__ == '__main__':
     # meandiff = np.mean(abs(p09-p09thin))
     # print(meandiff)
     # print(np.std(abs(p09-p09thin)))
-    # 
+    # print()
+    # print(np.max(abs(p09-p09thin)))
+    
     # ## displacement
     # 
     # patients=['chevas_09']
@@ -1202,7 +1206,8 @@ if __name__ == '__main__':
     # meandiff = np.mean(abs(p09-p09thin))
     # print(meandiff)
     # print(np.std(abs(p09-p09thin)))
-    #     
-    #     
-        
-        
+    # print()
+    # print(np.max(abs(p09-p09thin)))
+    # print()
+    # print(np.max(abs(p09-p09thin)))
+
