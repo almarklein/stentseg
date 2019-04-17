@@ -5,6 +5,7 @@ Author: M.A. Koenrades. Created 2018.
 
 from lspeas.analysis.utils_analysis import readRingExcel, _initaxis, cols2num
 import openpyxl
+from openpyxl.utils import column_index_from_string
 from stentseg.utils.datahandling import select_dir
 import sys, os
 import matplotlib.pyplot as plt
@@ -18,6 +19,9 @@ from stentseg.utils.picker import pick3d
 from stentseg.utils.visualization import DrawModelAxes, show_ctvolume, plot_points
 from stentseg.utils import PointSet, _utils_GUI, visualization
 from lspeas.utils.vis import showModel3d
+from lspeas.utils.normality_statistics import normality_check
+import scipy
+from scipy import io
 
 class MotionAnalysis():
     """ Create graphs from excel data or from the segmented models
@@ -26,15 +30,14 @@ class MotionAnalysis():
     exceldir = select_dir(r'C:\Users\Maaike\SURFdrive\UTdrive\LSPEAS\Analysis', 
                     r'D:\Profiles\koenradesma\SURFdrive\UTdrive\LSPEAS\Analysis')
     dirsaveIm =  select_dir(r'C:\Users\Maaike\Desktop','D:\Profiles\koenradesma\Desktop')
-    basedir = select_dir(r'D:\LSPEAS\LSPEAS_ssdf', 
-                     r'F:\LSPEAS_ssdf_backup',r'G:\LSPEAS_ssdf_backup')
+    # basedir = select_dir(r'D:\LSPEAS\LSPEAS_ssdf', 
+    #                  r'F:\LSPEAS_ssdf_backup',r'G:\LSPEAS_ssdf_backup')
     
     def __init__(self):
         self.exceldir =  MotionAnalysis.exceldir
         self.dirsaveIm = MotionAnalysis.dirsaveIm
-        self.basedir = MotionAnalysis.basedir
-        self.workbook_stent = 'LSPEAS_pulsatility_expansion_avgreg_subp_v2.0.xlsx'
-        #self.workbook_variables = 'LSPEAS_Variables.xlsx'
+        # self.basedir = MotionAnalysis.basedir
+        self.workbook_stent = 'LSPEAS_pulsatility_expansion_avgreg_subp_v2.1.xlsx'
         self.patients =['LSPEAS_001', 
                         'LSPEAS_002',	
                         'LSPEAS_003', 
@@ -62,9 +65,11 @@ class MotionAnalysis():
         
         self.fontsize1 = 17 # 14
         self.fontsize2 = 17 # 15
+        self.fontsize3 = 13 # legend title
+        self.fontsize4 = 10 # legend contents
     
     def _init_fig_plot_displacement(self, ylim, ylimRel):
-        """
+        """ use to initialize the displacement plots
         """
         # init figure
         self.f1 = plt.figure(figsize=(12.5, 9.1)) # 11.6, 5.8 or 4.62
@@ -189,10 +194,10 @@ class MotionAnalysis():
                 ax4.plot(xrange, vec_rel_displ_magn, ls=ls, lw=lw, marker=marker, color=color3d, 
                         label='%s-%s' % (ctname,shortname), alpha=alpha)
             
-        ax1.legend(loc='upper right', fontsize=10, numpoints=2, title='Analysis:')
-        ax2.legend(loc='upper right', fontsize=10, numpoints=2, title='Analysis:')
-        ax3.legend(loc='upper right', fontsize=10, numpoints=2, title='Analysis:')
-        ax4.legend(loc='upper right', fontsize=10, numpoints=2, title='Analysis:')
+        ax1.legend(loc='upper right', fontsize=self.fontsize4, numpoints=2, title='Analysis:')
+        ax2.legend(loc='upper right', fontsize=self.fontsize4, numpoints=2, title='Analysis:')
+        ax3.legend(loc='upper right', fontsize=self.fontsize4, numpoints=2, title='Analysis:')
+        ax4.legend(loc='upper right', fontsize=self.fontsize4, numpoints=2, title='Analysis:')
         _initaxis([ax1,ax2,ax3,ax4])
     
         if saveFig:
@@ -262,8 +267,8 @@ class MotionAnalysis():
         
         #ax1.legend(loc='upper right', fontsize=10, numpoints=2, title='Analysis:')
         #ax2.legend(loc='upper right', fontsize=10, numpoints=2, title='Analysis:')
-        ax3.legend(loc='upper right', fontsize=13, numpoints=2, title='Legend:')
-        ax4.legend(loc='upper right', fontsize=10, numpoints=2, title='Analysis:')
+        ax3.legend(loc='upper right', fontsize=self.fontsize3, numpoints=2, title='Legend:')
+        ax4.legend(loc='upper right', fontsize=self.fontsize4, numpoints=2, title='Analysis:')
         _initaxis([ax1,ax2,ax3,ax4])
     
         if saveFig:
@@ -419,8 +424,8 @@ class MotionAnalysis():
         self.modelssdf.append(s)
     
     def amplitude_of_node_points_models(self, graphname='modelspine'):
-        """ to calculate the displacement of the spine points (error) for the 
-        models in the ssdfs loaded to self with loadssdf
+        """ to calculate the displacement of the node points for the models
+        in the ssdfs loaded to self with loadssdf, e.g. spine points for error estimation
         """ 
         from stentseg.motion.displacement import _calculateAmplitude
         from lspeas.utils import normality_statistics
@@ -474,23 +479,25 @@ class MotionAnalysis():
         
         return xstats, ystats, zstats, xyzstats
         
-        
-#todo: wip
-    def plot_pulsatility_line_per_patient(self, patients=None, ylim=[0, 2], ylim_perc=[0,5], saveFig=True):
-        """ Plot pulsatility rings individul patients lines
-        plot in absolute change in mm and as radial strain percentage
-        
+    
+    def plot_pulsatility_line_per_patient_or_mean(self, patients=None, ylim=[0, 2], 
+                    ylim_perc=[0,5], plottype='max', analysis='pulsatility', 
+                    storemat=False, saveFig=False):
+        """ Plot maximum pulsatility rings for individul patients (plottype = max) or 
+        for all 4 directions using the mean of the patients (plottype = directionsmean)
+        plot in absolute change in mm and as percentage
+        * Option to store variables as .mat for SPSS
+        * Option to read other values in same excel table in sheets by analysis
+        analysis = pulsatility, compliance or bloodpressure
         """
         
         exceldir = self.exceldir
         workbook_stent = self.workbook_stent
-        workbook_vars = self.workbook_variables
         
         wb = openpyxl.load_workbook(os.path.join(exceldir, workbook_stent), data_only=True)
-        wbvars = openpyxl.load_workbook(os.path.join(exceldir, workbook_vars), data_only=True)
         
         # init figure
-        f1 = plt.figure(num=3, figsize=(11.6, 9.2)) # 4.6
+        f1 = plt.figure(figsize=(11.6, 9.2)) # 4.6
         xlabels = ['D', '1M', '6M', '12M', '24M']
         xrange = range(1,1+len(xlabels)) # not start from x=0 to play with margin xlim
         
@@ -504,63 +511,174 @@ class MotionAnalysis():
         ax4 = f1.add_subplot(2,2,4)
         plt.xticks(xrange, xlabels, fontsize = 14)
         
-        ax1.set_ylabel('Pulsatility R1 (mm)', fontsize=15) #Radial distension?
-        ax2.set_ylabel('Pulsatility R2 (mm)', fontsize=15)
+        yname2 = 'mm'
+        if analysis == 'pulsatility':
+            yname = 'Pulsatility'
+        elif analysis == 'compliance':
+            yname = 'Compliance'
+            yname2 = '%'
+        else:
+            yname = analysis
+        
+        ax1.set_ylabel('{} R1 (mm)'.format(yname), fontsize=15) #Radial distension?
+        ax2.set_ylabel('{} R2 (mm)'.format(yname), fontsize=15)
         ax1.set_ylim(ylim)
         ax2.set_ylim(ylim)
         ax1.set_xlim([0.8, len(xlabels)+0.2]) # xlim margins 0.2
         ax2.set_xlim([0.8, len(xlabels)+0.2])
         # plots in perc change cycle
-        ax3.set_ylabel('Pulsatility R1 (%)', fontsize=15) # mean distance pp vv
-        ax4.set_ylabel('Pulsatility R2 (%)', fontsize=15) # mean distance pp vv
+        ax3.set_ylabel('{} R1 (%)'.format(yname), fontsize=15) # mean distance pp vv
+        ax4.set_ylabel('{} R2 (%)'.format(yname), fontsize=15) # mean distance pp vv
         ax3.set_ylim(ylim_perc)
         ax4.set_ylim(ylim_perc)
         ax3.set_xlim([0.8, len(xlabels)+0.2]) # xlim margins 0.2
         ax4.set_xlim([0.8, len(xlabels)+0.2])
         
-        # lines and colors; 12-class Paired
+        # lines and colors; 12-class Paired (ring deployment paper colors)
         colors = itertools.cycle(['#a6cee3','#1f78b4','#b2df8a','#33a02c',
         '#fb9a99','#e31a1c','#fdbf6f','#ff7f00','#cab2d6','#6a3d9a','#ffff99','#b15928'])
         markers = ['D', 'o', '^', 's', '*']
         lw = 1
         
+        def readValuesOverTimePerPatient(sheet, colStart, rowStart):
+            """ read per patient sheet pulsatility or minimum or compliance...
+            for R1 or R2 over time from D to 24M
+            * tuple with 4 arrays for pp, vv, midmid1, midmid2 with 5 values over time 
+            """
+            R1pp = sheet.rows[rowStart[0]][colStart:colStart+9:2] # AX, AZ, BB etc.
+            R1vv = sheet.rows[rowStart[1]][colStart:colStart+9:2]
+            R1LAR = sheet.rows[rowStart[2]][colStart:colStart+9:2]
+            R1RAL = sheet.rows[rowStart[3]][colStart:colStart+9:2]
+            
+            R1pp = [obj.value for obj in R1pp]
+            R1vv = [obj.value for obj in R1vv]
+            R1LAR = [obj.value for obj in R1LAR]
+            R1RAL = [obj.value for obj in R1RAL]
+            
+            # handle unscored measures 'NA'
+            R1pp = [el if not isinstance(el, str) else np.nan for el in R1pp]
+            R1vv = [el if not isinstance(el, str) else np.nan for el in R1vv]
+            R1LAR = [el if not isinstance(el, str) else np.nan for el in R1LAR]
+            R1RAL = [el if not isinstance(el, str) else np.nan for el in R1RAL]
+            
+            return np.asarray(R1pp), np.asarray(R1vv), np.asarray(R1LAR), np.asarray(R1RAL)
+        
+        # init to collect all patients
+        R1allP_pts = []
+        R1allPperc_pts = []
+        R2allP_pts = []
+        R2allPperc_pts = []
+        
+        R1maxP_pts = []
+        R1maxPperc_pts = []
+        R2maxP_pts = []
+        R2maxPperc_pts = []
+        
+        R1maxPloc_pts = []
+        R1maxPpercloc_pts = []
+        R2maxPloc_pts = []
+        R2maxPpercloc_pts = []
+        
+        R1meanP_pts = []
+        R1meanPperc_pts = [] 
+        R2meanP_pts = []
+        R2meanPperc_pts = []
+        
         # read data
-        rowStart = 13 # 13 = row 14 excel
-        colStart = ['B', 'G'] # B, G
-        colStart = cols2num(colStart)
-        colStartPerc = [col+1 for col in colStart]
+        colsStart = ['AX', 'AY'] # R1, R2
+        colsStart = [column_index_from_string(col)-1 for col in colsStart] 
         
         if patients is None:
             patients = self.patients
         # loop through patient sheets
         for i, patient in enumerate(patients):
+            rowsStartP = [84, 90, 96, 102] # 84 = row 85 excel; peak peak, valley valley, LARP, RALP pulsatility
+            if analysis == 'compliance':
+                rowsStartP = [row+3 for row in rowsStartP]
+            
+            # 19 and 25 rotated placement; switch to use anatomical groups
+            if patient == 'LSPEAS_019' or patient == 'LSPEAS_025':
+                rowsStartP = [rowsStartP[i] for i in [1,0,3,2]]
+            
+            rowsStartMin = [row-2 for row in rowsStartP] # minimum diameter; ignore percentage outcome for complicance
+            
+            if analysis == 'bloodpressure':
+                rowsStartP = [80, 81, 80, 81]
+            
             sheet = wb.get_sheet_by_name(patient)
             # read R1/R2
-            if patient == ('LSPEAS_023' or 'LSPEAS_024'):
+            if patient == 'LSPEAS_023' or patient == 'LSPEAS_024':
                 continue
-            else:    
-                R1 = sheet.rows[rowStart][colStart[0]:colStart[0]+5] # +4 is read until 12M
-                R2 = sheet.rows[rowStart][colStart[1]:colStart[1]+5] # +4 is read until 12M
-                R1mm = sheet.rows[rowStartmm][colStart[0]:colStart[0]+5] # +4 is read until 12M
-                R2mm = sheet.rows[rowStartmm][colStart[1]:colStart[1]+5] # +4 is read until 12M
-            R1 = [obj.value for obj in R1]
-            R2 = [obj.value for obj in R2]
-            R1mm = [obj.value for obj in R1mm]
-            R2mm = [obj.value for obj in R2mm]
-            # read preop applied oversize
-            sheet_preop = wbvars.get_sheet_by_name(self.workbook_variables_presheet)
-            rowPre = 8 # row 9 in excel
-            for j in range(18): # read sheet column with patients
-                pt = sheet_preop.rows[rowPre+j][1]
-                pt = pt.value
-                if pt == patient[-3:]:
-                    devicesize = sheet_preop.rows[rowPre+j][4].value # 4 = col E
-                    break
+            else:
+                # pulsatility (P) R1
+                R1ppP, R1vvP, R1LARP, R1RALP = readValuesOverTimePerPatient(sheet, colsStart[0], rowsStartP)
+                R1ppMin, R1vvMin, R1LARMin, R1RALMin = readValuesOverTimePerPatient(sheet, colsStart[0], rowsStartMin)
+                R1ppPperc = R1ppP / R1ppMin *100
+                R1vvPperc = R1vvP / R1vvMin *100
+                R1LARPperc = R1LARP / R1LARMin *100
+                R1RALPperc = R1RALP / R1RALMin *100
+                R1allP = np.vstack((R1ppP, R1vvP, R1LARP, R1RALP)) # np.stack((..), axis=0)
+                R1allPperc = np.vstack((R1ppPperc, R1vvPperc, R1LARPperc, R1RALPperc))
+                # max pulsatility R1
+                R1maxP = np.nanmax(R1allP, axis=0) # 5 values over time
+                R1maxPperc = np.nanmax(R1allPperc, axis=0) # 5 values over time
+                # max pulsatility location (0=peak peak, 1=valley valley, 2=LARP, 3=RALP)
+                R1maxPloc = [np.where(R1allP[:,i] == R1maxP[i]) for i in range(len(R1maxP))]
+                R1maxPpercloc = [np.where(R1allPperc[:,i] == R1maxPperc[i]) for i in range(len(R1maxPperc))]
+                # mean pulsatility R1
+                R1meanP = np.nanmean(R1allP, axis=0) # 5 values over time
+                R1meanPperc = np.nanmean(R1allPperc, axis=0) # 5 values over time
+                
+                # pulsatility (P) R2
+                R2ppP, R2vvP, R2LARP, R2RALP = readValuesOverTimePerPatient(sheet, colsStart[1], rowsStartP)
+                R2ppMin, R2vvMin, R2LARMin, R2RALMin = readValuesOverTimePerPatient(sheet, colsStart[1], rowsStartMin)
+                R2ppPperc = R2ppP / R2ppMin *100
+                R2vvPperc = R2vvP / R2vvMin *100
+                R2LARPperc = R2LARP / R2LARMin *100
+                R2RALPperc = R2RALP / R2RALMin *100
+                R2allP = np.vstack((R2ppP, R2vvP, R2LARP, R2RALP))
+                R2allPperc = np.vstack((R2ppPperc, R2vvPperc, R2LARPperc, R2RALPperc))
+                # max pulsatility R2
+                R2maxP = np.nanmax(R2allP, axis=0) # 5 values over time
+                R2maxPperc = np.nanmax(R2allPperc, axis=0) # 5 values over time
+                # max pulsatility location (0=peak peak, 1=valley valley, 2=LARP, 3=RALP)
+                R2maxPloc = [np.where(R2allP[:,i] == R2maxP[i]) for i in range(len(R2maxP))]
+                R2maxPpercloc = [np.where(R2allPperc[:,i] == R2maxPperc[i]) for i in range(len(R2maxPperc))]
+                # mean pulsatility R2
+                R2meanP = np.nanmean(R2allP, axis=0) # 5 values over time
+                R2meanPperc = np.nanmean(R2allPperc, axis=0) # 5 values over time
+                
+                # collect max for max mean
+                R1maxP_pts.append(R1maxP)
+                R1maxPperc_pts.append(R1maxPperc)
+                R2maxP_pts.append(R2maxP)
+                R2maxPperc_pts.append(R2maxPperc)
+                
+                # collect location of max for location mean
+                R1maxPloc_pts.append(R1maxPloc)
+                R1maxPpercloc_pts.append(R1maxPpercloc)
+                R2maxPloc_pts.append(R2maxPloc)
+                R2maxPpercloc_pts.append(R2maxPpercloc)
+                
+                # collect mean for directions mean
+                R1meanP_pts.append(R1meanP)
+                R1meanPperc_pts.append(R1meanPperc)
+                R2meanP_pts.append(R2meanP)
+                R2meanPperc_pts.append(R2meanPperc)
+                
+                # collect for patient mean per direction
+                R1allP_pts.append(R1allP)
+                R1allPperc_pts.append(R1allPperc)
+                R2allP_pts.append(R2allP)
+                R2allPperc_pts.append(R2allPperc)
+                
+            devicesize = get_devicesize(patient)
+            
             # plot
             ls = '-'
+            ls2 = '--'
+            alpha = 0.9
             color = next(colors)
-            # if i > 11: # through 12 colors
-            #     marker = next(mStyles)
             if devicesize == 25.5:
                 marker = markers[0]
                 olb = 'OLB25' 
@@ -585,59 +703,344 @@ class MotionAnalysis():
                 ls = '-.'
                 olb = 'body28'
             
-            # when scans are not scored in excel do not plot '#DIV/0!'
-            R1 = [el if not isinstance(el, str) else None for el in R1]
-            R2 = [el if not isinstance(el, str) else None for el in R2]
-            R1mm = [el if not isinstance(el, str) else None for el in R1mm]
-            R2mm = [el if not isinstance(el, str) else None for el in R2mm]
-            # get deployment% (in excel percentage is used)
-            R1 = [100*(1-el) if not el is None else None for el in R1]
-            R2 = [100*(1-el) if not el is None else None for el in R2]
+            # plot 
+            if plottype == 'max':
+                # mm pulsatility
+                ax1.plot(xrange, R1maxP, ls=ls, lw=lw, marker=marker, color=color, 
+                        label='%s: %s' % (patient[-2:], olb), alpha=alpha)
+                ax2.plot(xrange, R2maxP, ls=ls, lw=lw, marker=marker, color=color,
+                        label='%s: %s' % (patient[-2:], olb), alpha=alpha)
+                
+                # in %
+                ax3.plot(xrange, R1maxPperc, ls=ls, lw=lw, marker=marker, color=color, 
+                        label='%s: %s' % (patient[-2:], olb), alpha=alpha)
+                ax4.plot(xrange, R2maxPperc, ls=ls, lw=lw, marker=marker, color=color, 
+                        label='%s: %s' % (patient[-2:], olb), alpha=alpha)
             
-            alpha = 1
-            if preop:
-                xaxis = xrange[1:]
-            else:
-                xaxis = xrange
-            # plot postop rdc
-            ax1.plot(xaxis, R1, ls=ls, lw=lw, marker=marker, color=color, 
-                    label='%s: %s' % (patient[-2:], olb), alpha=alpha)
-            ax2.plot(xaxis, R2, ls=ls, lw=lw, marker=marker, color=color,
-                    label='%s: %s' % (patient[-2:], olb), alpha=alpha)
-            # label='%i: ID %s' % (i+1, patient[-3:]), alpha=alpha)
-            if preop:
-                # plot preop rdc
-                if not isinstance(preR1, str): # not yet scored in excel so '#DIV/0!'
-                    ax1.plot(xrange[:2], [preR1,R1[0]], ls=ls, lw=lw, 
-                        marker=marker, color=color, alpha=alpha)
-                if not isinstance(preR2, str):
-                    ax2.plot(xrange[:2], [preR2,R2[0]], ls=ls, lw=lw, 
-                        marker=marker, color=color, alpha=alpha)
+        # Get pt mean of max pulsatility
+        R1maxP_mean = np.nanmean(R1maxP_pts, axis=0) # 1x5 array
+        aR1maxP_pts = np.asarray(R1maxP_pts) # 15x5 store as mat and use in spss
+        R1maxPperc_mean = np.nanmean(R1maxPperc_pts, axis=0) # 1x5 array
+        aR1maxPperc_pts = np.asarray(R1maxPperc_pts) # 15x5 store as mat and use in spss
+        
+        R2maxP_mean = np.nanmean(R2maxP_pts, axis=0) # 1x5 array
+        aR2maxP_pts = np.asarray(R2maxP_pts) # 15x5 store as mat and use in spss
+        R2maxPperc_mean = np.nanmean(R2maxPperc_pts, axis=0) # 1x5 array
+        aR2maxPperc_pts = np.asarray(R2maxPperc_pts) # 15x5 store as mat and use in spss
+
+        # # check normality
+        # for time in range(len(R1maxP)):
+        #     W, pValue, normality = normality_check(aR1maxP_pts[:,time], alpha=0.05, showhist=False)
+        #     print('Pulsatility distribution normal:{} (pValue of {:.3f})'.format(normality, pValue))
+        # print('')
+        
+        if plottype == 'max':
+            # plot mean for max pulsatility
+            ax1.plot(xrange, R1maxP_mean, ls=ls2, lw=2, marker='p', color='k', 
+                    label='Mean', alpha=alpha)
+            ax2.plot(xrange, R2maxP_mean, ls=ls2, lw=2, marker='p', color='k', 
+                    label='Mean', alpha=alpha)
+            ax3.plot(xrange, R1maxPperc_mean, ls=ls2, lw=2, marker='p', color='k', 
+                    label='Mean', alpha=alpha)
+            ax4.plot(xrange, R2maxPperc_mean, ls=ls2, lw=2, marker='p', color='k', 
+                    label='Mean', alpha=alpha)
+        
+        
+        # Get mean per direction
+        # -- R1 mm pulsatility
+        aR1allP_pts = np.asarray(R1allP_pts) # 15x4x5 array
+        # pp
+        aR1ppP_pts = aR1allP_pts[:,0,:] # 15x5 array to store as mat and use in spss?
+        R1ppP_mean = np.nanmean(aR1ppP_pts, axis=0) # 1x5 array
+        # vv
+        aR1vvP_pts = aR1allP_pts[:,1,:] # to store as mat and use in spss?
+        R1vvP_mean = np.nanmean(aR1vvP_pts, axis=0) 
+        # LARP
+        aR1LAP_pts = aR1allP_pts[:,2,:] # to store as mat and use in spss?
+        R1LAP_mean = np.nanmean(aR1LAP_pts, axis=0) 
+        # RALP
+        aR1RAP_pts = aR1allP_pts[:,3,:] # to store as mat and use in spss?
+        R1RAP_mean = np.nanmean(aR1RAP_pts, axis=0) 
+        # check normality
+        for i in range(aR1allP_pts.shape[1]):
+            for time in range(aR1allP_pts.shape[2]):
+                W, pValue, normality = normality_check(aR1allP_pts[:,i,time], alpha=0.05, showhist=False)
+                print('Pulsatility distribution normal:{} (pValue of {:.3f})'.format(normality, pValue))
+            print('')
             
-            # plot in mm postop
-            ax3.plot(xaxis, R1mm, ls=ls, lw=lw, marker=marker, color=color, 
-                    label='%s: %s' % (patient[-2:], olb), alpha=alpha)
-            ax4.plot(xaxis, R2mm, ls=ls, lw=lw, marker=marker, color=color, 
-                    label='%s: %s' % (patient[-2:], olb), alpha=alpha)
-            if preop:
-                # plot in mm preop
-                if not isinstance(preR1mm, str): # not yet scored in excel so '#DIV/0!'
-                    ax3.plot(xrange[:2], [preR1mm,R1mm[0]], ls=ls, lw=lw, 
-                        marker=marker, color=color, alpha=alpha)
-                if not isinstance(preR2mm, str):
-                    ax4.plot(xrange[:2], [preR2mm,R2mm[0]], ls=ls, lw=lw, 
-                        marker=marker, color=color, alpha=alpha)
+        # R1 % pulsatility
+        aR1allPperc_pts = np.asarray(R1allPperc_pts)
+        # pp
+        aR1ppPperc_pts = aR1allPperc_pts[:,0,:] # to store as mat and use in spss?
+        R1ppPperc_mean = np.nanmean(aR1ppPperc_pts, axis=0) 
+        # vv
+        aR1vvPperc_pts = aR1allPperc_pts[:,1,:] # to store as mat and use in spss?
+        R1vvPperc_mean = np.nanmean(aR1vvPperc_pts, axis=0) 
+        # LARP
+        aR1LAPperc_pts = aR1allPperc_pts[:,2,:] # to store as mat and use in spss?
+        R1LAPperc_mean = np.nanmean(aR1LAPperc_pts, axis=0) 
+        # RALP
+        aR1RAPperc_pts = aR1allPperc_pts[:,3,:] # to store as mat and use in spss?
+        R1RAPperc_mean = np.nanmean(aR1RAPperc_pts, axis=0) 
+        # check normality
+        for i in range(aR1allP_pts.shape[1]):
+            for time in range(aR1allP_pts.shape[2]):
+                W, pValue, normality = normality_check(aR1allPperc_pts[:,i,time], alpha=0.05, showhist=False)
+                print('Pulsatility distribution normal:{} (pValue of {:.3f})'.format(normality, pValue))
+            print('')
+        
+        # -- R2 mm pulsatility
+        aR2allP_pts = np.asarray(R2allP_pts) # 15x4x5 array
+        # pp
+        aR2ppP_pts = aR2allP_pts[:,0,:] # 15x5 array to store as mat and use in spss?
+        R2ppP_mean = np.nanmean(aR2ppP_pts, axis=0) # 1x5 array
+        # vv
+        aR2vvP_pts = aR2allP_pts[:,1,:] # to store as mat and use in spss?
+        R2vvP_mean = np.nanmean(aR2vvP_pts, axis=0) 
+        # LARP
+        aR2LAP_pts = aR2allP_pts[:,2,:] # to store as mat and use in spss?
+        R2LAP_mean = np.nanmean(aR2LAP_pts, axis=0) 
+        # RALP
+        aR2RAP_pts = aR2allP_pts[:,3,:] # to store as mat and use in spss?
+        R2RAP_mean = np.nanmean(aR2RAP_pts, axis=0)
+        # check normality
+        for i in range(aR2allP_pts.shape[1]):
+            for time in range(aR2allP_pts.shape[2]):
+                W, pValue, normality = normality_check(aR2allP_pts[:,i,time], alpha=0.05, showhist=False)
+                print('Pulsatility distribution normal:{} (pValue of {:.3f})'.format(normality, pValue))
+            print('')
+        
+        # R2 % pulsatility
+        aR2allPperc_pts = np.asarray(R2allPperc_pts)
+        # pp
+        aR2ppPperc_pts = aR2allPperc_pts[:,0,:] # to store as mat and use in spss?
+        R2ppPperc_mean = np.nanmean(aR2ppPperc_pts, axis=0) 
+        # vv
+        aR2vvPperc_pts = aR2allPperc_pts[:,1,:] # to store as mat and use in spss?
+        R2vvPperc_mean = np.nanmean(aR2vvPperc_pts, axis=0) 
+        # LARP
+        aR2LAPperc_pts = aR2allPperc_pts[:,2,:] # to store as mat and use in spss?
+        R2LAPperc_mean = np.nanmean(aR2LAPperc_pts, axis=0) 
+        # RALP
+        aR2RAPperc_pts = aR2allPperc_pts[:,3,:] # to store as mat and use in spss?
+        R2RAPperc_mean = np.nanmean(aR2RAPperc_pts, axis=0)
+        # check normality
+        for i in range(aR2allP_pts.shape[1]):
+            for time in range(aR2allP_pts.shape[2]):
+                W, pValue, normality = normality_check(aR2allPperc_pts[:,i,time], alpha=0.05, showhist=False)
+                print('Pulsatility distribution normal:{} (pValue of {:.3f})'.format(normality, pValue))
+            print('')
+        
+        # get ratio directions by dividing max by min values - to export to .mat for spss
+        # R1
+        ratioR1ppvvP_pts =     (np.maximum(aR1ppP_pts, aR1vvP_pts) / 
+                                np.minimum(aR1ppP_pts, aR1vvP_pts) ) # el wise comparison
+        ratioR1ppvvPperc_pts = (np.maximum(aR1ppPperc_pts, aR1vvPperc_pts) / 
+                                np.minimum(aR1ppPperc_pts, aR1vvPperc_pts) ) # el wise comparison
+        ratioR1LARAP_pts =     (np.maximum(aR1LAP_pts, aR1RAP_pts) / 
+                                np.minimum(aR1LAP_pts, aR1RAP_pts) ) # el wise comparison
+        ratioR1LARAPperc_pts = (np.maximum(aR1LAPperc_pts, aR1RAPperc_pts) / 
+                                np.minimum(aR1LAPperc_pts, aR1RAPperc_pts) ) # el wise comparison
+        # R2
+        ratioR2ppvvP_pts =     (np.maximum(aR2ppP_pts, aR2vvP_pts) / 
+                                np.minimum(aR2ppP_pts, aR2vvP_pts) )  # el wise comparison
+        ratioR2ppvvPperc_pts = (np.maximum(aR2ppPperc_pts, aR2vvPperc_pts) / 
+                                np.minimum(aR2ppPperc_pts, aR2vvPperc_pts) ) # el wise comparison
+        ratioR2LARAP_pts =     (np.maximum(aR2LAP_pts, aR2RAP_pts) / 
+                                np.minimum(aR2LAP_pts, aR2RAP_pts) ) # el wise comparison
+        ratioR2LARAPperc_pts = (np.maximum(aR2LAPperc_pts, aR2RAPperc_pts) / 
+                                np.minimum(aR2LAPperc_pts, aR2RAPperc_pts) ) # el wise comparison
+        
+        # plotting
+        colorsdirections =  [              # from chevas paper colors
+                            '#a6cee3', # 1 *
+                            '#fb9a99', # 2 *
+                            # '#33a02c', # 3
+                            '#fdbf6f', # 4 *
+                            '#1f78b4', # 5 *
+                            # '#e31a1c', # 6
+                            # '#b2df8a', # 7 
+                            # '#cab2d6', # 8 
+                            # '#ff7f00', # 9
+                            ]
+        colorsdirections = [              # from phantom paper in vivo plots
+                            '#d73027', # 1 red
+                            '#fc8d59', # orange
+                            '#91bfdb', # blue
+                            '#4575b4' # 5
+                            ]
+                            
+        #colorsdirections = ['#D02D2E', '#D02D2E', 'blue', 'blue']
+        
+        if plottype == 'directionsmean':
+            capsize = 8
+            lw2 = 1.1
+            # R1 mm pulsatility
+            ax1.plot(xrange, R1ppP_mean, ls=ls, lw=lw, marker=markers[0], color=colorsdirections[0], 
+                    label='AP', alpha=alpha)
+            ax1.errorbar(xrange, R1ppP_mean, yerr=np.nanstd(aR1ppP_pts, axis=0), fmt=None,
+                         ecolor=colorsdirections[0], capsize=capsize, elinewidth=lw2, capthick=lw2)
+            ax1.plot(xrange, R1vvP_mean, ls=ls, lw=lw, marker=markers[1], color=colorsdirections[1], 
+                    label='LR', alpha=alpha)
+            ax1.errorbar(xrange, R1vvP_mean, yerr=np.nanstd(aR1vvP_pts, axis=0), fmt=None,
+                         ecolor=colorsdirections[1], capsize=capsize, elinewidth=lw2, capthick=lw2)
+            ax1.plot(xrange, R1LAP_mean, ls=ls2, lw=lw, marker=markers[2], color=colorsdirections[2], 
+                    label='LARP', alpha=alpha)
+            ax1.errorbar(xrange, R1LAP_mean, yerr=np.nanstd(aR1LAP_pts, axis=0), fmt=None,
+                         ecolor=colorsdirections[2], capsize=capsize, elinewidth=lw2, capthick=lw2)
+            ax1.plot(xrange, R1RAP_mean, ls=ls2, lw=lw, marker=markers[3], color=colorsdirections[3], 
+                    label='RALP', alpha=alpha)
+            ax1.errorbar(xrange, R1RAP_mean, yerr=np.nanstd(aR1RAP_pts, axis=0), fmt=None,
+                         ecolor=colorsdirections[3], capsize=capsize, elinewidth=lw2, capthick=lw2)
             
-        ax1.legend(loc='lower right', fontsize=9, numpoints=1, title='Patients')
+            # R2 mm pulsatility
+            ax2.plot(xrange, R2ppP_mean, ls=ls, lw=lw, marker=markers[0], color=colorsdirections[0], 
+                label='AP', alpha=alpha)
+            ax2.errorbar(xrange, R2ppP_mean, yerr=np.nanstd(aR2ppP_pts, axis=0), fmt=None,
+                ecolor=colorsdirections[0], capsize=capsize, elinewidth=lw2, capthick=lw2)
+            ax2.plot(xrange, R2vvP_mean, ls=ls, lw=lw, marker=markers[1], color=colorsdirections[1], 
+                label='LR', alpha=alpha)
+            ax2.errorbar(xrange, R2vvP_mean, yerr=np.nanstd(aR2vvP_pts, axis=0), fmt=None,
+                ecolor=colorsdirections[1], capsize=capsize, elinewidth=lw2, capthick=lw2)
+            ax2.plot(xrange, R2LAP_mean, ls=ls2, lw=lw, marker=markers[2], color=colorsdirections[2], 
+                label='LARP', alpha=alpha)
+            ax2.errorbar(xrange, R2LAP_mean, yerr=np.nanstd(aR2LAP_pts, axis=0), fmt=None,
+                ecolor=colorsdirections[2], capsize=capsize, elinewidth=lw2, capthick=lw2)
+            ax2.plot(xrange, R2RAP_mean, ls=ls2, lw=lw, marker=markers[3], color=colorsdirections[3], 
+                label='RALP', alpha=alpha)
+            ax2.errorbar(xrange, R2RAP_mean, yerr=np.nanstd(aR2RAP_pts, axis=0), fmt=None,
+                ecolor=colorsdirections[3], capsize=capsize, elinewidth=lw2, capthick=lw2)
+
+            # R1 % pulsatility
+            ax3.plot(xrange, R1ppPperc_mean, ls=ls, lw=lw, marker=markers[0], color=colorsdirections[0], 
+                label='AP', alpha=alpha)
+            ax3.errorbar(xrange, R1ppPperc_mean, yerr=np.nanstd(aR1ppPperc_pts, axis=0), fmt=None,
+                ecolor=colorsdirections[0], capsize=capsize, elinewidth=lw2, capthick=lw2)
+            ax3.plot(xrange, R1vvPperc_mean, ls=ls, lw=lw, marker=markers[1], color=colorsdirections[1], 
+                label='LR', alpha=alpha)
+            ax3.errorbar(xrange, R1vvPperc_mean, yerr=np.nanstd(aR1vvPperc_pts, axis=0), fmt=None,
+                ecolor=colorsdirections[1], capsize=capsize, elinewidth=lw2, capthick=lw2)
+            ax3.plot(xrange, R1LAPperc_mean, ls=ls2, lw=lw, marker=markers[2], color=colorsdirections[2], 
+                label='LARP', alpha=alpha)
+            ax3.errorbar(xrange, R1LAPperc_mean, yerr=np.nanstd(aR1LAPperc_pts, axis=0), fmt=None,
+                ecolor=colorsdirections[2], capsize=capsize, elinewidth=lw2, capthick=lw2)
+            ax3.plot(xrange, R1RAPperc_mean, ls=ls2, lw=lw, marker=markers[3], color=colorsdirections[3], 
+                label='RALP', alpha=alpha)
+            ax3.errorbar(xrange, R1RAPperc_mean, yerr=np.nanstd(aR1RAPperc_pts, axis=0), fmt=None,
+                ecolor=colorsdirections[3], capsize=capsize, elinewidth=lw2, capthick=lw2)
+            
+            # R2 % pulsatility
+            ax4.plot(xrange, R2ppPperc_mean, ls=ls, lw=lw, marker=markers[0], color=colorsdirections[0], 
+                label='AP', alpha=alpha)
+            ax4.errorbar(xrange, R2ppPperc_mean, yerr=np.nanstd(aR2ppPperc_pts, axis=0), fmt=None,
+                ecolor=colorsdirections[0], capsize=capsize, elinewidth=lw2, capthick=lw2)
+            ax4.plot(xrange, R2vvPperc_mean, ls=ls, lw=lw, marker=markers[1], color=colorsdirections[1], 
+                label='LR', alpha=alpha)
+            ax4.errorbar(xrange, R2vvPperc_mean, yerr=np.nanstd(aR2vvPperc_pts, axis=0), fmt=None,
+                ecolor=colorsdirections[1], capsize=capsize, elinewidth=lw2, capthick=lw2)
+            ax4.plot(xrange, R2LAPperc_mean, ls=ls2, lw=lw, marker=markers[2], color=colorsdirections[2], 
+                label='LARP', alpha=alpha)
+            ax4.errorbar(xrange, R2LAPperc_mean, yerr=np.nanstd(aR2LAPperc_pts, axis=0), fmt=None,
+                ecolor=colorsdirections[2], capsize=capsize, elinewidth=lw2, capthick=lw2)
+            ax4.plot(xrange, R2RAPperc_mean, ls=ls2, lw=lw, marker=markers[3], color=colorsdirections[3], 
+                label='RALP', alpha=alpha)
+            ax4.errorbar(xrange, R2RAPperc_mean, yerr=np.nanstd(aR2RAPperc_pts, axis=0), fmt=None,
+                ecolor=colorsdirections[3], capsize=capsize, elinewidth=lw2, capthick=lw2)
+        
+        if plottype == 'max':
+            # ax1.legend(loc='lower right', fontsize=self.fontsize3, numpoints=1, title='Patients')
+            ax4.legend(loc='upper right', fontsize=self.fontsize4, numpoints=1, title='Patients')
+        elif plottype == 'directionsmean':
+            ax4.legend(loc='upper right', fontsize=self.fontsize4, numpoints=1, title='Legend')
+            
         _initaxis([ax1, ax2, ax3, ax4])
         
+        # Store to .mat
+        if storemat:
+            if analysis =='bloodpressure':
+                self.store_var_to_mat(aR1ppP_pts, varname='BP_systolic_pts')
+                self.store_var_to_mat(aR1vvP_pts, varname='BP_diastolic_pts')
+            elif analysis == 'pulsatility':
+                fname = 'P'
+                # max
+                self.store_var_to_mat(aR1maxP_pts, varname='R1max{}_pts'.format(fname))
+                self.store_var_to_mat(aR2maxP_pts, varname='R2max{}_pts'.format(fname))
+                self.store_var_to_mat(aR1maxPperc_pts, varname='R1max{}perc_pts'.format(fname))
+                self.store_var_to_mat(aR2maxPperc_pts, varname='R2max{}perc_pts'.format(fname))
+                #mean over directions
+                self.store_var_to_mat(np.asarray(R1meanP_pts), varname='R1mean{}_pts'.format(fname))
+                self.store_var_to_mat(np.asarray(R2meanP_pts), varname='R2mean{}_pts'.format(fname))
+                self.store_var_to_mat(np.asarray(R1meanPperc_pts), varname='R1mean{}perc_pts'.format(fname))
+                self.store_var_to_mat(np.asarray(R2meanPperc_pts), varname='R2mean{}perc_pts'.format(fname))
+                # per direction
+                names =    ['R1pp{}_pts'.format(fname), 'R1vv{}_pts'.format(fname), 
+                            'R1LA{}_pts'.format(fname), 'R1RA{}_pts'.format(fname)]
+                for i, var in enumerate([aR1ppP_pts, aR1vvP_pts, aR1LAP_pts, aR1RAP_pts]):
+                    self.store_var_to_mat(var, varname=names[i])
+                names =    ['R2pp{}_pts'.format(fname), 'R2vv{}_pts'.format(fname), 
+                            'R2LA{}_pts'.format(fname), 'R2RA{}_pts'.format(fname)]
+                for i, var in enumerate([aR2ppP_pts, aR2vvP_pts, aR2LAP_pts, aR2RAP_pts]):
+                    self.store_var_to_mat(var, varname=names[i])
+                names =    ['R1pp{}perc_pts'.format(fname), 'R1vv{}perc_pts'.format(fname), 
+                            'R1LA{}perc_pts'.format(fname), 'R1RA{}perc_pts'.format(fname)]
+                for i, var in enumerate([aR1ppPperc_pts, aR1vvPperc_pts, aR1LAPperc_pts, aR1RAPperc_pts]):
+                    self.store_var_to_mat(var, varname=names[i])
+                names =    ['R2pp{}perc_pts'.format(fname), 'R2vv{}perc_pts'.format(fname), 
+                            'R2LA{}perc_pts'.format(fname), 'R2RA{}perc_pts'.format(fname)]
+                for i, var in enumerate([aR2ppPperc_pts, aR2vvPperc_pts, aR2LAPperc_pts, aR2RAPperc_pts]):
+                    self.store_var_to_mat(var, varname=names[i])
+                # ratio directions pulsatility
+                self.store_var_to_mat(ratioR1ppvvP_pts, varname='ratioR1ppvv{}_pts'.format(fname))
+                self.store_var_to_mat(ratioR2ppvvP_pts, varname='ratioR2ppvv{}_pts'.format(fname))
+                self.store_var_to_mat(ratioR1LARAP_pts, varname='ratioR1LARA{}_pts'.format(fname))
+                self.store_var_to_mat(ratioR2LARAP_pts, varname='ratioR2LARA{}_pts'.format(fname))
+            elif analysis == 'compliance': # ignore percentage output
+                fname= 'Com'
+                # max
+                self.store_var_to_mat(aR1maxP_pts, varname='R1max{}_pts'.format(fname))
+                self.store_var_to_mat(aR2maxP_pts, varname='R2max{}_pts'.format(fname))
+                #mean over directions
+                self.store_var_to_mat(np.asarray(R1meanP_pts), varname='R1mean{}_pts'.format(fname))
+                self.store_var_to_mat(np.asarray(R2meanP_pts), varname='R2mean{}_pts'.format(fname))
+                # per direction
+                names =       ['R1pp{}_pts'.format(fname), 'R1vv{}_pts'.format(fname), 
+                            'R1LA{}_pts'.format(fname), 'R1RA{}_pts'.format(fname)]
+                for i, var in enumerate([aR1ppP_pts, aR1vvP_pts, aR1LAP_pts, aR1RAP_pts]):
+                    self.store_var_to_mat(var, varname=names[i])
+                names =       ['R2pp{}_pts'.format(fname), 'R2vv{}_pts'.format(fname), 
+                            'R2LA{}_pts'.format(fname), 'R2RA{}_pts'.format(fname)]
+                for i, var in enumerate([aR2ppP_pts, aR2vvP_pts, aR2LAP_pts, aR2RAP_pts]):
+                    self.store_var_to_mat(var, varname=names[i])
+                # ratio directions pulsatility
+                self.store_var_to_mat(ratioR1ppvvP_pts, varname='ratioR1ppvv{}_pts'.format(fname))
+                self.store_var_to_mat(ratioR2ppvvP_pts, varname='ratioR2ppvv{}_pts'.format(fname))
+                self.store_var_to_mat(ratioR1LARAP_pts, varname='ratioR1LARA{}_pts'.format(fname))
+                self.store_var_to_mat(ratioR2LARAP_pts, varname='ratioR2LARA{}_pts'.format(fname))
+        
+            
         if saveFig:
             plt.savefig(os.path.join(self.dirsaveIm, 
-            'plot_ring_deployment.png'), papertype='a0', dpi=600)
-
-
-
-
+            'plot_ring_pulsatility_{}.png'.format(plottype)), papertype='a0', dpi=600)
+    
+    
+    def store_var_to_mat(self, variable, varname=None, storematdir=None):
+        """ Save as .mat to easy copy to spss
+        """
+        if storematdir is None:
+            storematdir = os.path.join(self.dirsaveIm, 'python_to_mat_output')
+        if varname is None:
+            varname = 'variable_from_python'
+        storemat = os.path.join(storematdir, varname+'.mat')
+        
+        storevar = dict()
+        storevar[varname] = variable
+        
+        storevar['workbook_stent'] = self.workbook_stent
+        storevar['patients'] = self.patients
+        
+        io.savemat(storemat,storevar)
+        print('')
+        print('variable {} was stored as.mat to {}'.format(varname, storemat))
 
 
 def create_iter_colors(type=1):
@@ -736,9 +1139,20 @@ def ctcode_printname(ctcode):
     return name
     
 def get_devicesize(ptcode):
+    """ get device size per patient (ptcode)
     """
-    """
-
+    if ptcode == 'LSPEAS_001':
+        devicesize = 25.5 
+    elif ptcode in ['LSPEAS_005','LSPEAS_008','LSPEAS_011','LSPEAS_015','LSPEAS_022']:
+        devicesize = 28
+    elif ptcode in ['LSPEAS_002','LSPEAS_003','LSPEAS_009','LSPEAS_018','LSPEAS_019','LSPEAS_021']:
+        devicesize = 30.5
+    elif ptcode == 'LSPEAS_017':
+        devicesize = 32
+    elif ptcode in ['LSPEAS_020','LSPEAS_025']:
+        devicesize = 34
+    
+    return devicesize
 
 if __name__ == '__main__':
     
@@ -779,4 +1193,27 @@ if __name__ == '__main__':
         print(ystats)
         print(zstats)
         #print(xyzstats)
+    
+    
+    ## Ring motion manuscript
+    
+    ## plot and store pulsatility
+    # foo.plot_pulsatility_line_per_patient_or_mean(patients=None, ylim=[0, 1], ylim_perc=[0,4], 
+    #                 plottype='max', analysis='pulsatility', storemat=False, saveFig=False)
+    # foo.plot_pulsatility_line_per_patient_or_mean(patients=None, ylim=[0, 1], ylim_perc=[0,4], 
+                    # plottype='directionsmean', analysis='pulsatility', saveFig=True)
+    
+    ## store blood pressure
+    # foo.plot_pulsatility_line_per_patient_or_mean(patients=None, ylim=[0, 200], ylim_perc=[0,4], 
+    #                 plottype='directionsmean', analysis='bloodpressure', storemat=True, saveFig=False)
+    
+    ## store compliance
+    foo.plot_pulsatility_line_per_patient_or_mean(patients=None, ylim=[0, 8], ylim_perc=[0,4], 
+                    plottype='max', analysis='compliance', storemat=True, saveFig=True)
+    
+    
+    
+    
+    
+    
 
