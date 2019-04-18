@@ -67,6 +67,26 @@ class MotionAnalysis():
         self.fontsize2 = 17 # 15
         self.fontsize3 = 13 # legend title
         self.fontsize4 = 10 # legend contents
+        
+        # self.colorsdirections =  [              # from chevas paper colors
+        #                     '#a6cee3', # 1 *
+        #                     '#fb9a99', # 2 *
+        #                     # '#33a02c', # 3
+        #                     '#fdbf6f', # 4 *
+        #                     '#1f78b4', # 5 *
+        #                     # '#e31a1c', # 6
+        #                     # '#b2df8a', # 7 
+        #                     # '#cab2d6', # 8 
+        #                     # '#ff7f00', # 9
+        #                     ]
+        
+        # self.colorsdirections = ['#D02D2E', '#D02D2E', 'blue', 'blue']
+        self.colorsdirections = [              # from phantom paper in vivo plots
+                            '#d73027', # 1 red
+                            '#fc8d59', # orange
+                            '#91bfdb', # blue
+                            '#4575b4' # 5
+                            ]
     
     def _init_fig_plot_displacement(self, ylim, ylimRel):
         """ use to initialize the displacement plots
@@ -123,7 +143,7 @@ class MotionAnalysis():
                         ylim=[-0.5, 0.5], ylimRel=[0,0.8], saveFig=False):
         """
         Plot relative displacement with respect to position at avgreg and 
-        all positions at each phase.  for 1 patient
+        all positions at each phase - for 1 patient
         Rows is row as in excel sheet; 
         analysis='ant' or 'post' or 'left' or 'right';
         ctcodes= [discharge, 1month, 6months, 12months, 24months]
@@ -478,6 +498,101 @@ class MotionAnalysis():
         xyzstats = [xyzamplitudemean, xyzamplitudestd, xyzamplitudemin, xyzamplitudemax]
         
         return xstats, ystats, zstats, xyzstats
+    
+    # def get_displacement_peaks_valleys_mids():
+    #     """ 
+    #     """
+        
+        
+        
+    
+    def plot_pulsatility_during_cycle(self, patients=['LSPEAS_001'], analysis=['AP'], 
+                time = 'discharge', ring='R1', ylim=[20, 35], ylimRel=[-3,3], saveFig=False):
+        """ plot change in diametric distance during the cardiac cycle at
+        a certain time point (CT scan)
+        * time = discharge, 1M, 6M, 12M, 24M
+        * analysis = AP, LR, LARP, and/or RALP in list (perhaps add max, mean)
+        """
+        exceldir = self.exceldir
+        workbook_stent = self.workbook_stent
+        wb = openpyxl.load_workbook(os.path.join(exceldir, workbook_stent), data_only=True)
+        
+        self.distsAll = {}
+        self.distsRelAll = {}
+        
+        # init figure
+        self.f1 = plt.figure(figsize=(11.8, 5.8)) # 11.6, 4.62
+        xlabels = ['0', '10', '20', '30', '40', '50', '60', '70','80','90']
+        xrange = range(1,1+len(xlabels)) # not start from x=0 to play with margin xlim
+        fontsize1 = self.fontsize1
+        fontsize2 = self.fontsize2
+        
+        # init axis
+        factor = 1.36 # 1.33
+        gs = gridspec.GridSpec(1, 2, width_ratios=[1, factor]) # plot right wider
+        ax1 = plt.subplot(gs[0])
+        plt.xticks(xrange, xlabels, fontsize = fontsize1)
+        ax2 = plt.subplot(gs[1])
+        plt.xticks(xrange, xlabels, fontsize = fontsize1)
+        
+        ax1.set_ylabel('Distance (mm)', fontsize=fontsize2) # absolute distances
+        ax1.set_ylim(ylim)
+        ax1.set_xlim([0.8, len(xlabels)+0.2]) # xlim margins 0.2
+        ax1.set_xlabel('Phase in cardiac cycle', fontsize=fontsize2)
+        
+        ax2.set_ylabel('Relative distance change (mm)', fontsize=fontsize2) # relative dist from avgreg
+        ax2.set_ylim(ylimRel)
+        ax2.set_xlim([0.8, len(xlabels)*factor+0.2]) # xlim margins 0.2; # longer for legend
+        ax2.set_xlabel('Phase in cardiac cycle', fontsize=fontsize2)
+        
+        # plot init
+        lw = 1
+        alpha = 0.9
+        ls = '-'
+        markers = ['D', '^', 'o', 's']
+        colorsdirections = self.colorsdirections
+        
+        if patients == None:
+            patients = self.patients
+        
+        if ring == 'R1':
+            colStart = 'B'
+        elif ring == 'R2':
+            colStart = 'V'
+        
+        for patient in patients:
+            # read sheet
+            sheet = wb.get_sheet_by_name(patient)
+            for a in analysis:
+                if a == 'AP':
+                    dists, distsRel = readDistancesOverCycle(sheet,rowStart=50, colStart=colStart, time=time)
+                elif a == 'LR':
+                    dists, distsRel = readDistancesOverCycle(sheet,rowStart=50, colStart=colStart, colOffset=5, time=time)
+                elif a == 'LARP':
+                    dists, distsRel = readDistancesOverCycle(sheet,rowStart=50, colStart=colStart, colOffset=10, time=time)
+                elif a == 'RALP':
+                    dists, distsRel = readDistancesOverCycle(sheet,rowStart=50, colStart=colStart, colOffset=15, time=time)
+                self.distsAll['{}_{}'.format(patient, a)] = dists
+                self.distsRelAll['{}_{}'.format(patient, a)] = distsRel
+                
+                # plotting
+                # color1 = color_per_patient(patient)
+                colorindex = ['AP', 'LR', 'LARP', 'RALP']
+                color1 = colorsdirections[colorindex.index(a)]
+                marker = markers[colorindex.index(a)]
+                
+                ptlegend = a
+                ax1.plot(xrange, dists, ls=ls, lw=lw, marker=marker, color=color1, 
+                        label=ptlegend, alpha=alpha)
+                ax2.plot(xrange, distsRel, ls=ls, lw=lw, marker=marker, color=color1, 
+                        label=ptlegend, alpha=alpha)
+                
+        ax2.legend(loc='upper right', fontsize=self.fontsize4, numpoints=2, title='Legend:')
+        _initaxis([ax1,ax2], axsize=fontsize1)
+        
+        if saveFig:
+            plt.savefig(os.path.join(self.dirsaveIm, 
+            'plot_distances_over_cycle_{}.png'.format(analysis)), papertype='a0', dpi=600)
         
     
     def plot_pulsatility_line_per_patient_or_mean(self, patients=None, ylim=[0, 2], 
@@ -493,7 +608,6 @@ class MotionAnalysis():
         
         exceldir = self.exceldir
         workbook_stent = self.workbook_stent
-        
         wb = openpyxl.load_workbook(os.path.join(exceldir, workbook_stent), data_only=True)
         
         # init figure
@@ -516,12 +630,12 @@ class MotionAnalysis():
             yname = 'Pulsatility'
         elif analysis == 'compliance':
             yname = 'Compliance'
-            yname2 = '%'
+            yname2 = '%' # percentage change in diametric distance per 100 mmHg
         else:
             yname = analysis
         
-        ax1.set_ylabel('{} R1 (mm)'.format(yname), fontsize=15) #Radial distension?
-        ax2.set_ylabel('{} R2 (mm)'.format(yname), fontsize=15)
+        ax1.set_ylabel('{} R1 ({})'.format(yname, yname2), fontsize=15) #Radial distension?
+        ax2.set_ylabel('{} R2 ({})'.format(yname, yname2), fontsize=15)
         ax1.set_ylim(ylim)
         ax2.set_ylim(ylim)
         ax1.set_xlim([0.8, len(xlabels)+0.2]) # xlim margins 0.2
@@ -606,6 +720,7 @@ class MotionAnalysis():
                 rowsStartP = [80, 81, 80, 81]
             
             sheet = wb.get_sheet_by_name(patient)
+            
             # read R1/R2
             if patient == 'LSPEAS_023' or patient == 'LSPEAS_024':
                 continue
@@ -852,27 +967,10 @@ class MotionAnalysis():
                                 np.minimum(aR2LAPperc_pts, aR2RAPperc_pts) ) # el wise comparison
         
         # plotting
-        colorsdirections =  [              # from chevas paper colors
-                            '#a6cee3', # 1 *
-                            '#fb9a99', # 2 *
-                            # '#33a02c', # 3
-                            '#fdbf6f', # 4 *
-                            '#1f78b4', # 5 *
-                            # '#e31a1c', # 6
-                            # '#b2df8a', # 7 
-                            # '#cab2d6', # 8 
-                            # '#ff7f00', # 9
-                            ]
-        colorsdirections = [              # from phantom paper in vivo plots
-                            '#d73027', # 1 red
-                            '#fc8d59', # orange
-                            '#91bfdb', # blue
-                            '#4575b4' # 5
-                            ]
-                            
-        #colorsdirections = ['#D02D2E', '#D02D2E', 'blue', 'blue']
+        colorsdirections = self.colorsdirections
         
         if plottype == 'directionsmean':
+            markers = ['D', '^', 'o', 's']
             capsize = 8
             lw2 = 1.1
             # R1 mm pulsatility
@@ -1017,7 +1115,6 @@ class MotionAnalysis():
                 self.store_var_to_mat(ratioR1LARAP_pts, varname='ratioR1LARA{}_pts'.format(fname))
                 self.store_var_to_mat(ratioR2LARAP_pts, varname='ratioR2LARA{}_pts'.format(fname))
         
-            
         if saveFig:
             plt.savefig(os.path.join(self.dirsaveIm, 
             'plot_ring_pulsatility_{}.png'.format(plottype)), papertype='a0', dpi=600)
@@ -1042,6 +1139,27 @@ class MotionAnalysis():
         print('')
         print('variable {} was stored as.mat to {}'.format(varname, storemat))
 
+
+def readDistancesOverCycle(sheet,rowStart=50, colStart='B', colOffset=0, time='discharge', nphases=10):
+    """ read distances over all phases cardiac cycle in excel.
+    """
+    # read distances
+    timepoints = ['discharge', '1M', '6M', '12M', '24M']
+    colindex = timepoints.index(time)
+    rowStart = rowStart-1
+    colStart = column_index_from_string(colStart)+colOffset+colindex-1 
+    dists = sheet.columns[colStart][rowStart:rowStart+nphases] # 10 rows, 10 phases 
+    dists = [obj.value for obj in dists]
+    # handle unscored measures 'NA'
+    dists = [el if not isinstance(el, str) else np.nan for el in dists]
+    # convert to array
+    dists = np.asarray(dists)
+    # get distance at mid heart cycle
+    avgdist = np.nanmean(dists) 
+    # relative distances from avgreg
+    distsRel = dists - avgdist
+    
+    return dists, distsRel
 
 def create_iter_colors(type=1):
     if type == 1:
@@ -1208,8 +1326,16 @@ if __name__ == '__main__':
     #                 plottype='directionsmean', analysis='bloodpressure', storemat=True, saveFig=False)
     
     ## store compliance
-    foo.plot_pulsatility_line_per_patient_or_mean(patients=None, ylim=[0, 8], ylim_perc=[0,4], 
-                    plottype='max', analysis='compliance', storemat=True, saveFig=True)
+    # foo.plot_pulsatility_line_per_patient_or_mean(patients=None, ylim=[0, 9], ylim_perc=[0,4], 
+    #                 plottype='max', analysis='compliance', storemat=True, saveFig=True)
+    # foo.plot_pulsatility_line_per_patient_or_mean(patients=None, ylim=[0, 9], ylim_perc=[0,4], 
+    #                 plottype='directionsmean', analysis='compliance', storemat=False, saveFig=False)
+    
+    ## plot pulsatility during the cycle
+    # foo.plot_pulsatility_during_cycle(patients=['LSPEAS_002'], analysis=['AP', 'LR', 'LARP', 'RALP'], 
+    #         time = '12M', ring= 'R2', ylim=[24, 32], ylimRel=[-1,1], saveFig=True)
+    
+    
     
     
     
