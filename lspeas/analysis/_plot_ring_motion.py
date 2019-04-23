@@ -3,7 +3,7 @@ excel sheet or from the dynamic models
 Author: M.A. Koenrades. Created 2018.
 """
 
-from lspeas.analysis.utils_analysis import readRingExcel, _initaxis, cols2num
+from lspeas.analysis.utils_analysis import readRingExcel, _initaxis, cols2num, read_deforms
 import openpyxl
 from openpyxl.utils import column_index_from_string
 from stentseg.utils.datahandling import select_dir
@@ -18,8 +18,10 @@ from stentseg.utils.datahandling import select_dir, loadvol, loadmodel
 from stentseg.utils.picker import pick3d
 from stentseg.utils.visualization import DrawModelAxes, show_ctvolume, plot_points
 from stentseg.utils import PointSet, _utils_GUI, visualization
+from stentseg.motion.displacement import _calculateAmplitude
 from lspeas.utils.vis import showModel3d
 from lspeas.utils.normality_statistics import normality_check
+from lspeas.analysis._ringPulsatility import point_to_point_pulsatility
 import scipy
 from scipy import io
 
@@ -499,12 +501,176 @@ class MotionAnalysis():
         
         return xstats, ystats, zstats, xyzstats
     
-    # def get_displacement_peaks_valleys_mids():
-    #     """ 
-    #     """
+
+    def get_R1R2distance_change_peaks_valleys(self, patients=None, storemat=False):
+        """ Read excel pulsatility and expansion to obtain distance change between ring1
+        and ring2 during the cardiac cycle at the peaks and valleys, i.e. ant post left right
+        """
+        if patients == None:
+            patients = self.patients
+            
+        # self.displacementAnt_pts = {} # to add x,y,z,3d per patient over time as arrays
+        # self.displacementpost_pts = {}
+        # self.displacementleft_pts = {}
+        # self.displacementright_pts = {}
+        # # self.displacementLA_pts = {}
+        # # self.displacementRA_pts = {}
+        # # self.displacementLP_pts = {}
+        # # self.displacementRP_pts = {}
         
+        antDistOverTime_pts = [] # mm; 5 values for each patient
+        antDistPOverTime_pts = [] # %
+        postDistOverTime_pts = []
+        postDistPOverTime_pts = []
+        leftDistOverTime_pts = [] 
+        leftDistPOverTime_pts = [] 
+        rightDistOverTime_pts = []
+        rightDistPOverTime_pts = []
         
+        # read workbook
+        exceldir = self.exceldir
+        workbook_stent = self.workbook_stent
+        wb = openpyxl.load_workbook(os.path.join(exceldir, workbook_stent), data_only=True)
         
+        # read sheets
+        for patient in patients:
+            sheetname = 'Output_'+ patient[-3:]
+            sheet = wb.get_sheet_by_name(sheetname)  
+            # read peaks valleys for each ring
+            rowsStart = [18,31,55,68]
+            timepoints = ['discharge', '1M', '6M', '12M', '24M']
+            # init to collect distance change peaks valleys R1 R2 for all timepoints
+            antDistOverTime = [] # mm
+            antDistPOverTime = [] # %
+            postDistOverTime = []
+            postDistPOverTime = []
+            leftDistOverTime = [] 
+            leftDistPOverTime = [] 
+            rightDistOverTime = []
+            rightDistPOverTime = []
+            
+            for i in range(len(timepoints)):
+                time = i
+                # R1
+                colStart = 'B'
+                positionAnt, deformsAnt, poscycleAnt = readPosDeformsOverCycle(
+                    sheet, time=time, rowStart=rowsStart[0], colStart=colStart, nphases=10 ) # 1x3, 10x3, and 10x3
+                positionPost, deformsPost, poscyclePost = readPosDeformsOverCycle(
+                    sheet, time=time, rowStart=rowsStart[1], colStart=colStart, nphases=10 )
+                positionLeft, deformsLeft, poscycleLeft = readPosDeformsOverCycle(
+                    sheet, time=time, rowStart=rowsStart[2], colStart=colStart, nphases=10 )
+                positionRight, deformsRight, poscycleRight = readPosDeformsOverCycle(
+                    sheet, time=time, rowStart=rowsStart[3], colStart=colStart, nphases=10 )
+                # check and reorder ant post left right
+                P = [positionAnt, positionPost, positionLeft, positionRight]
+                D = [deformsAnt,  deformsPost,  deformsLeft,  deformsRight]
+                indexorder = orderlocation(positionAnt, positionPost, positionLeft, positionRight) # index A, P, L, R
+                R1positionAnt, R1deformsAnt = P[indexorder[0]], D[indexorder[0]]
+                R1positionPost, R1deformsPost = P[indexorder[1]], D[indexorder[1]]
+                R1positionLeft, R1deformsLeft = P[indexorder[2]], D[indexorder[2]]
+                R1positionRight, R1deformsRight = P[indexorder[3]], D[indexorder[3]]
+                
+                # # get motion amplitude
+                # motionAntxyz.append(_calculateAmplitude(deformsAnt, dim='xyz')[0]) # dmax, p1, p2
+                # motionAntx = _calculateAmplitude(deformsAnt, dim='x')[0]
+                # motionAnty = _calculateAmplitude(deformsAnt, dim='y')[0]
+                # motionAntz = _calculateAmplitude(deformsAnt, dim='z')[0]
+                # motionPostxyz = _calculateAmplitude(deformsPost, dim='xyz')[0] # dmax, p1, p2
+                # motionPostx = _calculateAmplitude(deformsPost, dim='x')[0]
+                # motionPosty = _calculateAmplitude(deformsPost, dim='y')[0]
+                # motionPostz = _calculateAmplitude(deformsPost, dim='z')[0]
+                # motionLeftxyz = _calculateAmplitude(deformsLeft, dim='xyz')[0] # dmax, p1, p2
+                # motionLeftx = _calculateAmplitude(deformsLeft, dim='x')[0]
+                # motionLefty = _calculateAmplitude(deformsLeft, dim='y')[0]
+                # motionLeftz = _calculateAmplitude(deformsLeft, dim='z')[0]
+                # motionRightxyz = _calculateAmplitude(deformsRight, dim='xyz')[0] # dmax, p1, p2
+                # motionRightx = _calculateAmplitude(deformsRight, dim='x')[0]
+                # motionRighty = _calculateAmplitude(deformsRight, dim='y')[0]
+                # motionRightz = _calculateAmplitude(deformsRight, dim='z')[0]
+                #
+                # # store in dict
+                # motion = {'xyz': motionOutxyz,
+                #             'x': motionOutx,
+                #             'y': motionOuty,
+                #             'z': motionOutz,
+                #             }
+                
+                # R2
+                colStart = 'V'
+                positionAnt, deformsAnt, poscycleAnt = readPosDeformsOverCycle(
+                    sheet, time=time, rowStart=rowsStart[0], colStart=colStart, nphases=10 ) # 1x3, 10x3, and 10x3
+                positionPost, deformsPost, poscyclePost = readPosDeformsOverCycle(
+                    sheet, time=time, rowStart=rowsStart[1], colStart=colStart, nphases=10 )
+                positionLeft, deformsLeft, poscycleLeft = readPosDeformsOverCycle(
+                    sheet, time=time, rowStart=rowsStart[2], colStart=colStart, nphases=10 )
+                positionRight, deformsRight, poscycleRight = readPosDeformsOverCycle(
+                    sheet, time=time, rowStart=rowsStart[3], colStart=colStart, nphases=10 )
+                # check and reorder ant post left right
+                P = [positionAnt, positionPost, positionLeft, positionRight]
+                D = [deformsAnt,  deformsPost,  deformsLeft,  deformsRight]
+                indexorder = orderlocation(positionAnt, positionPost, positionLeft, positionRight) # index A, P, L, R
+                R2positionAnt, R2deformsAnt = P[indexorder[0]], D[indexorder[0]]
+                R2positionPost, R2deformsPost = P[indexorder[1]], D[indexorder[1]]
+                R2positionLeft, R2deformsLeft = P[indexorder[2]], D[indexorder[2]]
+                R2positionRight, R2deformsRight = P[indexorder[3]], D[indexorder[3]]
+                
+                # Get distance between R1 R2 ant post left right
+                #handle missing scans
+                try:
+                    output = point_to_point_pulsatility(R1positionAnt, R1deformsAnt, R2positionAnt, R2deformsAnt)
+                    distancechangeAnt = output[5][0] # index 5 is pulsatility in [mm, %]
+                    distancechangePAnt = output[5][1]
+                    output = point_to_point_pulsatility(R1positionPost, R1deformsPost, R2positionPost, R2deformsPost)
+                    distancechangePost = output[5][0]
+                    distancechangePPost = output[5][1]
+                    output = point_to_point_pulsatility(R1positionLeft, R1deformsLeft, R2positionLeft, R2deformsLeft)
+                    distancechangeLeft = output[5][0]
+                    distancechangePLeft = output[5][1]
+                    output = point_to_point_pulsatility(R1positionRight, R1deformsRight, R2positionRight, R2deformsRight)
+                    distancechangeRight = output[5][0]
+                    distancechangePRight = output[5][1]
+                    
+                    antDistOverTime.append(distancechangeAnt)
+                    antDistPOverTime.append(distancechangePAnt)
+                    postDistOverTime.append(distancechangePost)
+                    postDistPOverTime.append(distancechangePPost)
+                    leftDistOverTime.append(distancechangeLeft) 
+                    leftDistPOverTime.append(distancechangePLeft) 
+                    rightDistOverTime.append(distancechangeRight)
+                    rightDistPOverTime.append(distancechangePRight)
+                    
+                except ValueError:
+                    antDistOverTime.append(np.nan)
+                    antDistPOverTime.append(np.nan)
+                    postDistOverTime.append(np.nan)
+                    postDistPOverTime.append(np.nan)
+                    leftDistOverTime.append(np.nan) 
+                    leftDistPOverTime.append(np.nan) 
+                    rightDistOverTime.append(np.nan)
+                    rightDistPOverTime.append(np.nan)
+            
+            # collect for pts
+            antDistOverTime_pts.append(np.asarray(antDistOverTime))
+            antDistPOverTime_pts.append(np.asarray(antDistPOverTime))
+            postDistOverTime_pts.append(np.asarray(postDistOverTime))
+            postDistPOverTime_pts.append(np.asarray(postDistPOverTime))
+            leftDistOverTime_pts.append(np.asarray(leftDistOverTime))
+            leftDistPOverTime_pts.append(np.asarray(leftDistPOverTime)) 
+            rightDistOverTime_pts.append(np.asarray(rightDistOverTime))
+            rightDistPOverTime_pts.append(np.asarray(rightDistPOverTime))
+            
+        # Store to .mat
+        if storemat:
+            # mm
+            self.store_var_to_mat(np.asarray(antDistOverTime_pts), varname='distchangebetweenR1R2_pts_ant')
+            self.store_var_to_mat(np.asarray(postDistOverTime_pts), varname='distchangebetweenR1R2_pts_post')
+            self.store_var_to_mat(np.asarray(leftDistOverTime_pts), varname='distchangebetweenR1R2_pts_left')
+            self.store_var_to_mat(np.asarray(rightDistOverTime_pts), varname='distchangebetweenR1R2_pts_right')
+            # %
+            self.store_var_to_mat(np.asarray(antDistPOverTime_pts), varname='distchangePbetweenR1R2_pts_ant')
+            self.store_var_to_mat(np.asarray(postDistPOverTime_pts), varname='distchangePbetweenR1R2_pts_post')
+            self.store_var_to_mat(np.asarray(leftDistPOverTime_pts), varname='distchangePbetweenR1R2_pts_left')
+            self.store_var_to_mat(np.asarray(rightDistPOverTime_pts), varname='distchangePbetweenR1R2_pts_right')
     
     def plot_pulsatility_during_cycle(self, patients=['LSPEAS_001'], analysis=['AP'], 
                 time = 'discharge', ring='R1', ylim=[20, 35], ylimRel=[-3,3], saveFig=False):
@@ -1130,7 +1296,13 @@ class MotionAnalysis():
         storemat = os.path.join(storematdir, varname+'.mat')
         
         storevar = dict()
-        storevar[varname] = variable
+        # check if variable has multiple vars in list
+        if isinstance(variable, list):
+            for i, var in enumerate(variable):
+                name = varname+'{}'.format(i)
+                storevar[name] = var
+        else:
+            storevar[varname] = variable
         
         storevar['workbook_stent'] = self.workbook_stent
         storevar['patients'] = self.patients
@@ -1139,6 +1311,58 @@ class MotionAnalysis():
         print('')
         print('variable {} was stored as.mat to {}'.format(varname, storemat))
 
+
+def readPosDeformsOverCycle(sheet, time=0, rowStart=18, colStart='B', nphases=10 ):
+    """ Read deforms during phases in x,y,z in a scan
+    colStart is column for R1 = B or R2 = V; rowStart is start of deforms in excel
+    * array with point coordinates avgreg 1x3, deforms 10x3, pointpositions 10x3
+    """
+    rowStart = rowStart-1
+    colindex = time # 0,1,2,3,4 for 'Discharge', '1M' ...
+    colStart = column_index_from_string(colStart)+colindex*4-1 # B, F, J... 4 cols
+    # read deforms
+    deforms = read_deforms(sheet,rowStart,colStart,10)
+    deforms = np.asarray(deforms) #10x3
+    # location in avgreg/mid cycle
+    pos = sheet.rows[rowStart-1][colStart:colStart+3] #3tuple
+    pos = [obj.value for obj in pos] #3tuple x y z
+    pos = np.asarray(pos) #1x3 mid cycle
+    # locations during cycle
+    # handle unscored scans
+    try:
+        poscycle = pos+deforms
+        poscycle = np.asarray(poscycle) #10x3
+    except TypeError: # create arrays with Nans
+        pos = np.ones_like(pos)*np.nan
+        deforms = np.ones_like(deforms)*np.nan
+        poscycle = deforms 
+    
+    return pos, deforms, poscycle
+
+def orderlocation(positionAnt, positionPost, positionLeft, positionRight):
+    """
+    origin of vol is right ant superior
+    """ 
+    A = np.asarray([positionAnt, positionPost, positionLeft, positionRight])
+    # find ant
+    miny = np.where(A[:,1] == np.min(A[:,1]) ) # y=smallest for anterior
+    indexAnt = miny[0] # first el in tuple to get index int
+    # find post
+    maxy = np.where(A[:,1] == np.max(A[:,1]) )
+    indexPost = maxy[0]
+    # find left
+    maxx = np.where(A[:,0] == np.max(A[:,0]) ) # x=greatest for left
+    indexLeft = maxx[0]
+    # find right
+    minx = np.where(A[:,0] == np.min(A[:,0]) )
+    indexRight = minx[0]
+    
+    try:
+        indexorder = [int(indexAnt), int(indexPost), int(indexLeft), int(indexRight)]
+    except: #handle missing scans, nan values
+        indexorder = [0,1,2,3]
+    
+    return indexorder
 
 def readDistancesOverCycle(sheet,rowStart=50, colStart='B', colOffset=0, time='discharge', nphases=10):
     """ read distances over all phases cardiac cycle in excel.
@@ -1319,7 +1543,7 @@ if __name__ == '__main__':
     # foo.plot_pulsatility_line_per_patient_or_mean(patients=None, ylim=[0, 1], ylim_perc=[0,4], 
     #                 plottype='max', analysis='pulsatility', storemat=False, saveFig=False)
     # foo.plot_pulsatility_line_per_patient_or_mean(patients=None, ylim=[0, 1], ylim_perc=[0,4], 
-                    # plottype='directionsmean', analysis='pulsatility', saveFig=True)
+                    # plottype='directionsmean', analysis='pulsatility', saveFig=False)
     
     ## store blood pressure
     # foo.plot_pulsatility_line_per_patient_or_mean(patients=None, ylim=[0, 200], ylim_perc=[0,4], 
@@ -1327,15 +1551,16 @@ if __name__ == '__main__':
     
     ## store compliance
     # foo.plot_pulsatility_line_per_patient_or_mean(patients=None, ylim=[0, 9], ylim_perc=[0,4], 
-    #                 plottype='max', analysis='compliance', storemat=True, saveFig=True)
+    #                 plottype='max', analysis='compliance', storemat=True, saveFig=False)
     # foo.plot_pulsatility_line_per_patient_or_mean(patients=None, ylim=[0, 9], ylim_perc=[0,4], 
     #                 plottype='directionsmean', analysis='compliance', storemat=False, saveFig=False)
     
     ## plot pulsatility during the cycle
     # foo.plot_pulsatility_during_cycle(patients=['LSPEAS_002'], analysis=['AP', 'LR', 'LARP', 'RALP'], 
-    #         time = '12M', ring= 'R2', ylim=[24, 32], ylimRel=[-1,1], saveFig=True)
+    #         time = '12M', ring= 'R2', ylim=[24, 32], ylimRel=[-1,1], saveFig=False)
     
-    
+    ## get and store distance between R1 R2 at ant post left right
+    # foo.get_R1R2distance_change_peaks_valleys(patients=None, storemat=True)
     
     
     
