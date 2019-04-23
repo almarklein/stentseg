@@ -127,7 +127,8 @@ def loadvol(basedir, ptcode=None, ctcode=None, cropname=None, what='phases', fna
             s[key] = vv.Aarray(s[key], s.sampling, s.origin)
         elif key.startswith('deform'):
             fields = s[key]
-            s[key] = [vv.Aarray(field, s.sampling, s.origin) for field in fields]
+            s[key] = [vv.Aarray(field, s.sampling, s.origin) for field in fields] # origin of volume is added as meta-data
+            #[vv.Aarray(field, s.sampling, [0,0,0]) for field in fields] would use wrong deform-data when deforming
     return s
 
 
