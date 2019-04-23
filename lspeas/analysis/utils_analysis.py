@@ -58,20 +58,20 @@ def _initaxis(axis, legend=None, xlabel=None, ylabel=None, labelsize=16,
     plt.tight_layout() # so that labels are not cut off
 
 
+def read_deforms(sheet,row,col,nphases):
+    """ read x y z * nphases from given cell (row,col)
+    """ 
+    R1_ant_vectors_obj = [sheet.rows[row+i][col:col+3] for i in range(nphases) ] # deforms/displacement
+    R1_ant_vectors = []
+    for el in R1_ant_vectors_obj:
+        values = [obj.value for obj in el]
+        R1_ant_vectors.append(values)
+    R1_ant_vectors = np.asarray(R1_ant_vectors) 
+    return R1_ant_vectors
+
 def readRingExcel(sheet, ptcode, ctcode, ring='R1', motion=False, nphases=10, locationcheck=True):
     """ To read peak and valley locations, R1 or R2, up to 24M
     """
-    
-    def read_deforms(sheet,row,col,nphases):
-        """ read x y z * nphases from given cell (row,col)
-        """ 
-        R1_ant_vectors_obj = [sheet.rows[row+i][col:col+3] for i in range(nphases) ] # deforms/displacement
-        R1_ant_vectors = []
-        for el in R1_ant_vectors_obj:
-            values = [obj.value for obj in el]
-            R1_ant_vectors.append(values)
-        R1_ant_vectors = np.asarray(R1_ant_vectors) 
-        return R1_ant_vectors
     
     def check_left_right_ant_post(R_left, R_right, R_left_vectors, R_right_vectors, 
                                 R_ant, R_post, R_ant_vectors, R_post_vectors,
