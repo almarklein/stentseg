@@ -20,86 +20,6 @@ from visvis import ssdf
 from stentseg.utils.picker import pick3d
 from stentseg.utils.visualization import DrawModelAxes
 
-# Select the ssdf basedir
-basedir = select_dir(os.getenv('LSPEAS_BASEDIR', ''),
-                     r'D:\LSPEAS\LSPEAS_ssdf',
-                     r'F:\LSPEAS_ssdf_backup',r'G:\LSPEAS_ssdf_backup')
-
-# Select location storeOutputTemplate EXCEL file
-exceldir = select_dir(r'C:\Users\Maaike\Desktop',
-            r'D:\Profiles\koenradesma\Desktop')
-
-# Select dataset to register
-ptcode = 'LSPEAS_023'
-ctcode = '24months'
-cropname = 'ring'
-modelname = 'modelavgreg'
-
-# Load static CT image to add as reference
-s = loadvol(basedir, ptcode, ctcode, cropname, 'avgreg')
-vol = s.vol
-
-# Load the stent model and mesh
-s2 = loadmodel(basedir, ptcode, ctcode, cropname, modelname)
-model = s2.model
-
-
-## Start visualization and GUI
-
-clim = (0,2500)
-showVol = 'MIP'
-
-fig = vv.figure(); vv.clf()
-fig.position = 9.00, 30.00,  944.00, 1002.00
-a = vv.gca()
-label = DrawModelAxes(vol, model, a, getLabel=True, clim=clim, showVol=showVol, mw=10)
-vv.title('Model for LSPEAS %s  -  %s' % (ptcode[7:], ctcode))
-viewAP = {'zoom': 0.006,'fov': 0.0,
- 'daspect': (1.0, 1.0, -1.0),
- 'azimuth': 0.0,
- 'roll': 0.0}
-
-# Set view
-# a.SetView(viewAP)
-
-# Initialize labels
-t0 = vv.Label(a, '\b{Node nr|location}: ', fontSize=11, color='w')
-t0.position = 0.1, 25, 0.5, 20  # x (frac w), y, w (frac), h
-t0.bgcolor = None
-t0.visible = True
-t1 = vv.Label(a, '\b{Nodepair}: ', fontSize=11, color='w')
-t1.position = 0.1, 45, 0.5, 20  # x (frac w), y, w (frac), h
-t1.bgcolor = None
-t1.visible = False
-t2 = vv.Label(a, 'Node-to-node Min: ', fontSize=11, color='w')
-t2.position = 0.1, 65, 0.5, 20
-t2.bgcolor = None
-t2.visible = False
-t3 = vv.Label(a, 'Node-to-node Max: ', fontSize=11, color='w')
-t3.position = 0.1, 85, 0.5, 20
-t3.bgcolor = None
-t3.visible = False
-t4 = vv.Label(a, 'Node-to-node Median: ', fontSize=11, color='w')
-t4.position = 0.1, 105, 0.5, 20
-t4.bgcolor = None
-t4.visible = False
-t5 = vv.Label(a, 'Node-to-node Q1 and Q3: ', fontSize=11, color='w')
-t5.position = 0.1, 125, 0.5, 20
-t5.bgcolor = None
-t5.visible = False
-t6 = vv.Label(a, '\b{Node-to-node Pulsatility: }', fontSize=11, color='c')
-t6.position = 0.1, 145, 0.5, 20
-t6.bgcolor = None
-t6.visible = False
-
-# Initialize output variable to store pulsatility analysis
-storeOutput = list()
-# outputmaxP = list()
-selected_nodes = list()
-
-# Add clickable nodes
-scale = 0.7
-node_points = _utils_GUI.interactive_node_points(model, scale=0.7)
 
 def on_key(event):
     global node_points 
@@ -459,14 +379,100 @@ def storeOutputToExcel(storeOutput, exceldir):
     #vv.screenshot(r'C:\Users\Maaike\Desktop\storeScreenshot.png', vv.gcf(), sf=2)
     workbook.close()
 
-# Bind event handlers
-fig.eventKeyDown.Bind(on_key)
-_utils_GUI.node_points_callbacks(node_points, selected_nodes, t0=t0) # bind callback functions to node points
-fig.eventKeyDown.Bind(lambda event: _utils_GUI.ViewPresets(event) )
 
-# Print user instructions
-print('')
-print('n = add node to click from graph point closest to [picked point]')
-print('Enter = get distance between selected nodes and/or midpoints')
-print('Esc = finish analysis, STORE TO EXCEL desktop')
-print('x = axis invisible/visible')
+if __name__ == '__main__':
+    
+    # Select the ssdf basedir
+    basedir = select_dir(os.getenv('LSPEAS_BASEDIR', ''),
+                        r'D:\LSPEAS\LSPEAS_ssdf',
+                        r'F:\LSPEAS_ssdf_backup',r'G:\LSPEAS_ssdf_backup')
+    
+    # Select location storeOutputTemplate EXCEL file
+    exceldir = select_dir(r'C:\Users\Maaike\Desktop',
+                r'D:\Profiles\koenradesma\Desktop')
+    
+    # Select dataset to register
+    ptcode = 'LSPEAS_023'
+    ctcode = '24months'
+    cropname = 'ring'
+    modelname = 'modelavgreg'
+    
+    # Load static CT image to add as reference
+    s = loadvol(basedir, ptcode, ctcode, cropname, 'avgreg')
+    vol = s.vol
+    
+    # Load the stent model and mesh
+    s2 = loadmodel(basedir, ptcode, ctcode, cropname, modelname)
+    model = s2.model
+    
+    
+    ## Start visualization and GUI
+    
+    clim = (0,2500)
+    showVol = 'MIP'
+    
+    fig = vv.figure(); vv.clf()
+    fig.position = 9.00, 30.00,  944.00, 1002.00
+    a = vv.gca()
+    label = DrawModelAxes(vol, model, a, getLabel=True, clim=clim, showVol=showVol, mw=10)
+    vv.title('Model for LSPEAS %s  -  %s' % (ptcode[7:], ctcode))
+    viewAP = {'zoom': 0.006,'fov': 0.0,
+    'daspect': (1.0, 1.0, -1.0),
+    'azimuth': 0.0,
+    'roll': 0.0}
+    
+    # Set view
+    # a.SetView(viewAP)
+    
+    # Initialize labels
+    t0 = vv.Label(a, '\b{Node nr|location}: ', fontSize=11, color='w')
+    t0.position = 0.1, 25, 0.5, 20  # x (frac w), y, w (frac), h
+    t0.bgcolor = None
+    t0.visible = True
+    t1 = vv.Label(a, '\b{Nodepair}: ', fontSize=11, color='w')
+    t1.position = 0.1, 45, 0.5, 20  # x (frac w), y, w (frac), h
+    t1.bgcolor = None
+    t1.visible = False
+    t2 = vv.Label(a, 'Node-to-node Min: ', fontSize=11, color='w')
+    t2.position = 0.1, 65, 0.5, 20
+    t2.bgcolor = None
+    t2.visible = False
+    t3 = vv.Label(a, 'Node-to-node Max: ', fontSize=11, color='w')
+    t3.position = 0.1, 85, 0.5, 20
+    t3.bgcolor = None
+    t3.visible = False
+    t4 = vv.Label(a, 'Node-to-node Median: ', fontSize=11, color='w')
+    t4.position = 0.1, 105, 0.5, 20
+    t4.bgcolor = None
+    t4.visible = False
+    t5 = vv.Label(a, 'Node-to-node Q1 and Q3: ', fontSize=11, color='w')
+    t5.position = 0.1, 125, 0.5, 20
+    t5.bgcolor = None
+    t5.visible = False
+    t6 = vv.Label(a, '\b{Node-to-node Pulsatility: }', fontSize=11, color='c')
+    t6.position = 0.1, 145, 0.5, 20
+    t6.bgcolor = None
+    t6.visible = False
+    
+    # Initialize output variable to store pulsatility analysis
+    storeOutput = list()
+    # outputmaxP = list()
+    selected_nodes = list()
+    
+    # Add clickable nodes
+    scale = 0.7
+    node_points = _utils_GUI.interactive_node_points(model, scale=0.7)
+    
+    
+    # Bind event handlers
+    fig.eventKeyDown.Bind(on_key)
+    _utils_GUI.node_points_callbacks(node_points, selected_nodes, t0=t0) # bind callback functions to node points
+    fig.eventKeyDown.Bind(lambda event: _utils_GUI.ViewPresets(event) )
+    
+    # Print user instructions
+    print('')
+    print('n = add node to click from graph point closest to [picked point]')
+    print('Enter = get distance between selected nodes and/or midpoints')
+    print('Esc = finish analysis, STORE TO EXCEL desktop')
+    print('x = axis invisible/visible')
+
