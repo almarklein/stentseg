@@ -2,49 +2,78 @@
 """
 
 
-def create_mesh_with_values(g, radius=1.0, simplified=True): 
+# def create_mesh_with_values(g, radius=1.0, simplified=True): 
+#     """ Create a Mesh object from the graph. The values of the mesh
+#     encode triplets (node1, node2, weight) where node1 and node2 are
+#     indices to nodes in the graph and weight is the relative proximity
+#     to these nodes.
+#     
+#     The values array can then be used to set the value to any kind
+#     of information derived from the nodes.
+#     
+#     """
+#     from visvis.processing import lineToMesh, combineMeshes
+#     # todo: this still uses the old mesh model class
+#     
+#     # Init list of meshes
+#     meshes = []
+#     
+#     for e in g.GetEdges():
+#         # Obtain path of edge and make mesh
+#         if simplified:
+#             # Straight path
+#             path, values = vv.Pointset(3), vv.Pointset(3)
+#             path.append(e.end1._data); values.append(e._i1, e._i2, 0)
+#             path.append(e.end2._data); values.append(e._i1, e._i2, 1)
+#             #values = [e.end1._angleChange, e.end2._angleChange]
+#         else:
+#             path = vv.Pointset(e.props[2].data)
+#             #values = values.reshape(-1, 1)
+#             values = vv.Pointset(3)
+#             for i in np.linspace(0.0, 1.0, len(path)):
+#                 values.append(e._i1, e._i2, i)
+#         meshes.append( lineToMesh(path, radius, 8, values) )
+#     
+#     # Combine meshes and return
+#     if meshes:
+#         return combineMeshes(meshes)
+#     else:
+#         return None
+
+def create_mesh_with_values(graph, valueskey='path_curvature_change', radius=1.0):
     """ Create a Mesh object from the graph. The values of the mesh
-    encode triplets (node1, node2, weight) where node1 and node2 are
-    indices to nodes in the graph and weight is the relative proximity
-    to these nodes.
-    
-    The values array can then be used to set the value to any kind
-    of information derived from the nodes.
-    
-    """
+    encode the *given values* at the points on the *paths* in the graph.
+    E.g. curvature change at each point
+    """ 
     from visvis.processing import lineToMesh, combineMeshes
-    # todo: this still uses the old mesh model class
+    from visvis import Pointset  # lineToMesh does not like the new PointSet class
+    from stentseg.utils import PointSet
+    import numpy as np
     
     # Init list of meshes
     meshes = []
     
-    for e in g.GetEdges():
-        # Obtain path of edge and make mesh
-        if simplified:
-            # Straight path
-            path, values = vv.Pointset(3), vv.Pointset(3)
-            path.append(e.end1._data); values.append(e._i1, e._i2, 0)
-            path.append(e.end2._data); values.append(e._i1, e._i2, 1)
-            #values = [e.end1._angleChange, e.end2._angleChange]
-        else:
-            path = vv.Pointset(e.props[2].data)
-            #values = values.reshape(-1, 1)
-            values = vv.Pointset(3)
-            for i in np.linspace(0.0, 1.0, len(path)):
-                values.append(e._i1, e._i2, i)
-        meshes.append( lineToMesh(path, radius, 8, values) )
-    
+    for n1,n2 in graph.edges():
+        # obtain path and deforms of edge
+        path = graph.edge[n1][n2]['path']
+        # obtain values for points on path
+        pathValues = graph.edge[n1][n2][valueskey]
+        # create mesh for path
+        values = np.vstack(pathValues)
+        path, values = Pointset(path), values   
+        meshes.append( lineToMesh(path, radius, 8, values) ) # 8 refers to number of vertices on tube
+
     # Combine meshes and return
     if meshes:
         return combineMeshes(meshes)
     else:
         return None
 
-
+# todo: wip
 def make_mesh_dynamic_with_abs_displacement(mesh,deforms_f,origin,dim ='z',motion='amplitude',radius=1.0,**kwargs):
-    """ Create dynamic Mesh object from mesh
+    """ Create Mesh object with color values from mesh, e.g. of vessel
     Input:  origin from volume
-            deforms forward
+            deforms forward??
             invertZ, True of False. Inverts vertices value for z
     Output: 
     """
@@ -79,7 +108,7 @@ def make_mesh_dynamic_with_abs_displacement(mesh,deforms_f,origin,dim ='z',motio
     return mesh
     
     
-def create_mesh_with_abs_displacement(graph, radius = 1.0, dim = 'z', motion = 'amplitude'):
+def create_mesh_with_abs_displacement(graph, radius = 1.0, dim = 'xyz', motion = 'amplitude'):
     """ Create a Mesh object from the graph. The values of the mesh
     encode the *absolute displacement* at the points on the *paths* in the graph.
     Displacement can be the absolute displacement of a point in xyz, xy, z, y, or x
@@ -213,6 +242,7 @@ def convert_mesh_values_to_angle_change(m, g, i=None):
     return F1 * angleChanges[I1] + F2 * angleChanges[I2]
 
 
+#todo: move to utils
 def get_graph_in_phase(graph, phasenr):
     """ Get position of model in a certain phase
     """
