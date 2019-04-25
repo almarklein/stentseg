@@ -77,21 +77,23 @@ def reDrawModel(vol, model, interactive=True, ax=None):
         ax.SetView(view)
         
 
-def make_model_dynamic(model, deforms,  modelOrigin):
+def make_model_dynamic(model, deforms, origin):
     # modelpacked = model.pack()
     # g = stentgraph.StentGraph()
     # g.unpack(modelpacked)
     # First clear deforms in graph 
     for n in model.nodes():
         d = model.node[n]
-        p = d.pop('deforms', None)
+        # use dictionary comprehension to delete key
+        for key in [key for key in d if key == 'deforms']: del d[key]
     
     for n1,n2 in model.edges():
         d = model.edge[n1][n2]
-        p = d.pop('pathdeforms', None)
+        # use dictionary comprehension to delete key
+        for key in [key for key in d if key == 'pathdeforms']: del d[key]
     
-    incorporate_motion_nodes(model, deforms, modelOrigin) # adds deforms PointSets
-    incorporate_motion_edges(model, deforms, modelOrigin) # adds deforms PointSets
+    incorporate_motion_nodes(model, deforms, origin) # adds deforms PointSets
+    incorporate_motion_edges(model, deforms, origin) # adds deforms PointSets
     
     return model
 
