@@ -91,7 +91,6 @@ def incorporate_motion_edges(g, deforms, origin):
     """ Incorporate motion to edges
     An attribute _pathdeforms is added to each edge, which contains the
     deformation at each point on the path 
-    
     """
 
     for n1, n2 in g.edges():
@@ -121,7 +120,6 @@ def incorporate_motion_edges(g, deforms, origin):
             pathdeforms.append(pointdeforms) # for points on path their 10 deforms
         # Add pathdeforms to edge
         g.add_edge(n1, n2, pathdeforms = pathdeforms)
-        # todo: better if pathdeforms is a PointSet? possible?
 
 
 def calculate_angle_changes(g):
