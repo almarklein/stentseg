@@ -12,15 +12,15 @@ def measure_curvature(pp, deforms):
     * max_curvature locations list of 10 positions)
     * tuple (position, max-value) for the point with the most curvature change.
     """
-    pp = np.asarray(pp)
+    pp = np.asarray(pp) #todo: origin should be taken into account?! see dynamic.py
 
     # Calculate curvature array in each phase
     curvatures_per_phase = []
     for phase in range(len(deforms)):
         deform = deforms[phase]
-        dx = deform.get_field_in_points(pp, 0)
+        dx = deform.get_field_in_points(pp, 0) #todo: 0 = z?! see dynamic.py
         dy = deform.get_field_in_points(pp, 1)
-        dz = deform.get_field_in_points(pp, 2)
+        dz = deform.get_field_in_points(pp, 2) #todo: 2 = x?!
         deform_vectors = np.stack([dx, dy, dz], 1)
         curvatures_per_phase.append(get_curvatures(pp + deform_vectors))
 
@@ -41,10 +41,10 @@ def measure_curvature(pp, deforms):
     max_index, max_change, max_value = 0, 0, 0
     for index in range(len(pp)):
         curvature_per_phase = [float(curvatures_per_phase[phase][index]) for phase in range(len(deforms))]
-        change = max(curvature_per_phase) / min(curvature_per_phase)
+        change = max(curvature_per_phase) / min(curvature_per_phase) #todo: division?? should be minus?!
         if change > max_change:
             max_index, max_change, max_value = index, change, max(curvature_per_phase)
-    max_change = length_along_path(pp, max_index), max_value
+    max_change = length_along_path(pp, max_index), max_value #todo: max_value? should be max_change?!
 
     return mean_per_phase, max_per_phase, max_per_phase_loc, max_change
 
