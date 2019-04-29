@@ -17,11 +17,13 @@ class ecgSlider:
         """
         
         self.container = vv.Wibject(ax)
-        self.slider = vv.Slider(self.container, fullRange=(0,90), value=0 )
+        self.slider = vv.Slider(self.container, fullRange=(0,90), value=0 ) 
+        # value decimals defined in vv.Slider under def _getformat(self)
         self.slider.showTicks = True
         self.slider.edgeColor = 0,0,0
+        self.slider._frontColor = 0,0,1#0.5, 0.7, 0.9
         self.container.bgcolor = 1,0,0
-        self.container.position = 0.15, -20, 0.7, 20 # x y w h
+        self.container.position = 0.35, 0.98, 500, 20 # x y w h
         self.slider.position = 0, 0, 1, 15
         self.fig = fig
         self.maxRange = self.slider.fullRange.max
@@ -47,9 +49,9 @@ class ecgSlider:
     def _OnClose(self, event):
         self._finished = True
     
-    def _OnPosition(self, event): #todo: redundant?
+    def _OnPosition(self, event): # to keep slider position when window is changed
         # update position
-        self.container.position = (0.15, -20, 0.7, 20)
+        self.container.position = 0.35, 0.98, 500, 20 #(0.15, -20, 0.7, 20)
         
     def _OnKey(self, event):
         if event.text == 'w':
