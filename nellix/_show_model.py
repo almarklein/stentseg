@@ -1,6 +1,6 @@
 
 class _Show_Model:
-    def __init__(self,ptcode,ctcode,basedir,meshWithColors=False, motion='amplitude', clim2=(0,2)):
+    def __init__(self,ptcode,ctcode,basedir,showVol='mip',meshWithColors=False, motion='amplitude', clim2=(0,2)):
         """
         Script to show the stent model. [ nellix]
         """
@@ -12,6 +12,7 @@ class _Show_Model:
         from stentseg.utils.datahandling import select_dir, loadvol, loadmodel
         from pirt.utils.deformvis import DeformableTexture3D, DeformableMesh
         from stentseg.stentdirect.stentgraph import create_mesh
+        from stentseg.stentdirect import stentgraph
         from stentseg.utils.visualization import show_ctvolume
         from stentseg.motion.vis import create_mesh_with_abs_displacement
         import copy
@@ -26,18 +27,30 @@ class _Show_Model:
         nr = 1
         # motion = 'amplitude'  # amplitude or sum
         dimension = 'xyz'
-        showVol = 'mip'  # MIP or ISO or 2D or None
+        showVol = showVol  # MIP or ISO or 2D or None
         clim0 = (0,2000)
         # clim2 = (0,2)
         motionPlay = 9, 1   # each x ms, a step of x %
         
         s = loadvol(basedir, ptcode, ctcode, cropname, what = 'deforms')
-        m = loadmodel(basedir, ptcode, ctcode, cropname, 'centerline_modelavgreg')
+        m = loadmodel(basedir, ptcode, ctcode, cropname, 'centerline_total_modelavgreg_deforms')
+        v = loadmodel(basedir, ptcode, ctcode, cropname, modelname='centerline_total_modelvesselavgreg_deforms')
         s2 = loadvol(basedir, ptcode, ctcode, cropname, what='avgreg')
         vol_org = copy.deepcopy(s2.vol)
         s2.vol.sampling = [vol_org.sampling[1], vol_org.sampling[1], vol_org.sampling[2]]
         s2.sampling = s2.vol.sampling
         vol = s2.vol
+        
+        # merge models into one for dynamic visualization
+        model_total = stentgraph.StentGraph()
+        for key in dir(m):
+            if key.startswith('model'):
+                model_total.add_nodes_from(m[key].nodes(data=True)) # also attributes
+                model_total.add_edges_from(m[key].edges(data=True))
+        for key in dir(v):
+            if key.startswith('model'):
+                model_total.add_nodes_from(v[key].nodes(data=True)) # also attributes
+                model_total.add_edges_from(v[key].edges(data=True))
         
         # Load deformations (forward for mesh)
         deformkeys = []
@@ -56,33 +69,30 @@ class _Show_Model:
         deforms_f = [pirt.DeformationFieldForward(*f) for f in deforms]
         deforms_b = [f.as_backward() for f in deforms_f]
         
-        # Load the stent model and mesh+
-        modelmesh = vv.ssdf.new()
-        for key in dir(m):
-            if key.startswith('model'):
-                if meshWithColors:
-                    try:
-                        modelmesh[key] = create_mesh_with_abs_displacement(m[key], 
-                                         radius = 0.7, dim = dimension, motion = motion)
-                    except KeyError:
-                        print('Centerline model has no pathdeforms so we create them')
-                        # use unsampled deforms
-                        deforms2 = [s[key] for key in deformkeys]
-                        # deforms as backward for model
-                        deformsB = [pirt.DeformationFieldBackward(*fields) for fields in deforms2]
-                        # set sampling to original
-                        # for i in range(len(deformsB)):
-                        #         deformsB[i]._field_sampling = tuple(s.sampling)
-                        # not needed because we use unsampled deforms
-                        # Combine ...
-                        incorporate_motion_nodes(m[key], deformsB, s2.origin)
-                        convert_paths_to_PointSet(m[key])
-                        incorporate_motion_edges(m[key], deformsB, s2.origin)
-                        convert_paths_to_ndarray(m[key])
-                        modelmesh[key] = create_mesh_with_abs_displacement(m[key], 
-                                         radius = 0.7, dim = dimension, motion = motion)
-                else:
-                    modelmesh[key] = create_mesh(m[key], 0.7, fullPaths = False)
+        # Create mesh
+        if meshWithColors:
+            try:
+                modelmesh = create_mesh_with_abs_displacement(model_total, 
+                                radius = 0.7, dim = dimension, motion = motion)
+            except KeyError:
+                print('Centerline model has no pathdeforms so we create them')
+                # use unsampled deforms
+                deforms2 = [s[key] for key in deformkeys]
+                # deforms as backward for model
+                deformsB = [pirt.DeformationFieldBackward(*fields) for fields in deforms2]
+                # set sampling to original
+                # for i in range(len(deformsB)):
+                #         deformsB[i]._field_sampling = tuple(s.sampling)
+                # not needed because we use unsampled deforms
+                # Combine ...
+                incorporate_motion_nodes(model_total, deformsB, s2.origin)
+                convert_paths_to_PointSet(model_total)
+                incorporate_motion_edges(model_total, deformsB, s2.origin)
+                convert_paths_to_ndarray(model_total)
+                modelmesh = create_mesh_with_abs_displacement(model_total, 
+                                radius = 0.7, dim = dimension, motion = motion)
+        else:
+            modelmesh = create_mesh(model_total, 0.7, fullPaths = True)
                 
         ## Start vis
         f = vv.figure(nr); vv.clf()
@@ -98,27 +108,31 @@ class _Show_Model:
         t = vv.volshow(vol, clim=clim0, renderStyle=showVol, axes=a)
         vv.xlabel('x (mm)');vv.ylabel('y (mm)');vv.zlabel('z (mm)')
         if meshWithColors:
-            vv.title('Model for ChEVAS %s  (colorbar \b{%s} of motion in mm in %s)' % (ptcode[7:], motion, dimension))
+            if dimension == 'xyz':
+                dim = '3D'
+            vv.title('Model for chEVAS %s  (color-coded %s of movement in %s in mm)' % (ptcode[8:], motion, dim))
         else:
-            vv.title('Model for ChEVAS %s' % (ptcode[7:]))
+            vv.title('Model for chEVAS %s' % (ptcode[8:]))
         
-        for i in modelmesh:
-            # Create deformable mesh
-            dm = DeformableMesh(a, modelmesh[i]) # in x,y,z
-            dm.SetDeforms(*[list(reversed(deform)) for deform in deforms_f]) # from z,y,x to x,y,z
-            if meshWithColors:
-                dm.clim = clim2
-                dm.colormap = vv.CM_JET
+        colorbar = True
+        # Create deformable mesh
+        dm = DeformableMesh(a, modelmesh) # in x,y,z
+        dm.SetDeforms(*[list(reversed(deform)) for deform in deforms_f]) # from z,y,x to x,y,z
+        if meshWithColors:
+            dm.clim = clim2
+            dm.colormap = vv.CM_JET
+            if colorbar:
                 vv.colorbar()
-            else:
-                dm.faceColor = 'g'
-            
-            # Run mesh
-            a.SetLimits()
-            # a.SetView(viewringcrop)
-            dm.MotionPlay(motionPlay[0], motionPlay[1])  # (10, 0.2) = each 10 ms do a step of 20%
-            dm.motionSplineType = 'B-spline'
-            dm.motionAmplitude = 0.5  # For a mesh we can (more) safely increase amplitude
+            colorbar = False
+        else:
+            dm.faceColor = 'g'
+        
+        # Run mesh
+        a.SetLimits()
+        # a.SetView(viewringcrop)
+        dm.MotionPlay(motionPlay[0], motionPlay[1])  # (10, 0.2) = each 10 ms do a step of 20%
+        dm.motionSplineType = 'B-spline'
+        dm.motionAmplitude = 0.5 
         
         ## run ecgslider
         ecg = runEcgSlider(dm, f, a, motionPlay)
