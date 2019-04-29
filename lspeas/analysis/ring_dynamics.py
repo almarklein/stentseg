@@ -13,6 +13,7 @@ from stentseg.utils.picker import pick3d
 from stentseg.utils.visualization import DrawModelAxes, show_ctvolume, plot_points
 from stentseg.utils.centerline import dist_over_centerline
 from stentseg.utils import PointSet, _utils_GUI, visualization
+from stentseg.utils.utils_graphs_pointsets import point_in_pointcloud_closest_to_p
 from stentseg.motion.vis import get_graph_in_phase, create_mesh_with_values
 from stentseg.motion.dynamic import incorporate_motion_nodes, incorporate_motion_edges
 from stentseg.stentdirect import stentgraph
@@ -120,7 +121,7 @@ class _Do_Analysis_Rings:
         self.points_plotted = PointSet(3)
         
         
-    def drawModel(self, model=[], akey='a', a=None, showVol=None, removeStent=None, isoTh=225, 
+    def drawModel(self, model=[], akey='a', a=None, showVol=None, removeStent=None, isoTh=180, 
                 climEditor=True, color=['b'], mw=10, alpha=0.6, **kwargs):
         """ Draw model(s) with white background in given axis
         model = list with models
@@ -166,22 +167,23 @@ class _Do_Analysis_Rings:
                 self.calc_curvature_ring(model, key, deforms, origin, name_output)
                 
         
-    def calc_curvature_ring(self, model, key, deforms, origin, name_output, meshwithcurvature=True):
+    def calc_curvature_ring(self, model, key, deforms, origin, name_output, 
+        smoothfactor=30, meshwithcurvature=True):
         """ Get curvature of ring model and change during the cardiac cycle
         For given ring model and quadrants of ring
         """
-        # pop nodes
-        model = pop_nodes_ring_models(model, deforms, origin) #duplicates on path were removed
+        # Read locations peaks vallleys
+        posAnt, posPost, posLeft, posRight = readLocationPeaksValleys(self.exceldir, 
+                self.workbook_stent, self.ptcode, self.ctcode, ring=key[-2:])
+        
+        # pop nodes, get posterior as start node
+        model = pop_nodes_ring_models(model, deforms, origin, posStart=posPost, smoothfactor=smoothfactor) #duplicates on path were removed
         n1,n2 = model.edges()[0] # model has 1 edge, connected to same node so n1==n2
         pp = model.edge[n1][n2]['path']
         ppdeforms = model.edge[n1][n2]['pathdeforms']
         # measure curvature
         # mean_per_phase, max_per_phase, max_per_phase_loc, max_change = measure_curvature(pp, deforms) 
         #todo: xyz and origin error in measure_curvature?
-        
-        # Read locations peaks vallleys
-        posAnt, posPost, posLeft, posRight = readLocationPeaksValleys(self.exceldir, 
-                self.workbook_stent, self.ptcode, self.ctcode, ring=key[-2:])
         
         # Calculate curvature each phase for all points
         pp = np.asarray(pp) # nx3
@@ -200,12 +202,15 @@ class _Do_Analysis_Rings:
     
         # Max curvature per phase and position (1 tuple per phase)
         max_per_phase = []
-        max_per_phase_loc = []
+        max_per_phase_location = []
+        max_index = []
+        max_rel_index = []
         for curvatures in curvatures_per_phase:
             index = np.argmax(curvatures)
             max_per_phase.append((float(curvatures[index])))
-            max_per_phase_loc.append(length_along_path(pp, index))
-            #todo: define loc with respect to anterior or segments
+            max_per_phase_location.append(length_along_path(pp, index)) # in mm from startnode
+            max_index.append(index)
+            max_rel_index.append(100* (index/(len(pp)-1) )) # percentage of total points; estimation of location relative to posStart
             
         # Max change in curvature (index, indexmm, max-change)
         max_change_index, max_change, max_value, min_value = 0, 0, 0, 0
@@ -221,10 +226,16 @@ class _Do_Analysis_Rings:
                 max_value, min_value = max(curvature_per_phase), min(curvature_per_phase)
                 max_curvature_per_phase = curvature_per_phase
         
-        # max_change_location = length_along_path(pp, max_change_index) # in mm but which way from node?
-        # todo: define position as in which segment and/or closest to A, LA, L, LP, P, RP, R, RA
+        max_change_location = length_along_path(pp, max_change_index) # in mm from startnode
         # location_of_max_change = dist_over_centerline(pp[:-1],cl_point1=pp[0],
-        #                             cl_point2=max_change_point,type='euclidian') # distance from proximal end centerline
+        #    cl_point2=max_change_point,type='euclidian') # distance from proximal end centerline; same output
+        rel_index_max_change = 100* (max_change_index/(len(pp)-1) ) # percentage of total points
+        total_ring_perimeter = length_along_path(pp, len(pp)-1)
+        
+        
+        # todo: get curvature of segments
+        
+        
         
         # add curvature change to model edge for visualization
         model.add_edge(n1, n2, path_curvature_change = curvature_change) # add new key
@@ -237,6 +248,7 @@ class _Do_Analysis_Rings:
             ax.Clear()
             #draw both rings again, current being popped
             self.drawModel(model=[self.modelR1, self.modelR2], akey='a0', a=ax, color=self.colors, mw=10)
+            # self.drawModel(model=[self.model], akey='a0', a=ax, color=['b'], mw=10) # to compare
             # plot point of max curve change
             mc = 'r'
             self.points_plotted.append(max_change_point) # add to PointSet
@@ -247,7 +259,7 @@ class _Do_Analysis_Rings:
                 modelmesh = create_mesh_with_values(model, valueskey='path_curvature_change', radius=0.6)
                 a1 = self.axes['a1']
                 m = vv.mesh(modelmesh, axes=a1)
-                # m.clim = climcurv
+                m.clim = 0, 0.1 # when 2 rings are plotted seperately, clim must be fixed
                 m.colormap = vv.CM_JET
                 # check if colorbar already created
                 if not self.mesh: # empty dict evaluates False
@@ -259,6 +271,7 @@ class _Do_Analysis_Rings:
         print('')
         meanCurvatureCycle = [np.mean(max_curvature_per_phase), np.std(max_curvature_per_phase)] 
         minmaxCurvatureCycle = [min_value, max_value]
+        print('Max curvature change= {}'.format(max_change) )
         # 1/0
         # output = {}
         # output['peakCurvature_per_phase'] = peakAngle_phases
@@ -281,12 +294,25 @@ class _Do_Analysis_Rings:
         # self.storeOutput.append(output)
 
 
-
-def pop_nodes_ring_models(model, deforms, origin):
+def set_direction_of_pp(pp):
+    """ order direction of path so that we always go the same way and can define locations
+    order going clock wise from posterior so that left is ~25% and right is ~75% (top view)
+    """
+    pplength = len(pp)
+    p25 = pp[int(0.25*pplength)]
+    p75 = pp[int(0.75*pplength)]
+    # check which is left and right = dim 0
+    if not p25[0] > p75[0]:
+        # reorder
+        pp = [pp[-i] for i in range(1,len(pp)+1)]
+    
+    return pp
+    
+def pop_nodes_ring_models(model, deforms, origin, posStart, smoothfactor=2):
     """ For curvature calculations and distances between rings, remove nodes to
     define ring models as single edge
     origin is origin of volume crop used in registration to get deforms, stored in s_deforms
-    * graph one edge, made dynamic
+    * graph with one edge, popped, smoothed, and made dynamic
     """
     
     # remove 'nopop' tags from nodes to allow pop for all (if these where created)
@@ -316,9 +342,38 @@ def pop_nodes_ring_models(model, deforms, origin):
     duplicates = PointSet(np.array(list(duplicates)))
     for p in duplicates:
         pp.remove(p) # remove first occurance 
+    
     # now change the edge path
     model.add_edge(n1, n2, path = pp)
     
+    # to relate to location posStart, add node to make this start of pp, remove old edge
+    # get point on graph closest to posStart (will not be exactly the same after pop smooth)
+    n1,n2 = model.edges()[0]
+    assert n1 == n2 # connected to self
+    pp2 = model.edge[n1][n2]['path'] # PointSet
+    pointongraph = point_in_pointcloud_closest_to_p(pp2, posStart)[0] # p in pp, point 
+    pointongraph = tuple(pointongraph.flat) # PointSet to tuple
+    if not pointongraph == tuple(pp2[0].flat): #already is the startnode
+        # get path parts from pointongraph to current node
+        pp3 = [tuple(p.flat) for p in pp2]
+        index = pp3.index(pointongraph)
+        path1 = pp3[1:index+1]
+        path2 = pp3[index:]
+        newpath = path2 + path1
+        #remove old node and path
+        model.remove_node(n1)
+        #add newpath
+        # set direction of path going clockwise (left) from posterior (0)
+        newpath = set_direction_of_pp(newpath)
+        # nodes.add_edge(n1, pointongraph, path = PointSet(np.asarray(path1))  )
+        # model.add_edge(pointongraph, n2, path = PointSet(np.asarray(path2)) )
+        model.add_edge(pointongraph, pointongraph, path = PointSet(np.asarray(newpath)) )
+    else:
+        print('start node of edge was the same as the reference start pos (posterior): extra smooth needed here before analysis?')
+    
+    # smooth path
+    stentgraph.smooth_paths(model, ntimes=smoothfactor)
+       
     # make dynamic again
     incorporate_motion_nodes(model, deforms, origin) # adds deforms PointSets
     incorporate_motion_edges(model, deforms, origin) # adds deforms PointSets
