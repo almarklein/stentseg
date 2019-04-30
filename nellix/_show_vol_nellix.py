@@ -12,18 +12,20 @@ import scipy
 from stentseg.utils import _utils_GUI
 import copy
 from stentseg.utils.picker import pick3d
+from stentseg.apps.record_movie import recordMovie
 
 # Select the ssdf basedir
-basedir = select_dir(r'E:\Nellix_chevas\CT_SSDF\SSDF_automated',
+basedir = select_dir(r'F:\Nellix_chevas\CT_SSDF\SSDF_automated',
                 r'D:\Nellix_chevas_BACKUP\CT_SSDF\SSDF_automated')
 
 # Select dataset to register
-ptcode = 'chevas_09_thin'
+ptcode = 'chevas_02'
 ctcode, nr = '12months', 1
 cropname = 'prox'
 
-s0 = loadvol(basedir, ptcode, ctcode, cropname, 'phases')
 
+## Show single vol
+s0 = loadvol(basedir, ptcode, ctcode, cropname, 'phases')
 # vol = s0.vol
 vol = s0.vol20
 key = 'vol20'
@@ -37,11 +39,11 @@ vol = vol_zoom_type
 
 fig = vv.figure(); vv.clf()
 fig.position = 0.00, 22.00,  1920.00, 1018.00
-clim = (0,2000)
+clim = (0,2500)
 # Show volume
 a1 = vv.subplot(111)
 a1.daspect = 1,1,-1
-t = show_ctvolume(vol, axis=a1, showVol='MIP', clim =clim, isoTh=250, 
+t = show_ctvolume(vol, axis=a1, showVol='ISO', clim =clim, isoTh=250, 
                 removeStent=False, climEditor=True)
 label = pick3d(vv.gca(), vol)
 vv.xlabel('x (mm)');vv.ylabel('y (mm)');vv.zlabel('z (mm)')
@@ -69,15 +71,15 @@ a.daspect = 1, 1, -1
 a.axis.axisColor = 1,1,1
 a.axis.visible = True
 a.bgcolor = 0,0,0
-vv.title('ECG-gated CT scan Nellix %s  -  %s' % (ptcode[7:], ctcode))
+vv.title('Maximum intensity projection cine-loop of the original ECG-gated CT volumes of patient %s' % ptcode[8:])
 
 # Setup data container
 container = vv.MotionDataContainer(a)
 showVol = 'mip'
 for vol in vols:
     #     t = vv.volshow2(vol, clim=(-550, 500)) # -750, 1000
-    t = vv.volshow(vol, clim=(-300, 2000), renderStyle = showVol)
-    t.isoThreshold = 275               # iso or mip work well 
+    t = vv.volshow(vol, clim=(0, 2500), renderStyle = showVol)
+    t.isoThreshold = 350               # iso or mip work well 
     t.parent = container
     if showVol == 'iso':
         t.colormap = {'g': [(0.0, 0.0), (0.33636364, 1.0)],
@@ -85,9 +87,10 @@ for vol in vols:
         'a': [(0.0, 1.0), (1.0, 1.0)],
         'r': [(0.0, 0.0), (0.22272727, 1.0)]}
 
-f.eventKeyDown.Bind(lambda event: _utils_GUI.RotateView(event, [a]) )
+f.eventKeyDown.Bind(lambda event: _utils_GUI.RotateView(event, [a], axishandling=False) )
 f.eventKeyDown.Bind(lambda event: _utils_GUI.ViewPresets(event, [a]) )
 
+foo = recordMovie(frameRate=7)
 
 ## Show 3D movie, by showing one volume that is moved by motion fields
 
