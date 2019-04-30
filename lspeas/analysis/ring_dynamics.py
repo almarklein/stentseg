@@ -120,6 +120,12 @@ class _Do_Analysis_Rings:
         self.storeOutput = list()
         self.points_plotted = PointSet(3)
         
+        # Read locations peaks vallleys
+        self.posAnt, self.posPost, self.posLeft, self.posRight = {}, {}, {}, {}
+        self.posAnt['R1'], self.posPost['R1'], self.posLeft['R1'], self.posRight['R1'] = readLocationPeaksValleys(
+            self.exceldir, self.workbook_stent, self.ptcode, self.ctcode, ring='R1')
+        self.posAnt['R2'], self.posPost['R2'], self.posLeft['R2'], self.posRight['R2'] = readLocationPeaksValleys(
+            self.exceldir, self.workbook_stent, self.ptcode, self.ctcode, ring='R2')
         
     def drawModel(self, model=[], akey='a', a=None, showVol=None, removeStent=None, isoTh=180, 
                 climEditor=True, color=['b'], mw=10, alpha=0.6, **kwargs):
@@ -152,7 +158,7 @@ class _Do_Analysis_Rings:
         """ Calculate curvature of ring models R1, R2 
         * entire ring
         * 4 segments
-        * mean and max curvature per phase
+        * mean and max curvature per phase and change
         * point with max change in curvature
         
         """
@@ -168,16 +174,16 @@ class _Do_Analysis_Rings:
                 
         
     def calc_curvature_ring(self, model, key, deforms, origin, name_output, 
-        smoothfactor=30, meshwithcurvature=True):
+        posStart=None, smoothfactor=30, meshwithcurvature=True):
         """ Get curvature of ring model and change during the cardiac cycle
         For given ring model and quadrants of ring
         """
-        # Read locations peaks vallleys
-        posAnt, posPost, posLeft, posRight = readLocationPeaksValleys(self.exceldir, 
-                self.workbook_stent, self.ptcode, self.ctcode, ring=key[-2:])
-        
+        if posStart is None:
+            posStart = self.posPost[key[-2:]]
+            
         # pop nodes, get posterior as start node
-        model = pop_nodes_ring_models(model, deforms, origin, posStart=posPost, smoothfactor=smoothfactor) #duplicates on path were removed
+        model = pop_nodes_ring_models(model, deforms, origin, posStart=posStart, smoothfactor=smoothfactor) #duplicates on path were removed
+        
         n1,n2 = model.edges()[0] # model has 1 edge, connected to same node so n1==n2
         pp = model.edge[n1][n2]['path']
         ppdeforms = model.edge[n1][n2]['pathdeforms']
@@ -188,57 +194,94 @@ class _Do_Analysis_Rings:
         # Calculate curvature each phase for all points
         pp = np.asarray(pp) # nx3
         ppdeforms = np.asarray(ppdeforms) # nx10x3
-        curvatures_per_phase=[]
+        curvatures_per_phase=[] # list with 10 times nx1 values
         for phase in range(len(ppdeforms[0])): # len=10
             cv = get_curvatures(pp + ppdeforms[:,phase,:])
             # convert mm-1 to cm-1
             cv *= 10
             curvatures_per_phase.append(cv)
         
-        # Mean curvature per phase (1 value per phase)
-        mean_per_phase = []
-        for curvatures in curvatures_per_phase:
-            mean_per_phase.append(float(curvatures.mean()))
-    
-        # Max curvature per phase and position (1 tuple per phase)
-        max_per_phase = []
-        max_per_phase_location = []
-        max_index = []
-        max_rel_index = []
-        for curvatures in curvatures_per_phase:
-            index = np.argmax(curvatures)
-            max_per_phase.append((float(curvatures[index])))
-            max_per_phase_location.append(length_along_path(pp, index)) # in mm from startnode
-            max_index.append(index)
-            max_rel_index.append(100* (index/(len(pp)-1) )) # percentage of total points; estimation of location relative to posStart
-            
-        # Max change in curvature (index, indexmm, max-change)
-        max_change_index, max_change, max_value, min_value = 0, 0, 0, 0
-        curvature_change = [] # collect change for each point
-        for index in range(len(pp)):
-            curvature_per_phase = [float(curvatures_per_phase[phase][index]) for phase in range(len(deforms))] # 10 values for point
-            change = max(curvature_per_phase) - min(curvature_per_phase)
-            curvature_change.append(change)
-            if change > max_change:
-                max_change_index, max_change_point = index, pp[index]
-                max_change = change
-                max_changeP = 100 * (change / min(curvature_per_phase))
-                max_value, min_value = max(curvature_per_phase), min(curvature_per_phase)
-                max_curvature_per_phase = curvature_per_phase
+        # store for reuse with segments
+        self.curvatures_per_phase = curvatures_per_phase
         
-        max_change_location = length_along_path(pp, max_change_index) # in mm from startnode
-        # location_of_max_change = dist_over_centerline(pp[:-1],cl_point1=pp[0],
-        #    cl_point2=max_change_point,type='euclidian') # distance from proximal end centerline; same output
-        rel_index_max_change = 100* (max_change_index/(len(pp)-1) ) # percentage of total points
-        total_ring_perimeter = length_along_path(pp, len(pp)-1)
+        output = {}
+        
+        mean_curvature_output = curvature_mean(curvatures_per_phase)
+        output['mean_curvature_per_phase'] = mean_curvature_output[0]
+        output['mean_curvature_phase_minmax'] = [mean_curvature_output[1], mean_curvature_output[2]]
+        output['mean_curvature_phase_change'] = mean_curvature_output[3] 
+        
+        max_curvature_output = curvature_max(curvatures_per_phase, pp)
+        output['max_per_phase'] = max_curvature_output[0]
+        output['max_per_phase_index'] = max_curvature_output[1]
+        output['max_per_phase_rel_index'] = max_curvature_output[2]
+        output['max_per_phase_location'] = max_curvature_output[3]
+        output['max_phase_minmax'] = [max_curvature_output[4], max_curvature_output[5]]
+        output['max_phase_change'] = max_curvature_output[6]
+        
+        curvature_maxchange_output = curvature_maxchange(curvatures_per_phase, pp)
+        output['curvature_change'] = curvature_maxchange_output[0] #value for each point in pp
+        output['max_change'] = curvature_maxchange_output[1]
+        output['max_changeP'] = curvature_maxchange_output[2]
+        output['min_and_max_value'] = [curvature_maxchange_output[3], curvature_maxchange_output[4]]
+        output['max_change_index'] = curvature_maxchange_output[5]
+        output['max_change_point'] = curvature_maxchange_output[6] # x,y,z location of point on graph
+        output['rel_index_max_change'] = curvature_maxchange_output[7] # percentage of total points
+        output['max_change_location'] = curvature_maxchange_output[8] # in mm from startnode
+        output['total_ring_perimeter'] = curvature_maxchange_output[9]
+        output['max_point_curvature_per_phase'] = curvature_maxchange_output[10]
+        output['curvature_midcycle'] = curvature_maxchange_output[11] #value for each point in pp
+        
+        # # Mean curvature per phase (1 value per phase)
+        # mean_per_phase = []
+        # for curvatures in curvatures_per_phase:
+        #     mean_per_phase.append(float(curvatures.mean()))
+    
+   #    #   # Max curvature per phase and position (1 tuple per phase)
+        # max_per_phase = []
+        # max_per_phase_location = [] # mm
+        # max_index = []
+        # max_rel_index = [] # %
+        # for curvatures in curvatures_per_phase:
+        #     index = np.argmax(curvatures)
+        #     max_per_phase.append((float(curvatures[index])))
+        #     max_per_phase_location.append(length_along_path(pp, index)) # in mm from startnode
+        #     max_index.append(index)
+        #     max_rel_index.append(100* (index/(len(pp)-1) )) # percentage of total points; estimation of location relative to posStart
+        #     
+        # # Max change in curvature (index, indexmm, max-change)
+        # max_change_index, max_change, max_value, min_value = 0, 0, 0, 0
+        # curvature_change = [] # collect change for each point
+        # for index in range(len(pp)):
+        #     curvature_per_phase = [float(curvatures_per_phase[phase][index]) for phase in range(len(deforms))] # 10 values for point
+        #     change = max(curvature_per_phase) - min(curvature_per_phase)
+        #     curvature_change.append(change)
+        #     if change > max_change:
+        #         max_change_index, max_change_point = index, pp[index]
+        #         max_change = change
+        #         max_changeP = 100 * (change / min(curvature_per_phase))
+        #         max_value, min_value = max(curvature_per_phase), min(curvature_per_phase)
+        #         max_curvature_per_phase = curvature_per_phase
+        # 
+        # max_change_location = length_along_path(pp, max_change_index) # in mm from startnode
+        # # location_of_max_change = dist_over_centerline(pp[:-1],cl_point1=pp[0],
+        # #    cl_point2=max_change_point,type='euclidian') # distance from proximal end centerline; same output
+        # rel_index_max_change = 100* (max_change_index/(len(pp)-1) ) # percentage of total points
+        # total_ring_perimeter = length_along_path(pp, len(pp)-1)
         
         
         # todo: get curvature of segments
+        lenring = len(pp)
+        indicesQ025 = 0, int(0.25*lenring) # int floor rounding
+        indicesQ2550 = int(0.25*lenring)+1, int(0.5*lenring)
+        indicesQ5075 = int(0.5*lenring)+1,  int(0.75*lenring)
+        indicesQ75100 = int(0.75*lenring)+1,  lenring-1
         
         
         
         # add curvature change to model edge for visualization
-        model.add_edge(n1, n2, path_curvature_change = curvature_change) # add new key
+        model.add_edge(n1, n2, path_curvature_change = output['curvature_change'] ) # add new key
+        model.add_edge(n1, n2, path_curvature_midcycle = output['curvature_midcycle'] )
         
         # visualize
         if True: # False=do not show
@@ -251,12 +294,13 @@ class _Do_Analysis_Rings:
             # self.drawModel(model=[self.model], akey='a0', a=ax, color=['b'], mw=10) # to compare
             # plot point of max curve change
             mc = 'r'
-            self.points_plotted.append(max_change_point) # add to PointSet
+            self.points_plotted.append(output['max_change_point']) # add to PointSet
             plotted_point = plot_points(self.points_plotted,mc=mc,mw=mw,ls='',alpha=0.7,ax=ax)
             ax.SetView(view)
             # vis mesh 
             if meshwithcurvature:
                 modelmesh = create_mesh_with_values(model, valueskey='path_curvature_change', radius=0.6)
+                # modelmesh = create_mesh_with_values(model, valueskey='curvature_midcycle', radius=0.6)
                 a1 = self.axes['a1']
                 m = vv.mesh(modelmesh, axes=a1)
                 m.clim = 0, 0.1 # when 2 rings are plotted seperately, clim must be fixed
@@ -266,33 +310,94 @@ class _Do_Analysis_Rings:
                     vv.colorbar(axes=a1)
                 self.mesh[key] = m
         
-        # store output
-        print('Curvature during cycle of point with max curvature change= {}'.format(max_curvature_per_phase))
+        # print
+        print('Curvature during cycle of point with max curvature change= {}'.format(output['max_point_curvature_per_phase']))
         print('')
-        meanCurvatureCycle = [np.mean(max_curvature_per_phase), np.std(max_curvature_per_phase)] 
-        minmaxCurvatureCycle = [min_value, max_value]
-        print('Max curvature change= {}'.format(max_change) )
-        # 1/0
-        # output = {}
-        # output['peakCurvature_per_phase'] = peakAngle_phases
-        # output['point_angle_diff_max'] = angleChange 
-        # output['angles_phases'] = anglesCycle 
-        # output['angles_meanstd'] = meanAnglesCycle 
-        # output['angles_minmax'] = minmaxAnglesCycle # where min is sharpest angle
-        # output['anglenodes_positions_cycle'] = anglesCycleNodes #list 10xlist index,n,n2  ,n1,n3 for arms
-        # output['location_point_max_angle_change'] = location_of_midpoint_n # dist from proximal end
-        # output['total_length_chimney_midCycle'] = total_length_cll
-        # output['angleMidCycle'] = anglenew
-        # 
-        # 
-        # # ============
-        # # Store output with name
-        # output['Name'] = name_output
-        # output['Type'] = 'chimney_angle_change'
-        # 
-        # self.angleChange_output = output
-        # self.storeOutput.append(output)
+        print('Max curvature change= {}'.format(output['max_change']) )
+        
+        # ============
+        # Store output with name
+        output['Name'] = name_output
+        output['Type'] = 'curvature_entire_ring'
+        
+        self.curvatureChange_output = output
+        self.storeOutput.append(output)
 
+    
+    def calc_curvature_ring_segments(self, model, key, deforms, origin, name_output, 
+        posStart=None):
+        """
+        """
+    
+    
+def curvature_mean(curvatures_per_phase):
+    """ Given the curvatures along pp for each phase, calculate mean curvature
+    """
+    # Mean curvature per phase (1 value per phase)
+    mean_curvature_per_phase = []
+    for curvatures in curvatures_per_phase:
+        mean_curvature_per_phase.append(float(curvatures.mean()))
+    
+    # stats
+    mean_curvature_phase_min = min(mean_curvature_per_phase)
+    mean_curvature_phase_max = max(mean_curvature_per_phase)
+    mean_curvature_phase_change = mean_curvature_phase_max - mean_curvature_phase_min
+    
+    return (mean_curvature_per_phase, mean_curvature_phase_min, mean_curvature_phase_max, 
+            mean_curvature_phase_change )
+    
+def curvature_max(curvatures_per_phase, pp):
+    """ Given the curvatures along pp for each phase, calculate max curvature
+    """
+    # Max curvature per phase and position (1 tuple per phase)
+    max_per_phase = []
+    max_per_phase_location = [] # mm
+    max_per_phase_index = []
+    max_per_phase_rel_index = [] # %
+    for curvatures in curvatures_per_phase:
+        index = np.argmax(curvatures)
+        max_per_phase.append((float(curvatures[index])))
+        max_per_phase_location.append(length_along_path(pp, index)) # in mm from startnode
+        max_per_phase_index.append(index)
+        max_per_phase_rel_index.append(100* (index/(len(pp)-1) )) # percentage of total points; estimation of location relative to posStart
+    
+    # stats
+    max_phase_min = min(max_per_phase)
+    max_phase_max = max(max_per_phase)
+    max_phase_change = max_phase_max - max_phase_min
+    
+    return (max_per_phase, max_per_phase_index, max_per_phase_rel_index, max_per_phase_location,
+            max_phase_min, max_phase_max, max_phase_change)
+    
+def curvature_maxchange(curvatures_per_phase, pp):
+    """ Given the curvatures along pp for each phase, calculate point with max change in 
+    curvature during phases (cardiac cycle)
+    """
+    # Max change in curvature (index, indexmm, max-change)
+    max_change_index, max_change, max_value, min_value = 0, 0, 0, 0
+    curvature_change = [] # collect change for each point
+    curvature_midcycle = [] # collect mean value over phases as mid cycle
+    for index in range(len(pp)):
+        curvature_per_phase = [float(curvatures_per_phase[phase][index]) for phase in range(len(curvatures_per_phase))] # 10 values for point
+        change = max(curvature_per_phase) - min(curvature_per_phase)
+        curvature_change.append(change)
+        curvature_midcycle.append(np.mean(curvature_per_phase))
+        if change > max_change:
+            max_change_index, max_change_point = index, pp[index]
+            max_change = change
+            max_changeP = 100 * (change / min(curvature_per_phase))
+            max_value, min_value = max(curvature_per_phase), min(curvature_per_phase)
+            max_point_curvature_per_phase = curvature_per_phase
+    
+    max_change_location = length_along_path(pp, max_change_index) # in mm from startnode
+    # location_of_max_change = dist_over_centerline(pp[:-1],cl_point1=pp[0],
+    #    cl_point2=max_change_point,type='euclidian') # distance from proximal end centerline; same output
+    rel_index_max_change = 100* (max_change_index/(len(pp)-1) ) # percentage of total points
+    total_perimeter = length_along_path(pp, len(pp)-1)
+    
+    return (curvature_change, max_change, max_changeP, min_value, max_value, 
+            max_change_index, max_change_point, rel_index_max_change, max_change_location,
+            total_perimeter, max_point_curvature_per_phase, curvature_midcycle)
 
 def set_direction_of_pp(pp):
     """ order direction of path so that we always go the same way and can define locations
@@ -303,7 +408,7 @@ def set_direction_of_pp(pp):
     p75 = pp[int(0.75*pplength)]
     # check which is left and right = dim 0
     if not p25[0] > p75[0]:
-        # reorder
+        # reorder back to front
         pp = [pp[-i] for i in range(1,len(pp)+1)]
     
     return pp
