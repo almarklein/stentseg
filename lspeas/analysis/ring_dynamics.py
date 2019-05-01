@@ -215,10 +215,10 @@ class _Do_Analysis_Rings:
                 alpha = self.alpha
                 # plot with smooth popped models
                 ax = self.axes['a0']
-                vv.plot(ppQ1, ms='', ls='+', mw=10, lc='y', alpha=alpha, axesAdjust=False, axes=ax) 
-                vv.plot(ppQ2, ms='', ls='+', mw=10, lc='g', alpha=alpha, axesAdjust=False, axes=ax)
-                vv.plot(ppQ3, ms='', ls='+', mw=10, lc='r', alpha=alpha, axesAdjust=False, axes=ax)
-                vv.plot(ppQ4, ms='', ls='+', mw=10, lc='b', alpha=alpha, axesAdjust=False, axes=ax)
+                vv.plot(ppQ1, ms='', ls='-', mw=10, lc='y', alpha=alpha, axesAdjust=False, axes=ax) # + gives dashed lines
+                vv.plot(ppQ2, ms='', ls='-', mw=10, lc='g', alpha=alpha, axesAdjust=False, axes=ax)
+                vv.plot(ppQ3, ms='', ls='-', mw=10, lc='r', alpha=alpha, axesAdjust=False, axes=ax)
+                vv.plot(ppQ4, ms='', ls='-', mw=10, lc='b', alpha=alpha, axesAdjust=False, axes=ax)
                 # plot with mesh
                 ax = self.axes['a1']
                 vv.plot(ppQ1, ms='', ls='-', mw=10, lc='y', alpha=alpha, axesAdjust=False, axes=ax) 
@@ -361,7 +361,7 @@ class _Do_Analysis_Rings:
                     curvatures_per_phase_Q1a[i]) for i in range(len(curvatures_per_phase))] 
             
             # path segments
-            ppQ1 = np.append(pp[iQ1b[0]:iQ1b[1]], pp[iQ1a[0]:iQ1a[1]] )
+            ppQ1 = np.append(pp[iQ1b[0]:iQ1b[1]], pp[iQ1a[0]:iQ1a[1]], axis=0 )
             ppQ2 = pp[iQ2[0]:iQ2[1]]
             ppQ3 = pp[iQ3[0]:iQ3[1]]
             ppQ4 = pp[iQ4[0]:iQ4[1]]
