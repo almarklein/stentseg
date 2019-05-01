@@ -4,7 +4,7 @@
 * displacement ring parts/quartiles
 
 Uses excel pulsatility_and_expansion to get location of peaks and valleys
-M.A. Koenrades. Created April 2019
+Copyright 2019, Maaike A. Koenrades
 """
 
 import sys, os
@@ -25,6 +25,7 @@ from stentseg.motion.displacement import calculateMeanAmplitude
 import xlsxwriter
 from datetime import datetime
 import openpyxl
+from openpyxl.utils import column_index_from_string
 from lspeas.utils.curvature import measure_curvature, get_curvatures,length_along_path
 from lspeas.utils.get_anaconda_ringparts import get_model_struts,get_model_rings, _get_model_hooks
 from lspeas.analysis._plot_ring_motion import readPosDeformsOverCycle, orderlocation
@@ -447,7 +448,7 @@ class _Do_Analysis_Rings:
         
         
     def calc_displacement_ring(self, pp, ppDeforms, type, name_output):
-        """ Calculate the displacement of the ring model
+        """ Calculate the displacement of the points in pp
         in x, y, z and 3D
         """
         motionOutxyz = calculateMeanAmplitude(pp,ppDeforms, dim='xyz') # mean, std, min, max
@@ -510,10 +511,10 @@ class _Do_Analysis_Rings:
         for out in storeOutput: # each analysis that was appended to storeOutput
             worksheet = workbook.add_worksheet(out['Name'])
             worksheet.set_column('A:A', 70)
-            worksheet.set_column('B:C', 15)
             worksheet.write('A1', 'Name:', bold)
             worksheet.write('B1', out['Name'], bold)
             if out['Type'] == 'curvature_entire_ring' or out['Type'] == 'curvature_segment_ring':
+                worksheet.set_column('B:C', 15)
                 worksheet.write('A2', 'Type:', bold)
                 worksheet.write('B2', 'Curvature change of ring: max change for a point and peak angles of curvature',bold)
                 
@@ -582,8 +583,55 @@ class _Do_Analysis_Rings:
                 
                 worksheet.write('A27', 'Mean curvature at each phase in cardiac cycle',bold)
                 worksheet.write_row('B27', list(out['mean_curvature_per_phase']) )
+            
+            if out['Type'] == 'displacement_ring':
+                worksheet.write('A2', 'Type:', bold)
+                worksheet.write('B2', 'Displacement of ring in x, y, z and 3D (vector magnitude), mm',bold)
                 
-
+                worksheet.write('A3', 'Reference position start ring' )
+                worksheet.write('B3', out['ReferenceStart'])
+                
+                if 'Q' in out['Name']:
+                    worksheet.write('A4', 'How where segments defined with respect to reference start:' )
+                    worksheet.write('B4', out['QuadrantType'])  
+                    
+                worksheet.write('A5', 'Number of ring path points',bold)
+                worksheet.write('B5', out['number_of_ring_path_points_pp'])
+                
+                worksheet.write('A6', 'XYZ: mean displacement amplitude (vector magnitude), mean, std, min, max',bold)
+                worksheet.write_row('B6', out['mean_amplitudexyz_mean_std_min_max']) # tuple 4 el
+                
+                worksheet.write('A7', 'X: mean displacement amplitude (vector magnitude), mean, std, min, max',bold)
+                worksheet.write_row('B7', out['mean_amplitudex_mean_std_min_max']) # tuple 4 el
+                
+                worksheet.write('A8', 'Y: mean displacement amplitude (vector magnitude), mean, std, min, max',bold)
+                worksheet.write_row('B8', out['mean_amplitudey_mean_std_min_max']) # tuple 4 el
+                
+                worksheet.write('A9', 'Z: mean displacement amplitude (vector magnitude), mean, std, min, max',bold)
+                worksheet.write_row('B9', out['mean_amplitudez_mean_std_min_max']) # tuple 4 el
+                
+                worksheet.write('A11', 'Position mid cycle and deforms of individual points',bold)
+                worksheet.write_row('B11', ['Index','Position'])
+                worksheet.write_row('C12', ['x','y','z'])
+                # write pp
+                worksheet.write_column('B13', np.arange(1, out['number_of_ring_path_points_pp']+1 ))
+                row = 12 # 12=row 13 in excel
+                col = column_index_from_string('C')-1
+                for i, p in enumerate(out['position_of_ring_points_midcycle']):
+                    worksheet.write_row(row+i, col, tuple(p.flat) ) # write x,y,z
+                # write deforms per point
+                col = column_index_from_string('G')-1
+                for i, deforms in enumerate(out['deforms_of_ring_points']): # each point has deforms
+                    for j, phase in enumerate(deforms): #for each phase write x,y,z deform of point
+                        worksheet.write_row(row+i, col+j*4, tuple(phase.flat) ) # x y z and skip 1 col
+                # write deform titles
+                row = 10
+                for j, phase in enumerate(deforms):
+                    worksheet.write(row, col+j*4, 'Deforms {}%'.format(j*10))
+                    worksheet.write_row(row+1, col+j*4, ['x','y','z'])
+                
+                
+        
 def get_measures_curvatures_per_phase(curvatures_per_phase, pp):
     """ Perform mean, max, max change measures and store measures in dict
     """
@@ -845,5 +893,5 @@ if __name__ == '__main__':
     foo.displacement_ring_models(type='fromstart')
     
     # ====================
-    # foo.storeOutputToExcel()
+    foo.storeOutputToExcel()
     
