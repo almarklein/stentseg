@@ -310,7 +310,7 @@ class _Do_Analysis_Rings:
         output['Name'] = name_output # to create a sheet in excelfile patient
         output['Type'] = 'curvature_segment_ring'
         output['ReferenceStart'] = 'posterior (going clockwise so that left is at 25% of ring)'
-        output['SegmentType'] = type
+        output['QuadrantType'] = type
         
         self.storeOutput.append(output)
         
@@ -381,34 +381,105 @@ class _Do_Analysis_Rings:
             if key.startswith('modelR'): #R1 and R2
                 model = s[key]
                 key2 = key[-2:] # modelR1 to R1
+                # get model path and pathdeforms
+                assert model.number_of_edges() == 1 # a ring is one edge
+                n1,n2 = model.edges()[0] # model has 1 edge, connected to same node so n1==n2
+                pp = model.edge[n1][n2]['path']
+                ppdeforms = model.edge[n1][n2]['pathdeforms']
+                
+                # for entire ring
                 name_output = 'Motion{}'.format(key2)
-                self.calc_displacement_ring(model, key, name_output)
+                self.calc_displacement_ring(pp, ppdeforms, type, name_output)
+                
                 # per segment/quadrant of ring
-                out = self.get_curvatures_per_phase_ring_segments(key, type)
-                (curvatures_per_phase_Q1, curvatures_per_phase_Q2, curvatures_per_phase_Q3, 
-                    curvatures_per_phase_Q4, ppQ1, ppQ2, ppQ3, ppQ4) = out
+                lenring = len(pp)
+                if type == 'fromstart':
+                    # indices
+                    iQ1 = 0, int(0.25*lenring) # int floor rounding
+                    iQ2 = int(0.25*lenring), int(0.5*lenring)
+                    iQ3 = int(0.5*lenring),  int(0.75*lenring)
+                    iQ4 = int(0.75*lenring),  lenring
+                    
+                    # path segments
+                    ppQ1 = pp[iQ1[0]:iQ1[1]]
+                    ppQ2 = pp[iQ2[0]:iQ2[1]]
+                    ppQ3 = pp[iQ3[0]:iQ3[1]]
+                    ppQ4 = pp[iQ4[0]:iQ4[1]]
+                    
+                    # ppdeforms segments (ppdeforms is list with 10 x 3 PointSets for each point)
+                    ppdeformsQ1 = ppdeforms[iQ1[0]:iQ1[1]]
+                    ppdeformsQ2 = ppdeforms[iQ2[0]:iQ2[1]]
+                    ppdeformsQ3 = ppdeforms[iQ3[0]:iQ3[1]]
+                    ppdeformsQ4 = ppdeforms[iQ4[0]:iQ4[1]]
+                
+                elif type == 'beforeafterstart':
+                    # indices
+                    iQ1a = 0, int(0.125*lenring) # int floor rounding
+                    iQ1b = int(0.875*lenring), lenring
+                    iQ2 = int(0.125*lenring), int(0.375*lenring)
+                    iQ3 = int(0.375*lenring),  int(0.625*lenring)
+                    iQ4 = int(0.625*lenring),  int(0.875*lenring)
+                
+                    # path segments
+                    ppQ1 = np.append(pp[iQ1b[0]:iQ1b[1]], pp[iQ1a[0]:iQ1a[1]], axis=0 )
+                    ppQ2 = pp[iQ2[0]:iQ2[1]]
+                    ppQ3 = pp[iQ3[0]:iQ3[1]]
+                    ppQ4 = pp[iQ4[0]:iQ4[1]]
+                
+                    # pathdeforms segments
+                    ppdeformsQ1 = np.append(ppdeforms[iQ1b[0]:iQ1b[1]], ppdeforms[iQ1a[0]:iQ1a[1]], axis=0 ) #list with arrays
+                    ppdeformsQ2 = ppdeforms[iQ2[0]:iQ2[1]] # list with PointSets
+                    ppdeformsQ3 = ppdeforms[iQ3[0]:iQ3[1]]
+                    ppdeformsQ4 = ppdeforms[iQ4[0]:iQ4[1]]
+                
+                # now get motion for the quadrants
+                name_output = 'MotionQ1{}'.format(key2)
+                self.calc_displacement_ring(ppQ1, ppdeformsQ1, type, name_output)
+                
+                name_output = 'MotionQ2{}'.format(key2)
+                self.calc_displacement_ring(ppQ2, ppdeformsQ2, type, name_output)
+                
+                name_output = 'MotionQ3{}'.format(key2)
+                self.calc_displacement_ring(ppQ3, ppdeformsQ3, type, name_output)
+                
+                name_output = 'MotionQ4{}'.format(key2)
+                self.calc_displacement_ring(ppQ4, ppdeformsQ4, type, name_output)
         
         
+    def calc_displacement_ring(self, pp, ppDeforms, type, name_output):
+        """ Calculate the displacement of the ring model
+        in x, y, z and 3D
+        """
+        motionOutxyz = calculateMeanAmplitude(pp,ppDeforms, dim='xyz') # mean, std, min, max
+        motionOutx = calculateMeanAmplitude(pp,ppDeforms, dim='x')
+        motionOuty = calculateMeanAmplitude(pp,ppDeforms, dim='y')
+        motionOutz = calculateMeanAmplitude(pp,ppDeforms, dim='z')
         
+        lengthpp = len(pp)
         
-        # for key in s:
-        #     if key.startswith('ppCenterline'): # each branch or Nel or vessel
-        #         ppCll = s[key]
-        #         name_output = 'Motion_'+key[12:]+'prox'
-        #         model = s['model'+key[12:]] # skip 'ppCenterline' in key
-        #         assert model.number_of_edges() == 1 # a centerline is one edge
-        #         edge = model.edges()[0]
-        #         ppCllDeforms = model.edge[edge[0]][edge[1]]['pathdeforms']
-        #         ppCllDeforms = np.asarray(ppCllDeforms) # npoints x nphases x 3
-        #         #ppCll == model.edge[edge[0]][edge[1]]['path']
-        #         output = calculate_motion_points(key, ppCll, ppCllDeforms, lenSegment, part='prox')
-        #         output['Type'] = 'motion_centerlines_segments'
-        #         # Store output with name
-        #         output['Name'] = name_output
-        #         self.storeOutput.append(output)
-        #         pp = output['ppSegment'] # [positions nodes avgreg]
+        # store in dict
+        output = {}
+        output['mean_amplitudexyz_mean_std_min_max'] = motionOutxyz
+        output['mean_amplitudex_mean_std_min_max'] = motionOutx
+        output['mean_amplitudey_mean_std_min_max'] = motionOuty
+        output['mean_amplitudez_mean_std_min_max'] = motionOutz
+        output['number_of_ring_path_points_pp'] = lengthpp 
+        output['position_of_ring_points_midcycle'] = pp # [positions pathpoints avgreg]
+        output['deforms_of_ring_points'] = ppDeforms # [deforms pathpoints avgreg]
         
-
+        # ============
+        # Store output with name
+        output['Name'] = name_output
+        output['Type'] = 'displacement_ring'
+        output['ReferenceStart'] = 'posterior (going clockwise so that left is at 25% of ring)'
+        if 'Q' in name_output:
+            output['QuadrantType'] = type
+        else:
+            output['QuadrantType'] = None
+        
+        self.storeOutput.append(output)
+        
+    
     def storeOutputToExcel(self):
         """Create file and add a worksheet or overwrite existing
         Output of x,y,z positions in one cell can be handled in python with
@@ -452,7 +523,7 @@ class _Do_Analysis_Rings:
                 
                 if out['Type'] == 'curvature_segment_ring':
                     worksheet.write('A4', 'How where segments defined with respect to reference start:' )
-                    worksheet.write('B4', out['SegmentType'])    
+                    worksheet.write('B4', out['QuadrantType'])    
                
                 # max curvature change (curvature_maxchange_output)
                 worksheet.write('A5', 'Max curvature change for a point on ring, cm-1 / %',bold)
@@ -766,8 +837,13 @@ if __name__ == '__main__':
     
     foo = _Do_Analysis_Rings(ptcode,ctcode,cropname,nstruts=nstruts,showVol=showVol)
     
+    # Curvature
     # foo.curvature_ring_models(type='fromstart') # type= how to define segments
-    foo.curvature_ring_models(type='beforeafterstart')
+    # foo.curvature_ring_models(type='beforeafterstart')
+    
+    # Displacement
+    foo.displacement_ring_models(type='fromstart')
+    
     # ====================
     # foo.storeOutputToExcel()
     
