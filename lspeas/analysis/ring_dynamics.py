@@ -393,45 +393,8 @@ class _Do_Analysis_Rings:
                 self.calc_displacement_ring(pp, ppdeforms, type, name_output)
                 
                 # per segment/quadrant of ring
-                lenring = len(pp)
-                if type == 'fromstart':
-                    # indices
-                    iQ1 = 0, int(0.25*lenring) # int floor rounding
-                    iQ2 = int(0.25*lenring), int(0.5*lenring)
-                    iQ3 = int(0.5*lenring),  int(0.75*lenring)
-                    iQ4 = int(0.75*lenring),  lenring
-                    
-                    # path segments
-                    ppQ1 = pp[iQ1[0]:iQ1[1]]
-                    ppQ2 = pp[iQ2[0]:iQ2[1]]
-                    ppQ3 = pp[iQ3[0]:iQ3[1]]
-                    ppQ4 = pp[iQ4[0]:iQ4[1]]
-                    
-                    # ppdeforms segments (ppdeforms is list with 10 x 3 PointSets for each point)
-                    ppdeformsQ1 = ppdeforms[iQ1[0]:iQ1[1]]
-                    ppdeformsQ2 = ppdeforms[iQ2[0]:iQ2[1]]
-                    ppdeformsQ3 = ppdeforms[iQ3[0]:iQ3[1]]
-                    ppdeformsQ4 = ppdeforms[iQ4[0]:iQ4[1]]
-                
-                elif type == 'beforeafterstart':
-                    # indices
-                    iQ1a = 0, int(0.125*lenring) # int floor rounding
-                    iQ1b = int(0.875*lenring), lenring
-                    iQ2 = int(0.125*lenring), int(0.375*lenring)
-                    iQ3 = int(0.375*lenring),  int(0.625*lenring)
-                    iQ4 = int(0.625*lenring),  int(0.875*lenring)
-                
-                    # path segments
-                    ppQ1 = np.append(pp[iQ1b[0]:iQ1b[1]], pp[iQ1a[0]:iQ1a[1]], axis=0 )
-                    ppQ2 = pp[iQ2[0]:iQ2[1]]
-                    ppQ3 = pp[iQ3[0]:iQ3[1]]
-                    ppQ4 = pp[iQ4[0]:iQ4[1]]
-                
-                    # pathdeforms segments
-                    ppdeformsQ1 = np.append(ppdeforms[iQ1b[0]:iQ1b[1]], ppdeforms[iQ1a[0]:iQ1a[1]], axis=0 ) #list with arrays
-                    ppdeformsQ2 = ppdeforms[iQ2[0]:iQ2[1]] # list with PointSets
-                    ppdeformsQ3 = ppdeforms[iQ3[0]:iQ3[1]]
-                    ppdeformsQ4 = ppdeforms[iQ4[0]:iQ4[1]]
+                out = get_pp_ppdeforms_per_quadrant(pp, ppdeforms, type)
+                ppQ1, ppQ2, ppQ3, ppQ4, ppdeformsQ1, ppdeformsQ2, ppdeformsQ3, ppdeformsQ4 = out
                 
                 # now get motion for the quadrants
                 name_output = 'MotionQ1{}'.format(key2)
@@ -479,8 +442,126 @@ class _Do_Analysis_Rings:
             output['QuadrantType'] = None
         
         self.storeOutput.append(output)
+    
+    
+    def distance_ring_models(self, ringkeys = ['R1', 'R2'], type='fromstart'):
+        """ Get distances between rings R1 and R2 during the cardiac cycle
+        """
+        s = self.s_model # ssdf with ring models
+        
+        key1 = ringkeys[0]
+        model1 = s['model'+key1]
+        # get model path and pathdeforms
+        assert model1.number_of_edges() == 1 # a ring is one edge
+        n1,n2 = model1.edges()[0] # model has 1 edge, connected to same node so n1==n2
+        pp1 = model1.edge[n1][n2]['path']
+        ppdeforms1 = model1.edge[n1][n2]['pathdeforms']
+        
+        key2 = ringkeys[1]
+        model2 = s['model'+key2]
+        # get model path and pathdeforms
+        assert model2.number_of_edges() == 1 # a ring is one edge
+        n1,n2 = model2.edges()[0] # model has 1 edge, connected to same node so n1==n2
+        pp2 = model2.edge[n1][n2]['path']
+        ppdeforms2 = model2.edge[n1][n2]['pathdeforms']
+        
+        # entire ring
+        name_output = 'Distances{}{}'.format(key1, key2)
+        self.calc_distances_ring(pp1, ppdeforms1, pp2, ppdeforms2, type, name_output)
+        
+        # per quadrant
+        out = get_pp_ppdeforms_per_quadrant(pp1, ppdeforms1, type)
+        ppQ1, ppQ2, ppQ3, ppQ4, ppdeformsQ1, ppdeformsQ2, ppdeformsQ3, ppdeformsQ4 = out
+        
+        out2 = get_pp_ppdeforms_per_quadrant(pp2, ppdeforms2, type)
+        pp2Q1, pp2Q2, pp2Q3, pp2Q4, pp2deformsQ1, pp2deformsQ2, pp2deformsQ3, pp2deformsQ4 = out2
+        
+        # now get distancs for the quadrants
+        name_output = 'DistancesQ1{}{}'.format(key1, key2)
+        self.calc_distances_ring(ppQ1, ppdeformsQ1, pp2Q1, pp2deformsQ1, type, name_output)
+        
+        name_output = 'DistancesQ2{}{}'.format(key1, key2)
+        self.calc_distances_ring(ppQ2, ppdeformsQ2, pp2Q2, pp2deformsQ2, type, name_output)
+        
+        name_output = 'DistancesQ3{}{}'.format(key1, key2)
+        self.calc_distances_ring(ppQ3, ppdeformsQ3, pp2Q3, pp2deformsQ3, type, name_output)
+        
+        name_output = 'DistancesQ4{}{}'.format(key1, key2)
+        self.calc_distances_ring(ppQ4, ppdeformsQ4, pp2Q4, pp2deformsQ4, type, name_output)
         
     
+    def calc_distances_ring(self, pp1, ppdeforms1, pp2, ppdeforms2, type, name_output):
+        """ Calculate distance change from pp1 to pp2 during the cycle 
+        """
+        # get dists per phase (list with n x 10 values for points on pp1)
+        out = get_distances_per_phase(pp1, ppdeforms1, pp2, ppdeforms2)
+        dists_per_phase, p1p2_points, i1i2_indices, dists_midcycle = out
+        
+        dist_change_per_point = []
+        pdist_change_per_point = []
+        max_change_index, max_change, max_value, min_value = 0, 0, 0, 0
+        # get max change in distance for each point
+        for i in range(len(dists_per_phase)): # len pp1
+            change = max(dists_per_phase[i]) - min(dists_per_phase[i])
+            pchange = 100 * (change / min(dists_per_phase[i])) # in %
+            dist_change_per_point.append(change)
+            pdist_change_per_point.append(pchange)
+            # get point of greatest dist change
+            if change > max_change:
+                max_change_index, max_change_point = i, pp1[i] # index and x,y,z location of point on graph
+                max_change_indexp2, max_change_pointp2 = i1i2_indices[i][1], p1p2_points[i][1]
+                max_change = change
+                max_changeP = pchange
+                max_value, min_value = max(dists_per_phase[i]), min(dists_per_phase[i])
+                max_point_dists_per_phase = dists_per_phase[i] # distances cycle for point with greatest change
+        
+        # location of point with greatest dist change
+        max_change_location = length_along_path(pp1, max_change_index) # in mm from startnode
+        rel_index_max_change = 100* (max_change_index/(len(pp1)-1) ) # percentage of total points
+        total_perimeter = length_along_path(pp1, len(pp1)-1)
+        
+        # mean change in r1 r2 distance from pp1
+        mean_distchange = np.mean(dist_change_per_point)
+        mean_distchangeP = np.mean(pdist_change_per_point)
+        
+        lengthpp = len(pp1)
+        lengthpp2 = len(pp2)
+        
+        # store in dict
+        output = {}
+        output['mean_distance_change'] = mean_distchange
+        output['mean_distance_change_percentage'] = mean_distchangeP
+        output['distance_change'] = dist_change_per_point #value for each point in pp
+        output['distance_change_percentage'] = pdist_change_per_point #value for each point in pp
+        output['max_change'] = max_change
+        output['max_changeP'] = max_changeP
+        output['min_and_max_value'] = [min_value, max_value]
+        output['max_change_indexR1'] = max_change_index
+        output['max_change_pointR1'] = tuple(max_change_point.flat) # convert PointSet to tuple 
+        output['max_change_indexR2'] = max_change_indexp2
+        output['max_change_pointR2'] = tuple(max_change_pointp2.flat) # convert PointSet to tuple 
+        output['rel_index_max_change'] = rel_index_max_change # percentage of total points
+        output['max_change_location'] = max_change_location # in mm from startnode
+        output['total_ring_perimeter'] = total_perimeter
+        output['max_change_point_dists_per_phase'] = max_point_dists_per_phase
+        output['dists_midcycle'] = dists_midcycle #value for each point in pp
+        
+        output['number_of_ring_path_points_pp'] = lengthpp 
+        output['number_of_ring_path_points_pp2'] = lengthpp2
+        
+        # ============
+        # Store output with name
+        output['Name'] = name_output
+        output['Type'] = 'distance_between_rings'
+        output['ReferenceStart'] = 'posterior (going clockwise so that left is at 25% of ring)'
+        if 'Q' in name_output:
+            output['QuadrantType'] = type
+        else:
+            output['QuadrantType'] = None
+        
+        self.storeOutput.append(output)
+        
+        
     def storeOutputToExcel(self):
         """Create file and add a worksheet or overwrite existing
         Output of x,y,z positions in one cell can be handled in python with
@@ -550,6 +631,9 @@ class _Do_Analysis_Rings:
                 
                 worksheet.write('A12', 'Curvature for this point at each phase in cardiac cycle',bold)
                 worksheet.write_row('B12', list(out['max_point_curvature_per_phase']) )
+                
+                worksheet.write('A13', 'Average curvature change for ring, cm-1 / %',bold)
+                worksheet.write_row('B13', [np.mean(out['curvature_change']), np.mean(out['curvature_changeP']) ] )
             
                 # now peak curvature
                 worksheet.write('A15', 'Peak curvatures of ring during cycle (max_curvature_output):')
@@ -630,8 +714,134 @@ class _Do_Analysis_Rings:
                     worksheet.write(row, col+j*4, 'Deforms {}%'.format(j*10))
                     worksheet.write_row(row+1, col+j*4, ['x','y','z'])
                 
+            if out['Type'] == 'distance_between_rings':
+                worksheet.write('A2', 'Type:', bold)
+                worksheet.write('B2', 'Distance between ring 1 and ring2 during the cardiac cycle, mm',bold)
                 
+                worksheet.write('A3', 'Reference position start ring' )
+                worksheet.write('B3', out['ReferenceStart'])
+                
+                if 'Q' in out['Name']:
+                    worksheet.write('A4', 'How where segments defined with respect to reference start:' )
+                    worksheet.write('B4', out['QuadrantType'])  
+                
+                worksheet.write('A5', 'Number of ring path points R1 / R2',bold)
+                worksheet.write_row('B5', [out['number_of_ring_path_points_pp'], out['number_of_ring_path_points_pp2'] ])
+                
+                worksheet.write('A6', 'Max distance change for a point on ring, mm / %',bold)
+                worksheet.write_row('B6', [out['max_change'], out['max_changeP']] )
+                
+                worksheet.write('A7', 'Min and max distance of this point',bold)
+                worksheet.write_row('B7', out['min_and_max_value'] )
+                
+                worksheet.write('A8', 'xyz position of this point on ring 1, mm',bold)
+                worksheet.write_row('B8', out['max_change_pointR1'])
+                
+                worksheet.write('A9', 'Index of this point on ring 1 (from start pp)',bold)
+                worksheet.write('B9', out['max_change_indexR1'])
+                
+                worksheet.write('A10', 'xyz position of corresponding point on ring 2, mm',bold)
+                worksheet.write_row('B10', out['max_change_pointR2'])
+                
+                worksheet.write('A11', 'Index of corresponding point on ring 2 (from start pp)',bold)
+                worksheet.write('B11', out['max_change_indexR2'])
+                
+                worksheet.write('A12', 'Relative location of R1 point from start, %',bold)
+                worksheet.write('B12', out['rel_index_max_change'] )
+                
+                worksheet.write('A13', 'Location of R1 point from start, mm',bold)
+                worksheet.write('B13', out['max_change_location'] )
+                
+                worksheet.write('A14', 'Length of ring perimeter R1 (mid cardiac cycle), mm',bold)
+                worksheet.write('B14', out['total_ring_perimeter'] )
+                
+                worksheet.write('A15', 'Distance for point with max change at each phase in cardiac cycle',bold)
+                worksheet.write_row('B15', list(out['max_change_point_dists_per_phase']) )
+                
+                worksheet.write('A16', 'Average distance change for ring, mm / %',bold)
+                worksheet.write_row('B16', [out['mean_distance_change'], out['mean_distance_change_percentage'] ] )
+       
+
+def get_pp_ppdeforms_per_quadrant(pp, ppdeforms, type):
+    """ Starting from the reference, i.e. start point of pp, divide pp into 4 quadrants
+    type defines quadrants
+    """
+    lenring = len(pp)
+    if type == 'fromstart':
+        # indices
+        iQ1 = 0, int(0.25*lenring) # int floor rounding
+        iQ2 = int(0.25*lenring), int(0.5*lenring)
+        iQ3 = int(0.5*lenring),  int(0.75*lenring)
+        iQ4 = int(0.75*lenring),  lenring
         
+        # path segments
+        ppQ1 = pp[iQ1[0]:iQ1[1]]
+        ppQ2 = pp[iQ2[0]:iQ2[1]]
+        ppQ3 = pp[iQ3[0]:iQ3[1]]
+        ppQ4 = pp[iQ4[0]:iQ4[1]]
+        
+        # ppdeforms segments (ppdeforms is list with 10 x 3 PointSets for each point)
+        ppdeformsQ1 = ppdeforms[iQ1[0]:iQ1[1]]
+        ppdeformsQ2 = ppdeforms[iQ2[0]:iQ2[1]]
+        ppdeformsQ3 = ppdeforms[iQ3[0]:iQ3[1]]
+        ppdeformsQ4 = ppdeforms[iQ4[0]:iQ4[1]]
+    
+    elif type == 'beforeafterstart':
+        # indices
+        iQ1a = 0, int(0.125*lenring) # int floor rounding
+        iQ1b = int(0.875*lenring), lenring
+        iQ2 = int(0.125*lenring), int(0.375*lenring)
+        iQ3 = int(0.375*lenring),  int(0.625*lenring)
+        iQ4 = int(0.625*lenring),  int(0.875*lenring)
+    
+        # path segments
+        ppQ1 = np.append(pp[iQ1b[0]:iQ1b[1]], pp[iQ1a[0]:iQ1a[1]], axis=0 )
+        ppQ2 = pp[iQ2[0]:iQ2[1]]
+        ppQ3 = pp[iQ3[0]:iQ3[1]]
+        ppQ4 = pp[iQ4[0]:iQ4[1]]
+    
+        # pathdeforms segments
+        ppdeformsQ1 = np.append(ppdeforms[iQ1b[0]:iQ1b[1]], ppdeforms[iQ1a[0]:iQ1a[1]], axis=0 ) #list with arrays
+        ppdeformsQ2 = ppdeforms[iQ2[0]:iQ2[1]] # list with PointSets
+        ppdeformsQ3 = ppdeforms[iQ3[0]:iQ3[1]]
+        ppdeformsQ4 = ppdeforms[iQ4[0]:iQ4[1]]
+    
+    return ppQ1, ppQ2, ppQ3, ppQ4, ppdeformsQ1, ppdeformsQ2, ppdeformsQ3, ppdeformsQ4
+        
+def get_distances_per_phase(pp1, pp1deforms, pp2, pp2deforms):
+    """ Get distances at each phase on a given path pp1 to pp2
+    * dists_per_phase, p1p2_points, i1i2_indices 
+    """
+    pp1 = np.asarray(pp1) # nx3
+    pp1deforms = np.asarray(pp1deforms) # nx10x3
+    pp2 = np.asarray(pp2)
+    pp2deforms = np.asarray(pp2deforms)
+    
+    dists_per_phase = [] # collect dists during cycle for each point on pp1
+    p1p2_points = [] # collect pairs of r1 r2 points analyzed
+    i1i2_indices = [] # collect indices of points r1 r2 
+    dists_midcycle = []
+    for i, p in enumerate(pp1):
+        dmin = 10000
+        for j, p2 in enumerate(pp2):
+            d = np.linalg.norm(p-p2) # distance
+            # find which point in pp2 in closest to p on pp1
+            if d < dmin:
+                dmin = d # distance mid cycle from p to p2closest
+                p2closest = p2
+                iclosest = j
+        # get deforms
+        p1deforms = pp1deforms[i] # 10x3 
+        p2deforms = pp2deforms[iclosest] 
+        # for these points on r1 r2 get dists cycle
+        dists = [np.linalg.norm((p+p1deforms[phase,:])-(p2closest+p2deforms[phase,:])) for phase in range(len(p1deforms)) ]        
+        dists_per_phase.append(dists)
+        p1p2_points.append([p, p2closest])
+        i1i2_indices.append([i, iclosest])
+        dists_midcycle.append(dmin)
+    
+    return dists_per_phase, p1p2_points, i1i2_indices, dists_midcycle
+
 def get_measures_curvatures_per_phase(curvatures_per_phase, pp):
     """ Perform mean, max, max change measures and store measures in dict
     """
@@ -653,7 +863,7 @@ def get_measures_curvatures_per_phase(curvatures_per_phase, pp):
     output['max_phase_changeP'] = 100* (max_curvature_output[6] / max_curvature_output[4])
     
     curvature_maxchange_output = curvature_maxchange(curvatures_per_phase, pp)
-    output['curvature_change'] = curvature_maxchange_output[0] #value for each point in pp
+    output['curvature_change'] = curvature_maxchange_output[0] #change for each point in pp
     output['max_change'] = curvature_maxchange_output[1]
     output['max_changeP'] = curvature_maxchange_output[2]
     output['min_and_max_value'] = [curvature_maxchange_output[3], curvature_maxchange_output[4]]
@@ -664,6 +874,7 @@ def get_measures_curvatures_per_phase(curvatures_per_phase, pp):
     output['total_ring_perimeter'] = curvature_maxchange_output[9]
     output['max_point_curvature_per_phase'] = curvature_maxchange_output[10]
     output['curvature_midcycle'] = curvature_maxchange_output[11] #value for each point in pp
+    output['curvature_changeP'] = curvature_maxchange_output[12] # % change for each point in pp 
     
     return output
 
@@ -712,17 +923,20 @@ def curvature_maxchange(curvatures_per_phase, pp):
     """
     # Max change in curvature (index, indexmm, max-change)
     max_change_index, max_change, max_value, min_value = 0, 0, 0, 0
-    curvature_change = [] # collect change for each point
+    curvature_change = [] # collect change for each point in mm
+    curvature_changeP = [] # and in %
     curvature_midcycle = [] # collect mean value over phases as mid cycle for each point
     for index in range(len(pp)):
         curvature_per_phase = [float(curvatures_per_phase[phase][index]) for phase in range(len(curvatures_per_phase))] # 10 values for point
         change = max(curvature_per_phase) - min(curvature_per_phase)
+        pchange = 100 * (change / min(curvature_per_phase)) # in %
         curvature_change.append(change)
+        curvature_changeP.append(pchange)
         curvature_midcycle.append(np.mean(curvature_per_phase))
         if change > max_change:
             max_change_index, max_change_point = index, pp[index]
             max_change = change
-            max_changeP = 100 * (change / min(curvature_per_phase))
+            max_changeP = pchange
             max_value, min_value = max(curvature_per_phase), min(curvature_per_phase)
             max_point_curvature_per_phase = curvature_per_phase
     
@@ -734,7 +948,7 @@ def curvature_maxchange(curvatures_per_phase, pp):
     
     return (curvature_change, max_change, max_changeP, min_value, max_value, 
             max_change_index, max_change_point, rel_index_max_change, max_change_location,
-            total_perimeter, max_point_curvature_per_phase, curvature_midcycle)
+            total_perimeter, max_point_curvature_per_phase, curvature_midcycle, curvature_changeP)
 
 def set_direction_of_pp(pp):
     """ order direction of path so that we always go the same way and can define locations
@@ -887,11 +1101,16 @@ if __name__ == '__main__':
     
     # Curvature
     # foo.curvature_ring_models(type='fromstart') # type= how to define segments
-    # foo.curvature_ring_models(type='beforeafterstart')
+    # foo.curvature_ring_models(type='beforeafterstart', showquadrants=False)
     
     # Displacement
-    foo.displacement_ring_models(type='fromstart')
+    # foo.displacement_ring_models(type='beforeafterstart')
+    
+    # Distance between R1 R2
+    foo.distance_ring_models(ringkeys = ['R1', 'R2'], type='beforeafterstart')
+    
     
     # ====================
     foo.storeOutputToExcel()
+    
     
