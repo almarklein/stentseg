@@ -146,7 +146,7 @@ def on_key(event):
         # ESCAPE will FINISH model
         stentgraph.pop_nodes(sd._nodes3)
         sd._nodes3 = sd._RefinePositions(sd._nodes3) # subpixel locations 
-        stentgraph.smooth_paths(sd._nodes3, 2)
+        stentgraph.smooth_paths(sd._nodes3, 4)
         # Create mesh and visualize
         view = a3.GetView()
         a3.Clear()
@@ -168,7 +168,7 @@ def on_key(event):
         a3.SetView(view)
     if event.text == 's':
         # additional smooth
-        stentgraph.smooth_paths(sd._nodes3, 1)
+        stentgraph.smooth_paths(sd._nodes3, 2)
         view = a3.GetView()
         a3.Clear()
         DrawModelAxes(vol, sd._nodes3, a3, clim=clim, showVol=showVol, mw=8, lw=0.2, climEditor=False)
@@ -182,17 +182,25 @@ def on_key(event):
         select2 = selected_nodes[1].node
         edge_info = sd._nodes3.edge[select1][select2]
         edgegraph.add_edge(select1, select2, **edge_info)
-        stentgraph.smooth_paths(edgegraph, 2)
+        stentgraph.smooth_paths(edgegraph, 4)
         sd._nodes3.edge[select1][select2]['path'] = edgegraph.edge[select1][select2]['path']
-        selected_nodes[1].faceColor = 'b'
-        selected_nodes[0].faceColor = 'b'
-        selected_nodes.clear()
         view = a3.GetView()
         a3.Clear()
         DrawModelAxes(vol, sd._nodes3, a3, clim=clim, showVol=showVol, mw=8, lw=0.2, climEditor=False)
         node_points = _utils_GUI.interactive_node_points(sd._nodes3, scale=0.6)
         _utils_GUI.node_points_callbacks(node_points, selected_nodes, pick=False)
+        # see if node_points are still selected to color them red
+        for node_point in node_points:
+            node_point.visible = True
+            for i, node in enumerate(selected_nodes):
+                if node_point.node == node.node:
+                    selected_nodes[i] = node_point
+                    node_point.faceColor = (1,0,0)
         a3.SetView(view)
+    if event.text == 'w':
+        for n in selected_nodes:
+            n.faceColor = 'b'
+        selected_nodes.clear()
     if event.text == 'q':
         view = a3.GetView()
         _utils_GUI.interactiveClusterRemoval(sd._nodes3)
@@ -217,6 +225,7 @@ print('x and a/d = axis invisible/visible and rotate')
 print('q       = activate "interactiveClusterRemoval"')
 print('s       = additional smooth')
 print('e       = smooth selected edge')
+print('w       = clear selected nodes')
 print('r       = restore node in nodes3, node closest to picked point nodes 2')
 print('')
 
