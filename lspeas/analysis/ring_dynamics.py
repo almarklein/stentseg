@@ -1049,9 +1049,9 @@ def pop_nodes_ring_models(model, deforms, origin, posStart, smoothfactor=2):
     else:
         print('start node of edge was the same as the reference start pos (posterior): extra smooth needed here before analysis?')
     
-    # smooth path
-    stentgraph.smooth_paths(model, ntimes=smoothfactor)
-       
+    # smooth path for closed ring model
+    stentgraph.smooth_paths(model, ntimes=smoothfactor, closed=True)
+    
     # make dynamic again
     incorporate_motion_nodes(model, deforms, origin) # adds deforms PointSets
     incorporate_motion_edges(model, deforms, origin) # adds deforms PointSets

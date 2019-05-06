@@ -704,13 +704,42 @@ def _add_nodes_at_crossings_for_node(graph, node):
     return False
 
 
-def smooth_paths(graph, ntimes=2):
+def smooth_paths(graph, ntimes=2, closed=False):
     for n1, n2 in graph.edges():
         path = graph.edge[n1][n2]['path']
-        for iter in range(ntimes):
-            tmp = path[1:-1] + path[0:-2] + path[2:]
-            path[1:-1] = tmp / 3.0
-
+        if not closed:
+            for iter in range(ntimes):
+                tmp = path[1:-1] + path[0:-2] + path[2:]
+                path[1:-1] = tmp / 3.0
+        elif closed:
+            # if edge is closed and thus connected to self
+            assert path[0].all() == path[-1].all() # compare PointSets
+            assert graph.degree(n1) == 2 # not 3, not being connected to other node also
+            for iter in range(ntimes):
+                pp2 = path.copy()
+                for i in range(0, path.shape[0]-1):
+                    if i==0:
+                        pp2[i] = (path[i-2] + path[i] + path[i+1]) / 3
+                        pp2[-1] = pp2[i]
+                    else:
+                        pp2[i] = (path[i-1] + path[i] + path[i+1]) / 3
+                path = pp2
+            # Now change graph
+            try:
+                cost = graph.edge[n1][n2]['cost']
+                ctvalue = graph.edge[n1][n2]['ctvalue']
+                # remove old node and path
+                graph.remove_node(n1)
+                new_node = tuple(path[0].flat)
+                graph.add_node(new_node) # mind that node attributes are ignored 
+                graph.add_edge(new_node, new_node, path = path, cost = cost, ctvalue = ctvalue )
+            except KeyError:
+                # remove old node and path
+                graph.remove_node(n1)
+                new_node = tuple(path[0].flat)
+                graph.add_node(new_node) # mind that node attributes are ignored 
+                graph.add_edge(new_node, new_node, path = path )
+            
 
 def _edge_length(graph, n1, n2):
     """ 
