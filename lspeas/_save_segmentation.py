@@ -10,22 +10,24 @@ seeds = sd._nodes1
 ## Option 1: Store segmentation to disk
 
 save_segmentation(basedir, ptcode, ctcode, cropname, seeds, model, s, 
-                      stentType=stentType, what=what, params=p)
+                    stentType=stentType, what=what, params=p)
 
 
 
 ## Option 2: Add to existing ssdf as seperate graph
-graphname =  'spine' # 'branch_sma_dist'
-params = p
-add_segmentation_ssdf(basedir, ptcode, ctcode, cropname, seeds, model,  
-                        graphname, modelname='modelavgreg', 
-                        stentType=stentType, params=params)
+if False:
+    graphname =  'spine' # 'branch_sma_dist'
+    params = p
+    add_segmentation_ssdf(basedir, ptcode, ctcode, cropname, seeds, model,  
+                    graphname, modelname='modelavgreg', 
+                    stentType=stentType, params=params)
 
 
                         
 ## Option 3: Add to existing ssdf in existing graph (merge with existing model)
-add_segmentation_graph(basedir, ptcode, ctcode, cropname, seeds, model, 
-                       graphname='', modelname='modelavgreg')
+if False:
+    add_segmentation_graph(basedir, ptcode, ctcode, cropname, seeds, model, 
+                    graphname='', modelname='modelavgreg')
 
 
 
