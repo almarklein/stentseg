@@ -31,7 +31,6 @@ from openpyxl.utils import column_index_from_string
 from lspeas.utils.curvature import measure_curvature, get_curvatures,length_along_path
 from lspeas.utils.get_anaconda_ringparts import get_model_struts,get_model_rings, _get_model_hooks
 from lspeas.analysis._plot_ring_motion import readPosDeformsOverCycle, orderlocation
-from lspeas.utils.storesegmentation import make_model_dynamic
 import pirt
 
 class _Do_Analysis_Rings:
@@ -76,15 +75,17 @@ class _Do_Analysis_Rings:
             deforms = [s_deforms[key] for key in dir(s_deforms) if key.startswith('deform')]
             deforms = [pirt.DeformationFieldBackward(*fields) for fields in deforms]
             self.deforms = deforms
-            self.origin = s_deforms.origin
             
         # Load ring model
-        self.modelname = 'modelavgreg'
         try:
+            self.s_model
             self.model
         except AttributeError:
             self.s_model = loadmodel(self.basedir, self.ptcode, self.ctcode, self.cropname, 'modelavgreg')
             self.model = self.s_model.model 
+        self.modelname = 'modelavgreg'
+        # origin of model to get the deforms from correct locations in incorporate nodes/edges
+        self.origin = self.s_model.origin
         
         # Figure and init
         self.t = {} # store volume vis
@@ -1113,7 +1114,7 @@ if __name__ == '__main__':
     
     # Select dataset
     ptcode = 'LSPEAS_001'
-    ctcode = 'discharge'
+    ctcode = '6months'
     cropname = 'ring'
     
     showVol  = 'ISO'  # MIP or ISO or 2D or None
@@ -1133,6 +1134,7 @@ if __name__ == '__main__':
     
     
     # ====================
-    # foo.storeOutputToExcel()
-    # foo.save_ssdf_with_individual_ring_models()
+    if True:
+        foo.storeOutputToExcel()
+        foo.save_ssdf_with_individual_ring_models()
     
