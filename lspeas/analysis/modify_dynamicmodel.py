@@ -8,10 +8,9 @@ def on_key(event):
     """KEY commands for user interaction
     UP/DOWN = show/hide nodes
     DELETE  = remove edge [select 2 nodes] or pop node [select 1 node] or remove seed sd._nodes1 closest to [picked point]
-    PageDown= remove graph posterior (y-axis) to [picked point] (use for spine seeds)'
-    ALT     = SHOW RESULT after remove residual clusters, pop, corner
-    CTRL    = add selected point (SHIFT+Rclick) as seed in sd._nodes1')
+    ALT     = SHOW RESULT after pop
     """
+    global node_points
     if event.key == vv.KEY_DOWN:
         # hide nodes
         for node_point in node_points:
@@ -45,42 +44,71 @@ def on_key(event):
             selected_nodes.clear()
     if event.text == 's':
         # additional smooth
-        stentgraph.smooth_paths(model, 2)
-        reDrawModel(vol, model)
+        stentgraph.smooth_paths(model, 4)
+        node_points = reDrawModel(vol, model, selected_nodes=selected_nodes)
+    if event.text == 'e':
+        # smooth selected edge
+        edgegraph = stentgraph.StentGraph() #empty graph
+        select1 = selected_nodes[0].node
+        select2 = selected_nodes[1].node
+        edge_info = model.edge[select1][select2]
+        edgegraph.add_edge(select1, select2, **edge_info)
+        stentgraph.smooth_paths(edgegraph, 4)
+        model.edge[select1][select2]['path'] = edgegraph.edge[select1][select2]['path']
+        node_points = reDrawModel(vol, model, selected_nodes=selected_nodes)
+    if event.text == 'w':
+        for n in selected_nodes:
+            n.faceColor = 'b'
+        selected_nodes.clear()
     if event.key == vv.KEY_ALT:
         # ALT will POP nodes
         stentgraph.pop_nodes(model)
-        reDrawModel(vol, model)
+        node_points = reDrawModel(vol, model, selected_nodes=selected_nodes)
+    if event.text == 'q':
+        ax = vv.gca()
+        view = ax.GetView()
+        _utils_GUI.interactiveClusterRemoval(model)
+        ax.SetView(view)
     if event.key == vv.KEY_ESCAPE:
-        g = make_model_dynamic(model, deforms, origin)
-        reDrawModel(vol, g, interactive=False)
+        g = model_dynamic(model, deforms, origin)
+        node_points = reDrawModel(vol, g, selected_nodes=selected_nodes)
+        s.model = g
+        print('Done, model dynamic')
         # Save back
         filename = '%s_%s_%s_%s.ssdf' % (ptcode, ctcode, cropname, modelname)
-        s.model = g.pack()
-        print('Done, model dynamic')
-        # ssdf.save(os.path.join(basedir, ptcode, filename), s)
-        # print('saved dynamic to disk in {} as {}.'.format(basedir, filename) )
+        # pack all graphs in ssdf for save
+        for key in dir(s):
+            if key.startswith('model'):
+                s[key] = s[key].pack()
+            if key.startswith('seeds'):
+                s[key] = s[key].pack()
+        ssdf.save(os.path.join(basedir, ptcode, filename), s)
+        print('Model saved dynamic to disk in {} as {}.'.format(basedir, filename) )
 
-def reDrawModel(vol, model, interactive=True, ax=None):
-        if ax is None:
-            ax = vv.gca()
-        view = ax.GetView()
-        ax.Clear()
-        lim = (0,2500)
-        t = vv.volshow(vol, clim=lim, renderStyle='mip')
-        pick3d(vv.gca(), vol)
-        model.Draw(mc='g', mw = 10, lc='g')
-        if interactive:
-            #todo: doesnt work?
-            node_points = _utils_GUI.interactive_node_points(model, scale=0.6)
-            _utils_GUI.node_points_callbacks(node_points, selected_nodes, pick=False)
-        ax.SetView(view)
-        
+def reDrawModel(vol, model, ax=None, selected_nodes=[]):
+    if ax is None:
+        ax = vv.gca()
+    view = ax.GetView()
+    ax.Clear()
+    lim = (0,2500)
+    t = vv.volshow(vol, clim=lim, renderStyle='mip')
+    pick3d(vv.gca(), vol)
+    model.Draw(mc='g', mw = 10, lc='g')
+    node_points = _utils_GUI.interactive_node_points(model, scale=0.6)
+    _utils_GUI.node_points_callbacks(node_points, selected_nodes, pick=False)
+    # see if node_points are still selected to color them red
+    for node_point in node_points:
+        node_point.visible = True
+        for i, node in enumerate(selected_nodes):
+            if node_point.node == node.node:
+                selected_nodes[i] = node_point
+                node_point.faceColor = (1,0,0)
+                
+    ax.SetView(view)
+    
+    return node_points
 
-def make_model_dynamic(model, deforms, origin):
-    # modelpacked = model.pack()
-    # g = stentgraph.StentGraph()
-    # g.unpack(modelpacked)
+def model_dynamic(model, deforms, origin):
     # First clear deforms in graph 
     for n in model.nodes():
         d = model.node[n]
@@ -101,7 +129,7 @@ def nodeInteraction(model, vol, selected_nodes):
     """ modify edges in dynamic model and make dynamic again
     """
     f = vv.figure(); vv.clf()
-    f.position = 968.00, 30.00,  944.00, 1002.00
+    f.position = 8.00, 30.00,  944.00, 1002.00
     a = vv.gca()
     a.axis.axisColor = 1,1,1
     a.axis.visible = False
@@ -118,13 +146,19 @@ def nodeInteraction(model, vol, selected_nodes):
     node_points = _utils_GUI.interactive_node_points(model, scale=0.6)
     
     # bind event handlers
+    f.eventKeyDown.Bind(lambda event: _utils_GUI.ViewPresets(event, [a]) )
+    
     f.eventKeyDown.Bind(on_key)
     for node_point in node_points:
         node_point.eventDoubleClick.Bind(lambda event: _utils_GUI.select_node(event, selected_nodes) )
     print('')
     print('UP/DOWN = show/hide nodes')
     print('DELETE  = remove edge [select 2 nodes] or pop node [select 1 node]')
-    print('ESCAPE  = make model dynamic')
+    print('s       = additional smooth')
+    print('e       = smooth selected edge')
+    print('w       = clear selected nodes')
+    print('q       = activate "interactiveClusterRemoval"')
+    print('ESCAPE  = make model dynamic and save to disk')
     print('')
     
     return node_points
@@ -147,8 +181,8 @@ if __name__ == '__main__':
                         r'D:\LSPEAS\LSPEAS_ssdf',
                         r'F:\LSPEAS_ssdf_BACKUP',r'G:\LSPEAS_ssdf_BACKUP')
 
-    ptcode = 'LSPEAS_011'
-    ctcode = '1month'
+    ptcode = 'LSPEAS_001'
+    ctcode = '6months'
     cropname = 'ring'
     modelname = 'modelavgreg'
     
@@ -156,8 +190,8 @@ if __name__ == '__main__':
     model = s.model.copy()
     
     # Load volume
-    s = loadvol(basedir, ptcode, ctcode, cropname, 'avgreg')
-    vol = s.vol
+    s_vol = loadvol(basedir, ptcode, ctcode, cropname, 'avgreg')
+    vol = s_vol.vol
     
     # Load deforms
     s_deforms = loadvol(basedir, ptcode, ctcode, cropname, 'deforms')
@@ -171,6 +205,6 @@ if __name__ == '__main__':
     selected_nodes = list()
     node_points = nodeInteraction(model, vol, selected_nodes)
     
-    origin = s_deforms.origin # origin of vol
+    origin = s.origin # origin of model to get the deforms from correct locations
 
     
