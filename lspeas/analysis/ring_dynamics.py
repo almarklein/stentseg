@@ -1,9 +1,10 @@
-""" Module to analyze ring-stent dynamics during the heart cycle from (dynamic) models
+""" Module to analyze ring-stent dynamics during the cardiac cycle from models
+* displacement
 * ring curvature
 * distance between ring1 and ring2
 * displacement ring parts/quartiles
 
-Uses excel pulsatility_and_expansion to get location of peaks and valleys
+Uses excel pulsatility_and_expansion to get location of peaks and valleys to set start of ring
 Copyright 2019, Maaike A. Koenrades
 """
 
@@ -18,6 +19,7 @@ from stentseg.motion.vis import get_graph_in_phase, create_mesh_with_values
 from stentseg.motion.dynamic import incorporate_motion_nodes, incorporate_motion_edges
 from stentseg.stentdirect import stentgraph
 import visvis as vv
+from visvis import ssdf
 import numpy as np
 import copy
 import math
@@ -33,8 +35,7 @@ from lspeas.utils.storesegmentation import make_model_dynamic
 import pirt
 
 class _Do_Analysis_Rings:
-    """ Analyze motion and curvature of dynamic ring models
-    Functions for chimneys/branches and main stents
+    """ Analyze motion, curvature, distance between rings of dynamic ring models
     """
     exceldir = select_dir(r'C:\Users\Maaike\SURFdrive\UTdrive\LSPEAS\Analysis', 
                     r'D:\Profiles\koenradesma\SURFdrive\UTdrive\LSPEAS\Analysis')
@@ -78,6 +79,7 @@ class _Do_Analysis_Rings:
             self.origin = s_deforms.origin
             
         # Load ring model
+        self.modelname = 'modelavgreg'
         try:
             self.model
         except AttributeError:
@@ -760,7 +762,27 @@ class _Do_Analysis_Rings:
                 
                 worksheet.write('A16', 'Average distance change for ring, mm / %',bold)
                 worksheet.write_row('B16', [out['mean_distance_change'], out['mean_distance_change_percentage'] ] )
-       
+    
+    
+    def save_ssdf_with_individual_ring_models(self):
+        """ 
+        """
+        s = self.s_model
+        
+        # pack all graphs in ssdf for save
+        for key in dir(s):
+            if key.startswith('model'):
+                s[key] = s[key].pack()
+            if key.startswith('seeds'):
+                s[key] = s[key].pack()
+        
+        # Save
+        filename = '%s_%s_%s_%s.ssdf' % (self.ptcode, self.ctcode, self.cropname, self.modelname)
+        ssdf.save(os.path.join(self.basedir, self.ptcode, filename), s)
+        print('*********')
+        print('saved to disk in {} as {}.'.format(self.basedir, filename) )
+    
+
 
 def get_pp_ppdeforms_per_quadrant(pp, ppdeforms, type):
     """ Starting from the reference, i.e. start point of pp, divide pp into 4 quadrants
@@ -807,7 +829,7 @@ def get_pp_ppdeforms_per_quadrant(pp, ppdeforms, type):
         ppdeformsQ4 = ppdeforms[iQ4[0]:iQ4[1]]
     
     return ppQ1, ppQ2, ppQ3, ppQ4, ppdeformsQ1, ppdeformsQ2, ppdeformsQ3, ppdeformsQ4
-        
+
 def get_distances_per_phase(pp1, pp1deforms, pp2, pp2deforms):
     """ Get distances at each phase on a given path pp1 to pp2
     * dists_per_phase, p1p2_points, i1i2_indices 
@@ -1091,7 +1113,7 @@ if __name__ == '__main__':
     
     # Select dataset
     ptcode = 'LSPEAS_001'
-    ctcode = '24months'
+    ctcode = 'discharge'
     cropname = 'ring'
     
     showVol  = 'ISO'  # MIP or ISO or 2D or None
@@ -1101,16 +1123,16 @@ if __name__ == '__main__':
     
     # Curvature
     # foo.curvature_ring_models(type='fromstart') # type= how to define segments
-    # foo.curvature_ring_models(type='beforeafterstart', showquadrants=False)
+    foo.curvature_ring_models(type='beforeafterstart', showquadrants=False)
     
     # Displacement
-    # foo.displacement_ring_models(type='beforeafterstart')
+    foo.displacement_ring_models(type='beforeafterstart')
     
     # Distance between R1 R2
     foo.distance_ring_models(ringkeys = ['R1', 'R2'], type='beforeafterstart')
     
     
     # ====================
-    foo.storeOutputToExcel()
-    
+    # foo.storeOutputToExcel()
+    # foo.save_ssdf_with_individual_ring_models()
     
