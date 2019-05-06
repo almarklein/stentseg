@@ -238,7 +238,7 @@ class StentDirect:
             stentgraph.pop_nodes(nodes)  # because removing edges/add nodes can create degree 2 nodes
             
             nodes = self._RefinePositions(nodes)
-            stentgraph.smooth_paths(nodes, 2) # do not smooth iterative based on changing edges
+            stentgraph.smooth_paths(nodes, 4) # do not smooth iterative based on changing edges
             
         t0 = time.time()-t_start
         tmp = "Reduced to %i edges and %i nodes, "
