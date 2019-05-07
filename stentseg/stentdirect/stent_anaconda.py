@@ -71,7 +71,59 @@ class AnacondaDirect(StentDirect):
         
         return nodes
 
-
+    def Step3(self, cleanNodes=True):
+        """ Step3()
+        Process graph to remove unwanted edges.
+        """
+        
+        # Check if we can go
+        if self._vol is None or self._params is None:
+            raise ValueError('Data or params not yet given.')
+        if self._nodes2 is None:
+            raise ValueError('Edges not yet calculated.')
+        
+        # Get nodes and params
+        #nodes = stentgraph.StentGraph()
+        #nodes.unpack( self._nodes2.pack() )
+        nodes = self._nodes2.copy()
+        params = self._params
+        
+        # Init times        
+        t_start = time.time()
+        t_clean = 0
+        
+        print('Step3 anacondaRing is used')
+        # Iteratively prune the graph. 
+        cur_edges = 0
+        count = 0
+        ene = params.graph_expectedNumberOfEdges
+        while cur_edges != nodes.number_of_edges():
+            count += 1
+            cur_edges = nodes.number_of_edges()
+            self._Step3_iter(nodes, cleanNodes)
+        
+        if cleanNodes == True:
+            stentgraph.add_nodes_at_crossings(nodes) # not in loop; changes path of rings
+            stentgraph.pop_nodes(nodes) # pop before corner detect or angles can not be found
+            stentgraph.add_corner_nodes(nodes, th=params.graph_angleVector, angTh=params.graph_angleTh)
+            stentgraph.pop_nodes(nodes)  # because removing edges/add nodes can create degree 2 nodes
+            stentgraph.prune_tails(nodes, params.graph_trimLength)
+            stentgraph.prune_clusters(nodes, 3) #remove residual nodes/clusters
+            
+            nodes = self._RefinePositions(nodes)
+            stentgraph.smooth_paths(nodes, 4) # do not smooth iterative based on changing edges
+            
+        t0 = time.time()-t_start
+        tmp = "Reduced to %i edges and %i nodes, "
+        tmp += "which took %1.2f s (%i iters)"
+        print(tmp % (nodes.number_of_edges(), nodes.number_of_nodes(), t0, count))
+        
+        # Finish
+        self._nodes3 = nodes
+        if self._draw:
+            self.Draw(3)
+        
+        return nodes
     
     def _Step3_iter(self, nodes, cleanNodes=True):
         params = self._params
@@ -86,12 +138,12 @@ class AnacondaDirect(StentDirect):
         prune_redundant(nodes, params.graph_strongThreshold,
                                params.graph_min_strutlength,
                                params.graph_max_strutlength)
-        if cleanNodes == True:
-            stentgraph.add_nodes_at_crossings(nodes) 
-            # mind that adding at crossing in first iteration can lead to uncleaned edges (degree 3 nodes)
-            prune_redundant(nodes, params.graph_strongThreshold,
-                                   params.graph_min_strutlength,
-                                   params.graph_max_strutlength)
+        # if cleanNodes == True:
+        #     stentgraph.add_nodes_at_crossings(nodes) 
+        #     # mind that adding at crossing in first iteration can lead to uncleaned edges (degree 3 nodes)
+        #     prune_redundant(nodes, params.graph_strongThreshold,
+        #                            params.graph_min_strutlength,
+        #                            params.graph_max_strutlength)
         stentgraph.prune_tails(nodes, params.graph_trimLength)
         stentgraph.prune_clusters(nodes, params.graph_minimumClusterSize)
 
