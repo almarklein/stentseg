@@ -24,8 +24,8 @@ basedir = select_dir(os.getenv('LSPEAS_BASEDIR', ''),
 # basedir = select_dir(r'D:\LSPEAS_F\LSPEASF_ssdf', r'F:\LSPEASF_ssdf_backup')
 
 # Select dataset to register
-ptcode = 'lspeas_003'
-ctcode =  '1month'
+ptcode = 'lspeas_005'
+ctcode =  'discharge'
 cropname = 'ring'
 what = 'avgreg' # avgreg
 normalize = True
@@ -53,7 +53,17 @@ vol = s.vol
 
 # Optionally crop volume for segmentation
 if crop:
-    vol2 = cropvol(vol)
+    vol_crop = cropvol(vol)
+    s.origin = vol2.origin # for ssdf save model
+    # calculate crop range from origin
+    rz = int(vol_crop.origin[0] / vol_crop.sampling[0] + 0.5)
+    rz = rz, rz + vol_crop.shape[0]
+    ry = int(vol_crop.origin[1] / vol_crop.sampling[1] + 0.5)
+    ry = ry, ry + vol_crop.shape[1]
+    rx = int(vol_crop.origin[2] / vol_crop.sampling[2] + 0.5)
+    rx = rx, rx + vol_crop.shape[2]
+    s.croprange = rz, ry, rx  # in world coordinates 
+    vol2 = vol_crop 
 else:
     vol2 = vol
 
@@ -64,15 +74,15 @@ stentType = 'anacondaRing'
 # 'branch' or 'nellix' runs Nellixdirect with modified seeding
 
 p = getDefaultParams(stentType)
-p.seed_threshold = [1000]        # step 1 [lower th] or [lower th, higher th]
+p.seed_threshold = [700]        # step 1 [lower th] or [lower th, higher th]
 p.mcp_speedFactor = 750                 # step 2, costToCtValue; 
                                         # lower-> longer paths (costs low) -- higher-> short paths (costs high)
-p.mcp_maxCoverageFronts = 0.004         # step 2, base.py; replaces mcp_evolutionThreshold
-p.graph_weakThreshold = 750             # step 3, stentgraph.prune_very_weak
+p.mcp_maxCoverageFronts = 0.008         # step 2, base.py; replaces mcp_evolutionThreshold
+p.graph_weakThreshold = 700             # step 3, stentgraph.prune_very_weak
 p.graph_expectedNumberOfEdges = 3       # step 3, stentgraph.prune_weak
 p.graph_trimLength =  0                 # step 3, stentgraph.prune_tails
 p.graph_minimumClusterSize = 10         # step 3, stentgraph.prune_clusters
-p.graph_strongThreshold = 2500          # step 3, stentgraph.prune_weak and stentgraph.prune_redundant
+p.graph_strongThreshold = 1300          # step 3, stentgraph.prune_weak and stentgraph.prune_redundant
 p.graph_min_strutlength = 5             # step 3, stent_anaconda prune_redundant
 p.graph_max_strutlength = 13            # step 3, stent_anaconda prune_redundant
 # p.graph_angleVector = 5                 # step 3, corner detect
@@ -96,7 +106,7 @@ vol = vol2
 
 ## Visualization and interactive segmentation steps
 #todo: depending on the speedFactor fronts do not propagate from manually added seeds. 
-# see costfunction, from speedfactor > 750 it works for lspeas data
+# see costfunction, from speedfactor > 750 it works
 
 guiRemove = False # True for option to remove nodes/edges but takes longer
 clim = (0,3000)
@@ -318,8 +328,8 @@ print('n = add [picked point] (SHIFT+R-click) as seed')
 print('PageUp = protect node closest to picked point in nodes1 axes, no pop')
 print('p = remove seeds posterior (y-axis) to [picked point] (use for spine seeds)')
 print('o = remove seeds anterior (y-axis) to [picked point]')
-print('i = remove seeds proximal (z-axis) to [picked point]')
-print('k = remove seeds distal (z-axis) to [picked point]')
+print('i = remove seeds cranial (z-axis) to [picked point]')
+print('k = remove seeds caudal (z-axis) to [picked point]')
 print('l = remove seeds left (x-axis) to [picked point]')
 print('j = remove seeds right (x-axis) to [picked point]')
 print('1 = redo step 1; 2 = redo step 2; 3 = redo step 3')
