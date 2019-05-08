@@ -1,4 +1,4 @@
-""" Script to measure ring dynamics
+""" Script to measure ring pulsatility by fitting a plane
 
 run as script
 
