@@ -1,7 +1,7 @@
-""" Author: M.A. Koenrades
+""" Module to create plots from automated analysis of motion on the centerlines
+Reads Excel output per patient
 Created November 2017
-Module to create plots from automated analysis of motion on the centerlines
-Reads Excel output
+Copyright 2017-2019, Maaike A. Koenrades
 """
 from stentseg.utils import PointSet
 import openpyxl
@@ -1042,19 +1042,19 @@ if __name__ == '__main__':
     
     ## Get chimney angle change
     
-    # foo.get_angle_change(patients=patients, analysis='Chim', chimneys=['LRA', 'RRA'], angletype = 'peakangle') # pointdeflection or peakangle 
+    # foo.get_angle_change(patients=patients, analysis='Chim', chimneys=['LRA', 'RRA', 'SMA'], angletype = 'pointdeflection') # pointdeflection or peakangle 
     # print(len(foo.angleChange))
     # outcomeChim = foo.angleChange
     # outcomeChimMin = foo.angleMin
     # outcomeChimMax = foo.angleMax
-    # foo.get_angle_change(patients=patients, analysis='Chim', chimneys=['SMA'], angletype = 'peakangle')
+    # foo.get_angle_change(patients=patients, analysis='Chim', chimneys=['SMA'], angletype = 'pointdeflection')
     # print(len(foo.angleChange)) # verify number of chimneys
     # if True:
     #     t, p = independent_samples_ttest(foo.angleChange, outcomeChim)
     # if True:
     #     t, p = independent_samples_ttest(foo.angleMin, outcomeChimMin)
     #     t, p = independent_samples_ttest(foo.angleMax, outcomeChimMax)
-    # 
+    
     ## Get chimney-Nellix vector angle change
     # 
     # foo.get_angle_change(patients=patients, analysis='ChimNel', chimneys=['LRA','RRA'])
