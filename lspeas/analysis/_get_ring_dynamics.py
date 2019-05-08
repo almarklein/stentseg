@@ -87,7 +87,18 @@ class ExcelAnalysisRingDynamics():
                     filename = '{}_ringdynamics_{}.xlsx'.format(patient, ctcodes[i])
                     workbook_stent = os.path.join(self.exceldir, filename)
                     # read workbook
-                    wb = openpyxl.load_workbook(workbook_stent, data_only=True)
+                    try:
+                        wb = openpyxl.load_workbook(workbook_stent, data_only=True)
+                    except FileNotFoundError: # handle missing scans
+                        if curvetype == 'pointchange':
+                            # collect
+                            curvechangeOverTime.append(np.nan)
+                            curvechangePOverTime.append(np.nan)
+                            curvechangeRelLocOverTime.append(np.nan)
+                            avgcurvechangeOverTime.append(np.nan)
+                            avgcurvechangePOverTime.append(np.nan)
+                        continue # no scan, next
+                    
                     # get sheet
                     sheetname = 'Curvature{}'.format(a)
                     sheet = wb.get_sheet_by_name(sheetname)
