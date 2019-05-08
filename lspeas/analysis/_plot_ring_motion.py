@@ -1,6 +1,6 @@
 """ LSPEAS: Script to analyze and plot motion during the cardiac cycle from
 excel sheet or from the dynamic models
-Author: M.A. Koenrades. Created 2018.
+Copyright 2018-2019, Maaike A. Koenrades
 """
 
 from lspeas.analysis.utils_analysis import readRingExcel, _initaxis, cols2num, read_deforms
@@ -1365,7 +1365,7 @@ def orderlocation(positionAnt, positionPost, positionLeft, positionRight):
     return indexorder
 
 def readDistancesOverCycle(sheet,rowStart=50, colStart='B', colOffset=0, time='discharge', nphases=10):
-    """ read distances over all phases cardiac cycle in excel.
+    """ read distances over all phases cardiac cycle in excel (pulsatility).
     """
     # read distances
     timepoints = ['discharge', '1M', '6M', '12M', '24M']
