@@ -50,7 +50,7 @@ class ExcelAnalysisRingDynamics():
         
     def get_curvature_change(self, patients=None, analysis=['R1','Q1R1','Q2R1','Q3R1','Q4R1'], 
                 curvetype='pointchange', storemat=False):
-        """ Read curvature change for the ring or ring quadrant
+        """ Read curvature change for the ring and/or ring quadrant
         analysis: R1 and/or Q1R1 etc for ring or part of ring
         curvetype: 'pointchange'        --> curvature change per point
                    'peakcurvature'      --> max diff between peak angle over phases
@@ -59,12 +59,6 @@ class ExcelAnalysisRingDynamics():
         
         if patients == None:
             patients = self.patients
-        
-        self.curveChange = []
-        self.angleMin = []
-        self.angleMax = []
-        self.locationOnRing = [] # location on ring as percentage distance from prox / length chimney
-        self.locationChange = [] # location change of peak angle 
         
         ctcodes = ['discharge', '1month', '6months', '12months', '24months']
         
@@ -131,13 +125,87 @@ class ExcelAnalysisRingDynamics():
             # Store to .mat per analysis
             if storemat:
                 if curvetype == 'pointchange':
-                    # cm-1
                     self.store_var_to_mat(np.asarray(curvechangeOverTime_pts), varname='Curvature{}_maxchange_pts'.format(a) )
                     self.store_var_to_mat(np.asarray(curvechangePOverTime_pts), varname='Curvature{}_maxchangeP_pts'.format(a) )
                     self.store_var_to_mat(np.asarray(curvechangeRelLocOverTime_pts), varname='Curvature{}_maxchangeRelLoc_pts'.format(a) )
                     self.store_var_to_mat(np.asarray(avgcurvechangeOverTime_pts), varname='Curvature{}_meanchange_pts'.format(a) )
                     self.store_var_to_mat(np.asarray(avgcurvechangePOverTime_pts), varname='Curvature{}_meanchangeP_pts'.format(a) )
                     
+    
+    def get_displacement_cycle(self, patients=None, analysis=['R1','Q1R1','Q2R1','Q3R1','Q4R1'], 
+                storemat=False):
+        """ Read displacement during the cycle for the ring and/or ring quadrant
+        analysis: R1 and/or Q1R1 etc for ring or part of ring
+        Obtain mean displacement in 3d and x,y,z directions
+        """
+        
+        if patients == None:
+            patients = self.patients
+        
+        ctcodes = ['discharge', '1month', '6months', '12months', '24months']
+        
+        # read workbooks per patient (this might take a while)
+        for a in analysis:
+            # init to collect over time all pts
+            displxyzOverTime_pts = [] #  xyz mm; 5 values for each patient
+            curvechangePOverTime_pts = [] # x mm
+            curvechangeRelLocOverTime_pts = [] # y mm
+            avgcurvechangeOverTime_pts = [] # z mm
+            for patient in patients:
+                # init to collect parameter for all timepoints for this patient
+                displxyzOverTime = [] 
+                displxOverTime = [] 
+                displyOverTime = [] 
+                displzOverTime = []
+                for i in range(len(ctcodes)):
+                    filename = '{}_ringdynamics_{}.xlsx'.format(patient, ctcodes[i])
+                    workbook_stent = os.path.join(self.exceldir, filename)
+                    # read workbook
+                    try:
+                        wb = openpyxl.load_workbook(workbook_stent, data_only=True)
+                    except FileNotFoundError: # handle missing scans
+                        # collect
+                        displxyzOverTime.append(np.nan)
+                        displxOverTime.append(np.nan)
+                        displyOverTime.append(np.nan)
+                        displzOverTime.append(np.nan)
+                        continue # no scan, next
+                    
+                    # get sheet
+                    sheetname = 'Motion{}'.format(a)
+                    sheet = wb.get_sheet_by_name(sheetname)
+                    # set row for 3d,x,y,z
+                    rowstart = 6 # as in excel; xyz/3d
+                    rowstart2 = 7 # as in excel; x
+                    rowstart3 = 8 # as in excel; y
+                    rowstart4 = 9 # as in excel; z
+                    
+                    colstart = 1 # 1 = B
+                    # read change
+                    displxyz = sheet.rows[rowstart-1][colstart].value
+                    displx = sheet.rows[rowstart2-1][colstart].value 
+                    disply = sheet.rows[rowstart3-1][colstart].value
+                    displz = sheet.rows[rowstart4-1][colstart].value 
+                    # collect
+                    displxyzOverTime.append(displxyz)
+                    displxOverTime.append(displx)
+                    displyOverTime.append(disply)
+                    displzOverTime.append(displz)
+                    
+                # collect for pts
+                displxyzOverTime_pts.append(np.asarray(displxyzOverTime))
+                curvechangePOverTime_pts.append(np.asarray(displxOverTime))
+                curvechangeRelLocOverTime_pts.append(np.asarray(displyOverTime))        
+                avgcurvechangeOverTime_pts.append(np.asarray(displzOverTime))
+                
+            # Store to .mat per analysis
+            if storemat:
+                self.store_var_to_mat(np.asarray(displxyzOverTime_pts), varname='Displacement{}_3d_pts'.format(a) )
+                self.store_var_to_mat(np.asarray(curvechangePOverTime_pts), varname='Displacement{}_x_pts'.format(a) )
+                self.store_var_to_mat(np.asarray(curvechangeRelLocOverTime_pts), varname='Displacement{}_y_pts'.format(a) )
+                self.store_var_to_mat(np.asarray(avgcurvechangeOverTime_pts), varname='Displacement{}_z_pts'.format(a) )
+                    
+                     
     
     def store_var_to_mat(self, variable, varname=None, storematdir=None):
         """ Save as .mat to easy copy to spss
@@ -172,6 +240,25 @@ if __name__ == '__main__':
     
     ## Ring motion manuscript 
     
-    # get and store curvature change rings and quadrants post left ant right
-    foo.get_curvature_change(patients=None, analysis=['R1','Q1R1','Q2R1','Q3R1','Q4R1'], 
-            curvetype='pointchange', storemat=True)
+    # Get and store curvature change rings and quadrants post left ant right
+    # R1
+    # foo.get_curvature_change(patients=None, analysis=['R1','Q1R1','Q2R1','Q3R1','Q4R1'], 
+    #         curvetype='pointchange', storemat=True)
+    # R2
+    # foo.get_curvature_change(patients=None, analysis=['R2','Q1R2','Q2R2','Q3R2','Q4R2'], 
+    #         curvetype='pointchange', storemat=True)
+    
+    # Get and store displacement rings and quadrants
+    # R1
+    foo.get_displacement_cycle(patients=None, analysis=['R1','Q1R1','Q2R1','Q3R1','Q4R1'], 
+            storemat=True)
+    # R2
+    foo.get_displacement_cycle(patients=None, analysis=['R2','Q1R2','Q2R2','Q3R2','Q4R2'], 
+            storemat=True)
+    
+    # Get and store displacement between rings
+    
+    
+    
+    
+    
