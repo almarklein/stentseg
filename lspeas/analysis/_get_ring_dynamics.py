@@ -34,7 +34,7 @@ class ExcelAnalysisRingDynamics():
                         'LSPEAS_002',	
                         'LSPEAS_003', 
                         'LSPEAS_005',	
-                        # 'LSPEAS_008', 
+                        'LSPEAS_008', 
                         # 'LSPEAS_009',	
                         # 'LSPEAS_011', 
                         # 'LSPEAS_015',	
@@ -122,6 +122,12 @@ class ExcelAnalysisRingDynamics():
                 avgcurvechangeOverTime_pts.append(np.asarray(avgcurvechangeOverTime))
                 avgcurvechangePOverTime_pts.append(np.asarray(avgcurvechangePOverTime))
             
+            self.curvechangeOverTime_pts = np.asarray(curvechangeOverTime_pts)
+            self.curvechangePOverTime_pts = np.asarray(curvechangePOverTime_pts)
+            self.curvechangeRelLocOverTime_pts = np.asarray(curvechangeRelLocOverTime_pts)
+            self.avgcurvechangeOverTime_pts = np.asarray(avgcurvechangeOverTime_pts)
+            self.avgcurvechangePOverTime_pts = np.asarray(avgcurvechangePOverTime_pts)
+            
             # Store to .mat per analysis
             if storemat:
                 if curvetype == 'pointchange':
@@ -197,6 +203,11 @@ class ExcelAnalysisRingDynamics():
                 curvechangePOverTime_pts.append(np.asarray(displxOverTime))
                 curvechangeRelLocOverTime_pts.append(np.asarray(displyOverTime))        
                 avgcurvechangeOverTime_pts.append(np.asarray(displzOverTime))
+            
+            self.displxyzOverTime_pts = np.asarray(displxyzOverTime_pts)
+            self.displxOverTime_pts = np.asarray(curvechangePOverTime_pts)
+            self.displyOverTime_pts = np.asarray(curvechangeRelLocOverTime_pts)
+            self.displzOverTime_pts = np.asarray(avgcurvechangeOverTime_pts)
                 
             # Store to .mat per analysis
             if storemat:
@@ -256,6 +267,9 @@ class ExcelAnalysisRingDynamics():
                 # collect for pts
                 meanOverTime_pts.append(np.asarray(meanOverTime))
                 maxOverTime_pts.append(np.asarray(maxOverTime))
+            
+            self.meanOverTime_pts = np.asarray(meanOverTime_pts)
+            self.maxOverTime_pts = np.asarray(maxOverTime_pts)
                 
             # Store to .mat per analysis
             if storemat:
@@ -288,6 +302,22 @@ class ExcelAnalysisRingDynamics():
         print('')
         print('variable {} was stored as.mat to {}'.format(varname, storemat))
                     
+    
+def print_stats_var_over_time_(varOverTime_pts):
+    """ Tp print stats for paper
+    varOverTime_pts is an array of size 15x5 (pts x timepoints)
+    """
+    timepoints = ['D', '1M', '6M', '12M', '24M']
+    for time in range(len(timepoints)): # 5 time points
+        print(timepoints[time]+':')
+        print('Average±std, min, max: {:.1f} ± {:.1f} ({:.1f}-{:.1f})'.format(
+                                            np.nanmean(varOverTime_pts[:,time]),
+                                            np.nanstd(varOverTime_pts[:,time]),
+                                            np.nanmin(varOverTime_pts[:,time]),
+                                            np.nanmax(varOverTime_pts[:,time])
+                                            ))
+        print()
+
 
 
 if __name__ == '__main__':
@@ -314,8 +344,8 @@ if __name__ == '__main__':
     
     # Get and store displacement between rings
     foo.get_distance_change_between_rings(patients=None, analysis=['R1R2','Q1R1R2','Q2R1R2','Q3R1R2','Q4R1R2'], 
-                storemat=True)
-    
-    
+                storemat=False)
+    print_stats_var_over_time_(foo.meanOverTime_pts)
+    print_stats_var_over_time_(foo.maxOverTime_pts)
     
     
