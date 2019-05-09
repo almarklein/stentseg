@@ -204,8 +204,64 @@ class ExcelAnalysisRingDynamics():
                 self.store_var_to_mat(np.asarray(curvechangePOverTime_pts), varname='Displacement{}_x_pts'.format(a) )
                 self.store_var_to_mat(np.asarray(curvechangeRelLocOverTime_pts), varname='Displacement{}_y_pts'.format(a) )
                 self.store_var_to_mat(np.asarray(avgcurvechangeOverTime_pts), varname='Displacement{}_z_pts'.format(a) )
+    
+    
+    def get_distance_change_between_rings(self, patients=None, analysis=['R1R2','Q1R1R2','Q2R1R2','Q3R1R2','Q4R1R2'], 
+                storemat=False):
+        """ Read distance change during the cycle for the ring and/or ring quadrant
+        analysis: R1 and/or Q1R1 etc for ring or part of ring
+        Obtain mean and max distance change
+        """
+        
+        if patients == None:
+            patients = self.patients
+        
+        ctcodes = ['discharge', '1month', '6months', '12months', '24months']
+        
+        # read workbooks per patient (this might take a while)
+        for a in analysis:
+            # init to collect over time all pts
+            meanOverTime_pts = [] # mm; 5 values for each patient
+            maxOverTime_pts = [] # mm
+            for patient in patients:
+                # init to collect parameter for all timepoints for this patient
+                meanOverTime = [] 
+                maxOverTime = [] 
+                for i in range(len(ctcodes)):
+                    filename = '{}_ringdynamics_{}.xlsx'.format(patient, ctcodes[i])
+                    workbook_stent = os.path.join(self.exceldir, filename)
+                    # read workbook
+                    try:
+                        wb = openpyxl.load_workbook(workbook_stent, data_only=True)
+                    except FileNotFoundError: # handle missing scans
+                        # collect
+                        meanOverTime.append(np.nan)
+                        maxOverTime.append(np.nan)
+                        continue # no scan, next
                     
-                     
+                    # get sheet
+                    sheetname = 'Distances{}'.format(a)
+                    sheet = wb.get_sheet_by_name(sheetname)
+                    # set row for 3d,x,y,z
+                    rowstart = 16 # as in excel; mean
+                    rowstart2 = 6 # as in excel; max
+                    colstart = 1 # 1 = B
+                    # read change
+                    distmean = sheet.rows[rowstart-1][colstart].value
+                    distmax = sheet.rows[rowstart2-1][colstart].value 
+                    # collect
+                    meanOverTime.append(distmean)
+                    maxOverTime.append(distmax)
+                    
+                # collect for pts
+                meanOverTime_pts.append(np.asarray(meanOverTime))
+                maxOverTime_pts.append(np.asarray(maxOverTime))
+                
+            # Store to .mat per analysis
+            if storemat:
+                self.store_var_to_mat(np.asarray(meanOverTime_pts), varname='Distances{}_mean_pts'.format(a) )
+                self.store_var_to_mat(np.asarray(maxOverTime_pts), varname='Distances{}_max_pts'.format(a) )
+                
     
     def store_var_to_mat(self, variable, varname=None, storematdir=None):
         """ Save as .mat to easy copy to spss
@@ -250,14 +306,15 @@ if __name__ == '__main__':
     
     # Get and store displacement rings and quadrants
     # R1
-    foo.get_displacement_cycle(patients=None, analysis=['R1','Q1R1','Q2R1','Q3R1','Q4R1'], 
-            storemat=True)
+    # foo.get_displacement_cycle(patients=None, analysis=['R1','Q1R1','Q2R1','Q3R1','Q4R1'], 
+    #         storemat=True)
     # R2
-    foo.get_displacement_cycle(patients=None, analysis=['R2','Q1R2','Q2R2','Q3R2','Q4R2'], 
-            storemat=True)
+    # foo.get_displacement_cycle(patients=None, analysis=['R2','Q1R2','Q2R2','Q3R2','Q4R2'], 
+    #         storemat=True)
     
     # Get and store displacement between rings
-    
+    foo.get_distance_change_between_rings(patients=None, analysis=['R1R2','Q1R1R2','Q2R1R2','Q3R1R2','Q4R1R2'], 
+                storemat=True)
     
     
     
