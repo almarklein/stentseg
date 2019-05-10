@@ -44,7 +44,7 @@ def on_key(event):
             selected_nodes.clear()
     if event.text == 's':
         # additional smooth
-        stentgraph.smooth_paths(model, 4)
+        stentgraph.smooth_paths(model, 2)
         node_points = reDrawModel(vol, model, selected_nodes=selected_nodes)
     if event.text == 'e':
         # smooth selected edge
@@ -158,6 +158,7 @@ def nodeInteraction(model, vol, selected_nodes):
     print('e       = smooth selected edge')
     print('w       = clear selected nodes')
     print('q       = activate "interactiveClusterRemoval"')
+    print('ALT     = pop nodes')
     print('ESCAPE  = make model dynamic and save to disk')
     print('')
     
@@ -181,7 +182,7 @@ if __name__ == '__main__':
                         r'D:\LSPEAS\LSPEAS_ssdf',
                         r'F:\LSPEAS_ssdf_BACKUP',r'G:\LSPEAS_ssdf_BACKUP')
 
-    ptcode = 'LSPEAS_001'
+    ptcode = 'LSPEAS_019'
     ctcode = '6months'
     cropname = 'ring'
     modelname = 'modelavgreg'
@@ -205,6 +206,9 @@ if __name__ == '__main__':
     selected_nodes = list()
     node_points = nodeInteraction(model, vol, selected_nodes)
     
-    origin = s.origin # origin of model to get the deforms from correct locations
+    print(s.origin) # for same crop origins should be the same
+    print(s_vol.origin)
+    print(s_deforms.origin)
+    origin = s_deforms.origin # use origin of deforms to get the deforms for model from correct locations
 
     
