@@ -242,15 +242,17 @@ def get_mask_with_stent_likely_positions(data, th):
             mask[z,y,x] = 2
             values.append(data[z,y,x])
     
-    # remove outlier markers
+    # remove outliers => markers
     if len(th) == 1: # no upper seed threshold given
         for z, y, x in zip(*np.where(mask==2)):
             val = data[z,y,x]
             #mean-based method
             if val-np.mean(values) > 2.5* np.std(values):
-                mask[z,y,x] = 1
-                values.remove(val)
-                print("seed with value {} removed as outlier".format(val) )
+                # but do not remove if value if below 2200 HU (or False remove when normalized)
+                if not val < 2200:
+                    mask[z,y,x] = 1
+                    values.remove(val)
+                    print("seed with value {} removed as outlier".format(val) )
     
     print()
     print('Seed ctvalues: {}'.format(sorted(values)))
