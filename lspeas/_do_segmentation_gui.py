@@ -54,6 +54,7 @@ def on_key(event):
     ESCAPE  = FINISH: refine, smooth
     """
     global node_points
+    global nodes3copy
     if event.key == vv.KEY_DOWN:
         # hide nodes
         t1.visible = False
@@ -122,12 +123,11 @@ def on_key(event):
             selected_nodes[0].faceColor = 'w'
             selected_nodes.clear()
     if event.key == vv.KEY_ALT:
+        #backup to restore
+        nodes3copy = sd._nodes3.copy()
         # clean nodes
         if stentType == 'anacondaRing':
             stentgraph.add_nodes_at_crossings(sd._nodes3)
-#             prune_redundant(sd._nodes3, sd._params.graph_strongThreshold,
-#                                             sd._params.graph_min_strutlength,
-#                                             sd._params.graph_max_strutlength)
         stentgraph.pop_nodes(sd._nodes3) # pop before corner detect or angles can not be found
         stentgraph.add_corner_nodes(sd._nodes3, th=sd._params.graph_angleVector, angTh=sd._params.graph_angleTh)
         stentgraph.pop_nodes(sd._nodes3) # because removing edges/add nodes can create degree 2 nodes
@@ -142,7 +142,18 @@ def on_key(event):
         _utils_GUI.node_points_callbacks(node_points, selected_nodes, pick=False)
         a3.SetView(view)
         print('----Press ESCAPE to FINISH model----')
+    if event.text == 'u':
+        # undo and restore nodes3
+        sd._nodes3 = nodes3copy
+        view = a3.GetView()
+        a3.Clear()
+        DrawModelAxes(vol, sd._nodes3, a3, clim=clim, showVol=showVol, mw=8, lw=0.2, climEditor=False)
+        node_points = _utils_GUI.interactive_node_points(sd._nodes3, scale=0.6)
+        _utils_GUI.node_points_callbacks(node_points, selected_nodes, pick=False)
+        a3.SetView(view)
     if event.key == vv.KEY_ESCAPE:
+        #backup to restore
+        nodes3copy = sd._nodes3.copy()
         # ESCAPE will FINISH model
         stentgraph.pop_nodes(sd._nodes3)
         sd._nodes3 = sd._RefinePositions(sd._nodes3) # subpixel locations 
@@ -221,6 +232,7 @@ print('ENTER   = restore edge [select 2 nodes]')
 print('DELETE  = remove edge [select 2 ndoes] or pop node [select 1 node]')
 print('ALT     = clean nodes: crossings, pop, corner, tails, clusters<3')
 print('ESCAPE  = FINISH: refine, smooth')
+print('u       = undo and restore nodes3')
 print('x and a/d = axis invisible/visible and rotate')
 print('q       = activate "interactiveClusterRemoval"')
 print('s       = additional smooth')
