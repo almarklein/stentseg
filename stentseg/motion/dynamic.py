@@ -63,6 +63,7 @@ def incorporate_motion_nodes(g, deforms, origin):
     # Create deformation for all nodes in the graph
     # todo: perhaps pirt *should* be aware of the origin!
     # it isn't now, so we need to take it into account here
+    # origin of deforms is zero so subtract the origin of registered volumes (stored in ssdf deforms) from model (world) coordinates
     g_deforms = []
     samplePoints = g_nodes - PointSet([o for o in reversed(origin)], dtype='float32')
     for deform in deforms:
@@ -101,6 +102,7 @@ def incorporate_motion_edges(g, deforms, origin):
         # Create deformation for all points on path
         # todo: perhaps pirt *should* be aware of the origin!
         # it isn't now, so we need to take it into account here
+        # origin of deforms is zero so subtract the origin of registered volumes (stored in ssdf deforms) from model (world) coordinates
         g_deforms = []
         samplePoints = path - PointSet([o for o in reversed(origin)], dtype='float32')
         for deform in deforms:
