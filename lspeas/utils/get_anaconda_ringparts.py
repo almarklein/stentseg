@@ -57,6 +57,10 @@ def get_model_struts(model, nstruts=8):
     from stentseg.stentdirect import stentgraph
     import numpy as np
     
+    # remove 3rd or 4th ring if there, find self connected 
+    selfloopnodes = model.nodes_with_selfloops()
+    for node in selfloopnodes:
+        model.remove_node(node)
     # remove hooks if still there
     models = _get_model_hooks(model)
     model_hooks, model_noHooks = models[0], models[1]
@@ -94,10 +98,13 @@ def get_model_rings(model_R1R2):
     """
     import networkx as nx
     import numpy as np
-
+    
+    # remove remaining strut parts if any
+    modelhookparts, model_R1R2 = _get_model_hooks(model_R1R2) 
+        
     model_R2 = model_R1R2.copy()
     model_R1 = model_R1R2.copy()
-    # struts must be removed
+    # struts must have been removed
     clusters = list(nx.connected_components(model_R1R2))
     assert len(clusters) == 2  # 2 rings
     c1, c2 = np.asarray(clusters[0]), np.asarray(clusters[1])
@@ -219,8 +226,8 @@ if __name__ == '__main__':
                         r'D:\LSPEAS\LSPEAS_ssdf', r'F:\LSPEAS_ssdf_backup')
     
     # Select dataset to register
-    ptcode = 'LSPEAS_002'
-    ctcode = 'discharge'
+    ptcode = 'LSPEAS_021'
+    ctcode = '6months'
     cropname = 'ring'
     modelname = 'modelavgreg'
     
