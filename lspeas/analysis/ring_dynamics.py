@@ -106,11 +106,10 @@ class _Do_Analysis_Rings:
         # Get 2 seperate rings
         modelsout = get_model_struts(self.model, nstruts=nstruts)
         model_R1R2 = modelsout[2]
-        # remove remaining strut parts if any
-        modelhookparts, model_R1R2 = _get_model_hooks(model_R1R2) 
         modelR1, modelR2  = get_model_rings(model_R1R2)
+        
         # pop nodes, set posterior as start node of ring, make dynamic again
-        smoothfactor = 30
+        smoothfactor = 15
         posStart = self.posPost['R1'] # posterior is our reference
         modelR1 = pop_nodes_ring_models(modelR1, self.deforms, self.origin, posStart=posStart, 
             smoothfactor=smoothfactor) #duplicates on path were removed
@@ -196,7 +195,7 @@ class _Do_Analysis_Rings:
         #     vv.title('Quadrants of ring for LSPEAS %s  -  %s' % (self.ptcode[7:], self.ctcode))
             
         for key in s:
-            if key.startswith('modelR'): #R1 and R2
+            if key == 'modelR1' or key == 'modelR2': #R1 and R2
                 model = s[key]
                 key2 = key[-2:] # modelR1 to R1
                 name_output = 'Curvature{}'.format(key2)
@@ -290,6 +289,9 @@ class _Do_Analysis_Rings:
         print('Curvature during cycle of point with max curvature change= {}'.format(output['max_point_curvature_per_phase']))
         print('')
         print('Max curvature change= {}'.format(output['max_change']) )
+        print('')
+        print('Average curvature change for ring= {} (cm-1) / {} (%)'.format(np.mean(output['curvature_change']), np.mean(output['curvature_changeP']) ) )
+        print()
         
         # ============
         # Store output with name
@@ -382,7 +384,7 @@ class _Do_Analysis_Rings:
         """
         s = self.s_model # ssdf with ring models
         for key in s:
-            if key.startswith('modelR'): #R1 and R2
+            if key == 'modelR1' or key == 'modelR2': #R1 and R2
                 model = s[key]
                 key2 = key[-2:] # modelR1 to R1
                 # get model path and pathdeforms
@@ -1113,7 +1115,7 @@ def readLocationPeaksValleys(exceldir, workbook_stent, ptcode, ctcode, ring='R1'
 if __name__ == '__main__':
     
     # Select dataset
-    ptcode = 'LSPEAS_001'
+    ptcode = 'LSPEAS_021'
     ctcode = '6months'
     cropname = 'ring'
     
@@ -1124,7 +1126,7 @@ if __name__ == '__main__':
     
     # Curvature
     # foo.curvature_ring_models(type='fromstart') # type= how to define segments
-    foo.curvature_ring_models(type='beforeafterstart', showquadrants=False)
+    foo.curvature_ring_models(type='beforeafterstart', showquadrants=False) # type= how to define segments
     
     # Displacement
     foo.displacement_ring_models(type='beforeafterstart')
