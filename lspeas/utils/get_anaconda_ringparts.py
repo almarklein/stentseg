@@ -60,7 +60,8 @@ def get_model_struts(model, nstruts=8):
     # remove 3rd or 4th ring if there, find self connected 
     selfloopnodes = model.nodes_with_selfloops()
     for node in selfloopnodes:
-        model.remove_node(node)
+        if model.degree(node) == 2: # node should not be connected to other nodes
+            model.remove_node(node)
     # remove hooks if still there
     models = _get_model_hooks(model)
     model_hooks, model_noHooks = models[0], models[1]
@@ -70,7 +71,7 @@ def get_model_struts(model, nstruts=8):
     directions = []
     for n1, n2 in model_noHooks.edges():
         e_length = _edge_length(model, n1, n2)
-        if (3.5 < e_length < 12): # struts OLB21 are 4.5-5.5mm OLB34 9-9.5
+        if (4 < e_length < 12): # struts OLB21 are 4.5-5.5mm OLB34 9-9.5
             vector = np.subtract(n1,n2) # nodes, paths in x,y,z
             vlength = np.sqrt(vector[0]**2+vector[1]**2+vector[2]**2)
             direction = abs(vector / vlength)
@@ -220,14 +221,15 @@ if __name__ == '__main__':
     from stentseg.stentdirect.stentgraph import create_mesh
     from stentseg.utils.visualization import show_ctvolume
     from visvis import ssdf
+    from stentseg.utils.picker import pick3d
     
     # Select the ssdf basedir
     basedir = select_dir(os.getenv('LSPEAS_BASEDIR', ''),
                         r'D:\LSPEAS\LSPEAS_ssdf', r'F:\LSPEAS_ssdf_backup')
     
     # Select dataset to register
-    ptcode = 'LSPEAS_021'
-    ctcode = '6months'
+    ptcode = 'LSPEAS_025'
+    ctcode = '24months'
     cropname = 'ring'
     modelname = 'modelavgreg'
     
@@ -247,15 +249,16 @@ if __name__ == '__main__':
     a.bgcolor = 0,0,0
     a.daspect = 1, 1, -1
     t = vv.volshow(vol, clim=(0, 2500), renderStyle='mip')
+    label = pick3d(a, vol)
     # model.Draw(mc='b', mw = 10, lc='g')
     vv.xlabel('x (mm)');vv.ylabel('y (mm)');vv.zlabel('z (mm)')
     vv.title('Model for LSPEAS %s  -  %s' % (ptcode[7:], ctcode))
     
     # get hooks and struts
     model_struts, model_hooks, model_R1R2, model_h_s, model_noHooks = get_model_struts(model, nstruts=8)
-    # model_hooks.Draw(mc='r', mw = 10, lc='r')
+    model_R1R2.Draw(mc='r', mw = 10, lc='r')
     model_noHooks.Draw(mc='b', mw = 10, lc='b')
-    # model_struts.Draw(mc='m', mw = 10, lc='m')
+    model_struts.Draw(mc='y', mw = 10, lc='y')
     
     a2 = vv.subplot(1,2,2)
     a2.axis.axisColor = 1,1,1
