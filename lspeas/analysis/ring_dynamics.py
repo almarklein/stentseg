@@ -65,27 +65,22 @@ class _Do_Analysis_Rings:
         self.alpha = 0.6
         
         # Load CT image data for reference, and deform data to measure motion
-        try:
-            # If we run this script without restart, we can re-use volume and deforms
-            self.vol
-            self.deforms
-        except AttributeError:
-            self.vol = loadvol(self.basedir, self.ptcode, self.ctcode, self.cropvol, 'avgreg').vol
-            s_deforms = loadvol(self.basedir, self.ptcode, self.ctcode, self.cropname, 'deforms')
-            deforms = [s_deforms[key] for key in dir(s_deforms) if key.startswith('deform')]
-            deforms = [pirt.DeformationFieldBackward(*fields) for fields in deforms]
-            self.deforms = deforms
+        self.vol = loadvol(self.basedir, self.ptcode, self.ctcode, self.cropvol, 'avgreg').vol
+        s_deforms = loadvol(self.basedir, self.ptcode, self.ctcode, self.cropname, 'deforms')
+        deforms = [s_deforms[key] for key in dir(s_deforms) if key.startswith('deform')]
+        deforms = [pirt.DeformationFieldBackward(*fields) for fields in deforms]
+        self.deforms = deforms
             
         # Load ring model
-        try:
-            self.s_model
-            self.model
-        except AttributeError:
-            self.s_model = loadmodel(self.basedir, self.ptcode, self.ctcode, self.cropname, 'modelavgreg')
-            self.model = self.s_model.model 
+        self.s_model = loadmodel(self.basedir, self.ptcode, self.ctcode, self.cropname, 'modelavgreg')
+        self.model = self.s_model.model 
         self.modelname = 'modelavgreg'
-        # origin of model to get the deforms from correct locations in incorporate nodes/edges
-        self.origin = self.s_model.origin
+        
+        # origin of deforms to get the deforms from correct locations in incorporate nodes/edges
+        self.origin = s_deforms.origin
+        print(self.s_model.origin) # for same crop origins should be the same
+        print(s_deforms.origin)
+        print()
         
         # Figure and init
         self.t = {} # store volume vis
@@ -1115,28 +1110,58 @@ def readLocationPeaksValleys(exceldir, workbook_stent, ptcode, ctcode, ring='R1'
 if __name__ == '__main__':
     
     # Select dataset
-    ptcode = 'LSPEAS_021'
-    ctcode = '6months'
+    ptcodes = [ 
+                'LSPEAS_001', 
+                'LSPEAS_002',	
+                'LSPEAS_003', 
+                'LSPEAS_005',	
+                'LSPEAS_008', 
+                'LSPEAS_009',	
+                'LSPEAS_011', 
+                'LSPEAS_015',	
+                'LSPEAS_017',	
+                'LSPEAS_018',
+                'LSPEAS_019', 
+                'LSPEAS_020', 
+                'LSPEAS_021', 
+                'LSPEAS_022', 
+                'LSPEAS_025', 
+                ]
+    ctcodes = [ 
+                'discharge',
+                '1month', 
+                '6months', 
+                '12months', 
+                '24months']
     cropname = 'ring'
     
     showVol  = 'ISO'  # MIP or ISO or 2D or None
     nstruts = 8 # needed to get seperate ring models for R1 R2; 8 normally
     
-    foo = _Do_Analysis_Rings(ptcode,ctcode,cropname,nstruts=nstruts,showVol=showVol)
-    
-    # Curvature
-    # foo.curvature_ring_models(type='fromstart') # type= how to define segments
-    foo.curvature_ring_models(type='beforeafterstart', showquadrants=False) # type= how to define segments
-    
-    # Displacement
-    foo.displacement_ring_models(type='beforeafterstart')
-    
-    # Distance between R1 R2
-    foo.distance_ring_models(ringkeys = ['R1', 'R2'], type='beforeafterstart')
-    
-    
-    # ====================
-    if True:
-        foo.storeOutputToExcel()
-        foo.save_ssdf_with_individual_ring_models()
-    
+    for ptcode in ptcodes:
+        for ctcode in ctcodes:
+            try:
+                foo = _Do_Analysis_Rings(ptcode,ctcode,cropname,nstruts=nstruts,showVol=showVol)
+            except FileNotFoundError: # scan is missing
+                continue
+            except ValueError:
+                foo = _Do_Analysis_Rings(ptcode,ctcode,cropname,nstruts=7,showVol=showVol)
+            except AssertionError:
+                foo = _Do_Analysis_Rings(ptcode,ctcode,cropname,nstruts=7,showVol=showVol)
+            
+            # Curvature
+            # foo.curvature_ring_models(type='fromstart') # type= how to define segments
+            foo.curvature_ring_models(type='beforeafterstart', showquadrants=False) # type= how to define segments
+            
+            # Displacement
+            foo.displacement_ring_models(type='beforeafterstart')
+            
+            # Distance between R1 R2
+            foo.distance_ring_models(ringkeys = ['R1', 'R2'], type='beforeafterstart')
+            
+            
+            # ====================
+            if True:
+                foo.storeOutputToExcel()
+                foo.save_ssdf_with_individual_ring_models()
+            
