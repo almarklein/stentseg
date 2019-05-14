@@ -15,6 +15,7 @@ def on_key(event):
         # hide nodes
         for node_point in node_points:
             node_point.visible = False
+            t3.visible = False
     if event.key == vv.KEY_UP:
         # show nodes
         for node_point in node_points:
@@ -25,6 +26,8 @@ def on_key(event):
             select1 = selected_nodes[0].node
             select2 = selected_nodes[1].node
             c, ct, p, l = _utils_GUI.get_edge_attributes(model, select1, select2)
+            t3.text = 'Edge length: \b{%1.2f mm}' % l
+            t3.visible = True
             model.remove_edge(select1, select2)
             # visualize removed edge, show keys and deselect nodes
             selected_nodes[1].faceColor = 'b'
@@ -37,9 +40,12 @@ def on_key(event):
             line.faceColor = 'r'
             a.SetView(view)
         if len(selected_nodes) == 1:
-            # pop node
+            # pop node or remove
             select1 = selected_nodes[0].node
-            stentgraph._pop_node(model, select1) # asserts degree == 2
+            if select1 in model.nodes_with_selfloops():
+                model.remove_node[select1]
+            else:
+                stentgraph._pop_node(model, select1) # asserts degree == 2
             selected_nodes[0].faceColor = 'w'
             selected_nodes.clear()
     if event.text == 's':
@@ -142,6 +148,11 @@ def nodeInteraction(model, vol, selected_nodes):
     vv.xlabel('x (mm)');vv.ylabel('y (mm)');vv.zlabel('z (mm)')
     vv.title('User interaction to modify model %s  -  %s' % (ptcode[-3:], ctcode))
     
+    t3 = vv.Label(a, 'Edge length: ', fontSize=11, color='c')
+    t3.position = 0.1, 55, 0.5, 20
+    t3.bgcolor = None
+    t3.visible = False
+    
     # create clickable nodes
     node_points = _utils_GUI.interactive_node_points(model, scale=0.6)
     
@@ -162,7 +173,7 @@ def nodeInteraction(model, vol, selected_nodes):
     print('ESCAPE  = make model dynamic and save to disk')
     print('')
     
-    return node_points
+    return node_points, t3
 
 
 if __name__ == '__main__':
@@ -182,8 +193,8 @@ if __name__ == '__main__':
                         r'D:\LSPEAS\LSPEAS_ssdf',
                         r'F:\LSPEAS_ssdf_BACKUP',r'G:\LSPEAS_ssdf_BACKUP')
 
-    ptcode = 'LSPEAS_019'
-    ctcode = '6months'
+    ptcode = 'LSPEAS_025'
+    ctcode = '1month'
     cropname = 'ring'
     modelname = 'modelavgreg'
     
@@ -204,11 +215,12 @@ if __name__ == '__main__':
     deforms = [pirt.DeformationFieldBackward(*fields) for fields in deforms]
     
     selected_nodes = list()
-    node_points = nodeInteraction(model, vol, selected_nodes)
+    node_points, t3 = nodeInteraction(model, vol, selected_nodes)
     
-    print(s.origin) # for same crop origins should be the same
+    print(s.origin) # for same crop the origins should be the same
     print(s_vol.origin)
     print(s_deforms.origin)
+    print()
     origin = s_deforms.origin # use origin of deforms to get the deforms for model from correct locations
 
     
