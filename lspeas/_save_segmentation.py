@@ -8,8 +8,8 @@ model = sd._nodes3
 seeds = sd._nodes1
 
 ## Option 1: Store segmentation to disk
-
-save_segmentation(basedir, ptcode, ctcode, cropname, seeds, model, s, 
+if True:
+    save_segmentation(basedir, ptcode, ctcode, cropname, seeds, model, s, 
                     stentType=stentType, what=what, params=p)
 
 
