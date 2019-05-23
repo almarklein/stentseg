@@ -18,6 +18,7 @@ from stentseg.utils.utils_graphs_pointsets import point_in_pointcloud_closest_to
 from stentseg.motion.vis import get_graph_in_phase, create_mesh_with_values
 from stentseg.motion.dynamic import incorporate_motion_nodes, incorporate_motion_edges
 from stentseg.stentdirect import stentgraph
+from stentseg.stentdirect.stentgraph import create_mesh
 import visvis as vv
 from visvis import ssdf
 import numpy as np
@@ -126,7 +127,7 @@ class _Do_Analysis_Rings:
         # init axis for mesh rings
         a1 = vv.subplot(133)
         self.drawModel(model=[self.model], akey='a1', a=a1, removeStent=True, alpha=0)
-        # self.t['a1'].visible = False
+        # self.t['a1'].visible = False # do not show volume
         
         a.camera = a0.camera = a1.camera
         f.eventKeyDown.Bind(lambda event: _utils_GUI.RotateView(event, [a, a0, a1], axishandling=False) )
@@ -140,8 +141,8 @@ class _Do_Analysis_Rings:
         self.points_plotted = PointSet(3)
         
     
-    def drawModel(self, model=[], akey='a', a=None, showVol=None, removeStent=None, isoTh=180, 
-                climEditor=True, color=['b'], mw=10, alpha=0.6, **kwargs):
+    def drawModel(self, model=[], akey='a', a=None, showVol=None, removeStent=None, isoTh=184, 
+                climEditor=True, color=['b'], mw=10, alpha=0.6, drawmesh=False, **kwargs):
         """ Draw model(s) with white background in given axis
         model = list with models
         """
@@ -163,7 +164,12 @@ class _Do_Analysis_Rings:
         self.label[akey] = pick3d(a, self.vol)
         vv.xlabel('x (mm)');vv.ylabel('y (mm)');vv.zlabel('z (mm)')
         for i, m in enumerate(model):
-            m.Draw(mc=color[i], mw = mw, lc=color[i], alpha = alpha)
+            if drawmesh:
+                modelmesh = create_mesh(m, 0.7)  # Param is thickness
+                mo = vv.mesh(modelmesh, axesAdjust = False)
+                mo.faceColor = (255/192,255/192,255/192, 0.9) # ziler
+            else:
+                m.Draw(mc=color[i], mw = mw, lc=color[i], alpha = alpha)
         vv.title('Model for LSPEAS %s  -  %s' % (self.ptcode[7:], self.ctcode))
         self.axes[akey] = a
         
@@ -182,13 +188,15 @@ class _Do_Analysis_Rings:
         if showquadrants:
             # init ppquadrants
             ppQ1, ppQ2, ppQ3, ppQ4 = PointSet(3), PointSet(3), PointSet(3), PointSet(3)
-        #     #To visualize in own figure
-        #     f = vv.figure(); vv.clf()
-        #     f.position = 8.00, 30.00,  1567.00, 1002.00
-        #     self.a2 = vv.subplot(111)
-        #     self.drawModel(model=[], akey='a2', a=self.a2, removeStent=False)
-        #     vv.title('Quadrants of ring for LSPEAS %s  -  %s' % (self.ptcode[7:], self.ctcode))
-            
+            #To visualize in own figure
+            if True:
+                f = vv.figure(); vv.clf()
+                f.position = 8.00, 30.00,  1849.00, 1002.00
+                a2 = vv.subplot(131)
+                self.drawModel(model=[s['modelR1'], s['modelR2']], akey='a2', a=a2, removeStent=True, drawmesh=True)
+                # self.t['a2'].visible = False # do not show volume
+                vv.title('Quadrants of ring for LSPEAS %s  -  %s' % (self.ptcode[7:], self.ctcode))
+                a2.camera = self.axes['a1'].camera
         for key in s:
             if key == 'modelR1' or key == 'modelR2': #R1 and R2
                 model = s[key]
@@ -211,19 +219,32 @@ class _Do_Analysis_Rings:
             
             if showquadrants:
                 alpha = self.alpha
+                # colors =  [  (215/255,48/255,39/255) , # '#d73027', # 1 red; QP
+                #             (252/255,141/255,89/255) , #'#fc8d59', # orange; QA
+                #             (145/255,191/255,219/255), # '#91bfdb', # blue; QL
+                #             (69/255,117/255,180/255) # '#4575b4' # 5; QR
+                #             ]
+                colors['y', 'r', 'g', 'b']
                 # plot with smooth popped models
+                lw = 2
                 ax = self.axes['a0']
-                vv.plot(ppQ1, ms='', ls='-', mw=10, lc='y', alpha=alpha, axesAdjust=False, axes=ax) # + gives dashed lines
-                vv.plot(ppQ2, ms='', ls='-', mw=10, lc='g', alpha=alpha, axesAdjust=False, axes=ax)
-                vv.plot(ppQ3, ms='', ls='-', mw=10, lc='r', alpha=alpha, axesAdjust=False, axes=ax)
-                vv.plot(ppQ4, ms='', ls='-', mw=10, lc='b', alpha=alpha, axesAdjust=False, axes=ax)
+                vv.plot(ppQ1, ms='', ls='-', mw=10, lw=lw, lc=colors[0], alpha=alpha, axesAdjust=False, axes=ax) # + gives dashed lines
+                vv.plot(ppQ2, ms='', ls='-', mw=10, lw=lw, lc=colors[2], alpha=alpha, axesAdjust=False, axes=ax)
+                vv.plot(ppQ3, ms='', ls='-', mw=10, lw=lw, lc=colors[1], alpha=alpha, axesAdjust=False, axes=ax)
+                vv.plot(ppQ4, ms='', ls='-', mw=10, lw=lw, lc=colors[3], alpha=alpha, axesAdjust=False, axes=ax)
                 # plot with mesh
                 ax = self.axes['a1']
-                vv.plot(ppQ1, ms='', ls='-', mw=10, lc='y', alpha=alpha, axesAdjust=False, axes=ax) 
-                vv.plot(ppQ2, ms='', ls='-', mw=10, lc='g', alpha=alpha, axesAdjust=False, axes=ax)
-                vv.plot(ppQ3, ms='', ls='-', mw=10, lc='r', alpha=alpha, axesAdjust=False, axes=ax)
-                vv.plot(ppQ4, ms='', ls='-', mw=10, lc='b', alpha=alpha, axesAdjust=False, axes=ax)
-                
+                vv.plot(ppQ1, ms='', ls='-', mw=10, lw=lw, lc=colors[0], alpha=alpha, axesAdjust=False, axes=ax) 
+                vv.plot(ppQ2, ms='', ls='-', mw=10, lw=lw, lc=colors[2], alpha=alpha, axesAdjust=False, axes=ax)
+                vv.plot(ppQ3, ms='', ls='-', mw=10, lw=lw, lc=colors[1], alpha=alpha, axesAdjust=False, axes=ax)
+                vv.plot(ppQ4, ms='', ls='-', mw=10, lw=lw, lc=colors[3], alpha=alpha, axesAdjust=False, axes=ax)
+                if True:
+                    # plot in own figure
+                    ax = self.axes['a2']
+                    vv.plot(ppQ1, ms='', ls='-', mw=10, lw=lw, lc=colors[0], alpha=alpha, axesAdjust=False, axes=ax) # + gives dashed lines
+                    vv.plot(ppQ2, ms='', ls='-', mw=10, lw=lw, lc=colors[2], alpha=alpha, axesAdjust=False, axes=ax)
+                    vv.plot(ppQ3, ms='', ls='-', mw=10, lw=lw, lc=colors[1], alpha=alpha, axesAdjust=False, axes=ax)
+                    vv.plot(ppQ4, ms='', ls='-', mw=10, lw=lw, lc=colors[3], alpha=alpha, axesAdjust=False, axes=ax)
         
     def calc_curvature_ring(self, model, key, deforms, origin, name_output, 
         meshwithcurvature=True):
@@ -279,7 +300,7 @@ class _Do_Analysis_Rings:
             if not self.mesh: # empty dict evaluates False
                 vv.colorbar(axes=a1)
             self.mesh[key] = m
-        
+            
         # print
         print('Curvature during cycle of point with max curvature change= {}'.format(output['max_point_curvature_per_phase']))
         print('')
@@ -1111,28 +1132,29 @@ if __name__ == '__main__':
     
     # Select dataset
     ptcodes = [ 
-                'LSPEAS_001', 
-                'LSPEAS_002',	
-                'LSPEAS_003', 
-                'LSPEAS_005',	
-                'LSPEAS_008', 
-                'LSPEAS_009',	
-                'LSPEAS_011', 
-                'LSPEAS_015',	
-                'LSPEAS_017',	
-                'LSPEAS_018',
-                'LSPEAS_019', 
+                # 'LSPEAS_001', 
+                # 'LSPEAS_002',	
+                # 'LSPEAS_003', 
+                # 'LSPEAS_005',	
+                # 'LSPEAS_008', 
+                # 'LSPEAS_009',	
+                # 'LSPEAS_011', 
+                # 'LSPEAS_015',	
+                # 'LSPEAS_017',	
+                # 'LSPEAS_018',
+                # 'LSPEAS_019', 
                 'LSPEAS_020', 
-                'LSPEAS_021', 
-                'LSPEAS_022', 
-                'LSPEAS_025', 
+                # 'LSPEAS_021', 
+                # 'LSPEAS_022', 
+                # 'LSPEAS_025', 
                 ]
     ctcodes = [ 
                 'discharge',
-                '1month', 
-                '6months', 
-                '12months', 
-                '24months']
+                # '1month', 
+                # '6months', 
+                # '12months', 
+                # '24months'
+                ]
     cropname = 'ring'
     
     showVol  = 'ISO'  # MIP or ISO or 2D or None
@@ -1151,17 +1173,17 @@ if __name__ == '__main__':
             
             # Curvature
             # foo.curvature_ring_models(type='fromstart') # type= how to define segments
-            foo.curvature_ring_models(type='beforeafterstart', showquadrants=False) # type= how to define segments
+            foo.curvature_ring_models(type='beforeafterstart', showquadrants=True) # type= how to define segments
             
             # Displacement
-            foo.displacement_ring_models(type='beforeafterstart')
+            # foo.displacement_ring_models(type='beforeafterstart')
             
             # Distance between R1 R2
-            foo.distance_ring_models(ringkeys = ['R1', 'R2'], type='beforeafterstart')
+            # foo.distance_ring_models(ringkeys = ['R1', 'R2'], type='beforeafterstart')
             
             
             # ====================
-            if True:
+            if False:
                 foo.storeOutputToExcel()
                 foo.save_ssdf_with_individual_ring_models()
             
