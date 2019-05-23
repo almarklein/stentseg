@@ -1,9 +1,11 @@
 """ LSPEAS: Script to analyze and plot motion during the cardiac cycle from
-excel sheet or from the dynamic models
+excel pulsatility_expansion or from the dynamic models
 Copyright 2018-2019, Maaike A. Koenrades
 """
 
 from lspeas.analysis.utils_analysis import readRingExcel, _initaxis, cols2num, read_deforms
+from lspeas.analysis._get_ring_dynamics import print_stats_var_over_time_
+from lspeas.analysis._plot_ring_dynamics import print_stats_var_mean_over_time_
 import openpyxl
 from openpyxl.utils import column_index_from_string
 from stentseg.utils.datahandling import select_dir
@@ -64,6 +66,7 @@ class MotionAnalysis():
         self.points_plotted = []
         self.analysis = {}
         self.modelssdf = [] # for s of models (spine point analysis)
+        self.storevars = {}
         
         self.fontsize1 = 17 # 14
         self.fontsize2 = 17 # 15
@@ -509,15 +512,6 @@ class MotionAnalysis():
         if patients == None:
             patients = self.patients
             
-        # self.displacementAnt_pts = {} # to add x,y,z,3d per patient over time as arrays
-        # self.displacementpost_pts = {}
-        # self.displacementleft_pts = {}
-        # self.displacementright_pts = {}
-        # # self.displacementLA_pts = {}
-        # # self.displacementRA_pts = {}
-        # # self.displacementLP_pts = {}
-        # # self.displacementRP_pts = {}
-        
         antDistOverTime_pts = [] # mm; 5 values for each patient
         antDistPOverTime_pts = [] # %
         postDistOverTime_pts = []
@@ -569,31 +563,6 @@ class MotionAnalysis():
                 R1positionPost, R1deformsPost = P[indexorder[1]], D[indexorder[1]]
                 R1positionLeft, R1deformsLeft = P[indexorder[2]], D[indexorder[2]]
                 R1positionRight, R1deformsRight = P[indexorder[3]], D[indexorder[3]]
-                
-                # # get motion amplitude
-                # motionAntxyz.append(_calculateAmplitude(deformsAnt, dim='xyz')[0]) # dmax, p1, p2
-                # motionAntx = _calculateAmplitude(deformsAnt, dim='x')[0]
-                # motionAnty = _calculateAmplitude(deformsAnt, dim='y')[0]
-                # motionAntz = _calculateAmplitude(deformsAnt, dim='z')[0]
-                # motionPostxyz = _calculateAmplitude(deformsPost, dim='xyz')[0] # dmax, p1, p2
-                # motionPostx = _calculateAmplitude(deformsPost, dim='x')[0]
-                # motionPosty = _calculateAmplitude(deformsPost, dim='y')[0]
-                # motionPostz = _calculateAmplitude(deformsPost, dim='z')[0]
-                # motionLeftxyz = _calculateAmplitude(deformsLeft, dim='xyz')[0] # dmax, p1, p2
-                # motionLeftx = _calculateAmplitude(deformsLeft, dim='x')[0]
-                # motionLefty = _calculateAmplitude(deformsLeft, dim='y')[0]
-                # motionLeftz = _calculateAmplitude(deformsLeft, dim='z')[0]
-                # motionRightxyz = _calculateAmplitude(deformsRight, dim='xyz')[0] # dmax, p1, p2
-                # motionRightx = _calculateAmplitude(deformsRight, dim='x')[0]
-                # motionRighty = _calculateAmplitude(deformsRight, dim='y')[0]
-                # motionRightz = _calculateAmplitude(deformsRight, dim='z')[0]
-                #
-                # # store in dict
-                # motion = {'xyz': motionOutxyz,
-                #             'x': motionOutx,
-                #             'y': motionOuty,
-                #             'z': motionOutz,
-                #             }
                 
                 # R2
                 colStart = 'V'
@@ -687,14 +656,14 @@ class MotionAnalysis():
         self.distsRelAll = {}
         
         # init figure
-        self.f1 = plt.figure(figsize=(11.8, 5.8)) # 11.6, 4.62
+        self.f1 = plt.figure(figsize=(11.5, 4.2)) # 11.8, 5.8
         xlabels = ['0', '10', '20', '30', '40', '50', '60', '70','80','90']
         xrange = range(1,1+len(xlabels)) # not start from x=0 to play with margin xlim
-        fontsize1 = self.fontsize1
-        fontsize2 = self.fontsize2
+        fontsize1 = 16
+        fontsize2 = 16
         
         # init axis
-        factor = 1.36 # 1.33
+        factor = 1.33 # 1.36
         gs = gridspec.GridSpec(1, 2, width_ratios=[1, factor]) # plot right wider
         ax1 = plt.subplot(gs[0])
         plt.xticks(xrange, xlabels, fontsize = fontsize1)
@@ -753,7 +722,7 @@ class MotionAnalysis():
                 ax2.plot(xrange, distsRel, ls=ls, lw=lw, marker=marker, color=color1, 
                         label=ptlegend, alpha=alpha)
                 
-        ax2.legend(loc='upper right', fontsize=self.fontsize4, numpoints=2, title='Legend:')
+        ax2.legend(loc='upper right', fontsize=self.fontsize4, numpoints=1, title='Legend:')
         _initaxis([ax1,ax2], axsize=fontsize1)
         
         if saveFig:
@@ -763,7 +732,7 @@ class MotionAnalysis():
     
     def plot_pulsatility_line_per_patient_or_mean(self, patients=None, ylim=[0, 2], 
                     ylim_perc=[0,5], plottype='max', analysis='pulsatility', 
-                    storemat=False, saveFig=False):
+                    storemat=False, saveFig=False, showlegend=True):
         """ Plot maximum pulsatility rings for individul patients (plottype = max) or 
         for all 4 directions using the mean of the patients (plottype = directionsmean)
         plot in absolute change in mm and as percentage
@@ -777,7 +746,7 @@ class MotionAnalysis():
         wb = openpyxl.load_workbook(os.path.join(exceldir, workbook_stent), data_only=True)
         
         # init figure
-        f1 = plt.figure(figsize=(11.6, 9.2)) # 4.6
+        f1 = plt.figure(figsize=(10, 9.2)) # 11.6 to 10 for legend
         xlabels = ['D', '1M', '6M', '12M', '24M']
         xrange = range(1,1+len(xlabels)) # not start from x=0 to play with margin xlim
         
@@ -1211,11 +1180,12 @@ class MotionAnalysis():
             ax4.errorbar(xrange, R2RAPperc_mean, yerr=np.nanstd(aR2RAPperc_pts, axis=0), fmt=None,
                 ecolor=colorsdirections[3], capsize=capsize, elinewidth=lw2, capthick=lw2)
         
-        if plottype == 'max':
-            # ax1.legend(loc='lower right', fontsize=self.fontsize3, numpoints=1, title='Patients')
-            ax4.legend(loc='upper right', fontsize=self.fontsize4, numpoints=1, title='Patients')
-        elif plottype == 'directionsmean':
-            ax4.legend(loc='upper right', fontsize=self.fontsize4, numpoints=1, title='Legend')
+        if showlegend:
+            if plottype == 'max':
+                # ax1.legend(loc='lower right', fontsize=self.fontsize3, numpoints=1, title='Patients')
+                ax4.legend(loc='upper right', fontsize=self.fontsize4, numpoints=1, title='Patients')
+            elif plottype == 'directionsmean':
+                ax4.legend(loc='upper right', fontsize=self.fontsize4, numpoints=1, title='Legend')
             
         _initaxis([ax1, ax2, ax3, ax4])
         
@@ -1283,11 +1253,12 @@ class MotionAnalysis():
         
         if saveFig:
             plt.savefig(os.path.join(self.dirsaveIm, 
-            'plot_ring_pulsatility_{}.png'.format(plottype)), papertype='a0', dpi=600)
+            'plot_ring_{}_{}.png'.format(analysis, plottype)), papertype='a0', dpi=600)
     
     
-    def store_var_to_mat(self, variable, varname=None, storematdir=None):
+    def store_var_to_mat(self, variable, varname=None, storematdir=None, printstats=True):
         """ Save as .mat to easy copy to spss
+        also store var to self
         """
         if storematdir is None:
             storematdir = os.path.join(self.dirsaveIm, 'python_to_mat_output')
@@ -1301,15 +1272,28 @@ class MotionAnalysis():
             for i, var in enumerate(variable):
                 name = varname+'{}'.format(i)
                 storevar[name] = var
+                self.storevars[name] = var
+                print_stats_var_over_time_(var, varname=name, dec=1, showvar=False)
+                if 'ratio' in name: # not normal distributed
+                    print_stats_var_mean_over_time_(var, varname=name, dec=dec, showvar=False, median=True)
+                else:
+                    print_stats_var_mean_over_time_(var, varname=name, dec=dec, showvar=False)
         else:
             storevar[varname] = variable
+            self.storevars[varname] = variable
+            print_stats_var_over_time_(variable, varname=varname, dec=1, showvar=False)
+            if 'ratio' in varname: # not normal distributed
+                print_stats_var_mean_over_time_(variable, varname=varname, dec=1, showvar=False, median=True)
+            else:
+                print_stats_var_mean_over_time_(variable, varname=varname, dec=1, showvar=False)
         
         storevar['workbook_stent'] = self.workbook_stent
         storevar['patients'] = self.patients
         
         io.savemat(storemat,storevar)
-        print('')
+        print()
         print('variable {} was stored as.mat to {}'.format(varname, storemat))
+        print()
 
 
 def readPosDeformsOverCycle(sheet, time=0, rowStart=18, colStart='B', nphases=10 ):
@@ -1511,6 +1495,7 @@ if __name__ == '__main__':
     #                         analysis=['R1ant', 'R2ant'], 
     #                         clim=(0,2600),showVol='MIP', showModelavgreg=True, locationcheck=False)
     
+    # For phantom validation manuscript
     if False:
         # Select points from 3d image
         # step 1 select and visualize 3d
@@ -1521,7 +1506,7 @@ if __name__ == '__main__':
         foo.plot_displacement_selected_points(colortype=4, colortype3d=3,
                 markertype=5, linetype=4,
                 ylim=[-0.7, 0.85], ylimRel=[0,0.8], saveFig=False)
-    
+    # For phantom validation manuscript
     if False:
         # Get displacement amplitude of spinepoints
         # load models to analyze
@@ -1538,12 +1523,13 @@ if __name__ == '__main__':
     
     
     ## Ring motion manuscript
+    # ---- storemat True to print stats over time ----
     
     ## plot and store pulsatility
     # foo.plot_pulsatility_line_per_patient_or_mean(patients=None, ylim=[0, 1], ylim_perc=[0,4], 
-    #                 plottype='max', analysis='pulsatility', storemat=False, saveFig=False)
+    #                 plottype='max', analysis='pulsatility', storemat=True, saveFig=False, showlegend=False)
     # foo.plot_pulsatility_line_per_patient_or_mean(patients=None, ylim=[0, 1], ylim_perc=[0,4], 
-                    # plottype='directionsmean', analysis='pulsatility', saveFig=False)
+    #                 plottype='directionsmean', analysis='pulsatility', saveFig=True)
     
     ## store blood pressure
     # foo.plot_pulsatility_line_per_patient_or_mean(patients=None, ylim=[0, 200], ylim_perc=[0,4], 
@@ -1553,11 +1539,11 @@ if __name__ == '__main__':
     # foo.plot_pulsatility_line_per_patient_or_mean(patients=None, ylim=[0, 9], ylim_perc=[0,4], 
     #                 plottype='max', analysis='compliance', storemat=True, saveFig=False)
     # foo.plot_pulsatility_line_per_patient_or_mean(patients=None, ylim=[0, 9], ylim_perc=[0,4], 
-    #                 plottype='directionsmean', analysis='compliance', storemat=False, saveFig=False)
+    #                 plottype='directionsmean', analysis='compliance', saveFig=False)
     
     ## plot pulsatility during the cycle
-    # foo.plot_pulsatility_during_cycle(patients=['LSPEAS_002'], analysis=['AP', 'LR', 'LARP', 'RALP'], 
-    #         time = '12M', ring= 'R2', ylim=[24, 32], ylimRel=[-1,1], saveFig=False)
+    foo.plot_pulsatility_during_cycle(patients=['LSPEAS_002'], analysis=['AP', 'LR', 'LARP', 'RALP'], 
+            time = '12M', ring= 'R1', ylim=[24, 32], ylimRel=[-1,1], saveFig=True)
     
     ## get and store distance between R1 R2 at ant post left right
     # foo.get_R1R2distance_change_peaks_valleys(patients=None, storemat=True)
