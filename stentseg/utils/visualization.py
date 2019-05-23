@@ -9,7 +9,7 @@ from stentseg.utils import _utils_GUI, PointSet
 import numpy as np
 
 
-def remove_stent_from_volume(vol, graph, stripSize=5):
+def remove_stent_from_volume(vol, graph, stripSize=5, stripSizeZ=None):
     """ Give the high intensity voxels that belong to the stent a
     lower value, so that the stent appears to be "removed". This is for
     visualization purposes only. Makes use of known paths in graph model.
@@ -20,16 +20,17 @@ def remove_stent_from_volume(vol, graph, stripSize=5):
     for n1,n2 in graph.edges():
         path = graph.edge[n1][n2]['path']
         path = Pointset(path)  # Make a visvis pointset
-        stripSize2 = stripSize // 2 # floor division
+        if stripSizeZ is None:
+            stripSizeZ = stripSize // 2 # floor division
         for point in path:
             z,y,x = vol2.point_to_index(point)
-            vol2[z-stripSize2:z+stripSize2+1, y-stripSize:y+stripSize+1, x-stripSize:x+stripSize+1] = 0
+            vol2[z-stripSizeZ:z+stripSizeZ+1, y-stripSize:y+stripSize+1, x-stripSize:x+stripSize+1] = 0
             # remove less in z direction to not remove 3rd ring/calcifications -> stripSize2
     return vol2
 
 
 def show_ctvolume(vol, graph=None, axis=None, showVol='MIP', clim =(0,2500), isoTh=250, 
-                  removeStent=True, climEditor=False, stripSize=6):
+                  removeStent=True, climEditor=False, stripSize=6, stripSizeZ=None):
     """ Different ways to visualize the CT volume as reference
     For '2D' clim (-550,500) often good range
     """
@@ -46,7 +47,7 @@ def show_ctvolume(vol, graph=None, axis=None, showVol='MIP', clim =(0,2500), iso
         t = vv.volshow(vol, clim=clim, renderStyle='mip')
     elif showVol == 'ISO':
         if removeStent == True:
-            vol = remove_stent_from_volume(vol, graph, stripSize=stripSize) # rings are removed for vis.
+            vol = remove_stent_from_volume(vol, graph, stripSize=stripSize, stripSizeZ=stripSizeZ) # rings are removed for vis.
         t = vv.volshow(vol,clim=clim, renderStyle='iso')
         t.isoThreshold = isoTh; t.colormap = colormap
     elif showVol == '2D':
