@@ -24,9 +24,9 @@ from lspeas.utils import normality_statistics
 
 exceldir = select_dir(r'C:\Users\Maaike\SURFdrive\UTdrive\LSPEAS\Analysis', 
                 r'D:\Profiles\koenradesma\SURFdrive\UTdrive\LSPEAS\Analysis')
-workbook_stent = 'LSPEAS_pulsatility_expansion_avgreg_subp_v2.0.xlsx'
+workbook_stent = 'LSPEAS_pulsatility_expansion_avgreg_subp_v2.1.xlsx'
 workbook_renal_cll = 'Peak valley displacement\\dist_peaks_valleys_cll.xlsx' # data with distances over CLL
-workbook_variables = 'LSPEAS_Variables.xlsx'
+# workbook_renal_cll = 'Peak valley displacement\\dist_peaks_valleys_cll_interobserver_JS_fillnans.xlsx'
 dirsaveIm =  select_dir(r'C:\Users\Maaike\Desktop','D:\Profiles\koenradesma\Desktop')
 
 
@@ -173,23 +173,28 @@ def patient_order(type=23):
     return neworder
         
     
-def plot_tilt_lines(exceldir, workbook_stent, workbook_renal_cll, obs='obsMK', 
-                    ctcodes=['D', '1M', '6M', '12M', '24M'], 
+def plot_tilt_lines(exceldir, workbook_stent, workbook_renal_cll, obs='obsMK',
                     ylim=[0,50], saveFig=False):
     """ Plot tilt over time for all patients
     uses the functions above to get data for each time point
     """
+    ctcodes=['D', '1M', '6M', '12M', '24M']
+    
     # data ring dimension
     PPVVdistances = read_distance_peaks_and_valleys(exceldir, workbook_stent)
     
     tiltPeaks_all = [] # all scans
     tiltValleys_all = []
     for ctcode in ctcodes:
-        # data centerline renal
-        VR, PA, VL, PP = read_dist_to_renal(exceldir, workbook_renal_cll, ctcode, obs=obs)
-        # tilt
-        tiltPeaks, tiltValleys = tilt_peaks_valleys_centerline(PPVVdistances, 
-                                    ctcode, VR, PA, VL, PP)
+        try:
+            # data centerline renal
+            VR, PA, VL, PP = read_dist_to_renal(exceldir, workbook_renal_cll, ctcode, obs=obs)
+            # tilt
+            tiltPeaks, tiltValleys = tilt_peaks_valleys_centerline(PPVVdistances, 
+                                        ctcode, VR, PA, VL, PP)
+        except TypeError: # when excel cells are Nonetype (empty/not scored)
+            tiltPeaks = np.empty((15, 1,)) * np.nan
+            tiltValleys = np.empty((15, 1,)) * np.nan
         tiltPeaks_all.append(tiltPeaks)
         tiltValleys_all.append(tiltValleys)
     
@@ -297,6 +302,7 @@ def plot_tilt_lines(exceldir, workbook_stent, workbook_renal_cll, obs='obsMK',
 if __name__ == '__main__':
     
     obs = 'obsMK'
+    # obs = 'obs2'
     
     if False:
         ctcode = '24M'
@@ -310,8 +316,7 @@ if __name__ == '__main__':
     
     # plot tilt all CT's
     f1, tiltPeaks_all, tiltValleys_all = plot_tilt_lines(exceldir, workbook_stent, 
-                    workbook_renal_cll, obs=obs, 
-                    ctcodes=['D', '1M', '6M', '12M', '24M'], 
+                    workbook_renal_cll, obs=obs,
                     ylim=[-0.3,46], saveFig=True)
     
     #normality check
@@ -361,7 +366,7 @@ if __name__ == '__main__':
         storevar['workbook_stent'] = workbook_stent
         scipy.io.savemat(storemat,storevar)
         print('')
-        print('centerline2 was stored as.mat to {}'.format(storemat))
+        print('tilt peaks valleys and change was stored as.mat to {}'.format(storemat))
         print('')
         
     
