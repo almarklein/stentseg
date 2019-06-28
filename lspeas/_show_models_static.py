@@ -13,6 +13,7 @@ from stentseg.motion.vis import create_mesh_with_abs_displacement
 import numpy as np
 from stentseg.utils.picker import pick3d
 from lspeas.utils.vis import showModelsStatic
+from lspeas.utils.get_anaconda_ringparts import get_model_struts,get_model_rings, _get_model_hooks
 
 # Select the ssdf basedir
 basedir = select_dir(os.getenv('LSPEAS_BASEDIR', ''),
@@ -23,29 +24,31 @@ basedirMesh = select_dir(r'D:\Profiles\koenradesma\SURFdrive\UTdrive\MedDataMimi
     r'C:\Users\Maaike\SURFdrive\UTdrive\MedDataMimics\LSPEAS_Mimics')
 
 # Select dataset to register
-ptcode = 'LSPEAS_021'
+ptcode = 'LSPEAS_025'
 # codes = ctcode1, ctcode2, ctcode3 = 'discharge', '1month', '24months'
-codes = ctcode1, ctcode2 = 'discharge', '24months'
-# codes = ctcode1 = '12months'
+# codes = ctcode1, ctcode2 = 'discharge', '24months'
+codes = ctcode1 = 'discharge'
 # codes = ctcode1, ctcode2, ctcode3, ctcode4 = 'discharge', '1month', '6months', '12months'
 # codes = ctcode1, ctcode2, ctcode3, ctcode4, ctcode5 = 'discharge', '1month', '6months', '12months', '24months'
 cropname = 'ring'
 modelname = 'modelavgreg'
+ringpart = 'model' # model or modelR1 or modelR2
 cropvol = 'stent'
 
-drawModelLines = False  # True or False
+drawModelLines = True  # True or False
 drawMesh, meshDisplacement, dimensions = True, False, 'xyz'
-meshColor = [(1,1,0,1), (0,128/255,1,1)] # [(0,1,0,1)]
+meshColor = [(0,1,0,1)]#[(1,1,0,1), (0,128/255,1,1)] # [(0,1,0,1)]
 showAxis = False
 showVol  = 'ISO'  # MIP or ISO or 2D or None
-removeStent = True
+removeStent = True; stripSizeZ = 20 # (set or default;None)
 showvol2D = False
-drawVessel = True
+drawVessel = False
+
 
 clim = (0,2500)
 clim2D = -200,500
 clim2 = (0,2)
-isoTh = 180 # 250
+isoTh = 300 # 180 / 250
 
 # view1 = 
 #  
@@ -53,11 +56,69 @@ isoTh = 180 # 250
 #  
 # view3 = 
 
+def get_popped_ringpart(s, part='model', nstruts=8, smoothfactor=15):
+    """ get ring1 or ring2; create when does not exist (not yet dynamic)
+    s is ssdf with model
+    part: model, modelR1, modelR2
+    replace s.model for ringpart given by part
+    """
+    try:
+        model = s[part] # then already smoothed and popped
+        s.model = model
+    except AttributeError:
+        model = s.model
+        # Get 2 seperate rings
+        modelsout = get_model_struts(model, nstruts=nstruts)
+        model_R1R2 = modelsout[2]
+        modelR1, modelR2  = get_model_rings(model_R1R2)
+        if part == 'modelR1':
+            model = modelR1
+        elif part == 'modelR2':
+            model = modelR2
+        # remove 'nopop' tags from nodes to allow pop for all (if these where created)
+        # remove deforms
+        for n in model.nodes():
+            d = model.node[n] # dict
+            # use dictionary comprehension to delete key
+            for key in [key for key in d if key == 'nopop']: del d[key]
+            for key in [key for key in d if key == 'deforms']: del d[key]
+        # pop
+        stentgraph.pop_nodes(model)
+        assert model.number_of_edges() == 1 # a ring model is now one edge
+        
+        # remove duplicates in middle of path (due to last pop?)
+        n1,n2 = model.edges()[0]
+        pp = model.edge[n1][n2]['path'] # PointSet
+        duplicates = []
+        for p in pp[1:-1]: # exclude begin/end node
+            index = np.where( np.all(pp == p, axis=-1))
+            if len(np.array(index)[0]) == 2: # occurred at positions
+                duplicates.append(p) 
+            elif len(np.array(index)[0]) > 2:
+                print('A point on the ring model occurred at more than 2 locations')
+        # remove 1 occurance (remove duplicates)
+        duplicates = set(tuple(p.flat) for p in duplicates )
+        # turn into a PointSet
+        duplicates = PointSet(np.array(list(duplicates)))
+        for p in duplicates:
+            pp.remove(p) # remove first occurance 
+        
+        # now change the edge path
+        model.add_edge(n1, n2, path = pp)
+        
+        # smooth path for closed ring model
+        stentgraph.smooth_paths(model, ntimes=smoothfactor, closed=True)
+        
+        s.model = model # replace for visualization
+        
+    return s
+
 mm = []
 vs = []
 # Load the stent model, create mesh, load CT image for reference
 # 1 model 
 s1 = loadmodel(basedir, ptcode, ctcode1, cropname, modelname)
+s1 = get_popped_ringpart(s1, part=ringpart, nstruts=8, smoothfactor=15)
 vol1 = loadvol(basedir, ptcode, ctcode1, cropvol, 'avgreg').vol
 vols = [vol1]
 ss = [s1]
@@ -164,7 +225,7 @@ if len(codes) == 5:
 axes, cbars = showModelsStatic(ptcode, codes, vols, ss, mm, vs, showVol, clim, 
         isoTh, clim2, clim2D, drawMesh, meshDisplacement, drawModelLines, 
         showvol2D, showAxis, drawVessel, climEditor=True, removeStent=removeStent,
-        meshColor=meshColor)
+        stripSizeZ=stripSizeZ, meshColor=meshColor)
 
 
 ## Set view
