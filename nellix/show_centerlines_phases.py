@@ -15,7 +15,7 @@ from stentseg.utils.picker import pick3d
 basedir = select_dir(r'E:\Nellix_chevas\CT_SSDF\SSDF_automated',
 r'D:\Nellix_chevas_BACKUP\CT_SSDF\SSDF_automated')
 
-ptcode = 'chevas_02'
+ptcode = 'chevas_09_thin'
 ctcode = '12months'
 phases =  range(10)  # all 10 phases
 
