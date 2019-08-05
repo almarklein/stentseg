@@ -9,13 +9,15 @@ from stentseg.utils.datahandling import select_dir, loadvol, loadmodel
 from pirt.utils.deformvis import DeformableTexture3D, DeformableMesh
 from stentseg.utils.visualization import show_ctvolume
 from stentseg.stentdirect.stentgraph import create_mesh
-from stentseg.motion.vis import create_mesh_with_abs_displacement
+from stentseg.stentdirect import stentgraph
+from stentseg.motion.vis import create_mesh_with_abs_displacement, create_mesh_with_values
 import pirt
 import numpy as np
 from stentseg.motion.displacement import _calculateAmplitude, _calculateSumMotion
 from stentseg.motion.displacement import calculateMeanAmplitude
 from lspeas.utils.ecgslider import runEcgSlider
 from stentseg.utils import _utils_GUI
+from stentseg.apps.record_movie import recordMovie
 
 # Select the ssdf basedir
 basedir = select_dir(os.getenv('LSPEAS_BASEDIR', ''),
@@ -23,22 +25,23 @@ basedir = select_dir(os.getenv('LSPEAS_BASEDIR', ''),
                      r'F:\LSPEAS_ssdf_BACKUP',r'G:\LSPEAS_ssdf_BACKUP')
 
 # Select dataset to register
-ptcode = 'LSPEASF_C_01'
-ctcode, nr = 'd', 1
+ptcode = 'LSPEAS_002'
+ctcode, nr = '12months', 1
 # ptcode = 'QRM_FANTOOM_20160121'
 # ctcode, nr = 'ZA3-75-1.2', 1
 cropname = 'ring'
 modelname = 'modelavgreg'
 motion = 'amplitude'  # amplitude or sum
-dimension = 'z'
+dimension = 'xyz'
 showVol  = 'MIP'  # MIP or ISO or 2D or None
 clim0  = (-10,2500) 
-clim2 = (0,1.5)
+clim2 = (0,1.5) # mm
+clim3 = (0,0.1) # cm-1
 isoTh = 250
 motionPlay = 9, 1  # each x ms, a step of perc of T
 staticref =  'avgreg'# 'avg7020'
-meshWithColors = True
-
+meshWithColors = 'displacement' # False or displacement or curvature
+ringnames = ['modelR1', 'modelR2'] # ['model'] or ['modelR1'] or ['modelR1', 'modelR2']  
 
 # Load deformations (forward for mesh)
 s = loadvol(basedir, ptcode, ctcode, cropname, 'deforms')
@@ -61,9 +64,19 @@ deforms_b = [f.as_backward() for f in deforms_f]
 
 # Load the stent model and mesh
 s = loadmodel(basedir, ptcode, ctcode, cropname, modelname)
-model = s.model
-if meshWithColors:
+if len(ringnames)==1: # show entire model or 1 ring
+    model = s[ringnames[0]]
+else:
+    # merge ring models into one graph for dynamic visualization
+    model = stentgraph.StentGraph()
+    for key in ringnames:
+        model.add_nodes_from(s[key].nodes(data=True)) # also attributes
+        model.add_edges_from(s[key].edges(data=True))
+
+if meshWithColors=='displacement':
     modelmesh = create_mesh_with_abs_displacement(model, radius = 0.7, dim = dimension, motion = motion)
+elif meshWithColors=='curvature':
+    modelmesh = create_mesh_with_values(model, valueskey='path_curvature_change', radius=0.7)
 else:
     modelmesh = create_mesh(model, 1.0)  # Param is thickness
 
@@ -78,20 +91,22 @@ vol = s2.vol
 ## Start vis
 f = vv.figure(nr); vv.clf()
 if nr == 1:
-    f.position = 8.00, 30.00,  944.00, 980.00
+    f.position = 8.00, 30.00,  1216.00, 960.00
 else:
-    f.position = 968.00, 30.00,  944.00, 980.00
+    f.position = 968.00, 30.00,  1216.00, 960.00
 a = vv.gca()
 a.axis.axisColor = 1,1,1
 a.axis.visible = False
 a.bgcolor = 0,0,0
 a.daspect = 1, 1, -1
-show_ctvolume(vol, model, showVol=showVol, clim=clim0, isoTh=isoTh)
+t = show_ctvolume(vol, model, showVol=showVol, clim=clim0, isoTh=isoTh)
 vv.xlabel('x (mm)');vv.ylabel('y (mm)');vv.zlabel('z (mm)')
-if meshWithColors:
-    vv.title('Model for LSPEAS %s  -  %s  (colorbar \b{%s} of motion in mm in %s)' % (ptcode[7:], ctcode, motion, dimension))
+if meshWithColors=='displacement':
+    vv.title('Dynamic model for patient %s at %s  (colorbar \b{%s} of motion in mm in %s)' % (ptcode[7:], ctcode, motion, dimension))
+elif meshWithColors=='curvature':
+    vv.title('Dynamic model for patient %s at %s  (colorbar \b{%s} in cm^{-1})' % (ptcode[7:], ctcode, 'curvature change'))
 else:
-    vv.title('Model for LSPEAS %s  -  %s ' % (ptcode[7:], ctcode))
+    vv.title('Dynamic model for patient %s at %s ' % (ptcode[7:], ctcode))
     
 # viewringcrop = {'daspect': (1.0, 1.0, -1.0), 'azimuth': 32.9516129032258, 
 # 'elevation': 14.162658990412158, 'roll': 0.0, 
@@ -135,7 +150,10 @@ if meshWithColors:
 dm = DeformableMesh(a, modelmesh) # in x,y,z
 dm.SetDeforms(*[list(reversed(deform)) for deform in deforms_f]) # from z,y,x to x,y,z
 if meshWithColors:
-    dm.clim = clim2
+    if meshWithColors == 'displacement':
+        dm.clim = clim2
+    elif meshWithColors == 'curvature':
+        dm.clim = clim3
     dm.colormap = vv.CM_JET
     vv.colorbar()
 else:
@@ -146,7 +164,7 @@ a.SetLimits()
 # a.SetView(viewringcrop)
 dm.MotionPlay(motionPlay[0], motionPlay[1])  # (10, 0.2) = each 10 ms do a step of 20% for a phase
 dm.motionSplineType = 'B-spline'
-dm.motionAmplitude = 1.0  # For a mesh we can (more) safely increase amplitude
+dm.motionAmplitude = 0.5  # 1 or less. For a mesh we can (more) safely increase amplitude
 #todo: dm.SetValues in loop for changing color?
 
 # Add clickable nodes
@@ -262,15 +280,17 @@ for node_point in node_points:
 # Bind rotate view
 f = vv.gcf()
 ax = vv.gca()
-f.eventKeyDown.Bind(lambda event: _utils_GUI.RotateView(event, [ax]) ) # crtl+L/R/up/down
+f.eventKeyDown.Bind(lambda event: _utils_GUI.RotateView(event, [ax], axishandling=False) ) # crtl+L/R/up/down
 f.eventKeyDown.Bind(lambda event: _utils_GUI.ViewPresets(event, [ax]) )
+
+# ax.SetView({'loc': (106.0082950235823, 108.20059588594421, 59.10612742987558), 'elevation': 60.3586956521739, 'zoom': 0.015789282821813144, 'azimuth': 146.66058394160584, 'roll': 0.0, 'daspect': (1.0, 1.0, -1.0), 'fov': 0.0})
 
 ## run ecgslider
 ecg = runEcgSlider(dm, f, a, motionPlay)
 
 
-# In stentseg.motion.vis are a few functions, but they need to be adjusted
-# to work with the new stent model.
+## Hide volume
+# t.visible = False
 
 ## Turn on/off axis
 # vv.figure(1); a1 = vv.gca()
