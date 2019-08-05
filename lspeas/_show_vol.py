@@ -16,19 +16,19 @@ basedir = select_dir(os.getenv('LSPEAS_BASEDIR', ''),
 #                      r'E:\LSPEASF_ssdf_backup\LSPEASF_C_01')
 
 # Select dataset to register
-ptcode = 'LSPEAS_004'
+ptcode = 'LSPEAS_002'
 # ctcode, nr = 'ZA6-75-0', 1
-ctcode, nr = 'discharge', 2
-cropname = 'ring'
+ctcode, nr = '12months', 2
+cropname = 'stent'
 
 ## Show 3D movie, by alternating the 10 volumes
 from lspeas.utils.vis import showVolPhases
 
 showVol='mip'
 t = showVolPhases(basedir, None, ptcode, ctcode, cropname, showVol=showVol, 
-        mipIsocolor=False, isoTh=310, clim=(60,3000), slider=True  )
+        mipIsocolor=False, isoTh=310, clim=(20,2500), slider=True  )
 
-foo = recordMovie(frameRate=6)
+foo = recordMovie(frameRate=7)
 
 ## Show 3D movie, by showing one volume that is moved by motion fields
 
@@ -74,7 +74,7 @@ dt.MotionPlay(5, 0.6)  # (10, 0.2) = each 10 ms do a step of 20% ;(0.1,0.2)
                         # With 85 bpm every beat 706 ms; 141 ms per 20%  
 
 dt.motionSplineType = 'B-spline'
-dt.motionAmplitude = 2.0
+dt.motionAmplitude = 1.0
 
 ## Turn on/off axis
 vv.figure(1); a1 = vv.gca(); vv.figure(2); a2= vv.gca()
