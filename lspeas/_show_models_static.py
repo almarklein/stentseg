@@ -63,7 +63,7 @@ def get_popped_ringpart(s, part='model', nstruts=8, smoothfactor=15):
     replace s.model for ringpart given by part
     """
     try:
-        model = s[part] # then already smoothed and popped
+        model = s[part] # then part was model or R1/R2 already in ssdf
         s.model = model
     except AttributeError:
         model = s.model
@@ -140,6 +140,7 @@ if drawVessel:
 # 2 models
 if len(codes) == 2 or len(codes) == 3 or len(codes) == 4 or len(codes) == 5:
     s2 = loadmodel(basedir, ptcode, ctcode2, cropname, modelname)
+    s2 = get_popped_ringpart(s2, part=ringpart, nstruts=8, smoothfactor=15)
     vol2 = loadvol(basedir, ptcode, ctcode2, cropvol, 'avgreg').vol
     vols = [vol1, vol2]
     ss = [s1,s2]
@@ -161,6 +162,7 @@ if len(codes) == 2 or len(codes) == 3 or len(codes) == 4 or len(codes) == 5:
 # 3 models
 if len(codes) == 3 or len(codes) == 4 or len(codes) == 5:
     s3 = loadmodel(basedir, ptcode, ctcode3, cropname, modelname)
+    s3 = get_popped_ringpart(s3, part=ringpart, nstruts=8, smoothfactor=15)
     vol3 = loadvol(basedir, ptcode, ctcode3, cropvol, 'avgreg').vol
     vols = [vol1, vol2, vol3]
     ss = [s1,s2,s3]
@@ -182,6 +184,7 @@ if len(codes) == 3 or len(codes) == 4 or len(codes) == 5:
 # 4 models
 if len(codes) == 4 or len(codes) == 5:
     s4 = loadmodel(basedir, ptcode, ctcode4, cropname, modelname)
+    s4 = get_popped_ringpart(s4, part=ringpart, nstruts=8, smoothfactor=15)
     vol4 = loadvol(basedir, ptcode, ctcode4, cropvol, 'avgreg').vol
     vols = [vol1, vol2, vol3, vol4]
     ss = [s1,s2,s3,s4]
@@ -203,6 +206,7 @@ if len(codes) == 4 or len(codes) == 5:
 # 5 models
 if len(codes) == 5:
     s5 = loadmodel(basedir, ptcode, ctcode5, cropname, modelname)
+    s5 = get_popped_ringpart(s5, part=ringpart, nstruts=8, smoothfactor=15)
     vol5 = loadvol(basedir, ptcode, ctcode5, cropvol, 'avgreg').vol
     vols = [vol1, vol2, vol3, vol4, vol5]
     ss = [s1,s2,s3,s4, s5]
