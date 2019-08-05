@@ -26,7 +26,7 @@ ptcode = 'LSPEAS_020'
 codes = ctcode1 = 'discharge'
 cropname = 'ring'
 modelname = 'modelavgreg'
-ringnames = ['modelR1'] # ['modelR1', 'modelR2']
+ringnames = ['modelR1'] # ['modelR1', 'modelR2'] or ['model']
 
 showVol  = 'ISO'  # MIP or ISO or 2D or None
 phases =  range(10) # range(10) for all 10 phases; [3,9] for 30% and 90%
@@ -107,7 +107,7 @@ def drawmodelphasescycles(vol1, model1, modelori1, showVol, isoTh=300, removeSte
         label = pick3d(ax, vol1)
     if not showvol:
         t.visible = False
-    # get centerline models in different phases
+    # get models in different phases
     for model in model1:
         for phasenr in phases:
             model_phase = get_graph_in_phase(model, phasenr = phasenr)
