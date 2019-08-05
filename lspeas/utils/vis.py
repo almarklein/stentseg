@@ -175,16 +175,22 @@ def showVolPhases(basedir, vols=None, ptcode=None, ctcode=None, cropname=None,
         
     # Start vis
     f = vv.figure(1); vv.clf()
-    f.position = 9.00, 38.00,  942.00, 985.00
+    f.position = 9.00, 38.00,  992.00, 944.00
     a = vv.gca()
     a.daspect = 1, 1, -1
     a.axis.axisColor = 1,1,1
     a.axis.visible = False
     a.bgcolor = 0,0,0
-    if not ptcode is None and ctcode is None:
-        vv.title('ECG-gated CT scan %s  -  %s' % (ptcode[7:], ctcode))
+    if showVol=='mip':
+        if not ptcode is None and not ctcode is None:
+            vv.title('Maximum intensity projection cine-loop of the original ECG-gated CT volumes of patient %s at %s ' % (ptcode[8:], ctcode))
+        else:
+            vv.title('Maximum intensity projection cine-loop of the original ECG-gated CT volumes ')
     else:
-        vv.title('ECG-gated CT scan ')
+        if not ptcode is None and not ctcode is None:
+            vv.title('ECG-gated CT scan cine-loop of the original ECG-gated CT volumes of patient %s at %s ' % (ptcode[8:], ctcode))
+        else:
+            vv.title('ECG-gated CT scan cine-loop of the original ECG-gated CT volumes ')
     
     # Setup data container
     container = vv.MotionDataContainer(a)
