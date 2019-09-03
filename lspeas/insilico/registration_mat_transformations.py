@@ -37,8 +37,7 @@ visualize = True
 reg2d = False
 
 # Load the mat files with original and deformed volumes
-dirinsilico = select_dir(
-        #r'D:\LSPEAS\LSPEAS_insilico_mat',
+matpath = select_dir(
         #r'F:\LSPEAS_insilico_mat',
         (r'D:\Profiles\koenradesma\SURFdrive\UTdrive\LSPEAS\In silico validation'
             r'\translation_Geurts_2019-02-08\translation\LSPEAS_insilico_mat'),
@@ -47,19 +46,22 @@ dirinsilico = select_dir(
         #r'/Users/geurtsbj/ownCloud/research/articles/maaike/registration_sensitivity/registration_assessment/LSPEAS_insilico_mat',
         r'/Users/geurtsbj/ownCloud/research/articles/maaike/registration_sensitivity_cases/translation/LSPEAS_insilico_mat')
 
-dirsaveinsilico = select_dir(
-        #r'D:\LSPEAS\LSPEAS_insilico_ssdf\reg1',
-        #r'F:\LSPEAS_insilico_ssdf\reg1',
+#savelocation
+regpath = select_dir(
+        #r'F:\LSPEAS_insilico_ssdf',
         (r'D:\Profiles\koenradesma\SURFdrive\UTdrive\LSPEAS\In silico validation'
-            r'\translation_Geurts_2019-02-08\translation\LSPEAS_insilico_ssdf\reg1'),
+            r'\translation_Geurts_2019-02-08\translation\LSPEAS_insilico_ssdf'),
         (r'C:\Users\Maaike\SURFdrive\UTdrive\LSPEAS\In silico validation'
-            r'\translation_Geurts_2019-02-08\translation\LSPEAS_insilico_ssdf\reg1'),
+            r'\translation_Geurts_2019-02-08\translation\LSPEAS_insilico_ssdf'),
         #r'/Users/geurtsbj/ownCloud/research/articles/maaike/registration_sensitivity/registration_assessment/LSPEAS_insilico_ssdf/reg1',
-        r'/Users/geurtsbj/ownCloud/research/articles/maaike/registration_sensitivity_cases/translation/LSPEAS_insilico_ssdf/reg1')
+        r'/Users/geurtsbj/ownCloud/research/articles/maaike/registration_sensitivity_cases/translation/LSPEAS_insilico_ssdf')
 
-# Get .mat volumes DataDressed and all DataDressedInterpolated automatically from folder dirinsilico\ptcode
+experiment = 'exp1';
+dirsaveinsilico = os.path.join(regpath, experiment)
+
+# Get .mat volumes DataDressed and all DataDressedInterpolated automatically from folder matpath\ptcode
 fileTrs = []
-files_in_folder = os.listdir(os.path.join(dirinsilico, ptcode))
+files_in_folder = os.listdir(os.path.join(matpath, experiment, ptcode))
 for file_name in files_in_folder:
     if file_name.startswith('original'):
         fileOr = file_name
@@ -126,8 +128,8 @@ for file_name in files_in_folder:
 
 # load DataDressed and DataDressedInterpolated for all VelocityFieldTransformations
 for fileTr in fileTrs:
-    mat = scipy.io.loadmat(os.path.join(dirinsilico, ptcode, fileOr))
-    mat2 = scipy.io.loadmat(os.path.join(dirinsilico, ptcode, fileTr))
+    mat = scipy.io.loadmat(os.path.join(matpath, experiment, ptcode, fileOr))
+    mat2 = scipy.io.loadmat(os.path.join(matpath, experiment, ptcode, fileTr))
     
     volOr = mat['DataDressed']
     volTr = mat2['DataDressedInterpolated']
@@ -183,26 +185,47 @@ for fileTr in fileTrs:
     if visualize:
         f = vv.figure(1); vv.clf()
         f.position = 0.00, 22.00,  1914.00, 1018.00
-        clim = (-400,1500)
-        a1 = vv.subplot(221)
-        vv.volshow(volOr,clim=clim)
-        vv.xlabel('x'), vv.ylabel('y'), vv.zlabel('z')
-        vv.title('Im1:Original (DataDressed)')
-        a1.daspect = 1,1,-1
-        
-        a2 = vv.subplot(222)
-        vv.volshow(volOr,clim=clim)
-        vv.volshow(volTr,clim=clim)
-        vv.xlabel('x'), vv.ylabel('y'), vv.zlabel('z')
-        vv.title('Overlay')
-        a2.daspect = 1,1,-1
-        
-        a3 = vv.subplot(223)
-        vv.volshow(volTr,clim=clim)
-        vv.xlabel('x'), vv.ylabel('y'), vv.zlabel('z')
-        vv.title('Im2:Original transformed (DataDressedInterpolated u_\magnitude {})'.format(mat2['u_magnitude'][0][0]))
-        a3.daspect = 1,1,-1
-        
+        if reg2d:
+            clim = (-500,500)
+            a1 = vv.subplot(221)
+            vv.imshow(imOr,clim=clim)
+            vv.xlabel('x'), vv.ylabel('y'), vv.zlabel('z')
+            vv.title('Im1:Original (DataDressed)')
+            a1.daspect = 1,1,-1
+            
+            a2 = vv.subplot(222)
+            vv.imshow(imOr,clim=clim)
+            vv.imshow(imTr,clim=clim)
+            vv.xlabel('x'), vv.ylabel('y'), vv.zlabel('z')
+            vv.title('Overlay')
+            a2.daspect = 1,1,-1
+            
+            a3 = vv.subplot(223)
+            vv.imshow(imTr,clim=clim)
+            vv.xlabel('x'), vv.ylabel('y'), vv.zlabel('z')
+            vv.title('Im2:Original transformed (DataDressedInterpolated u_\magnitude {})'.format(mat2['u_magnitude'][0][0]))
+            a3.daspect = 1,1,-1
+        else:
+            clim = (-400,1500)
+            a1 = vv.subplot(221)
+            vv.volshow(volOr,clim=clim)
+            vv.xlabel('x'), vv.ylabel('y'), vv.zlabel('z')
+            vv.title('Im1:Original (DataDressed)')
+            a1.daspect = 1,1,-1
+            
+            a2 = vv.subplot(222)
+            vv.volshow(volOr,clim=clim)
+            vv.volshow(volTr,clim=clim)
+            vv.xlabel('x'), vv.ylabel('y'), vv.zlabel('z')
+            vv.title('Overlay')
+            a2.daspect = 1,1,-1
+            
+            a3 = vv.subplot(223)
+            vv.volshow(volTr,clim=clim)
+            vv.xlabel('x'), vv.ylabel('y'), vv.zlabel('z')
+            vv.title('Im2:Original transformed (DataDressedInterpolated u_\magnitude {})'.format(mat2['u_magnitude'][0][0]))
+            a3.daspect = 1,1,-1
+            
         a4 = vv.subplot(224)
         a4.daspect = 1,1,-1
         
