@@ -10,7 +10,7 @@ from stentseg.utils import _utils_GUI
 from stentseg.utils.datahandling import select_dir, loadvol, loadmodel
 from stentseg.utils.visualization import show_ctvolume
 from stentseg.stentdirect.stentgraph import create_mesh
-from stentseg.motion.vis import get_graph_in_phase
+from stentseg.utils.utils_graphs_pointsets import get_graph_in_phase
 from stentseg.stentdirect import stentgraph
 import numpy as np
 #sys.path.insert(0, os.path.abspath('..'))

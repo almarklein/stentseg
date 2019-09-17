@@ -202,28 +202,4 @@ def convert_mesh_values_to_angle_change(m, g, i=None):
     # Get values and update
     return F1 * angleChanges[I1] + F2 * angleChanges[I2]
 
-
-#todo: move to utils
-def get_graph_in_phase(graph, phasenr):
-    """ Get position of model in a certain phase
-    """
-    from stentseg.stentdirect import stentgraph
-    import numpy as np
-    
-    # initialize
-    model_phase = stentgraph.StentGraph()
-    for n1, n2 in graph.edges():
-        # obtain path and deforms of nodes and edge
-        path = graph.edge[n1][n2]['path']
-        pathDeforms = graph.edge[n1][n2]['pathdeforms']
-        # obtain path in phase
-        path_phase = []
-        for i, point in enumerate(path):
-            pointposition = point + pathDeforms[i][phasenr]
-            path_phase.append(pointposition) # points on path, one phase
-        n1_phase, n2_phase = tuple(path_phase[0]), tuple(path_phase[-1]) # position of nodes
-        model_phase.add_edge(n1_phase, n2_phase, path = np.asarray(path_phase), 
-                            pathdeforms = np.asarray(pathDeforms))
-    return model_phase
-    
     

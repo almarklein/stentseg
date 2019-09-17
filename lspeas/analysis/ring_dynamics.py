@@ -15,7 +15,7 @@ from stentseg.utils.visualization import DrawModelAxes, show_ctvolume, plot_poin
 from stentseg.utils.centerline import dist_over_centerline
 from stentseg.utils import PointSet, _utils_GUI, visualization
 from stentseg.utils.utils_graphs_pointsets import point_in_pointcloud_closest_to_p
-from stentseg.motion.vis import get_graph_in_phase, create_mesh_with_values
+from stentseg.motion.vis import create_mesh_with_values
 from stentseg.motion.dynamic import incorporate_motion_nodes, incorporate_motion_edges
 from stentseg.stentdirect import stentgraph
 from stentseg.stentdirect.stentgraph import create_mesh

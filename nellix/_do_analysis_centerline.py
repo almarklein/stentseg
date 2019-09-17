@@ -8,7 +8,7 @@ from stentseg.utils.datahandling import select_dir, loadvol, loadmodel
 from stentseg.utils.picker import pick3d
 from stentseg.utils.visualization import DrawModelAxes, show_ctvolume, plot_points
 from stentseg.utils import PointSet, _utils_GUI, visualization
-from stentseg.motion.vis import get_graph_in_phase
+from stentseg.utils.utils_graphs_pointsets import get_graph_in_phase
 import visvis as vv
 import numpy as np
 import copy

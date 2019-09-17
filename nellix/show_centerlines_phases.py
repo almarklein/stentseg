@@ -9,7 +9,7 @@ from stentseg.utils.centerline import points_from_nodes_in_graph
 import visvis as vv
 from stentseg.utils import PointSet, _utils_GUI
 from stentseg.utils.visualization import DrawModelAxes, show_ctvolume
-from stentseg.motion.vis import get_graph_in_phase
+from stentseg.utils.utils_graphs_pointsets import get_graph_in_phase
 from stentseg.utils.picker import pick3d
 
 basedir = select_dir(r'E:\Nellix_chevas\CT_SSDF\SSDF_automated',
