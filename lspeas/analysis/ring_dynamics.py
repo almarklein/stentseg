@@ -224,9 +224,9 @@ class _Do_Analysis_Rings:
                 #             (145/255,191/255,219/255), # '#91bfdb', # blue; QL
                 #             (69/255,117/255,180/255) # '#4575b4' # 5; QR
                 #             ]
-                colors['y', 'r', 'g', 'b']
+                colors = ['y', 'r', 'g', 'b']
                 # plot with smooth popped models
-                lw = 2
+                lw = 3
                 ax = self.axes['a0']
                 vv.plot(ppQ1, ms='', ls='-', mw=10, lw=lw, lc=colors[0], alpha=alpha, axesAdjust=False, axes=ax) # + gives dashed lines
                 vv.plot(ppQ2, ms='', ls='-', mw=10, lw=lw, lc=colors[2], alpha=alpha, axesAdjust=False, axes=ax)
@@ -295,7 +295,7 @@ class _Do_Analysis_Rings:
             a1 = self.axes['a1']
             m = vv.mesh(modelmesh, axes=a1, axesAdjust=False)
             m.clim = 0, 0.1 # when 2 rings are plotted seperately, clim must be fixed
-            m.colormap = vv.CM_JET
+            m.colormap = vv.CM_JET #todo: use colormap Viridis or Magma as JET is not linear (https://bids.github.io/colormap/)
             # check if colorbar already created
             if not self.mesh: # empty dict evaluates False
                 vv.colorbar(axes=a1)

@@ -120,7 +120,7 @@ class _Show_Model:
         dm.SetDeforms(*[list(reversed(deform)) for deform in deforms_f]) # from z,y,x to x,y,z
         if meshWithColors:
             dm.clim = clim2
-            dm.colormap = vv.CM_JET
+            dm.colormap = vv.CM_JET #todo: use colormap Viridis or Magma as JET is not linear (https://bids.github.io/colormap/)
             if colorbar:
                 vv.colorbar()
             colorbar = False

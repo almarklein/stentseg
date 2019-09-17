@@ -107,7 +107,7 @@ def showModelsStatic(ptcode,codes, vols, ss, mm, vs, showVol, clim, isoTh, clim2
             m = vv.mesh(mm[i], axes=ax)
             if meshDisplacement:
                 m.clim = clim2
-                m.colormap = vv.CM_JET
+                m.colormap = vv.CM_JET #todo: use colormap Viridis or Magma as JET is not linear (https://bids.github.io/colormap/)
                 cb = vv.colorbar(ax)
                 cbars.append(cb)
             elif meshColor is not None:

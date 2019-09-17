@@ -114,6 +114,7 @@ def drawmodelphasescycles(vol1, model1, modelori1, showVol, isoTh=300, removeSte
             if meshWithColors:
                 modelmesh1 = create_mesh_with_abs_displacement(model_phase, radius = radius, dim = dimensions)
                 m = vv.mesh(modelmesh1, colormap = vv.CM_JET, clim = clim2)
+                #todo: use colormap Viridis or Magma as JET is not linear (https://bids.github.io/colormap/)
             else:
                 model_phase.Draw(mc=colors[phasenr], mw = 10, lc=colors[phasenr])
         #         modelmesh1 = create_mesh(model_phase, radius = radius)

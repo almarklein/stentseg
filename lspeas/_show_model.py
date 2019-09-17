@@ -154,7 +154,7 @@ if meshWithColors:
         dm.clim = clim2
     elif meshWithColors == 'curvature':
         dm.clim = clim3
-    dm.colormap = vv.CM_JET
+    dm.colormap = vv.CM_JET #todo: use colormap Viridis or Magma as JET is not linear (https://bids.github.io/colormap/)
     vv.colorbar()
 else:
     dm.faceColor = 'g'
