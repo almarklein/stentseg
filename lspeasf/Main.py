@@ -24,8 +24,13 @@ if True:
         dicom_basedir = r'F:\LSPEASF_backup\LSPEASF_CT_dicom_backup\LSPEASF_C_01\LSPEASF_C_01_pre'
         print(dicom_basedir)
         
-        dicom2ssdf(dicom_basedir,ptcode,ctcode,basedir)
+        vols = dicom2ssdf(dicom_basedir,ptcode,ctcode,basedir)
         print('load, crop and convert to ssdf: done')
 
+        # show vols dynamic
+        from lspeas.utils.vis import showVolPhases
+        showVol='mip'
+        t = showVolPhases(basedir, None, ptcode, ctcode, cropname, showVol=showVol, 
+                mipIsocolor=False, isoTh=310, clim=(20,2500), slider=True  )
 
 ## REGISTRATION
