@@ -83,7 +83,7 @@ basedirCenterline = select_dir(
     r'C:\Users\Maaike\SURFdrive\UTdrive\LSPEAS_centerlines_terarecon',
     r"C:\stack\data\lspeas\vaatwand")
 
-# Select dataset to register
+# Select dataset
 ptcode = 'LSPEAS_003'
 ctcode1 = 'discharge'
 cropname = 'ring'
@@ -357,7 +357,7 @@ def deform_points_2d(pp2, plane):
     deformed = []
     for phase in range(len(deforms)):
         deform = deforms[phase]
-        dx = deform.get_field_in_points(pp3, 0)
+        dx = deform.get_field_in_points(pp3, 0) #todo: shouldn't this be z=0 y=1 x=2! see dynamic.py; adapt in all functions?!
         dy = deform.get_field_in_points(pp3, 1)
         dz = deform.get_field_in_points(pp3, 2)
         deform_vectors = PointSet(np.stack([dx, dy, dz], 1))
