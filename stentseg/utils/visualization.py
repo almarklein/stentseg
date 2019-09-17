@@ -15,7 +15,6 @@ def remove_stent_from_volume(vol, graph, stripSize=5, stripSizeZ=None):
     visualization purposes only. Makes use of known paths in graph model.
     """
     from visvis import Pointset
-
     vol2 = vol.copy()
     for n1,n2 in graph.edges():
         path = graph.edge[n1][n2]['path']
