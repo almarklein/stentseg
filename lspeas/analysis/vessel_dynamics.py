@@ -19,7 +19,7 @@ from stentseg.utils import PointSet, fitting
 
 from lspeas.utils.vis import showModelsStatic
 from lspeas.utils.deforminfo import DeformInfo
-from lspeas.utils.curvature import measure_curvature
+from lspeas.utils.curvature import measure_curvature #todo: check xyz vs zyx!
 from lspeas.utils import meshlib
 
 assert openpyxl.__version__ < "2.4", "Do pip install openpyxl==2.3.5"
@@ -353,7 +353,7 @@ def deform_points_2d(pp2, plane):
     """ Given a 2D pointset (and the plane that they are on),
     return a list with the deformed versions of that pointset.
     """
-    pp3 = fitting.project_from_plane(pp2, plane)
+    pp3 = fitting.project_from_plane(pp2, plane) #todo: shouldn't origin be subtracted?! see dynamic.py
     deformed = []
     for phase in range(len(deforms)):
         deform = deforms[phase]
@@ -596,5 +596,5 @@ slider_ref.eventSliderChanged.Bind(on_sliding_done)
 slider_ves.eventSliderChanged.Bind(on_sliding_done)
 button_go.eventMouseDown.Bind(on_button_press)
 
-#todo: measure (change of) curvature of stent rings
 #todo: visualize mesh with motion and use colors to represent radius change
+#todo: add torsion and angular rotation of centerline
