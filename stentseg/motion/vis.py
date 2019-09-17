@@ -1,45 +1,6 @@
 """ Module that provides functionality for visualization moving stent grafts.
 """
 
-
-# def create_mesh_with_values(g, radius=1.0, simplified=True): 
-#     """ Create a Mesh object from the graph. The values of the mesh
-#     encode triplets (node1, node2, weight) where node1 and node2 are
-#     indices to nodes in the graph and weight is the relative proximity
-#     to these nodes.
-#     
-#     The values array can then be used to set the value to any kind
-#     of information derived from the nodes.
-#     
-#     """
-#     from visvis.processing import lineToMesh, combineMeshes
-#     # todo: this still uses the old mesh model class
-#     
-#     # Init list of meshes
-#     meshes = []
-#     
-#     for e in g.GetEdges():
-#         # Obtain path of edge and make mesh
-#         if simplified:
-#             # Straight path
-#             path, values = vv.Pointset(3), vv.Pointset(3)
-#             path.append(e.end1._data); values.append(e._i1, e._i2, 0)
-#             path.append(e.end2._data); values.append(e._i1, e._i2, 1)
-#             #values = [e.end1._angleChange, e.end2._angleChange]
-#         else:
-#             path = vv.Pointset(e.props[2].data)
-#             #values = values.reshape(-1, 1)
-#             values = vv.Pointset(3)
-#             for i in np.linspace(0.0, 1.0, len(path)):
-#                 values.append(e._i1, e._i2, i)
-#         meshes.append( lineToMesh(path, radius, 8, values) )
-#     
-#     # Combine meshes and return
-#     if meshes:
-#         return combineMeshes(meshes)
-#     else:
-#         return None
-
 def create_mesh_with_values(graph, valueskey='path_curvature_change', radius=1.0):
     """ Create a Mesh object from the graph. The values of the mesh
     encode the *given values* at the points on the *paths* in the graph.
