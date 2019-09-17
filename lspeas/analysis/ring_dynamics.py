@@ -5,7 +5,7 @@
 * displacement ring parts/quartiles
 
 Uses excel pulsatility_and_expansion to get location of peaks and valleys to set start of ring
-Copyright 2019, Maaike A. Koenrades
+Copyright (c) 2019, Maaike A. Koenrades
 """
 
 import sys, os

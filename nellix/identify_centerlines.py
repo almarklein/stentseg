@@ -1,6 +1,6 @@
-""" Author: M.A. Koenrades
-Created October 2017
-Module to identify the anatomical location of the centerlines by the user
+""" Module to identify the anatomical location of the centerlines by the user
+Author: Maaike A. Koenrades. Created October 2017
+
 """
 import visvis as vv
 import os

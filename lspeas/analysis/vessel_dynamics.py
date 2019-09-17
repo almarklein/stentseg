@@ -1,6 +1,6 @@
 """ Module to analyze vessel pulsatility during the heart cycle in ecg-gated CT
 radius change - area change - volume change
-
+Authors: Almar Klein and Maaike Koenrades. Created 2019.
 """
 
 import os

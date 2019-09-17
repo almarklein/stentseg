@@ -1,5 +1,5 @@
 """ Show centerlines at relative positions during the cardiac cycle
-
+Author: Maaike Koenrades. Created 2019.
 """
 
 import os

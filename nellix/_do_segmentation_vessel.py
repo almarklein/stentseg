@@ -1,7 +1,7 @@
 """ Script to do the vasculature segmentation using marching cubes to 
 obtain the wall/vessel surface and store the result.
 will overwrite in pt folder
-Copyright (C) Maaike Koenrades
+Copyright (C) Maaike Koenrades 2019
 """
 class _Do_Segmentation_Vessel:
     def __init__(self,ptcode,ctcode,basedir, threshold=300, show=True, 

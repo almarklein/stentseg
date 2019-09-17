@@ -1,6 +1,6 @@
-""" Author: M.A. Koenrades
-Created October 2017
-Module to perform automated motion analysis of dynamic centerline models
+""" Module to perform automated motion analysis of dynamic centerline models
+Author: Maaike A. Koenrades. Created October 2017
+
 """
 import sys, os
 from stentseg.utils.centerline import points_from_nodes_in_graph, dist_over_centerline

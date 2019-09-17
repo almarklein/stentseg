@@ -1,6 +1,5 @@
-# Author: M.A. Koenrades. Created 2018.
 """ Module with functions to handle graphs or PointSets for analysis or visualization
-
+Author: M.A. Koenrades. Created 2018.
 """
 import numpy as np
 import scipy.io
