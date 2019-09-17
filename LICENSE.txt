@@ -39,3 +39,25 @@ appreciate it if you refer to our paper:
     Y. and Schultze Kool, L.J. and Renema, W.K.J. and Slump, C.H. (2012) 
     Automatic segmentation of the wire frame of stent grafts from CT data. 
     Medical Image Analysis, 16 (1). pp. 127-139. ISSN 1361-8415
+
+===================================================================
+
+If scripts are used that make use of PIRT for motion analysis, please
+refer to the following papers:
+    
+    Klein A, Renema W, Vliet JA, Oostveen LJ, Hoogeveen Y, Schultze Kool LJ, 
+    et al. Motion Calculations on Stent Grafts in AAA. In: Grundmann RT, editor. 
+    Diagnosis, Screening and Treatment of Abdominal, Thoracoabdominal and 
+    Thoracic Aortic Aneurysms. [Rijeka]: InTechOpen; 2011. p. 125–44.
+    
+    Koenrades MA, Struijs EM, Klein A, Kuipers H, Geelkerken RH, Slump CH. 
+    Validation of an image registration and segmentation method to measure 
+    stent graft motion on ECG-gated CT using a physical dynamic stent graft 
+    model. Proc SPIE Med Imaging. 2017;10134:1013411–8.
+    
+    Koenrades MA, Struijs EM, Klein A, Kuipers H, Reijnen MMPJ, Slump CH, et al.
+    Quantitative stent-graft motion in ECG-gated CT by image registration and 
+    segmentation: In vitro validation and preliminary clinical results. 
+    Eur J Vasc Endovasc Surg. 2019;in press
+    
+    
